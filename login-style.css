@@ -1,0 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+
+:root { 
+    --bg-main: #f8fafc; /* พื้นหลังสีสว่างสบายตา */
+    --bg-card: #ffffff; 
+    --primary: #1e40af; /* สีน้ำเงินเข้มเน้นความคมชัด */
+    --text-main: #0f172a; /* ตัวอักษรสีดำเกือบสนิท อ่านง่ายมาก */
+    --text-muted: #475569; 
+    --border-color: #94a3b8;
+    --danger: #b91c1c; 
+    --success: #15803d; 
+}
+
+body { 
+    font-family: 'Sarabun', sans-serif; 
+    background-color: var(--bg-main); 
+    color: var(--text-main); 
+    margin: 0; 
+    height: 100vh; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+}
+
+/* 🏠 กล่องล็อกอินสีขาว ขอบหนาเห็นชัด */
+.login-container { 
+    background: var(--bg-card); 
+    padding: 50px 40px; 
+    border-radius: 16px; 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+    border: 3px solid #1e3a8a; /* ขอบหนาสีน้ำเงินเข้ม */
+    width: 100%; 
+    max-width: 460px; 
+    box-sizing: border-box; 
+    text-align: center;
+}
+
+.logo-area { 
+    font-size: 34px; /* ขนาดใหญ่พิเศษ */
+    font-weight: 700; 
+    color: #1e3a8a; 
+    margin-bottom: 8px; 
+}
+
+.subtitle { 
+    font-size: 16px; /* ปรับขนาดเพิ่มขึ้น */
+    color: var(--text-muted); 
+    margin-bottom: 40px; 
+    font-weight: 600;
+}
+
+.form-group { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    margin-bottom: 28px; 
+    text-align: left; 
+}
+
+.form-group label { 
+    font-size: 18px; /* ขนาดฟอนต์สำหรับผู้สูงอายุ */
+    color: var(--text-main); 
+    font-weight: 700; 
+}
+
+/* ช่องป้อนข้อมูลขนาดใหญ่ เส้นขอบเข้มสูง */
+.form-control { 
+    padding: 16px; 
+    background: #ffffff; 
+    border: 2px solid var(--border-color); 
+    border-radius: 8px; 
+    color: var(--text-main); 
+    font-size: 18px; /* ขยายตัวหนังสือในช่องพิมพ์ */
+    font-weight: bold;
+}
+
+.form-control:focus { 
+    outline: none; 
+    border-color: #2563eb; 
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.25); 
+}
+
+/* ปุ่มกดขนาดใหญ่หนาสะใจ กดง่าย */
+.btn-login { 
+    width: 100%; 
+    padding: 18px; 
+    background: #1e3a8a; 
+    color: white; 
+    border: none; 
+    border-radius: 8px; 
+    font-weight: 700; 
+    font-size: 20px; /* ฟอนต์ปุ่มใหญ่พิเศษ */
+    cursor: pointer; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-top: 15px; 
+}
+
+.btn-login:hover { 
+    background: #2563eb;
+}
+
+.error-msg { 
+    color: var(--danger); 
+    font-size: 16px; 
+    margin-top: 25px; 
+    display: none; 
+    background: #fee2e2; 
+    padding: 14px; 
+    border-radius: 8px; 
+    border: 2px solid #ef4444; 
+    font-weight: 700;
+}

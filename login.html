@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - บจก.พี.วี.ที.แอนด์ ที.พลาส</title>
+    <link rel="stylesheet" href="main-style.css">
+</head>
+<body class="login-page">
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <h2>🏢 PVT & T-PLAS</h2>
+            <div class="login-subtitle">ระบบบริหารจัดการข้อมูลและรายงานการผลิตสถิติ</div>
+            
+            <div class="form-group">
+                <label for="username">👤 ชื่อผู้ใช้งาน (Username)</label>
+                <input type="text" id="username" placeholder="พนักงาน: STAFF... / หัวหน้า: SUP..." required onkeydown="checkEnter(event)" autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">🔒 รหัสผ่าน (Password)</label>
+                <div class="password-container">
+                    <input type="password" id="password" placeholder="กรอกรหัสผ่าน..." required onkeydown="checkEnter(event)">
+                    <button type="button" id="togglePassword" class="toggle-password-btn" onclick="togglePasswordVisibility()">👁️ ดูรหัส</button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="dept">🏭 เลือกแผนกปฏิบัติงาน (Department)</label>
+                <select id="dept" onkeydown="checkEnter(event)">
+                    <option value="blow">แผนกเป่า (Blow)</option>
+                    <option value="mono">แผนกโมโน (Mono)</option>
+                    <option value="drill">แผนกตัดเจาะ (Drill)</option>
+                    <option value="pipe">แผนกท่อ (Pipe)</option>
+                    <option value="salan">แผนกสแลน (Salan)</option>
+                    <option value="garbage">แผนกบด/จัดการขยะ (Garbage)</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                <input type="checkbox" id="rememberMe" style="width: auto; margin: 0;">
+                <label for="rememberMe" style="margin: 0; font-size: 13px; color: #64748b; cursor: pointer;">จำชื่อผู้ใช้งานในเครื่องนี้</label>
+            </div>
+            
+            <button class="btn-login" onclick="handleLogin()">
+                <span>🔓 เข้าสู่ระบบความปลอดภัย</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const savedUser = localStorage.getItem('rememberedUser');
+            if (savedUser) {
+                document.getElementById('username').value = savedUser;
+                document.getElementById('rememberMe').checked = true;
+            }
+        };
+
+        function checkEnter(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleLogin();
+            }
+        }
+
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const toggleBtn = document.getElementById('togglePassword');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleBtn.innerText = '🙈 ซ่อนรหัส';
+            } else {
+                passwordInput.type = 'password';
+                toggleBtn.innerText = '👁️ ดูรหัส';
+            }
+        }
+
+        function handleLogin() {
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const dept = document.getElementById('dept').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
+
+            if (!user || !pass) {
+                alert("❌ กรุณากรอกชื่อผู้ใช้งาน และรหัสผ่านให้ครบถ้วน");
+                return;
+            }
+
+            let role = 'staff';
+
+            if (user.toUpperCase().startsWith('MAN')) {
+                if (pass !== "MAN555") { alert("❌ รหัสผ่านระดับผู้บริหารไม่ถูกต้อง!"); return; }
+                role = 'management';
+            } else if (user.toUpperCase().startsWith('SUP')) {
+                if (pass !== "SUP333") { alert("❌ รหัสผ่านระดับหัวหน้าแผนกไม่ถูกต้อง!"); return; }
+                role = 'supervisor';
+            } else {
+                if (pass !== "1234") { alert("❌ รหัสผ่านพนักงานไม่ถูกต้อง!"); return; }
+                role = 'staff';
+            }
+
+            if (rememberMe) {
+                localStorage.setItem('rememberedUser', user);
+            } else {
+                localStorage.removeItem('rememberedUser');
+            }
+
+            localStorage.setItem('activeUser', user);
+            localStorage.setItem('activeDept', dept);
+            localStorage.setItem('activeRole', role);
+
+            if (role === 'management' || role === 'supervisor') {
+                window.location.href = 'dashboard.html';
+            } else {
+                window.location.href = `form-${dept}.html`;
+            }
+        }
+    </script>
+</body>
+</html>

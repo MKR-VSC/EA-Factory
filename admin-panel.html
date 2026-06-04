@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ ศูนย์ควบคุมผู้ดูแลระบบ (Admin Panel) - V3.6</title>
+    <link rel="stylesheet" href="admin-style.css">
+</head>
+<body>
+
+    <div id="auth-gate" class="login-gate">
+        <h2>🛡️ Admin Authentication</h2>
+        <p style="color: #94a3b8; font-size: 14px;">หน้านี้สำหรับผู้ดูแลระบบไอทีเท่านั้น กรุณากรอกรหัสผ่านเพื่อเข้าใช้งาน</p>
+        <input type="password" id="adminPassword" class="form-control" placeholder="ใส่รหัสผ่านผู้ดูแลระบบที่นี่..." onkeydown="if(event.key==='Enter') verifyAdmin()">
+        <button class="btn-login" onclick="verifyAdmin()">🔓 ยืนยันสิทธิ์เข้าใช้งาน</button>
+    </div>
+
+    <div id="admin-main" class="container">
+        <div class="admin-card">
+            <div class="admin-header">
+                <h1>🛡️ แผงควบคุมระบบหลังบ้าน (Admin Master Console)</h1>
+                <button class="btn-secondary" onclick="lockAdmin()">🔒 ล็อกหน้าจอ</button>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn-primary" onclick="loadReports()">🔄 โหลดข้อมูลล่าสุด (Port 3000)</button>
+                <button class="btn-secondary" onclick="clearView()">🧹 เคลียร์หน้าตาราง</button>
+                <button class="btn-danger" onclick="clearServerDatabase()">⚠️ ล้างฐานข้อมูลเซิร์ฟเวอร์ทั้งหมด</button>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 8%">ID</th>
+                            <th style="width: 18%">วัน-เวลา เกิดเหตุ</th>
+                            <th style="width: 12%">แผนก</th>
+                            <th style="width: 20%">หมวดหมู่ปัญหา</th>
+                            <th>รายละเอียดอาการขัดข้อง</th>
+                            <th style="width: 12%">สถานะเซิร์ฟเวอร์</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb">
+                        <tr>
+                            <td colspan="6" style="text-align:center; color:#64748b; padding:20px;">ยังไม่มีการโหลดข้อมูล กรุณากดปุ่ม "โหลดข้อมูลล่าสุด"</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🔑 ตั้งค่ารหัสผ่านสำหรับ Admin (ใช้ Key เดียวกับระบบหลังบ้านในการล้างฐานข้อมูล)
+        const ADMIN_SECRET_PASSWORD = "PVT_SECRET_2026"; 
+        const API_URL = 'http://localhost:3000/api/reports';
+
+        // ฟังก์ชันตรวจสอบรหัสผ่าน
+        function verifyAdmin() {
+            const inputPass = document.getElementById('adminPassword').value;
+            if (inputPass === ADMIN_SECRET_PASSWORD) {
+                document.getElementById('auth-gate').style.display = 'none';
+                document.querySelector('.admin-card').style.display = 'block';
+                document.body.style.alignItems = 'flex-start'; // ปรับตำแหน่งให้ตารางยืดขยายสวยงาม
+                loadReports(); 
+            } else {
+                alert("❌ รหัสผ่านไม่ถูกต้อง! ไม่ได้รับอนุญาตให้เข้าใช้งานระบบควบคุม");
+                document.getElementById('adminPassword').value = "";
+            }
+        }
+
+        // ฟังก์ชันดึงข้อมูลจาก Server พอร์ต 3000
+        async function loadReports(){
+            const tb = document.getElementById('tb');
+            tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#38bdf8;">🔄 กำลังเชื่อมต่อดึงข้อมูลจากฐานข้อมูล...</td></tr>`;
+            
+            try {
+                const response = await fetch(API_URL);
+                const result = await response.json();
+                
+                if(result.success && result.data.length > 0) {
+                    tb.innerHTML = '';
+                    result.data.forEach(x => {
+                        let statusBadge = `<span class="badge" style="background:#b45309; color:#fef3c7;">⏳ Pending</span>`;
+                        if(x.status === 'progress') statusBadge = `<span class="badge" style="background:#1d4ed8; color:#dbeafe;">🔧 Repairing</span>`;
+                        if(x.status === 'resolved') statusBadge = `<span class="badge" style="background:#047857; color:#d1fae5;">✅ Success</span>`;
+
+                        // แปลงชื่อแผนกให้เป็นพิมพ์ใหญ่เพื่อความสวยงามในหน้าแอดมิน
+                        const deptName = x.department ? x.department.toUpperCase() : 'UNKNOWN';
+
+                        tb.innerHTML += `<tr>
+                            <td><b>#${x.id}</b></td>
+                            <td>${x.datetime}</td>
+                            <td><span style="color:#f43f5e; font-weight:bold;">${deptName}</span></td>
+                            <td><span style="background:#334155; padding:4px 8px; border-radius:4px;">${x.reportType || 'ทั่วไป'}</span></td>
+                            <td>${x.detail}</td>
+                            <td>${statusBadge}</td>
+                        </tr>`;
+                    });
+                } else {
+                    tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding:20px;">📭 ไม่พบข้อมูลรายการแจ้งซ่อมใดๆ ในระบบเซิร์ฟเวอร์</td></tr>`;
+                }
+            } catch(error) {
+                tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#ef4444; padding:20px;">❌ [ERROR] ไม่สามารถเชื่อมต่อกับหลังบ้านได้ (กรุณาเช็คว่ารัน API พอร์ต 3000 หรือยัง)</td></tr>`;
+            }
+        }
+
+        function clearView(){
+            document.getElementById('tb').innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding:20px;">ตารางถูกล้างค่าเรียบร้อยแล้ว</td></tr>`;
+        }
+
+        function lockAdmin() {
+            document.getElementById('adminPassword').value = "";
+            document.getElementById('auth-gate').style.display = 'block';
+            document.querySelector('.admin-card').style.display = 'none';
+            document.body.style.alignItems = 'center';
+        }
+
+        // ส่งคำสั่งลบฐานข้อมูลทั้งหมดล้างตาราง
+        async function clearServerDatabase() {
+            if (confirm("⚠️ ข้อควรระวังขั้นวิกฤต! คุณต้องการสั่งล้างทำลายข้อมูลบนฐานข้อมูล Server ทั้งหมดใช่หรือไม่? ข้อมูลจะหายถาวร!")) {
+                try {
+                    const response = await fetch('http://localhost:3000/api/reports/clear-all', {
+                        method: 'DELETE',
+                        headers: {
+                            'user-role': 'management',
+                            'x-pvt-secure-key': ADMIN_SECRET_PASSWORD
+                        }
+                    });
+                    const resData = await response.json();
+                    alert("📢 ผลลัพธ์จากเซิร์ฟเวอร์: " + resData.message);
+                    loadReports();
+                } catch (error) {
+                    alert("ไม่สามารถส่งคำสั่งล้างฐานข้อมูลไปยังหลังบ้านได้");
+                }
+            }
+        }
+    </script>
+</body>
+</html>

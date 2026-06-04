@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+
+body { 
+    font-family: 'Sarabun', sans-serif; 
+    margin: 0; 
+    display: flex; 
+    background-color: #f8fafc; 
+    height: 100vh; 
+    color: #1e293b; 
+    overflow: hidden;
+}
+
+.sidebar { 
+    width: 280px; 
+    background: #1e3a8a; 
+    display: flex; 
+    flex-direction: column; 
+    border-right: 1px solid #cbd5e1;
+}
+
+.sidebar-brand { 
+    padding: 25px 20px; 
+    font-size: 18px; 
+    font-weight: 700; 
+    color: #ffffff;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-brand span {
+    display: block;
+    font-size: 12px;
+    font-weight: normal;
+    color: #93c5fd;
+    margin-top: 4px;
+}
+
+.sidebar a { 
+    padding: 15px 20px; 
+    color: #e2e8f0; 
+    text-decoration: none; 
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.sidebar a:hover, .sidebar a.active { 
+    background: #1d4ed8; 
+    color: #ffffff; 
+}
+
+.sidebar .logout-btn {
+    margin-top: auto;
+    background: #b91c1c;
+    color: white;
+    text-align: center;
+}
+.sidebar .logout-btn:hover { background: #991b1b; }
+
+.main-content { 
+    flex: 1; 
+    padding: 30px; 
+    overflow-y: auto; 
+}
+
+.top-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 30px; 
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 15px;
+}
+
+.top-header h2 { color: #1e3a8a; margin: 0; font-weight: 700; }
+
+.profile-widget { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: flex-end; 
+}
+
+#prof-name { font-weight: 700; color: #334155; }
+#prof-role { 
+    font-size: 12px; 
+    padding: 4px 8px; 
+    border-radius: 4px; 
+    color: white; 
+    margin-top: 4px; 
+    font-weight: bold;
+}
+
+.table-responsive { 
+    background: #ffffff;
+    border-radius: 12px; 
+    overflow: hidden; 
+    border: 1px solid #e2e8f0; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03); 
+}
+
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 16px 20px; text-align: left; font-size: 15px; border-bottom: 1px solid #e2e8f0; }
+th { background: #f8fafc; color: #475569; font-weight: 700; border-bottom: 2px solid #e2e8f0; }
+td { color: #334155; font-weight: 500; }
+
+.badge-dept { padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; color: white; }
+.dept-blow { background: #ec4899; }
+.dept-mono { background: #3b82f6; }
+.dept-drill { background: #10b981; }
+
+.status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #e2e8f0; color: #475569; }
+
+.table-empty-msg { text-align: center; color: #64748b; padding: 30px; }

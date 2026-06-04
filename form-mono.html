@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ฟอร์มแจ้งปัญหา - แผนกโมโน</title>
+    <link rel="icon" href="data:;base64,=">
+    <link rel="stylesheet" href="main-style.css">
+    
+    <style>
+        /* 🎨 เพิ่ม CSS ตกแต่ง Sidebar และปุ่มย้อนกลับให้เข้าเซ็ตกับหน้า Dashboard ไม่ลอยแน่นอน */
+        .mode-switch-section {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 10px;
+        }
+        .btn-back-to-dashboard {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: #2563eb; /* สีน้ำเงินแดชบอร์ดโดดเด่น */
+            color: #ffffff !important;
+            padding: 12px 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-back-to-dashboard:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+    </style>
+
+    <script>
+        // 🔒 1. เช็กสิทธิ์ความปลอดภัยขั้นต้น (ปรับคีย์ให้ตรงกับระบบหลัก)
+        (function() {
+            try {
+                const user = localStorage.getItem('activeUser');
+                if (!user) {
+                    alert("🔒 กรุณาเข้าสู่ระบบก่อนใช้งาน");
+                    window.location.href = 'login.html';
+                }
+            } catch (e) { window.location.href = 'login.html'; }
+        })();
+    </script>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            🏢 บจก.พี.วี.ที.แอนด์ ที.พลาส
+            <span>ระบบจัดการข้อมูลโรงงาน</span>
+        </div>
+        
+        <div class="mode-switch-section">
+            <a href="dashboard.html" class="btn-back-to-dashboard">
+                📊 กลับหน้าแดชบอร์ดรวม
+            </a>
+        </div>
+
+        <div class="sidebar-menu">
+            <a href="javascript:void(0);" class="active">📝 ฟอร์มแผนกโมโน</a>
+        </div>
+        <a href="javascript:void(0);" class="logout-btn" onclick="logout()">🚪 ออกจากระบบ</a>
+    </aside>
+
+    <main class="main-content">
+        <div class="card">
+            <h2>📝 รายงานปัญหาการผลิต [ แผนกโมโน ]</h2>
+            <div id="userInfo" class="user-badge"></div>
+            
+            <div class="form-group">
+                <label for="reportDate">วัน-เวลา ที่เกิดปัญหา:</label>
+                <input type="datetime-local" id="reportDate">
+            </div>
+
+            <div class="form-group">
+                <label for="problemType">อาการเสียที่ตรวจพบ:</label>
+                <select id="problemType">
+                    <option value="เส้นใยขาดบ่อย">เส้นใยขาดบ่อย</option>
+                    <option value="ความร้อนหัวฉีดไม่นิ่ง">ความร้อนหัวฉีดไม่นิ่ง</option>
+                    <option value="ขนาดเส้นใยไม่ได้มาตรฐาน">ขนาดเส้นใยไม่ได้มาตรฐาน</option>
+                    <option value="เครื่องจักรหยุดทำงานกะทันหัน">เครื่องจักรหยุดทำงานกะทันหัน</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="machineNo">หมายเลขเครื่องจักร:</label>
+                <input type="text" id="machineNo" placeholder="ตัวอย่าง: MONO-04">
+            </div>
+
+            <div class="form-group">
+                <label for="problemDesc">รายละเอียดหน้างานเพิ่มเติม:</label>
+                <textarea id="problemDesc" rows="4" placeholder="ระบุอาการเพิ่มเติม..."></textarea>
+            </div>
+
+            <button class="btn" onclick="submitReport()">บันทึกข้อมูลและส่งรายงาน</button>
+        </div>
+    </main>
+
+    <script>
+        window.onload = function() {
+            // 🔒 ดึงข้อมูลเช็ค Session และคีย์ที่ถูกต้อง (ป้องกันการดีดกลับหน้าล็อกอิน)
+            const user = localStorage.getItem('activeUser');
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // บันทึกสถานะหน้าล่าสุดไว้ เพื่อให้ปุ่มย้อนกลับทำงานได้ถูกต้อง
+            localStorage.setItem('activeDept', 'mono');
+
+            document.getElementById('userInfo').innerHTML = `👤 <b>ผู้รายงาน:</b> คุณ ${user} | ⚙️ <b>ไลน์ผลิต:</b> แผนกโมโน`;
+            
+            // ตั้งค่าเวลาปัจจุบันเริ่มต้นให้ใช้งานง่ายขึ้น
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('reportDate').value = now.toISOString().slice(0, 16);
+        };
+
+        // 🚪 ฟังก์ชันออกจากระบบ ปรับคีย์ให้เคลียร์ค่าได้ตรงจุดและแม่นยำ
+        function logout() {
+            if (confirm("🚪 คุณต้องการออกจากระบบใช่หรือไม่?")) {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            }
+        }
+
+        // 🚀 ฟังก์ชันส่งข้อมูลเข้าสู่ระบบสถิติส่วนกลาง (Database ลำลอง และ API)
+        async function submitReport() {
+            const dateValue = document.getElementById('reportDate').value;
+            const type = document.getElementById('problemType').value;
+            const machine = document.getElementById('machineNo').value;
+            const desc = document.getElementById('problemDesc').value;
+            const activeUser = localStorage.getItem('activeUser') || 'พนักงาน';
+            
+            if(!machine || !dateValue) { 
+                alert("❌ กรุณาระบุหมายเลขเครื่องจักรและวันเวลาให้ครบถ้วนครับ"); 
+                return; 
+            }
+            
+            // จัดการโครงสร้างข้อมูลของแผนกโมโนให้แมตช์เข้ากับโครงสร้างของแดชบอร์ดหลัก 100%
+            const reportPayload = {
+                id: String(Date.now()),
+                datetime: dateValue,
+                dept: 'mono', // ส่งค่าคีย์ภาษาอังกฤษเพื่อให้ฟิลเตอร์บนแดชบอร์ดและกราฟติด
+                type: type,
+                note: `เครื่อง: ${machine} | รายละเอียด: ${desc || '-'}`,
+                reporter: activeUser,
+                status: 'pending',
+                resolution: '',
+                resolver: ''
+            };
+
+            // 1. บันทึกลง LocalStorage สถิติจำลองหลักของ PVT
+            try {
+                let cachedData = JSON.parse(localStorage.getItem('pvtLocalReportsCache')) || [];
+                cachedData.push(reportPayload);
+                localStorage.setItem('pvtLocalReportsCache', JSON.stringify(cachedData));
+            } catch(e) { console.error(e); }
+
+            // 2. ยิงเชื่อมต่อ API หลังบ้าน (ถ้าเปิดใช้งานเซิร์ฟเวอร์ไว้)
+            try {
+                await fetch('http://localhost:3000/api/reports', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reportPayload)
+                });
+            } catch(e) { 
+                console.log("Saved to Local Cache successfully."); 
+            }
+
+            alert("🎉 บันทึกปัญหาเข้าสู่ศูนย์แดชบอร์ดสถิติสำเร็จ!");
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+</body>
+</html>

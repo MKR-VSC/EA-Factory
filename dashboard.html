@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบแดชบอร์ดผู้บริหาร - บจก.พี.วี.ที.แอนด์ ที.พลาส</title>
+    <link rel="icon" href="data:;base64,=">
+    <link rel="stylesheet" href="main-style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* 🎨 แก้ไขดีไซน์โซนปุ่มย้อนกลับ ไม่ให้ลอยหรือหลุดธีม */
+        .mode-switch-section {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 10px;
+        }
+        .btn-back-to-form {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: #e11d48; /* สีแดงโดดเด่น */
+            color: #ffffff !important;
+            padding: 12px 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-back-to-form:hover {
+            background: #be123c;
+            transform: translateY(-1px);
+        }
+        .menu-title {
+            padding: 10px 20px 5px 20px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #94a3b8;
+            font-weight: bold;
+        }
+    </style>
+
+    <script>
+        // 🔒 1. เช็กสิทธิ์ผู้บริหารตอนโหลดหน้าเว็บ
+        (function() {
+            try {
+                const user = localStorage.getItem('activeUser');
+                const role = localStorage.getItem('activeRole');
+                if (!user || (role !== 'management' && role !== 'supervisor')) {
+                    alert("🔒 พื้นที่ส่วนบุคคลสำหรับผู้บริหารและหัวหน้างานเท่านั้น");
+                    window.location.href = 'login.html';
+                }
+            } catch (e) { window.location.href = 'login.html'; }
+        })();
+
+        // 🌟 2. ฟังก์ชันสลับแผนกอัจฉริยะ ปลดล็อกบั๊กดีดตัวกลับหน้าล็อกอิน
+        function switchDepartment(deptName) {
+            try {
+                localStorage.setItem('activeDept', deptName);
+                window.location.href = `form-${deptName}.html`;
+            } catch(e) {
+                window.location.href = `form-${deptName}.html`;
+            }
+        }
+
+        window.onload = function() {
+            const user = localStorage.getItem('activeUser') || 'ผู้บริหาร';
+            const role = localStorage.getItem('activeRole') === 'management' ? '👑 ผู้บริหารสูงสุด' : '📋 หัวหน้างาน';
+            
+            document.getElementById('prof-name').innerText = user;
+            document.getElementById('prof-role').innerText = role;
+            
+            document.body.setAttribute('data-theme', localStorage.getItem('pvtTheme') || 'light');
+            loadDashboardData();
+        };
+
+        function logout() {
+            if(confirm("🚪 คุณต้องการออกจากระบบใช่หรือไม่?")) {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            }
+        }
+
+        function goBackToForm() {
+            const savedDept = localStorage.getItem('activeDept') || 'blow';
+            window.location.href = `form-${savedDept}.html`;
+        }
+    </script>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            🏢 บจก.พี.วี.ที.แอนด์ ที.พลาส
+            <span>ระบบจัดการข้อมูลโรงงาน</span>
+        </div>
+        
+        <div class="mode-switch-section">
+            <a href="javascript:void(0);" class="btn-back-to-form" onclick="goBackToForm()">
+                ⬅️ กลับหน้ากรอกฟอร์ม
+            </a>
+        </div>
+
+        <div class="sidebar-menu">
+            <div class="menu-title">หน้าหลักบริหาร</div>
+            <a href="dashboard.html" class="active">📊 ภาพรวมแดชบอร์ดสถิติ</a>
+            
+            <div class="menu-title">ลิงก์ตรวจสอบรายแผนก</div>
+            <a href="javascript:void(0);" onclick="switchDepartment('blow')">🏭 ตรวจสอบฟอร์มแผนกเป่า</a>
+            <a href="javascript:void(0);" onclick="switchDepartment('mono')">🧬 ตรวจสอบฟอร์มแผนกโมโน</a>
+            <a href="javascript:void(0);" onclick="switchDepartment('drill')">🎯 ตรวจสอบฟอร์มแผนกตัดเจาะ</a>
+            <a href="javascript:void(0);" onclick="switchDepartment('pipe')">🚰 ตรวจสอบฟอร์มแผนกท่อ</a>
+            <a href="javascript:void(0);" onclick="switchDepartment('salan')">🕸️ ตรวจสอบฟอร์มแผนกสแลน</a>
+            <a href="javascript:void(0);" onclick="switchDepartment('garbage')">♻️ ตรวจสอบฟอร์มแผนกบดย่อย</a>
+            <a href="javascript:void(0);" onclick="switchDepartment('sheet')">✂️ ตรวจสอบฟอร์มแผนกตัดผืน</a>
+            <a href="javascript:void(0);" onclick="switchDepartment('tape')">💧 ตรวจสอบฟอร์มแผนกเทปน้ำพุ่ง</a>
+        </div>
+        <a href="javascript:void(0);" class="logout-btn" onclick="logout()">🚪 ออกจากระบบ</a>
+    </aside>
+
+    <main class="main-content">
+        <div class="top-header">
+            <h2>📊 ศูนย์ควบคุมสั่งการและสถิติปัญหาการผลิตรวม</h2>
+            <div class="profile-widget">
+                <div id="prof-name">ผู้ใช้ระบบ</div>
+                <div id="prof-role">📊 กำลังตรวจสอบ</div>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn-action btn-export" onclick="exportToCSV()">📥 ส่งออกข้อมูลรวมแนวทางแก้ไขเป็น Excel (CSV)</button>
+            <button class="btn-action btn-print" onclick="window.print()">🖨️ สั่งพิมพ์เอกสารรายงาน</button>
+        </div>
+
+        <div class="filter-card">
+            <div class="filter-group">
+                <label>📅 เริ่มจากวันที่</label>
+                <input type="date" id="filter-start-date" onchange="filterData()">
+            </div>
+            <div class="filter-group">
+                <label>📅 ถึงวันที่</label>
+                <input type="date" id="filter-end-date" onchange="filterData()">
+            </div>
+            <div class="filter-group" style="flex: 1; min-width: 200px;">
+                <label>🔍 ค้นหาละเอียด (ชื่อคนกรอก, คนแก้ไข, แผนก, อาการ, สถานะ)</label>
+                <input type="text" id="filter-search" placeholder="พิมพ์คำสำคัญเพื่อค้นหา..." oninput="filterData()">
+            </div>
+        </div>
+
+        <div id="chartLoader" class="loading-spinner" style="display: block;"></div>
+
+        <div class="dashboard-grid">
+            <div class="chart-container" style="position: relative; height:350px; width:100%; margin-bottom: 20px;">
+                <canvas id="problemsChart"></canvas>
+            </div>
+
+            <div class="table-container">
+                <h3>📋 รายการประเมินสถานะและสั่งการแก้ไขปัญหาจากผู้บริหาร</h3>
+                <table id="raw-data-table">
+                    <thead>
+                        <tr>
+                            <th>วันเวลาที่เกิดปัญหา</th>
+                            <th>แผนก</th>
+                            <th>ปัญหาที่พบ / รายละเอียด</th>
+                            <th>👤 ผู้แจ้งเรื่อง (Reporter)</th>
+                            <th>🚦 Status</th>
+                            <th>🛠️ แนวทางแก้ไข / ผู้รับผิดชอบปิดงาน</th>
+                            <th>⚙️ จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="resolveModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">🛠️ บันทึกการดำเนินการและสั่งการแก้ไขปัญหา</div>
+            <input type="hidden" id="modal-target-id">
+            
+            <div class="form-group">
+                <label style="font-weight:bold; display:block; margin-bottom:5px;">🚦 ปรับเปลี่ยนสถานะขั้นตอน</label>
+                <select id="modal-status-select" style="width:100%; padding:10px; border-radius:6px; font-weight:bold;">
+                    <option value="pending">🔴 รอดำเนินการ (Pending)</option>
+                    <option value="progress">🟡 กำลังดำเนินการแก้ไข (In Progress)</option>
+                    <option value="resolved">🟢 แก้ไขเสร็จสิ้น/ปิดงาน (Resolved)</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin-top:15px;">
+                <label style="font-weight:bold; display:block; margin-bottom:5px;">📝 รายละเอียดแนวทางการซ่อมบำรุง / มาตรการแก้ไข</label>
+                <textarea id="modal-resolution-text" style="width:100%; height:100px; padding:10px; border-radius:6px; box-sizing:border-box;" placeholder="ระบุสิ่งที่ดำเนินการแก้ไข..."></textarea>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal()">❌ ยกเลิก</button>
+                <button class="btn-save" onclick="saveResolutionData()">💾 บันทึกคำสั่ง</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.pvtMasterData = []; 
+        window.pvtFilteredData = [];  
+        window.pvtChartInstance = null;
+
+        function normalizeItemData(item, index) {
+            if (!item) return null;
+            const dept = item.dept || item.department || item.dept_name || item.section || 'ไม่ระบุแผนก';
+            const reporter = item.reporter || item.reporter_name || item.created_by || item.name || item.username || item.staff || 'ไม่ระบุชื่อ';
+            const type = item.type || item.problem_type || item.issue || item.subject || 'ปัญหาทั่วไป';
+            const note = item.note || item.detail || item.description || item.comment || '-';
+            const status = item.status || 'pending';
+            const resolver = item.resolver || item.resolved_by || '';
+            const resolution = item.resolution || item.action_taken || '';
+            const datetime = item.datetime || item.created_at || item.timestamp || new Date().toISOString();
+            const id = item.id || item._id || String(index);
+
+            return { id, datetime, dept, type, note, reporter, status, resolution, resolver };
+        }
+
+        async function loadDashboardData() {
+            const loader = document.getElementById('chartLoader');
+            try {
+                const response = await fetch('http://localhost:3000/api/reports');
+                if (!response.ok) throw new Error();
+                let data = await response.json();
+                if (data && !Array.isArray(data)) data = data.data || data.reports || [];
+                window.pvtMasterData = data.map((item, idx) => normalizeItemData(item, idx));
+            } catch (error) {
+                const cached = localStorage.getItem('pvtLocalReportsCache');
+                if(cached) {
+                    window.pvtMasterData = JSON.parse(cached);
+                } else {
+                    const rawMock = [
+                        { id: "1", datetime: '2026-06-01T10:30', department: 'blow', type: 'เปลี่ยนแม่พิมพ์บ่อย', note: 'ขนาดของถังพลาสติกไม่สม่ำเสมอ', reporter_name: 'STAFF_BLOW01', status: 'pending', resolution: '', resolver: '' },
+                        { id: "2", datetime: '2026-06-01T14:15', department: 'mono', type: 'ฮีตเตอร์ไม่ร้อน', note: 'ฟิวส์ควบคุมอุณหภูมิขาดกระทันหัน', reporter_name: 'STAFF_BLOW02', status: 'progress', resolution: 'กำลังตามช่างไฟเข้ามาดูตู้คอนโทรล', resolver: 'SUP_ANUCHA' },
+                        { id: "3", datetime: '2026-06-02T09:00', department: 'pipe', type: 'กระบอกสูบติดขัด', note: 'กระบอกไฮดรอลิกดันแกนท่อมีเสียงดัง', reporter_name: 'STAFF_PIPE01', status: 'resolved', resolution: 'หยอดน้ำมันหล่อลื่นและเปลี่ยนซีลยางชำรุดเรียบร้อย', resolver: 'MAN_WICHAI' }
+                    ];
+                    window.pvtMasterData = rawMock.map((item, idx) => normalizeItemData(item, idx));
+                    localStorage.setItem('pvtLocalReportsCache', JSON.stringify(window.pvtMasterData));
+                }
+            } finally {
+                if(loader) loader.style.display = 'none';
+                window.pvtFilteredData = [...window.pvtMasterData];
+                renderTable(window.pvtFilteredData);
+                generateChart(window.pvtFilteredData);
+            }
+        }
+
+        function filterData() {
+            const startDateStr = document.getElementById('filter-start-date').value;
+            const endDateStr = document.getElementById('filter-end-date').value;
+            const searchKeyword = document.getElementById('filter-search').value.toLowerCase().trim();
+
+            window.pvtFilteredData = window.pvtMasterData.filter(item => {
+                if (!item) return false;
+                if (item.datetime) {
+                    const itemTimeNum = new Date(item.datetime).getTime();
+                    if (!isNaN(itemTimeNum)) {
+                        if (startDateStr && itemTimeNum < new Date(startDateStr + "T00:00:00").getTime()) return false;
+                        if (endDateStr && itemTimeNum > new Date(endDateStr + "T23:59:59").getTime()) return false;
+                    }
+                }
+                
+                let statusTh = item.status === 'progress' ? "กำลังแก้ไข" : (item.status === 'resolved' ? "แก้ไขเสร็จสิ้น ปิดงาน" : "รอดำเนินการ");
+
+                return String(item.reporter).toLowerCase().includes(searchKeyword) ||
+                       String(item.type).toLowerCase().includes(searchKeyword) ||
+                       String(item.dept).toLowerCase().includes(searchKeyword) ||
+                       String(item.note).toLowerCase().includes(searchKeyword) ||
+                       String(item.resolution).toLowerCase().includes(searchKeyword) ||
+                       String(item.resolver).toLowerCase().includes(searchKeyword) ||
+                       statusTh.includes(searchKeyword);
+            });
+
+            renderTable(window.pvtFilteredData);
+            generateChart(window.pvtFilteredData);
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; font-weight:bold; padding:25px;">❌ ไม่พบข้อมูลสถิติตามเงื่อนไข</td></tr>`;
+                return;
+            }
+
+            data.forEach((item) => {
+                try {
+                    const tr = document.createElement('tr');
+                    const displayDate = item.datetime ? new Date(item.datetime).toLocaleString('th-TH', { hour12: false }) : 'ไม่ระบุเวลา';
+                    
+                    let statusClass = "status-pending", statusText = "🔴 รอดำเนินการ";
+                    if (item.status === 'progress') { statusClass = "status-progress"; statusText = "🟡 กำลังแก้ไข"; }
+                    if (item.status === 'resolved') { statusClass = "status-resolved"; statusText = "🟢 แก้ไขเสร็จสิ้น"; }
+
+                    let resolutionDetails = `<span style="color:var(--text-muted); font-style:italic;">ยังไม่มีการบันทึกมาตรการแก้ไข</span>`;
+                    if (item.resolution) {
+                        resolutionDetails = `<b>วิธีแก้:</b> ${item.resolution} <br><small style="color:#0284c7;">👤 ผู้ปิดงาน: <b>${item.resolver}</b></small>`;
+                    }
+
+                    tr.innerHTML = `
+                        <td><b>${displayDate}</b></td>
+                        <td><span style="padding:4px 8px; border-radius:4px; font-weight:bold; background:rgba(0,0,0,0.06); font-size:12px; color:#1e293b;">${String(item.dept).toUpperCase()}</span></td>
+                        <td><span style="color:#dc2626; font-weight:700;">⚠️ ${item.type}</span><br><small style="color:var(--text-muted);">${item.note}</small></td>
+                        <td><mark style="padding:3px 8px; border-radius:4px; font-weight:bold; background-color:#fef08a; color:#854d0e; font-size:13px;">👤 ${item.reporter}</mark></td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td style="font-size:13px; max-width:220px; word-wrap:break-word;">${resolutionDetails}</td>
+                        <td><button class="btn-manage" onclick="openResolveModal('${item.id}')">🛠️ สั่งการ</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                } catch (e) { console.error("Error at row rendering: ", e); }
+            });
+        }
+
+        function openResolveModal(id) {
+            const item = window.pvtMasterData.find(x => String(x.id) === String(id));
+            if(!item) return;
+
+            document.getElementById('modal-target-id').value = id;
+            document.getElementById('modal-status-select').value = item.status || 'pending';
+            document.getElementById('modal-resolution-text').value = item.resolution || '';
+            
+            document.getElementById('resolveModal').style.display = 'flex';
+        }
+
+        document.getElementById('resolveModal').addEventListener('click', function(e) {
+            if(e.target === this) closeModal();
+        });
+
+        function closeModal() {
+            document.getElementById('resolveModal').style.display = 'none';
+        }
+
+        async function saveResolutionData() {
+            const id = document.getElementById('modal-target-id').value;
+            const status = document.getElementById('modal-status-select').value;
+            const resolution = document.getElementById('modal-resolution-text').value.trim();
+            const activeManager = localStorage.getItem('activeUser') || 'SUPERVISOR';
+
+            if(!resolution && status === 'resolved') {
+                alert("❌ กรุณากรอกรายละเอียดแนวทางการซ่อมแซมเพื่อบันทึกเป็นข้อมูลสถิติลงระบบด้วยครับ");
+                return;
+            }
+
+            const idx = window.pvtMasterData.findIndex(x => String(x.id) === String(id));
+            if(idx !== -1) {
+                window.pvtMasterData[idx].status = status;
+                window.pvtMasterData[idx].resolution = resolution;
+                window.pvtMasterData[idx].resolver = activeManager;
+                localStorage.setItem('pvtLocalReportsCache', JSON.stringify(window.pvtMasterData));
+            }
+
+            try {
+                await fetch(`http://localhost:3000/api/reports/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status, resolution, resolver: activeManager })
+                });
+            } catch(e) { console.log("Saved locally."); }
+
+            alert("🎉 บันทึกมาตรการและอัปเดตข้อมูลสถิติเรียบร้อย!");
+            closeModal();
+            
+            window.pvtFilteredData = [...window.pvtMasterData];
+            renderTable(window.pvtFilteredData);
+            generateChart(window.pvtFilteredData);
+        }
+
+        function generateChart(rawData) {
+            const canvas = document.getElementById('problemsChart');
+            // ตรวจสอบและดักจับการทำงานของออบเจกต์ Chart อย่างรอบคอบ
+            if (!canvas || typeof Chart === 'undefined') {
+                console.warn("Chart library not loaded yet.");
+                return;
+            }
+
+            const counts = {};
+            rawData.forEach(item => {
+                if (!item) return;
+                counts[item.type] = (counts[item.type] || 0) + 1;
+            });
+
+            let sortedList = Object.keys(counts).map(k => ({ label: k, value: counts[k] }));
+            sortedList.sort((a, b) => b.value - a.value);
+
+            const ctx = canvas.getContext('2d');
+            if (window.pvtChartInstance) { window.pvtChartInstance.destroy(); }
+
+            window.pvtChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedList.map(i => i.label),
+                    datasets: [{
+                        label: 'สถิติสัดส่วนจำนวนปัญหาที่เกิดขึ้น (ครั้ง)',
+                        data: sortedList.map(i => i.value),
+                        backgroundColor: ['#dc2626', '#ea580c', '#d97706', '#059669', '#2563eb', '#7c3aed'],
+                        borderColor: '#0f172a',
+                        borderWidth: 1.5,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { font: { family: 'Sarabun', size: 13, weight: 'bold' } } } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                        x: { ticks: { font: { family: 'Sarabun', weight: 'bold', size: 12 } } }
+                    }
+                }
+            });
+        }
+
+        function exportToCSV() {
+            try {
+                if(!window.pvtFilteredData || window.pvtFilteredData.length === 0) { return alert("❌ ไม่มีข้อมูล"); }
+                let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
+                csvContent += "วันเวลาที่เกิดปัญหา,แผนก,หัวข้อปัญหา,รายละเอียดพนักงานกรอก,ผู้แจ้งเรื่อง,สถานะปัจจุบัน,มาตรการแนวทางซ่อมแซม,ผู้รับผิดชอบปิดงาน(Manager)\n";
+                
+                window.pvtFilteredData.forEach(item => {
+                    let timeCell = item.datetime ? new Date(item.datetime).toLocaleString('th-TH', { hour12: false }).replace(/,/g, '') : '';
+                    let statusText = item.status === 'progress' ? "กำลังแก้ไข" : (item.status === 'resolved' ? "แก้ไขเสร็จสิ้น ปิดงาน" : "รอดำเนินการ");
+                    csvContent += `"${timeCell}","${item.dept.toUpperCase()}","${item.type}","${item.note}","${item.reporter}","${statusText}","${item.resolution}","${item.resolver}"\n`;
+                });
+                
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `รายงานสถิติโรงงาน_PVT_${new Date().toISOString().slice(0,10)}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch(e) { alert("❌ เกิดข้อผิดพลาด"); }
+        }
+    </script>
+</body>
+</html>
