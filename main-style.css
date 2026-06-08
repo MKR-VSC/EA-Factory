@@ -14,274 +14,348 @@
     --input-bg: #f8fafc;
 }
 
-[data-theme="dark"] {
-    --bg-main: #0f172a;
-    --bg-content: #1e293b;
-    --bg-card: #334155;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --text-label: #cbd5e1;
-    --border-color: #475569;
-    --input-bg: #1e293b;
-}
-
 body { 
     font-family: 'Sarabun', sans-serif; 
     background: var(--bg-main); 
-    color: var(--text-main); 
-    margin: 0; 
-    display: flex; 
-    height: 100vh; 
-    transition: background 0.3s, color 0.3s;
-}
-
-/* ===================================================
-   🔒 หน้า Login ดีไซ็นโมเดิร์น
-   =================================================== */
-.login-page {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
-    display: flex !important;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100vh;
+    color: var(--text-main);
     margin: 0;
-    padding: 20px;
+    padding: 0;
     box-sizing: border-box;
 }
 
-.login-card {
-    background: #ffffff !important;
-    padding: 35px 30px;
-    border-radius: 16px;
-    width: 100%;
-    max-width: 380px;
-    box-sizing: border-box;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+/* 🏢 โครงสร้างหน้าจอหลัก Layout */
+.app-layout {
+    display: flex;
+    min-height: 100vh;
 }
 
-.login-card h2 {
-    color: #0f172a;
-    text-align: center;
-    margin-top: 0;
-    margin-bottom: 6px;
-    font-size: 24px;
+/* 📑 แถบเมนูซ้ายมือ (Sidebar) */
+.sidebar {
+    width: 280px;
+    background: #1e3a8a; /* สีน้ำเงินเข้มหลัก */
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.sidebar-header {
+    padding: 25px 20px;
+    background: #1e3a8a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 20px;
     font-weight: 700;
+    color: #ffffff;
 }
 
-.login-subtitle {
-    text-align: center;
-    color: #64748b;
+.sidebar-header p {
+    margin: 5px 0 0 0;
     font-size: 13px;
+    color: #93c5fd;
+}
+
+.sidebar-menu {
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.menu-group {
     margin-bottom: 25px;
-    font-weight: 600;
+    padding: 0 15px;
 }
 
-.login-card .form-group label {
-    color: #334155 !important;
+.menu-label {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #93c5fd;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
 }
 
-.login-card .form-group input, 
-.login-card .form-group select {
-    width: 100%;
-    padding: 12px 14px;
+/* บล็อกแสดงโปรไฟล์ผู้ใช้ */
+.user-profile-box {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 12px;
     border-radius: 8px;
-    border: 2px solid #cbd5e1 !important;
-    background: #f8fafc !important;
-    color: #0f172a !important;
+    margin-top: 5px;
+}
+
+.user-avatar {
+    font-size: 24px;
+    margin-right: 12px;
+}
+
+.user-info-text strong {
+    display: block;
+    font-size: 15px;
+    color: #ffffff;
+}
+
+.user-info-text span {
+    font-size: 12px;
+    color: #cbd5e1;
+}
+
+/* ลิงก์เมนูระบบ */
+.sidebar-menu a {
+    display: block;
+    padding: 12px 15px;
+    color: #cbd5e1;
+    text-decoration: none;
     font-size: 15px;
     font-weight: 600;
-    box-sizing: border-box;
-    outline: none;
-    transition: all 0.2s ease-in-out;
-}
-
-.login-card .form-group input:focus, 
-.login-card .form-group select:focus {
-    border-color: #2563eb !important;
-    background: #ffffff !important;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-}
-
-.password-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    width: 100%;
-}
-.password-container input {
-    padding-right: 75px !important;
-}
-.toggle-password-btn {
-    position: absolute;
-    right: 10px;
-    background: #e2e8f0;
-    color: #0f172a;
-    border: 1px solid #cbd5e1;
     border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
+    margin-bottom: 4px;
+    transition: all 0.2s;
 }
 
-.btn-login {
+.sidebar-menu a:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+}
+
+.sidebar-menu a.active {
+    background: #ffffff;
+    color: #1e3a8a;
+    font-weight: 700;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding: 20px 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ปุ่มล็อกเอาต์ */
+.btn-logout {
     width: 100%;
-    padding: 14px;
-    background: #2563eb !important;
-    color: #ffffff !important;
+    padding: 12px;
+    background: #ef4444;
+    color: white;
     border: none;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 16px;
+    border-radius: 6px;
+    font-weight: bold;
     cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    margin-top: 10px;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.btn-logout:hover {
+    background: #dc2626;
+}
+
+/* 🏢 พื้นที่แสดงเนื้อหาด้านขวามือ */
+.main-content {
+    flex: 1;
+    background: var(--bg-content);
+    padding: 30px;
+}
+
+.content-header {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-}
-.btn-login:hover {
-    background: #1d4ed8 !important;
-    transform: translateY(-1px);
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 25px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 20px;
 }
 
-/* ===================================================
-   📊 โครงสร้างเมนู Sidebar & Layout หน้าหลัก
-   =================================================== */
-.sidebar { 
-    width: 280px; 
-    background: var(--bg-card); 
-    color: var(--text-main); 
-    display: flex; 
-    flex-direction: column; 
-    border-right: 2px solid var(--border-color); 
-    box-shadow: 4px 0 15px rgba(0,0,0,0.03);
-    transition: background 0.3s, border-color 0.3s;
-}
-.sidebar-brand { 
-    padding: 25px 20px; 
-    font-size: 18px; 
-    font-weight: 700; 
-    border-bottom: 2px solid var(--border-color); 
-}
-.sidebar-brand span { display: block; font-size: 13px; color: var(--text-muted); font-weight: 600; margin-top: 5px; }
-
-.sidebar-menu { display: flex; flex-direction: column; padding: 10px 0; }
-.sidebar a { 
-    padding: 16px 20px; 
-    color: var(--text-label); 
-    text-decoration: none; 
-    font-weight: 600; 
-    border-bottom: 1px solid var(--border-color);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.sidebar a:hover { color: #2563eb; padding-left: 28px; background: var(--input-bg); }
-.sidebar a.active { 
-    background: #eff6ff; 
-    color: #1e40af; 
-    border-left: 6px solid #2563eb; 
-    font-weight: 700; 
-    padding-left: 24px; 
-}
-
-.sidebar .logout-btn { 
-    margin-top: auto; 
-    background: #fee2e2; 
-    color: #b91c1c; 
-    text-align: center; 
-    border-left: none; 
-    border-top: 2px solid #fca5a5;
+.header-title-area h1 {
+    margin: 0;
+    font-size: 24px;
+    color: var(--text-main);
     font-weight: 700;
 }
-.sidebar .logout-btn:hover { background: #fecaca; color: #991b1b; }
 
-.main-content { flex: 1; padding: 35px; overflow-y: auto; background: var(--bg-content); transition: background 0.3s; }
-.top-header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    border-bottom: 3px solid var(--border-color); 
-    padding-bottom: 18px; 
-    margin-bottom: 35px; 
-}
-.top-header h2 { margin: 0; color: var(--text-main); font-weight: 700; font-size: 26px; }
-
-.profile-widget { text-align: right; }
-#prof-name { font-weight: 700; color: var(--text-main); font-size: 16px; }
-#prof-role { 
-    font-size: 13px; padding: 5px 10px; border-radius: 6px; color: white; 
-    background: #2563eb; font-weight: bold; display: inline-block; margin-top: 6px; border: 1px solid #1d4ed8; 
+.header-title-area .subtitle {
+    margin: 5px 0 0 0;
+    color: var(--text-muted);
+    font-size: 14px;
 }
 
-/* โครงสร้างหน้า Dashboard และตารางสถิติ */
-.dashboard-grid { display: flex; flex-direction: column; gap: 30px; }
-.chart-container { 
-    background: var(--bg-card); padding: 25px; border-radius: 12px; 
-    border: 2px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); min-height: 380px; 
-    transition: background 0.3s, border-color 0.3s;
+.header-status-area {
+    display: flex;
+    gap: 10px;
 }
 
-/* ระบบสไตล์ตารางข้อมูลดิบสำหรับผู้บริหาร */
-.filter-card {
-    background: var(--bg-card); padding: 20px; border-radius: 12px;
-    border: 2px solid var(--border-color); margin-bottom: 25px;
-    display: flex; gap: 15px; flex-wrap: wrap; align-items: center;
-}
-.filter-group { display: flex; flex-direction: column; gap: 6px; }
-.filter-group label { font-size: 13px; font-weight: 700; color: var(--text-label); }
-.filter-card input, .filter-card select {
-    padding: 10px 14px; border-radius: 6px; border: 2px solid var(--border-color);
-    background: var(--input-bg); color: var(--text-main); font-size: 14px; font-weight: 600;
+/* ป้าย Badge */
+.badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
 }
 
-.table-container {
-    background: var(--bg-card); padding: 20px; border-radius: 12px;
-    border: 2px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    overflow-x: auto; margin-top: 10px;
+.badge-dept {
+    background: #475569;
+    color: white;
 }
-.table-container h3 { margin-top: 0; margin-bottom: 15px; font-size: 18px; font-weight: 700; }
-table { width: 100%; border-collapse: collapse; text-align: left; color: var(--text-main); }
-th, td { padding: 12px 16px; border-bottom: 1px solid var(--border-color); font-size: 14px; }
-th { background: var(--input-bg); font-weight: 700; color: var(--text-label); }
-tr:hover { background: rgba(0,0,0,0.02); }
-[data-theme="dark"] tr:hover { background: rgba(255,255,255,0.02); }
 
-/* โครงสร้างหน้าการ์ดฟอร์มพนักงาน */
-.form-card { background: var(--bg-card); padding: 35px; border-radius: 12px; border: 2px solid var(--border-color); box-shadow: 0 8px 20px rgba(0,0,0,0.06); max-width: 600px; transition: background 0.3s, border-color 0.3s; }
-.form-group { margin-bottom: 20px; }
-.form-group label { display: block; font-weight: 700; margin-bottom: 8px; color: var(--text-main); }
-.form-group input, .form-group select, .form-group textarea { 
-    width: 100%; padding: 12px; border-radius: 6px; border: 2px solid var(--border-color); background: var(--input-bg); font-size: 16px; box-sizing: border-box; outline: none; transition: 0.2s; color: var(--text-main); font-family: 'Sarabun', sans-serif;
+.badge-status-online {
+    background: #dcfce7;
+    color: #15803d;
 }
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #2563eb; background: var(--bg-card); box-shadow: 0 0 0 4px rgba(59,130,246,0.15); }
-.form-group textarea { height: 110px; resize: vertical; }
 
-.btn-submit { 
-    width: 100%; padding: 16px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; transition: 0.2s; margin-top: 15px; box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+/* 📝 ตัวกล่องการ์ดฟอร์มกรอกข้อมูล */
+.form-container-card {
+    background: var(--bg-card);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    max-width: 800px;
 }
-.btn-submit:hover { background: #1d4ed8; transform: translateY(-2px); }
 
-/* แถบสถานะออฟไลน์ */
-.offline-bar { display: none; background: #ea580c; color: white; text-align: center; padding: 10px; font-weight: bold; border-radius: 6px; margin-bottom: 15px; }
-.btn-sync { background: #10b981; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; margin-left: 10px; cursor: pointer; }
-.loading-spinner { display: none; border: 4px solid rgba(0,0,0,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #2563eb; animation: spin 1s linear infinite; margin: 20px auto; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-label);
+    font-weight: 600;
+}
+
+.required {
+    color: #ef4444;
+}
+
+/* กล่องกรอกอินพุต */
+.form-group input[type="text"],
+.form-group input[type="datetime-local"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--input-bg);
+    color: var(--text-main);
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.helper-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* ปุ่มคำสั่งของฟอร์ม */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.btn-clear {
+    padding: 12px 24px;
+    background: #e2e8f0;
+    color: #475569;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-clear:hover {
+    background: #cbd5e1;
+}
+
+.btn-submit {
+    padding: 12px 24px;
+    background: #1e3a8a;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-submit:hover {
+    opacity: 0.9;
+}
 
 /* ===================================================
-   🎨 แผนกต่างๆ (Department Color Schemes)
+   🎨 ชุดธีมสีแยกตามรายแผนก (Department Colors)
    =================================================== */
-.dept-blow .sidebar a.active { border-left-color: #ec4899; color: #be123c; background: #fdf2f8; }
-.dept-blow .btn-submit { background: #db2777; }
-.dept-mono .sidebar a.active { border-left-color: #06b6d4; color: #0e7490; background: #ecfeff; }
-.dept-mono .btn-submit { background: #0891b2; }
-.dept-drill .sidebar a.active { border-left-color: #10b981; color: #047857; background: #ecfdf5; }
-.dept-drill .btn-submit { background: #059669; }
-.dept-pipe .sidebar a.active { border-left-color: #ea580c; color: #c2410c; background: #fff7ed; }
-.dept-pipe .btn-submit { background: #ea580c; }
-.dept-salan .sidebar a.active { border-left-color: #7c3aed; color: #6d28d9; background: #f5f3ff; }
-.dept-salan .btn-submit { background: #7c3aed; }
-.dept-garbage .sidebar a.active { border-left-color: #d97706; color: #b45309; background: #fffbeb; }
-.dept-garbage .btn-submit { background: #d97706; }
+
+/* 📠 แผนกม้วนพิมพ์ - PRINT (แดง) */
+.dept-print .sidebar { background: #991b1b; }
+.dept-print .sidebar-header { background: #991b1b; }
+.dept-print .sidebar-menu a.active { color: #991b1b; }
+.dept-print .btn-submit { background: #ef4444; }
+.dept-print .btn-submit:hover { background: #dc2626; }
+
+/* 💿 แผนกแผ่นหล่อ - SHEET (น้ำเงิน) */
+.dept-sheet .sidebar { background: #1e40af; }
+.dept-sheet .sidebar-header { background: #1e40af; }
+.dept-sheet .sidebar-menu a.active { color: #1e40af; }
+.dept-sheet .btn-submit { background: #3b82f6; }
+.dept-sheet .btn-submit:hover { background: #2563eb; }
+
+/* 🎞️ แผนกเทปพัน - TAPE (เขียว) */
+.dept-tape .sidebar { background: #065f46; }
+.dept-tape .sidebar-header { background: #065f46; }
+.dept-tape .sidebar-menu a.active { color: #065f46; }
+.dept-tape .btn-submit { background: #10b981; }
+.dept-tape .btn-submit:hover { background: #059669; }
+
+/* 🎈 แผนกเป่าถุง - BLOW (ม่วง) */
+.dept-blow .sidebar { background: #6b21a8; }
+.dept-blow .sidebar-header { background: #6b21a8; }
+.dept-blow .sidebar-menu a.active { color: #6b21a8; }
+.dept-blow .btn-submit { background: #a855f7; }
+.dept-blow .btn-submit:hover { background: #9333ea; }
+
+/* 📐 แผนกเจาะรู - DRILL (ส้ม) */
+.dept-drill .sidebar { background: #9a3412; }
+.dept-drill .sidebar-header { background: #9a3412; }
+.dept-drill .sidebar-menu a.active { color: #9a3412; }
+.dept-drill .btn-submit { background: #f59e0b; }
+.dept-drill .btn-submit:hover { background: #d97706; }
+
+/* 🗑️ แผนกถุงขยะ - GARBAGE (เทา) */
+.dept-garbage .sidebar { background: #374151; }
+.dept-garbage .sidebar-header { background: #374151; }
+.dept-garbage .sidebar-menu a.active { color: #374151; }
+.dept-garbage .btn-submit { background: #64748b; }
+.dept-garbage .btn-submit:hover { background: #475569; }
+
+/* 💎 แผนกโมโน - MONO (ฟ้า) */
+.dept-mono .sidebar { background: #0e7490; }
+.dept-mono .sidebar-header { background: #0e7490; }
+.dept-mono .sidebar-menu a.active { color: #0e7490; }
+.dept-mono .btn-submit { background: #06b6d4; }
+.dept-mono .btn-submit:hover { background: #0891b2; }
+
+/* Responsive สำหรับมือถือ */
+@media (max-width: 768px) {
+    .app-layout { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; }
+    .main-content { padding: 15px; }
+    .content-header { flex-direction: column; gap: 15px; }
+    .form-actions { justify-content: space-between; }
+    .btn-submit, .btn-clear { flex: 1; text-align: center; }
+}

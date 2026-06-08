@@ -3,11 +3,11 @@ const cors = require('cors');
 const app = express();
 const PORT = 3000;
 
-// อนุญาตให้หน้าบ้าน (Frontend พอร์ต 5500) เชื่อมต่อมายังหลังบ้านได้
+// 🔑 เปิดสิทธิ์ CORS และรองรับ JSON Payload (ให้หน้าบ้านดึงข้อมูลข้ามพอร์ตได้ปลอดภัย)
 app.use(cors());
 app.use(express.json());
 
-// 🗄️ ตัวอย่างฐานข้อมูลจำลองบน Server (ปรับคีย์โครงสร้างให้แมตช์กับระบบฟอร์มและแดชบอร์ดเวอร์ชันใหม่)
+// 🗄️ ฐานข้อมูลจำลองบน Server (คงรูปแบบตามที่พี่กำหนดไว้เป๊ะๆ)
 let globalReportsData = [
     { 
         id: 1, 
@@ -33,12 +33,12 @@ let globalReportsData = [
 // [MIDDLEWARE] ระบบตรวจสิทธิ์หลังบ้าน (Role Authorization)
 // ----------------------------------------------------
 function checkManagementPermission(req, res, next) {
-    // ดึงค่าสิทธิ์ที่ส่งมาจากหน้าบ้านผ่าน Headers
+    // ดึงค่าสิทธิ์และรหัสตรวจสอบความปลอดภัยจาก Headers ที่หน้าบ้านส่งมา
     const userRole = req.headers['user-role']; 
     const secretKey = req.headers['x-pvt-secure-key']; // รหัสลับภายในองค์กรสำหรับล้างระบบ
 
     if (userRole === 'management' && secretKey === 'PVT_SECRET_2026') {
-        next(); // สิทธิ์ถูกต้อง อนุญาตให้ไปทำงานในฟังก์ชันถัดไป (เช่น ล้างข้อมูล)
+        next(); // สิทธิ์ถูกต้อง ผ่านมิดเดิ้ลแวร์ไปทำงานฟังก์ชันถัดไปได้
     } else {
         res.status(403).json({ 
             success: false, 
@@ -48,17 +48,18 @@ function checkManagementPermission(req, res, next) {
 }
 
 // ----------------------------------------------------
-// [API ROUTES]
+// [API ROUTES] 
 // ----------------------------------------------------
 
-// 1. API สำหรับดึงข้อมูลไปโชว์ที่แดชบอร์ด (สิทธิ์: หัวหน้า/ผู้บริหาร)
+// 1. API GET: ดึงข้อมูลรายงานปัญหาทั้งหมดไปโชว์ที่หน้าบ้าน
 app.get('/api/reports', (req, res) => {
+    // ส่งออก Object ที่มี success และข้อมูล data เป็นอาร์เรย์
     res.json({ success: true, data: globalReportsData });
 });
 
-// 2. API สำหรับพนักงานส่งข้อมูลปัญหาเข้ามาจากหน้าฟอร์ม (สิทธิ์: พนักงานทุกคน)
+// 2. API POST: รับข้อมูลรายงานข้อบกพร่องใหม่เข้ามาจากพนักงานหน้างาน
 app.post('/api/reports', (req, res) => {
-    // ดึงเวลาที่พนักงานเลือกจากหน้างาน ถ้าไม่มีให้ใช้เวลาปัจจุบันของเซิร์ฟเวอร์
+    // ตรวจสอบวันเวลาเกิดเหตุ ถ้าไม่มีส่งมาให้ใช้เวลาปัจจุบันของเซิร์ฟเวอร์
     const eventDateTime = req.body.datetime || new Date().toISOString().replace('T', ' ').substring(0, 16);
 
     const newReport = {
@@ -66,13 +67,13 @@ app.post('/api/reports', (req, res) => {
         datetime: eventDateTime,
         department: req.body.department || 'unknown',
         type: req.body.type || 'อื่นๆ',
-        reportType: req.body.reportType || 'ไม่ได้ระบุหมวดหมู่', // รับค่าหมวดหมู่หลักไปคำนวณกราฟวงกลม
+        reportType: req.body.reportType || 'ไม่ได้ระบุหมวดหมู่', 
         detail: req.body.detail || '',
-        status: req.body.status || 'pending' // บันทึกสถานะตั้งต้นเป็นรอดำเนินการ
+        status: req.body.status || 'pending'
     };
 
     globalReportsData.push(newReport);
-    console.log("📥 [NEW REPORT RECEIVED]:", newReport); // โชว์ข้อมูลที่พนักงานส่งมาบนหน้าจอ Terminal หลังบ้าน
+    console.log("📥 [NEW REPORT RECEIVED]:", newReport); // แฟลชประวัติขึ้นที่หน้า Console จอดำหลังบ้าน
     
     res.status(201).json({ 
         success: true, 
@@ -81,9 +82,9 @@ app.post('/api/reports', (req, res) => {
     });
 });
 
-// 3. API สำหรับล้างข้อมูลทั้งหมดในระบบ (สิทธิ์: เฉพาะผู้บริหารที่ผ่านการตรวจสิทธิ์)
+// 3. API DELETE: คำสั่งล้างฐานข้อมูลระบบทั้งหมด (ต้องผ่านด่านตรวจสิทธิ์)
 app.delete('/api/reports/clear-all', checkManagementPermission, (req, res) => {
-    // สั่งเซ็ตซีโร่ฐานข้อมูลบน Server
+    // ทำลายอาร์เรย์ เคลียร์ค่าฐานข้อมูลจำลองบน RAM
     globalReportsData = []; 
     
     console.log("⚠️ [SYSTEM ALERT]: ฐานข้อมูลถูกล้างประวัติโดยผู้บริหาร");
@@ -93,7 +94,7 @@ app.delete('/api/reports/clear-all', checkManagementPermission, (req, res) => {
     });
 });
 
-// เปิด Server พอร์ต 3000
+// 🚀 รันเปิดเซิร์ฟเวอร์ Node.js ฟังคำขอที่พอร์ต 3000
 app.listen(PORT, () => {
     console.log(`🚀 Cyber Factory Backend running on http://localhost:${PORT}`);
 });

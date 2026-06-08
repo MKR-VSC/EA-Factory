@@ -1,16 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
 
 :root { 
-    --bg-main: #f8fafc; /* พื้นหลังสีสว่างสบายตา */
+    --bg-main: #f8fafc; 
     --bg-card: #ffffff; 
-    --primary: #1e40af; /* สีน้ำเงินเข้มเน้นความคมชัด */
-    --text-main: #0f172a; /* ตัวอักษรสีดำเกือบสนิท อ่านง่ายมาก */
+    --primary: #1e40af; 
+    --text-main: #0f172a; 
     --text-muted: #475569; 
     --border-color: #94a3b8;
-    --danger: #b91c1c; 
-    --success: #15803d; 
 }
 
+/* 🎯 ตั้งค่าพื้นหลังเต็มหน้าจอ และล็อกสไตล์หลัก */
 body { 
     font-family: 'Sarabun', sans-serif; 
     background-color: var(--bg-main); 
@@ -18,95 +17,213 @@ body {
     margin: 0; 
     height: 100vh; 
     display: flex; 
+    flex-direction: column; 
+    padding: 20px;
+    box-sizing: border-box;
+    position: relative; 
+}
+
+/* ส่วนหัวข้อด้านบนสุด (จัดกลางหน้าจอ) */
+.pvt-top-header {
+    text-align: center; 
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+/* 🏢 โครงสร้างควบคุมให้กล่องล็อกอินอยู่ตรงกลางจอพอดี */
+.pvt-main-layout {
+    display: flex;
+    flex: 1;
+    width: 100%;
     align-items: center; 
-    justify-content: center; 
+    justify-content: center; /* ดึงกล่องล็อกอินอยู่กึ่งกลางหน้าจอพอดีแป๊ะ */
+    box-sizing: border-box;
 }
 
-/* 🏠 กล่องล็อกอินสีขาว ขอบหนาเห็นชัด */
+/* 💡 กล่องคำแนะนำสีเหลือง (เด้งไปอยู่ซ้ายสุดชิดขอบจอ ไม่เบียดส่วนกลาง) */
+.pvt-guide-container {
+    position: absolute;
+    left: 20px; /* ชิดขอบซ้ายสุด */
+    top: 50%;
+    transform: translateY(-50%); /* จัดกลางแนวตั้งของจอ */
+    width: 330px;
+    background: #fef08a;
+    border-left: 6px solid #eab308;
+    padding: 25px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    font-size: 15px;
+    color: #713f12;
+    line-height: 1.6;
+    text-align: left;
+    box-sizing: border-box;
+}
+
+.pvt-guide-container h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 20px;
+    color: #854d0e;
+    font-weight: 700;
+}
+
+.pvt-guide-container ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.pvt-guide-container li {
+    margin-bottom: 6px;
+}
+
+/* 🏠 กล่องการ์ดลงชื่อเข้าใช้งานหลัก (อยู่ตรงกลางหน้าจอสง่างาม สมมาตร) */
 .login-container { 
+    width: 100%;
+    max-width: 430px;
     background: var(--bg-card); 
-    padding: 50px 40px; 
+    padding: 40px 35px; 
     border-radius: 16px; 
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-    border: 3px solid #1e3a8a; /* ขอบหนาสีน้ำเงินเข้ม */
-    width: 100%; 
-    max-width: 460px; 
-    box-sizing: border-box; 
-    text-align: center;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06); 
+    border: 2px solid #e2e8f0;
+    text-align: center; 
+    box-sizing: border-box;
 }
 
-.logo-area { 
-    font-size: 34px; /* ขนาดใหญ่พิเศษ */
+.login-container h2 { 
+    font-size: 28px; 
     font-weight: 700; 
-    color: #1e3a8a; 
+    color: var(--primary); 
+    margin-top: 0;
     margin-bottom: 8px; 
 }
 
-.subtitle { 
-    font-size: 16px; /* ปรับขนาดเพิ่มขึ้น */
+.pvt-subtitle { 
+    font-size: 16px; 
     color: var(--text-muted); 
-    margin-bottom: 40px; 
+    margin-bottom: 30px; 
     font-weight: 600;
 }
 
 .form-group { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 12px; 
-    margin-bottom: 28px; 
+    margin-bottom: 22px; 
     text-align: left; 
 }
 
 .form-group label { 
-    font-size: 18px; /* ขนาดฟอนต์สำหรับผู้สูงอายุ */
-    color: var(--text-main); 
+    display: block; 
+    font-size: 17px; 
     font-weight: 700; 
+    margin-bottom: 8px; 
+    color: var(--text-main); 
 }
 
-/* ช่องป้อนข้อมูลขนาดใหญ่ เส้นขอบเข้มสูง */
+/* ช่องพิมพ์ข้อมูลตัวใหญ่ (ใช้สีขาวสว่างล้วน ตัดกับปุ่มตาเด่นชัด) */
 .form-control { 
-    padding: 16px; 
-    background: #ffffff; 
+    width: 100%; 
+    padding: 14px 16px; 
+    font-size: 17px; 
+    font-weight: 600;
+    font-family: 'Sarabun', sans-serif;
     border: 2px solid var(--border-color); 
-    border-radius: 8px; 
+    border-radius: 10px; 
+    background-color: #ffffff; 
     color: var(--text-main); 
-    font-size: 18px; /* ขยายตัวหนังสือในช่องพิมพ์ */
-    font-weight: bold;
+    box-sizing: border-box; 
+    outline: none;
+    transition: all 0.2s ease-in-out;
 }
 
 .form-control:focus { 
-    outline: none; 
-    border-color: #2563eb; 
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.25); 
+    border-color: var(--primary); 
+    box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.15); 
 }
 
-/* ปุ่มกดขนาดใหญ่หนาสะใจ กดง่าย */
+/* 👁️ ส่วนบล็อกรหัสผ่านและปุ่มตาแสดง/ซ่อน */
+.password-container { 
+    position: relative; 
+    display: flex; 
+    align-items: center; 
+    width: 100%;
+}
+
+.password-container input {
+    padding-right: 110px !important;
+}
+
+/* ใช้สีเข้ม Dark สลับเพื่อไม่ให้สีปุ่มกลืนหายไปกับช่องกรอก */
+.toggle-password-btn { 
+    position: absolute; 
+    right: 8px; 
+    background-color: #1e293b; 
+    color: #ffffff; 
+    border: none; 
+    padding: 8px 14px; 
+    border-radius: 7px; 
+    cursor: pointer; 
+    font-size: 13px; 
+    font-weight: bold; 
+    transition: background-color 0.2s;
+    user-select: none;
+}
+
+.toggle-password-btn:hover { 
+    background-color: #0f172a; 
+}
+
+/* 🔘 ตัวติ๊กจำรหัสผ่าน */
+.remember-me-container { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    margin-top: 5px;
+    margin-bottom: 25px; 
+    text-align: left; 
+}
+
+.remember-me-container input[type="checkbox"] { 
+    width: 20px; 
+    height: 20px; 
+    cursor: pointer; 
+}
+
+.remember-me-container label { 
+    font-size: 15px; 
+    font-weight: 600; 
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+}
+
+/* 🚀 ปุ่มเข้าสู่ระบบ */
 .btn-login { 
     width: 100%; 
-    padding: 18px; 
-    background: #1e3a8a; 
-    color: white; 
-    border: none; 
-    border-radius: 8px; 
+    background-color: var(--primary); 
+    color: #ffffff; 
+    padding: 15px; 
+    font-size: 18px; 
     font-weight: 700; 
-    font-size: 20px; /* ฟอนต์ปุ่มใหญ่พิเศษ */
+    border: none; 
+    border-radius: 10px; 
     cursor: pointer; 
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    margin-top: 15px; 
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+    transition: all 0.2s ease-in-out;
 }
 
 .btn-login:hover { 
-    background: #2563eb;
+    background-color: #1d4ed8; 
+    transform: translateY(-1px);
 }
 
-.error-msg { 
-    color: var(--danger); 
-    font-size: 16px; 
-    margin-top: 25px; 
-    display: none; 
-    background: #fee2e2; 
-    padding: 14px; 
-    border-radius: 8px; 
-    border: 2px solid #ef4444; 
-    font-weight: 700;
+/* หากเปิดบนหน้าจอขนาดเล็ก ให้สลับมาเรียงแนวตั้งอัตโนมัติไม่ให้ทับซ้อนกัน */
+@media (max-width: 1150px) {
+    .pvt-guide-container {
+        position: static;
+        transform: none;
+        margin: 0 auto 20px auto;
+        width: 100%;
+        max-width: 430px;
+    }
+    body {
+        height: auto;
+    }
 }
