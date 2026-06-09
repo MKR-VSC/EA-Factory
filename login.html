@@ -5,13 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เข้าสู่ระบบ - บจก.พี.วี.ที.แอนด์ ที.พลาส</title>
     <link rel="stylesheet" href="/css/login-style.css">
+    <style>
+        /* Moved inline styles here to satisfy linter */
+        .pvt-top-header h1 {
+            font-size: 30px; font-weight: 700; color: #1e40af; margin: 0;
+        }
+        .pvt-top-header p {
+            font-size: 16px; color: #475569; margin: 6px 0 0 0; font-weight: 600;
+        }
+        .code-badge {
+            background:#fef9c3; padding:2px 6px; border-radius:4px; font-weight:bold; color:#854d0e;
+        }
+    </style>
 </head>
 <body>
     
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <div class="pvt-top-header">
-        <h1 style="font-size: 30px; font-weight: 700; color: #1e40af; margin: 0;">🏢 ระบบบันทึกข้อมูลปัญหาการผลิต</h1>
-        <p style="font-size: 16px; color: #475569; margin: 6px 0 0 0; font-weight: 600;">บจก.พี.วี.ที.แอนด์ ที.พลาส (PVT AND T.PLAS CO.,LTD.)</p>
+        <h1>🏢 ระบบบันทึกข้อมูลปัญหาการผลิต</h1>
+        <p>บจก.พี.วี.ที.แอนด์ ที.พลาส (PVT AND T.PLAS CO.,LTD.)</p>
     </div>
 
     <div class="pvt-main-layout">
@@ -20,9 +32,9 @@
             <h3>💡 คำแนะนำการใส่ชื่อผู้ใช้</h3>
             <ul>
                 <li>พิมพ์ชื่อภาษาอังกฤษของคุณ ตามด้วยขีดและชื่อแผนกโรงงานของคุณ</li>
-                <li><b>แผนกม้วนพิมพ์:</b> <code style="background:#fef9c3; padding:2px 6px; border-radius:4px; font-weight:bold; color:#854d0e;">somchai-print</code></li>
-                <li><b>แผนกเป่าถุง:</b> <code style="background:#fef9c3; padding:2px 6px; border-radius:4px; font-weight:bold; color:#854d0e;">wichai-blow</code></li>
-                <li><b>ระดับผู้บริหาร/หัวหน้า:</b> <code style="background:#fef9c3; padding:2px 6px; border-radius:4px; font-weight:bold; color:#854d0e;">boss-pvt</code> หรือ <code style="background:#fef9c3; padding:2px 6px; border-radius:4px; font-weight:bold; color:#854d0e;">head-leader</code></li>
+                <li><b>แผนกม้วนพิมพ์:</b> <code class="code-badge">somchai-print</code></li>
+                <li><b>แผนกเป่าถุง:</b> <code class="code-badge">wichai-blow</code></li>
+                <li><b>ระดับผู้บริหาร/หัวหน้า:</b> <code class="code-badge">boss-pvt</code> หรือ <code class="code-badge">head-leader</code></li>
             </ul>
         </div>
 
@@ -51,11 +63,22 @@
                 </div>
 
                 <button type="submit" class="btn-login">👉 กดที่นี่เพื่อเข้าสู่ระบบ</button>
+                <p>
+                    ยังไม่มีบัญชี?
+                    <a href="#" onclick="showRegister()">สมัครที่นี่</a>
+                </p>
 
             </form>
         </div>
 
     </div>
+
+<script>
+function showRegister() {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('registerForm').style.display = 'block';
+}
+</script>
 
     <script>
         // ระบบดึงชื่อที่เคยสั่งให้จำไว้ในเครื่องขึ้นมาหยอดให้อัตโนมัติเวลาเปิดหน้าใหม่
