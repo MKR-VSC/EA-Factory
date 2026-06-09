@@ -138,19 +138,25 @@ localStorage.setItem(
 );
 
             // บันทึก Token ข้อมูลพนักงานแชร์ข้ามระบบ ไปแสดงผลที่ Dashboard หรือ ฟอร์มรับข้อมูล
-            localStorage.setItem('activeUser', user);
-            localStorage.setItem('activeDept', dept);
-            localStorage.setItem('activeRole', role);
+            localStorage.setItem('activeUser', username);
+    localStorage.setItem('activeDept', dept);
+    localStorage.setItem('activeRole', role);
 
-            alert(`🎉 เข้าสู่ระบบสำเร็จ!\nคุณเข้าใช้งานในสิทธิ์: ${role === 'management' ? 'ผู้บริหาร' : (role === 'supervisor' ? 'หัวหน้างาน' : 'พนักงานทั่วไป')}\nแผนก: ${dept.toUpperCase()}`);
+    if (rememberMe) {
+        localStorage.setItem('rememberedUser', email);
+    } else {
+        localStorage.removeItem('rememberedUser');
+    }
 
-            // 🚀 แยกส่งเส้นทางข้ามไฟล์ตามระดับสิทธิ์ที่ระบบแกะได้
-            if (role === 'management' || role === 'supervisor') {
-                window.location.href = 'index.html'; /* เด้งเข้าสู่ Dashboard ผู้บริหาร/หัวหน้างาน */
-            } else {
-                window.location.href = '/html/form-department.html'; /* พนักงานทั่วไปเด้งเข้าสู่ฟอร์มบันทึกตัวหนังสือใหญ่ตัวใหม่ */
-            }
-        }
+    alert(`🎉 Login สำเร็จ!\nRole: ${role}\nDept: ${dept}`);
+
+    // 🚀 redirect
+    if (role === 'management' || role === 'supervisor') {
+        window.location.href = 'index.html';
+    } else {
+        window.location.href = '/html/form-department.html';
+    }
+}
     </script>
     
 </body>

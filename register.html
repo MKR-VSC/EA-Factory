@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สมัครสมาชิก</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<h2>📝 สมัครสมาชิก</h2>
+
+<form onsubmit="handleRegister(event)">
+
+    <input type="text" id="username" placeholder="Username" required>
+    <br><br>
+
+    <input type="text" id="department" placeholder="Department" required>
+    <br><br>
+
+    <label for="role">Role</label>
+    <select id="role" name="role" aria-label="Role">
+        <option value="staff">Staff</option>
+        <option value="supervisor">Supervisor</option>
+        <option value="management">Management</option>
+    </select>
+
+    <br><br>
+
+    <input type="email" id="email" placeholder="Email" required>
+    <br><br>
+
+    <input type="password" id="password" placeholder="Password" required>
+    <br><br>
+
+    <button type="submit">สมัครสมาชิก</button>
+
+</form>
+
+<script>
+const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+const SUPABASE_KEY = "YOUR_ANON_KEY";
+
+const supabase = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+async function handleRegister(event) {
+    event.preventDefault();
+
+    const username = document.getElementById('username').value;
+    const department = document.getElementById('department').value;
+    const role = document.getElementById('role').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    // 1️⃣ สมัคร Auth ก่อน
+    const { data, error } = await supabase.auth.signUp({
+        email,
+        password
+    });
+
+    if (error) {
+        alert("สมัครไม่สำเร็จ: " + error.message);
+        return;
+    }
+
+    const userId = data.user.id;
+
+    // 2️⃣ สร้าง profile
+    const { error: profileError } = await supabase
+        .from('users_profile')
+        .insert([
+            {
+                id: userId,
+                username,
+                department,
+                role
+            }
+        ]);
+
+    if (profileError) {
+        alert("สร้าง profile ไม่สำเร็จ: " + profileError.message);
+        return;
+    }
+
+    alert("🎉 สมัครสำเร็จ! ไปหน้า Login ได้เลย");
+    window.location.href = "login.html";
+}
+</script>
+
+</body>
+</html>
