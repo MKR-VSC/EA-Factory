@@ -329,6 +329,51 @@
                         document.getElementById('incident-datetime').value =
                             now.toISOString().slice(0, 16);
                     });
+
+                                async function handleFormSubmit(event) {
+                    event.preventDefault();
+
+                    if (!confirm("📋 ยืนยันการส่งข้อมูลเข้าระบบ ?")) {
+                        return;
+                    }
+
+                    const reportData = {
+                        datetime: document.getElementById('incident-datetime').value,
+                        department: currentDept,
+                        type: document.getElementById('problem-type').value,
+                        reportType: "ปัญหาการผลิต",
+                        detail: document.getElementById('problem-description').value,
+                        status: "pending"
+                    };
+
+                    try {
+
+                        const response = await fetch(
+                            'http://localhost:3000/api/reports',
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(reportData)
+                            }
+                        );
+
+                            const result = await response.json();
+
+                            if (result.success) {
+                                alert("✅ บันทึกข้อมูลสำเร็จ");
+                                document.getElementById('pvt-production-form').reset();
+                            } else {
+                                alert("❌ บันทึกไม่สำเร็จ");
+                            }
+
+                        } catch (error) {
+                            console.error(error);
+                            alert("❌ เชื่อมต่อ Server ไม่ได้");
+                        }
+                    }
+
                                     function handleLogout() {
                     // ล้างข้อมูลการเข้าสู่ระบบทั้งหมด
                     localStorage.removeItem('activeUser');

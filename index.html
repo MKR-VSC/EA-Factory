@@ -244,14 +244,28 @@
             loadAndProcessDashboardData();
             setInterval(loadAndProcessDashboardData, 30000);
         });
+
+
+        
 async function loadAndProcessDashboardData() {
-    let records;
-try {
-    const rawData = localStorage.getItem('your_data_key'); // Replace with your actual key
-    records = JSON.parse(rawData) || [];
-} catch (e) {
-    records = [];
-}
+    let records = [];
+
+    try {
+
+        const response = await fetch(
+            'http://localhost:3000/api/reports'
+        );
+
+        const result = await response.json();
+
+        if (result.success) {
+            records = result.data;
+        }
+
+    } catch (e) {
+        console.error("โหลดข้อมูลไม่สำเร็จ", e);
+        records = [];
+    }
 
 // Keep your safety check to ensure it's specifically an Array
 if (!Array.isArray(records)) {
@@ -267,7 +281,7 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
     // ... โค้ดวาดกราฟและตารางเดิมของคุณด้านล่าง ...
             // 2. กราฟวงกลม
             const divisionCounters = { print: 0, sheet: 0, tape: 0, blow: 0, drill: 0, garbage: 0, mono: 0, salan: 0 };
-            records.forEach(item => { if (divisionCounters[item.dept] !== undefined) divisionCounters[item.dept]++; });
+            records.forEach(item => { if (divisionCounters[item.department] !== undefined) divisionCounters[item.department]++; });
             renderDoughnutChart(divisionCounters);
 
             // 3. กราฟใหญ่ยาวรายเดือนแยกตามเครื่องจักร
@@ -278,7 +292,7 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
 
             // 4. ตารางข้อมูล
             const targetFilter = document.getElementById('sel-dept-filter').value;
-            let displayRecords = targetFilter === 'all' ? records : records.filter(r => r.dept === targetFilter);
+            let displayRecords = targetFilter === 'all' ? records : records.filter(r => r.department === targetFilter);
             window.pvtExecutiveFilteredCache = displayRecords;
 
             const tbody = document.getElementById('dom-table-body');
@@ -299,10 +313,10 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
 
                 tr.innerHTML = `
                     <td style="font-weight: 700; white-space: nowrap;">${renderedDate}</td>
-                    <td><span class="btn-dept d-${row.dept}" style="padding:4px 8px; font-size:11px; border-radius:4px; display:inline-block; text-align:center;">${row.dept.toUpperCase()}</span></td>
+                    <td><span class="btn-dept d-${row.department}" style="padding:4px 8px; font-size:11px; border-radius:4px; display:inline-block; text-align:center;">${row.department.toUpperCase()}</span></td>
                     <td style="color: var(--danger); font-weight: 700;">${row.machine_no || '-'}</td>
                     <td style="font-weight: 600; color: var(--text-primary);">${row.type}</td>
-                    <td><div style="max-width: 320px; word-break: break-all; font-size:14px; color:#334155;">${row.note || '-'}</div></td>
+                    <td><div style="max-width: 320px; word-break: break-all; font-size:14px; color:#334155;">${row.detail || '-'}</div></td>
                     <td><code style="background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-size:13px; color: #0f172a; font-weight:600;">${row.reporter || 'คนงาน'}</code></td>
                     <td>
                         <div style="margin-bottom: 8px;">${statusBadgeHTML}</div>
@@ -357,7 +371,7 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
             };
 
           records.forEach(r => {
-                if (r.datetime && r.dept) {
+                if (r.datetime && r.department) {
                     let m = -1; // ตั้งค่าเริ่มต้นของเดือนให้เป็นค่าว่างก่อน
                     
                     // 📅 [ระบบตรวจสอบและแปลงวันที่] ป้องกันปัญหา Invalid Date จาก format เครื่อง
@@ -381,7 +395,7 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
 
                     // 🚨 ถ้าตรวจพบเดือน (ค่าอยู่ระหว่างเดือน 0 ถึง 11) และระบุแผนก ให้บวกแต้มเข้ากราฟทันที
                     if (m >= 0 && m <= 11) {
-                        const currentDeptLowerCase = r.dept.toLowerCase();
+                        const currentDeptLowerCase = r.department.toLowerCase();
 
                         if (currentDeptLowerCase === 'print') monthlyData.print[m]++;
                         else if (currentDeptLowerCase === 'blow' || currentDeptLowerCase === 'tape' || currentDeptLowerCase === 'tape_cut') monthlyData.blow[m]++;
@@ -432,6 +446,9 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
             loadAndProcessDashboardData();
         }
 
+
+
+        
         async function executeModifyCaseResolution(caseId, updatedText) {
             try {
                 await fetch(`http://localhost:3000/api/reports/${caseId}/resolution`, {
@@ -445,6 +462,8 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
                 targetRow.resolution = updatedText; localStorage.setItem('pvtLocalReportsCache', JSON.stringify(cachedList));
             }
         }
+
+                
 
         function generateExecutiveSummary(records){
             const summaryBox = document.getElementById("ai-summary-box");
@@ -508,7 +527,7 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
 
             const deptCount = {};
             records.forEach(r => {
-                const d = r.dept || "unknown";
+                const d = r.department || "unknown";
                 deptCount[d] = (deptCount[d] || 0) + 1;
             });
 
@@ -516,14 +535,47 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
             let maxDept = 0;
             Object.entries(deptCount).forEach(([d,c])=>{ if(c > maxDept){ maxDept = c; topDept = d; } });
 
-            box.innerHTML = `
-                <div>📊 งานทั้งหมด: <b>${total}</b> รายการ</div>
-                <div>⏳ รอดำเนินการ: <b>${pending}</b></div>
-                <div>⚙️ กำลังซ่อม: <b>${progress}</b></div>
-                <div>✅ ปิดงานแล้ว: <b>${resolved}</b></div>
-                <hr style="margin:10px 0;opacity:0.3">
-                <div>🚨 เครื่องปัญหาสูงสุด: <b>${topMachine}</b> (${max} ครั้ง)</div>
-                <div>🏭 แผนกที่มีปัญหามากสุด: <b>${topDept.toUpperCase()}</b></div>
+
+            const problemCount = {};
+
+            records.forEach(r => {
+                const p = r.type || "ไม่ระบุ";
+
+                problemCount[p] = (problemCount[p] || 0) + 1;
+            });
+
+            let topProblem = "-";
+            let maxProblem = 0;
+
+            Object.entries(problemCount).forEach(([p, c]) => {
+                if (c > maxProblem) {
+                    maxProblem = c;
+                    topProblem = p;
+                }
+            });
+
+
+           box.innerHTML = `
+            <div>📊 งานทั้งหมด: <b>${total}</b> รายการ</div>
+            <div>⏳ รอดำเนินการ: <b>${pending}</b></div>
+            <div>⚙️ กำลังซ่อม: <b>${progress}</b></div>
+            <div>✅ ปิดงานแล้ว: <b>${resolved}</b></div>
+
+            <hr style="margin:10px 0;opacity:0.3">
+
+            <div>🚨 เครื่องที่เกิดปัญหาสูงสุด: <b>${topMachine}</b></div>
+            <div>⚠️ ปัญหาที่พบมากที่สุด: <b>${topProblem}</b></div>
+            <div>🏭 แผนกที่มีปัญหาสูงสุด: <b>${topDept.toUpperCase()}</b></div>
+
+            <hr style="margin:10px 0;opacity:0.3">
+
+            <div style="color:#fbbf24">
+            💡 ข้อเสนอแนะ:
+            ควรตรวจสอบเครื่อง <b>${topMachine}</b>
+            เนื่องจากพบปัญหา "<b>${topProblem}</b>"
+            บ่อยที่สุดในระบบ
+            </div>
+
                 <hr style="margin:10px 0;opacity:0.3">
                 <div style="color:#fbbf24">💡 Insight: ควรตรวจสอบเครื่อง ${topMachine} และเพิ่มการบำรุงรักษาในแผนก ${topDept.toUpperCase()}</div>
             `;
@@ -555,7 +607,7 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
                     let cleanStatusText = item.status === 'progress' ? "กำลังดำเนินการซ่อม" : (item.status === 'resolved' ? "แก้ไขสำเร็จปิดงาน" : "รอดำเนินการ");
                     let cleanNote = (item.note || '-').replace(/"/g, '""');
                     let cleanResolution = (item.resolution || '-').replace(/"/g, '""');
-                    csvRawString += `"${formattedTime}","${item.dept.toUpperCase()}","${item.machine_no || '-'}","${item.type}","${cleanNote}","${item.reporter || '-'}","${cleanStatusText}","${cleanResolution}","${item.resolver || '-'}"\n`;
+                    csvRawString += `"${formattedTime}","${item.department.toUpperCase()}","${item.machine_no || '-'}","${item.type}","${cleanNote}","${item.reporter || '-'}","${cleanStatusText}","${cleanResolution}","${item.resolver || '-'}"\n`;
                 });
                 const URIEncoded = encodeURI(csvRawString);
                 const clickDownloader = document.createElement("a");
