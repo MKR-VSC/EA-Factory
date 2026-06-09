@@ -305,7 +305,7 @@
         async function clearServerDatabase() {
             if (confirm("⚠️ คำเตือนสิทธิ์แอดมินสูงสุด! คุณมั่นใจหรือไม่ที่จะใช้คำสั่งล้างข้อมูลเพื่อทำลายและลบข้อมูลบนเซิร์ฟเวอร์หลังบ้านทั้งหมดทิ้งแบบถาวร? (ไม่สามารถกู้คืนได้)")) {
                 try {
-                    const response = await fetch('http://localhost:3000/api/reports/clear-all', {
+                    const response = await fetch('http:///api/reports/clear-all', {
                         method: 'DELETE',
                         headers: {
                             'user-role': 'management',
