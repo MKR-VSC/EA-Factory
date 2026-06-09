@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - บจก.พี.วี.ที.แอนด์ ที.พลาส</title>
+    <link rel="stylesheet" href="login-style.css">
+</head>
+<body>
+
+    <div class="pvt-top-header">
+        <h1 style="font-size: 30px; font-weight: 700; color: #1e40af; margin: 0;">🏢 ระบบบันทึกข้อมูลปัญหาการผลิต</h1>
+        <p style="font-size: 16px; color: #475569; margin: 6px 0 0 0; font-weight: 600;">บจก.พี.วี.ที.แอนด์ ที.พลาส (PVT AND T.PLAS CO.,LTD.)</p>
+    </div>
+
+    <div class="pvt-main-layout">
+        
+        <div class="pvt-guide-container">
+            <h3>💡 คำแนะนำการใส่ชื่อผู้ใช้</h3>
+            <ul>
+                <li>พิมพ์ชื่อภาษาอังกฤษของคุณ ตามด้วยขีดและชื่อแผนกโรงงานของคุณ</li>
+                <li><b>แผนกม้วนพิมพ์:</b> <code style="background:#fef9c3; padding:2px 6px; border-radius:4px; font-weight:bold; color:#854d0e;">somchai-print</code></li>
+                <li><b>แผนกเป่าถุง:</b> <code style="background:#fef9c3; padding:2px 6px; border-radius:4px; font-weight:bold; color:#854d0e;">wichai-blow</code></li>
+                <li><b>ระดับผู้บริหาร/หัวหน้า:</b> <code style="background:#fef9c3; padding:2px 6px; border-radius:4px; font-weight:bold; color:#854d0e;">boss-pvt</code> หรือ <code style="background:#fef9c3; padding:2px 6px; border-radius:4px; font-weight:bold; color:#854d0e;">head-leader</code></li>
+            </ul>
+        </div>
+
+        <div class="login-container">
+            <h2>🔐 ลงชื่อเข้าใช้งาน</h2>
+            <div class="pvt-subtitle">กรุณากรอกข้อมูลเพื่อเข้าสู่ระบบรายงาน</div>
+            
+            <form onsubmit="handlePvtLogin(event)">
+                
+                <div class="form-group">
+                    <label for="username">👤 ชื่อผู้ใช้งาน (Username)</label>
+                    <input type="text" id="username" class="form-control" placeholder="ตัวอย่าง: somchai-print" required autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="pvtPassword">🔑 รหัสผ่าน (Password)</label>
+                    <div class="password-container">
+                        <input type="password" id="pvtPassword" class="form-control" placeholder="กรอกรหัสผ่านของคุณ..." required>
+                        <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility()">👁️ แสดง</button>
+                    </div>
+                </div>
+
+                <div class="remember-me-container">
+                    <input type="checkbox" id="rememberMe">
+                    <label for="rememberMe">จำชื่อผู้ใช้งานไว้ในเครื่องนี้</label>
+                </div>
+
+                <button type="submit" class="btn-login">👉 กดที่นี่เพื่อเข้าสู่ระบบ</button>
+
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        // ระบบดึงชื่อที่เคยสั่งให้จำไว้ในเครื่องขึ้นมาหยอดให้อัตโนมัติเวลาเปิดหน้าใหม่
+        window.onload = function() {
+            const savedUser = localStorage.getItem('rememberedUser');
+            if (savedUser) {
+                document.getElementById('username').value = savedUser;
+                document.getElementById('rememberMe').checked = true;
+            }
+        };
+
+        // ฟังก์ชันคลิกสลับเปิด/ปิดตาเพื่อดูรหัสผ่านตอนพิมพ์
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('pvtPassword');
+            const toggleBtn = document.querySelector('.toggle-password-btn');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleBtn.innerText = '🙈 ซ่อน';
+            } else {
+                passwordInput.type = 'password';
+                toggleBtn.innerText = '👁️ แสดง';
+            }
+        }
+
+        // 🔥 ระบบคัดกรองและส่งเส้นทางพนักงาน/หัวหน้า/ผู้บริหาร ข้ามหน้าจออย่างแม่นยำ
+     function handlePvtLogin(event) {
+    event.preventDefault();
+
+    const user = document.getElementById('username').value.trim();
+    const rememberMe = document.getElementById('rememberMe').checked;
+
+ 
+
+    // ⭐ ต้องอยู่ตรงนี้เท่านั้น
+    const lowerUser = user.toLowerCase();
+
+    let role = 'staff';
+    let dept = null;
+
+    // ต่อจากนี้ค่อยใช้ lowerUser ได้
+    if (lowerUser.includes('admin') || lowerUser.includes('man')) {
+        role = 'management';
+        dept = 'management';
+    }
+    else if (lowerUser.includes('head') || lowerUser.includes('leader')) {
+        role = 'supervisor';
+        dept = 'general';
+    }
+   else {
+    if (lowerUser.includes('print')) dept = 'print';
+    else if (lowerUser.includes('sheet')) dept = 'sheet';
+    else if (lowerUser.includes('tape')) dept = 'tape';
+    else if (lowerUser.includes('blow')) dept = 'blow';
+    else if (lowerUser.includes('drill')) dept = 'drill';
+    else if (lowerUser.includes('garbage')) dept = 'garbage';
+    else if (lowerUser.includes('mono')) dept = 'mono';
+    else if (lowerUser.includes('salan')) dept = 'salan'; // 👈 เพิ่มบรรทัดนี้
+    if (!dept) dept = 'print'; // fallback กันระบบพัง
+}
+
+                if (!dept) {
+                    alert("❌ username ต้องมีคำว่า print / blow / mono ฯลฯ");
+                    return;
+                }
+
+            // จัดการเซฟหรือล้างระบบจำประวัติชื่อผู้ใช้งาน
+            if (rememberMe) {
+                localStorage.setItem('rememberedUser', user);
+            } else {
+                localStorage.removeItem('rememberedUser');
+            }
+
+            // บันทึก Token ข้อมูลพนักงานแชร์ข้ามระบบ ไปแสดงผลที่ Dashboard หรือ ฟอร์มรับข้อมูล
+            localStorage.setItem('activeUser', user);
+            localStorage.setItem('activeDept', dept);
+            localStorage.setItem('activeRole', role);
+
+            alert(`🎉 เข้าสู่ระบบสำเร็จ!\nคุณเข้าใช้งานในสิทธิ์: ${role === 'management' ? 'ผู้บริหาร' : (role === 'supervisor' ? 'หัวหน้างาน' : 'พนักงานทั่วไป')}\nแผนก: ${dept.toUpperCase()}`);
+
+            // 🚀 แยกส่งเส้นทางข้ามไฟล์ตามระดับสิทธิ์ที่ระบบแกะได้
+            if (role === 'management' || role === 'supervisor') {
+                window.location.href = 'dashboard.html'; /* เด้งเข้าสู่ Dashboard ผู้บริหาร/หัวหน้างาน */
+            } else {
+                window.location.href = 'form-department.html'; /* พนักงานทั่วไปเด้งเข้าสู่ฟอร์มบันทึกตัวหนังสือใหญ่ตัวใหม่ */
+            }
+        }
+    </script>
+</body>
+</html>
