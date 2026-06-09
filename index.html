@@ -252,7 +252,14 @@ async function loadAndProcessDashboardData() {
 
     try {
 
-        const response = await fetch(
+        const { data, error } = await supabase
+    .from('production_reports')
+    .select('*')
+    .order('incident_datetime', { ascending: false });
+
+if (error) throw error;
+
+records = data;(
             'http://localhost:3000/api/reports'
         );
 
@@ -304,7 +311,7 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
             tbody.innerHTML = '';
             displayRecords.reverse().forEach(row => {
                 const tr = document.createElement('tr');
-                let renderedDate = row.datetime ? new Date(row.datetime).toLocaleString('th-TH') : '-';
+                let renderedDate = row.incident_datetime ? new Date(row.incident_datetime).toLocaleString('th-TH') : '-';
                 
                 let statusBadgeHTML = '';
                 if (row.status === 'pending' || !row.status) statusBadgeHTML = `<span class="badge-status status-pending">⏳ รอดำเนินการ</span>`;
@@ -315,9 +322,9 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
                     <td style="font-weight: 700; white-space: nowrap;">${renderedDate}</td>
                     <td><span class="btn-dept d-${row.department}" style="padding:4px 8px; font-size:11px; border-radius:4px; display:inline-block; text-align:center;">${row.department.toUpperCase()}</span></td>
                     <td style="color: var(--danger); font-weight: 700;">${row.machine_no || '-'}</td>
-                    <td style="font-weight: 600; color: var(--text-primary);">${row.type}</td>
+                    <td style="font-weight: 600; color: var(--text-primary);">${row.problem_type || '-'}</td>
                     <td><div style="max-width: 320px; word-break: break-all; font-size:14px; color:#334155;">${row.detail || '-'}</div></td>
-                    <td><code style="background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-size:13px; color: #0f172a; font-weight:600;">${row.reporter || 'คนงาน'}</code></td>
+                    <td><code style="background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-size:13px; color: #0f172a; font-weight:600;">${row.reported_by || 'คนงาน'}</code></td>
                     <td>
                         <div style="margin-bottom: 8px;">${statusBadgeHTML}</div>
                         <select class="select-inline-status" onchange="executeModifyCaseStatus('${row.id}', this.value)">
@@ -480,7 +487,7 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
                     machineCounter[machine] = { total:0, problems:{} };
                 }
                 machineCounter[machine].total++;
-                const problem = r.type || "อื่นๆ";
+                const problem = r.problem_type || "อื่นๆ";
                 machineCounter[machine].problems[problem] = (machineCounter[machine].problems[problem] || 0) + 1;
             });
 
@@ -539,7 +546,7 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
             const problemCount = {};
 
             records.forEach(r => {
-                const p = r.type || "ไม่ระบุ";
+                const p = r.problem_type || "ไม่ระบุ";
 
                 problemCount[p] = (problemCount[p] || 0) + 1;
             });
@@ -603,11 +610,11 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
                 let csvRawString = "data:text/csv;charset=utf-8,\uFEFF";
                 csvRawString += "วันเวลาเกิดเหตุ,แผนก,หมายเลขเครื่องจักร,หัวข้อปัญหาขัดข้อง,รายละเอียดอาการ,ผู้แจ้งเรื่อง,สถานะปัจจุบัน,สั่งการแก้ไข (MAN),ผู้สั่งงาน\n";
                 targetData.forEach(item => {
-                    let formattedTime = item.datetime ? new Date(item.datetime).toLocaleString('th-TH').replace(/,/g, '') : '';
+                    let formattedTime = item.incident_datetime ? new Date(item.incident_datetime).toLocaleString('th-TH').replace(/,/g, '') : '';
                     let cleanStatusText = item.status === 'progress' ? "กำลังดำเนินการซ่อม" : (item.status === 'resolved' ? "แก้ไขสำเร็จปิดงาน" : "รอดำเนินการ");
                     let cleanNote = (item.note || '-').replace(/"/g, '""');
                     let cleanResolution = (item.resolution || '-').replace(/"/g, '""');
-                    csvRawString += `"${formattedTime}","${item.department.toUpperCase()}","${item.machine_no || '-'}","${item.type}","${cleanNote}","${item.reporter || '-'}","${cleanStatusText}","${cleanResolution}","${item.resolver || '-'}"\n`;
+                    csvRawString += `"${formattedTime}","${item.department.toUpperCase()}","${item.machine_no || '-'}","${item.problem_type}","${cleanNote}","${item.reported_by || '-'}","${cleanStatusText}","${cleanResolution}","${item.resolver || '-'}"\n`;
                 });
                 const URIEncoded = encodeURI(csvRawString);
                 const clickDownloader = document.createElement("a");

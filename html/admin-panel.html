@@ -214,7 +214,14 @@
             const startTime = performance.now();
             
             try {
-                const response = await fetch(API_URL);
+                const { data, error } = await supabase
+    .from('production_reports')
+    .select('*')
+    .order('incident_datetime', { ascending: false });
+
+if (error) throw error;
+
+records = data;(API_URL);
                 const result = await response.json();
                 const endTime = performance.now();
                 const latency = Math.round(endTime - startTime);
@@ -305,7 +312,21 @@
         async function clearServerDatabase() {
             if (confirm("⚠️ คำเตือนสิทธิ์แอดมินสูงสุด! คุณมั่นใจหรือไม่ที่จะใช้คำสั่งล้างข้อมูลเพื่อทำลายและลบข้อมูลบนเซิร์ฟเวอร์หลังบ้านทั้งหมดทิ้งแบบถาวร? (ไม่สามารถกู้คืนได้)")) {
                 try {
-                    const response = await fetch('http:///api/reports/clear-all', {
+                    const { data, error } = await supabase
+    .from('production_reports')
+    .select('*')
+    .order('incident_datetime', { ascending: false });
+
+if (error) throw error;
+
+records = data;t supabase
+    .from('production_reports')
+    .select('*')
+    .order('incident_datetime', { ascending: false });
+
+if (error) throw error;
+
+records = data;('http:///api/reports/clear-all', {
                         method: 'DELETE',
                         headers: {
                             'user-role': 'management',

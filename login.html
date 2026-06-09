@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="/css/login-style.css">
 </head>
 <body>
-
+    
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <div class="pvt-top-header">
         <h1 style="font-size: 30px; font-weight: 700; color: #1e40af; margin: 0;">🏢 ระบบบันทึกข้อมูลปัญหาการผลิต</h1>
         <p style="font-size: 16px; color: #475569; margin: 6px 0 0 0; font-weight: 600;">บจก.พี.วี.ที.แอนด์ ที.พลาส (PVT AND T.PLAS CO.,LTD.)</p>
@@ -79,14 +80,40 @@
             }
         }
 
+                    const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+            const SUPABASE_KEY = "YOUR_ANON_KEY";
+
+            const supabase = window.supabase.createClient(
+                SUPABASE_URL,
+                SUPABASE_KEY
+            );
         // 🔥 ระบบคัดกรองและส่งเส้นทางพนักงาน/หัวหน้า/ผู้บริหาร ข้ามหน้าจออย่างแม่นยำ
-     function handlePvtLogin(event) {
+     async function handlePvtLogin(event) {
     event.preventDefault();
 
-    const user = document.getElementById('username').value.trim();
+    const user =
+    document.getElementById('username').value.trim();
     const rememberMe = document.getElementById('rememberMe').checked;
+    const password =
+    document.getElementById('pvtPassword').value;
 
- 
+    const { data, error } =
+await supabase.auth.signInWithPassword({
+    email: user,
+    password: password
+});
+
+if (error) {
+    alert("❌ Username หรือ Password ไม่ถูกต้อง");
+    return;
+}
+
+const { data: profile } =
+await supabase
+.from('users')
+.select('*')
+.eq('id', data.user.id)
+.single();
 
     // ⭐ ต้องอยู่ตรงนี้เท่านั้น
     const lowerUser = user.toLowerCase();
@@ -94,38 +121,21 @@
     let role = 'staff';
     let dept = null;
 
-    // ต่อจากนี้ค่อยใช้ lowerUser ได้
-    if (lowerUser.includes('admin') || lowerUser.includes('man')) {
-        role = 'management';
-        dept = 'management';
-    }
-    else if (lowerUser.includes('head') || lowerUser.includes('leader')) {
-        role = 'supervisor';
-        dept = 'general';
-    }
-   else {
-    if (lowerUser.includes('print')) dept = 'print';
-    else if (lowerUser.includes('sheet')) dept = 'sheet';
-    else if (lowerUser.includes('tape')) dept = 'tape';
-    else if (lowerUser.includes('blow')) dept = 'blow';
-    else if (lowerUser.includes('drill')) dept = 'drill';
-    else if (lowerUser.includes('garbage')) dept = 'garbage';
-    else if (lowerUser.includes('mono')) dept = 'mono';
-    else if (lowerUser.includes('salan')) dept = 'salan'; // 👈 เพิ่มบรรทัดนี้
-    if (!dept) dept = 'print'; // fallback กันระบบพัง
-}
+  
+           localStorage.setItem(
+    'activeUser',
+    profile.username
+);
 
-                if (!dept) {
-                    alert("❌ username ต้องมีคำว่า print / blow / mono ฯลฯ");
-                    return;
-                }
+localStorage.setItem(
+    'activeDept',
+    profile.department
+);
 
-            // จัดการเซฟหรือล้างระบบจำประวัติชื่อผู้ใช้งาน
-            if (rememberMe) {
-                localStorage.setItem('rememberedUser', user);
-            } else {
-                localStorage.removeItem('rememberedUser');
-            }
+localStorage.setItem(
+    'activeRole',
+    profile.role
+);
 
             // บันทึก Token ข้อมูลพนักงานแชร์ข้ามระบบ ไปแสดงผลที่ Dashboard หรือ ฟอร์มรับข้อมูล
             localStorage.setItem('activeUser', user);
@@ -142,5 +152,6 @@
             }
         }
     </script>
+    
 </body>
 </html>

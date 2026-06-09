@@ -127,6 +127,13 @@
     </div>
 
 <script>
+    const SUPABASE_URL = "https://yviibwmojkodhkxgmkgb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_3seUH8g6QzA6y7fuYDeoxw_HVV4ZmeL";
+
+const supabase = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
                                     // ===============================
                     // 👤 USER + DEPT
                     // ===============================
@@ -330,51 +337,45 @@
                             now.toISOString().slice(0, 16);
                     });
 
-                                async function handleFormSubmit(event) {
-                    event.preventDefault();
+                       async function handleFormSubmit(event) {
+    event.preventDefault();
 
-                    if (!confirm("📋 ยืนยันการส่งข้อมูลเข้าระบบ ?")) {
-                        return;
-                    }
+    if (!confirm("📋 ยืนยันการส่งข้อมูลเข้าระบบ ?")) {
+        return;
+    }
 
-                    const reportData = {
-                        datetime: document.getElementById('incident-datetime').value,
-                        department: currentDept,
-                        type: document.getElementById('problem-type').value,
-                        reportType: "ปัญหาการผลิต",
-                        detail: document.getElementById('problem-description').value,
-                        status: "pending"
-                    };
+    const reportData = {
+        incident_datetime: document.getElementById('incident-datetime').value,
+        department: currentDept,
+        machine_no: document.getElementById('machine-no').value,
+        problem_type: document.getElementById('problem-type').value,
+        report_type: "ปัญหาการผลิต",
+        detail: document.getElementById('problem-description').value,
+        status: "pending",
+        reported_by: activeUser
+    };
 
-                    try {
+    try {
 
-                        const response = await fetch(
-                            'http://localhost:3000/api/reports',
-                            {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(reportData)
-                            }
-                        );
+        const { error } = await supabase
+            .from('production_reports')
+            .insert([reportData]);
 
-                            const result = await response.json();
+        if (error) throw error;
 
-                            if (result.success) {
-                                alert("✅ บันทึกข้อมูลสำเร็จ");
-                                document.getElementById('pvt-production-form').reset();
-                            } else {
-                                alert("❌ บันทึกไม่สำเร็จ");
-                            }
+        alert("✅ บันทึกข้อมูลสำเร็จ");
 
-                        } catch (error) {
-                            console.error(error);
-                            alert("❌ เชื่อมต่อ Server ไม่ได้");
-                        }
-                    }
+        document.getElementById('pvt-production-form').reset();
 
-                                    function handleLogout() {
+    } catch (err) {
+
+        console.error(err);
+
+        alert("❌ บันทึกไม่สำเร็จ\n" + err.message);
+    }
+    }
+
+    function handleLogout() {
                     // ล้างข้อมูลการเข้าสู่ระบบทั้งหมด
                     localStorage.removeItem('activeUser');
                     localStorage.removeItem('activeDept');
