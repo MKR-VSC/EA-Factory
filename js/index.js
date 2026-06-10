@@ -1,5 +1,5 @@
 // =========================================================
-// PVT Executive Dashboard
+// index.js
 // แยกจาก HTML แล้ว และใช้ window.supabaseClient
 // =========================================================
 
@@ -17,42 +17,163 @@ const DEPARTMENT_LABELS = {
   drill: "เจาะรู",
   garbage: "ถุงขยะ",
   mono: "โมโน",
-  salan: "สแลน"
+  salan: "สแลน",
 };
 
 const EXCEL_MACHINE_PROBLEM_DB = {
   print: {
     machines: ["เครื่องพิมพ์1", "เครื่องพิมพ์2"],
-    problems: ["สกรีนไม่สวย", "สีเพี้ยน", "พิมพ์เลอะ", "อื่นๆ"]
+    problems: ["สกรีนไม่สวย", "สีเพี้ยน", "พิมพ์เลอะ", "อื่นๆ"],
   },
   mono: {
     machines: ["Mono1", "Mono2", "Mono3"],
-    problems: ["ขาดหน้าดาย", "ขาดอ่างน้ำร้อน", "ขาดพันลูกกลิ้ง", "ตัดเส้นไม่ขาด", "ขาดลมร้อน", "เดินเครื่องใหม่", "เปลี่ยนสีโมโน", "ไฟดับ", "ก้อนแข็ง", "อื่นๆ"]
+    problems: [
+      "ขาดหน้าดาย",
+      "ขาดอ่างน้ำร้อน",
+      "ขาดพันลูกกลิ้ง",
+      "ตัดเส้นไม่ขาด",
+      "ขาดลมร้อน",
+      "เดินเครื่องใหม่",
+      "เปลี่ยนสีโมโน",
+      "ไฟดับ",
+      "ก้อนแข็ง",
+      "อื่นๆ",
+    ],
   },
   blow: {
-    machines: ["F1", "F2", "F3", "F4", "F5", "F6", "F7", "เป่าถุง", "เทปน้ำพุ่ง"],
-    problems: ["ทะลุ", "ตกใบมีด", "ลูกโปร่งส่าย", "รอยกรีดไม่สวย", "รูเจาะไม่ทะลุ", "เจาะรูไม่ทะลุ", "เนื้อฟิล์มแข็งเป็นเม็ด", "สกรีนไม่สวย", "น้ำหนักไม่ถึง/เกิน", "จับจีบไม่สวย", "ไซร้ไม่ได้ขนาด", "ขี้ดายหลุด", "เดินเครื่องใหม่", "เปลี่ยนสี", "เปลี่ยนไซร้", "เศษเจาะ", "ขัดหน้าดาย", "ตั้งมีดใหม่", "อื่นๆ", "ไฟดับ"]
+    machines: [
+      "F1",
+      "F2",
+      "F3",
+      "F4",
+      "F5",
+      "F6",
+      "F7",
+      "เป่าถุง",
+      "เทปน้ำพุ่ง",
+    ],
+    problems: [
+      "ทะลุ",
+      "ตกใบมีด",
+      "ลูกโปร่งส่าย",
+      "รอยกรีดไม่สวย",
+      "รูเจาะไม่ทะลุ",
+      "เจาะรูไม่ทะลุ",
+      "เนื้อฟิล์มแข็งเป็นเม็ด",
+      "สกรีนไม่สวย",
+      "น้ำหนักไม่ถึง/เกิน",
+      "จับจีบไม่สวย",
+      "ไซร้ไม่ได้ขนาด",
+      "ขี้ดายหลุด",
+      "เดินเครื่องใหม่",
+      "เปลี่ยนสี",
+      "เปลี่ยนไซร้",
+      "เศษเจาะ",
+      "ขัดหน้าดาย",
+      "ตั้งมีดใหม่",
+      "อื่นๆ",
+      "ไฟดับ",
+    ],
   },
   drill: {
     machines: ["ตัดเจาะ1", "ตัดเจาะ2", "ตัดเจาะ3", "ตัดเจาะ4"],
-    problems: ["มีดตัดไม่ขาด", "ตัดเอียง", "ซีนไม่ติด", "ซีนขาด", "เจาะไม่ทะลุ", "รูเจาะเอียง", "ขนาดไม่ได้", "ถุงเอียง / ก้นถุงใหญ่", "เช็คดูซีน", "เปลี่ยนยาง / ลวด / ลวดซีนเคลื่อน", "เปลี่ยนซีน", "เปลี่ยนไซร้", "ซ่อมเครื่อง", "ไฟดับ", "อื่นๆ"]
+    problems: [
+      "มีดตัดไม่ขาด",
+      "ตัดเอียง",
+      "ซีนไม่ติด",
+      "ซีนขาด",
+      "เจาะไม่ทะลุ",
+      "รูเจาะเอียง",
+      "ขนาดไม่ได้",
+      "ถุงเอียง / ก้นถุงใหญ่",
+      "เช็คดูซีน",
+      "เปลี่ยนยาง / ลวด / ลวดซีนเคลื่อน",
+      "เปลี่ยนซีน",
+      "เปลี่ยนไซร้",
+      "ซ่อมเครื่อง",
+      "ไฟดับ",
+      "อื่นๆ",
+    ],
   },
   garbage: {
     machines: ["ตัดถุงขยะ-ถุงอเนก"],
-    problems: ["ซีนไม่ติด / ซีนขาด", "ถุงมีรอยขาด / ขูด", "ตัดไม่ขาด", "ถุงเอียง / ก้นถุงใหญ่", "ขนาดไม่ได้", "ต้นม้วน / ปลายม้วน", "เปลี่ยนไซร้", "ซ่อมเครื่อง", "ไฟดับ"]
+    problems: [
+      "ซีนไม่ติด / ซีนขาด",
+      "ถุงมีรอยขาด / ขูด",
+      "ตัดไม่ขาด",
+      "ถุงเอียง / ก้นถุงใหญ่",
+      "ขนาดไม่ได้",
+      "ต้นม้วน / ปลายม้วน",
+      "เปลี่ยนไซร้",
+      "ซ่อมเครื่อง",
+      "ไฟดับ",
+    ],
   },
   tape: {
     machines: ["ตัดเทปน้ำพุ่ง"],
-    problems: ["ความยาวไม่ถึง", "ม้วนล้นกระดาษ", "เข็มหัก", "รูไม่ทะลุ", "สกรีนหาย", "ต้นม้วน / ปลายม้วน", "ซ่อมเครื่อง", "ตั้งไซร้", "ตัดดูรู", "ไฟดับ", "รอยต่อม้วน", "เศษลองน้ำ / ตัดดูรู"]
+    problems: [
+      "ความยาวไม่ถึง",
+      "ม้วนล้นกระดาษ",
+      "เข็มหัก",
+      "รูไม่ทะลุ",
+      "สกรีนหาย",
+      "ต้นม้วน / ปลายม้วน",
+      "ซ่อมเครื่อง",
+      "ตั้งไซร้",
+      "ตัดดูรู",
+      "ไฟดับ",
+      "รอยต่อม้วน",
+      "เศษลองน้ำ / ตัดดูรู",
+    ],
   },
   sheet: {
     machines: ["ตัดผืน1"],
-    problems: ["ความยาวไม่ถึง", "เศษหัวม้วน / ปลายม้วน", "เครื่องเสีย", "ส่วนที่เสียจากแผนกสแลน", "เปลี่ยนเปอร์เซ็นต์การผลิต", "อื่นๆ"]
+    problems: [
+      "ความยาวไม่ถึง",
+      "เศษหัวม้วน / ปลายม้วน",
+      "เครื่องเสีย",
+      "ส่วนที่เสียจากแผนกสแลน",
+      "เปลี่ยนเปอร์เซ็นต์การผลิต",
+      "อื่นๆ",
+    ],
   },
   salan: {
-    machines: ["สแลน ทอ 1", "สแลน ทอ 2", "สแลน ทอ 3", "สแลน ทอ 4", "สแลน ทอ 5", "สแลน ทอ 6", "สแลน ทอ 7", "สแลน ทอ 8", "สแลน ทอ 9", "สแลน ทอ 10", "สแลน ทอ 11", "สแลน ทอ 12", "สแลน ทอ 13", "สแลน ทอ 14", "สแลน ทอ 15", "สแลน ทอ 16", "สแลน ทอ 17", "สแลน ทอ 18"],
-    problems: ["ฟิล์มขาดยาว", "โมโนขาด", "เปลี่ยนความกว้าง", "สีไม่ได้คุณภาพ", "น้ำหนักไม่ได้คุณภาพ", "ความกว้างไม่ถึง", "เศษฟิล์มปลายม้วน (ดำ, เขียว, เงิน, ฟ้า, ขาว)", "เศษฟิล์มเส้นข้าง (ดำ, เขียว, เงิน, ฟ้า, ขาว)", "โมโนปลายม้วน", "เศษฟิล์มกรีดหา (ดำ, เขียว, เงิน, ฟ้า, ขาว)", "เศษแสลนทอแล้ว", "ตัดทิ้ง", "อื่นๆ"]
-  }
+    machines: [
+      "สแลน ทอ 1",
+      "สแลน ทอ 2",
+      "สแลน ทอ 3",
+      "สแลน ทอ 4",
+      "สแลน ทอ 5",
+      "สแลน ทอ 6",
+      "สแลน ทอ 7",
+      "สแลน ทอ 8",
+      "สแลน ทอ 9",
+      "สแลน ทอ 10",
+      "สแลน ทอ 11",
+      "สแลน ทอ 12",
+      "สแลน ทอ 13",
+      "สแลน ทอ 14",
+      "สแลน ทอ 15",
+      "สแลน ทอ 16",
+      "สแลน ทอ 17",
+      "สแลน ทอ 18",
+    ],
+    problems: [
+      "ฟิล์มขาดยาว",
+      "โมโนขาด",
+      "เปลี่ยนความกว้าง",
+      "สีไม่ได้คุณภาพ",
+      "น้ำหนักไม่ได้คุณภาพ",
+      "ความกว้างไม่ถึง",
+      "เศษฟิล์มปลายม้วน (ดำ, เขียว, เงิน, ฟ้า, ขาว)",
+      "เศษฟิล์มเส้นข้าง (ดำ, เขียว, เงิน, ฟ้า, ขาว)",
+      "โมโนปลายม้วน",
+      "เศษฟิล์มกรีดหา (ดำ, เขียว, เงิน, ฟ้า, ขาว)",
+      "เศษแสลนทอแล้ว",
+      "ตัดทิ้ง",
+      "อื่นๆ",
+    ],
+  },
 };
 
 let currentDept = localStorage.getItem("activeDept") || "print";
@@ -74,16 +195,19 @@ function protectExecutivePage() {
   const user = localStorage.getItem("activeUser");
   const role = localStorage.getItem("activeRole");
 
-  if (!user || !ALLOWED_ROLES.includes(role)) {
-    alert("🔒 เฉพาะผู้บริหาร / หัวหน้า / Admin เท่านั้น");
-    window.location.href = LOGIN_PAGE;
+  const allowRoles = ["admin", "accounting", "supervisor", "management"];
+
+  if (!user || !allowRoles.includes(role)) {
+    alert("ไม่มีสิทธิ์เข้าใช้งานหน้านี้");
+    window.location.href = "/login2.html";
   }
 }
 
 function setActiveUserLabel() {
   const label = document.getElementById("lbl-active-user");
   if (label) {
-    label.textContent = localStorage.getItem("activeName") ||
+    label.textContent =
+      localStorage.getItem("activeName") ||
       localStorage.getItem("activeUser") ||
       "MAN_DIRECTOR";
   }
@@ -131,9 +255,18 @@ window.loadAndProcessDashboardData = loadAndProcessDashboardData;
 
 function updateMetricCards(records) {
   setText("cnt-total", records.length);
-  setText("cnt-pending", records.filter((r) => r.status === "pending" || !r.status).length);
-  setText("cnt-progress", records.filter((r) => r.status === "progress").length);
-  setText("cnt-resolved", records.filter((r) => r.status === "resolved").length);
+  setText(
+    "cnt-pending",
+    records.filter((r) => r.status === "pending" || !r.status).length,
+  );
+  setText(
+    "cnt-progress",
+    records.filter((r) => r.status === "progress").length,
+  );
+  setText(
+    "cnt-resolved",
+    records.filter((r) => r.status === "resolved").length,
+  );
 }
 
 function getDepartmentCounters(records) {
@@ -145,7 +278,7 @@ function getDepartmentCounters(records) {
     drill: 0,
     garbage: 0,
     mono: 0,
-    salan: 0
+    salan: 0,
   };
 
   records.forEach((item) => {
@@ -164,9 +297,10 @@ function renderReportTable(records) {
   const tbody = document.getElementById("dom-table-body");
   const filter = document.getElementById("sel-dept-filter")?.value || "all";
 
-  let displayRecords = filter === "all"
-    ? records
-    : records.filter((r) => normalizeDept(r.department) === filter);
+  let displayRecords =
+    filter === "all"
+      ? records
+      : records.filter((r) => normalizeDept(r.department) === filter);
 
   window.pvtExecutiveFilteredCache = displayRecords;
 
@@ -253,21 +387,50 @@ function renderDoughnutChart(counts) {
   globalDeptChart = new Chart(ctx, {
     type: "doughnut",
     data: {
-      labels: ["ม้วนพิมพ์", "แผ่นหล่อ", "เทปพัน", "เป่าถุง", "เจาะรู", "ถุงขยะ", "โมโน", "สแลน"],
-      datasets: [{
-        data: [counts.print, counts.sheet, counts.tape, counts.blow, counts.drill, counts.garbage, counts.mono, counts.salan],
-        backgroundColor: ["#dc2626", "#2563eb", "#16a34a", "#9333ea", "#ea580c", "#4b5563", "#0891b2", "#14532d"],
-        borderWidth: 1,
-        borderColor: "#ffffff"
-      }]
+      labels: [
+        "ม้วนพิมพ์",
+        "แผ่นหล่อ",
+        "เทปพัน",
+        "เป่าถุง",
+        "เจาะรู",
+        "ถุงขยะ",
+        "โมโน",
+        "สแลน",
+      ],
+      datasets: [
+        {
+          data: [
+            counts.print,
+            counts.sheet,
+            counts.tape,
+            counts.blow,
+            counts.drill,
+            counts.garbage,
+            counts.mono,
+            counts.salan,
+          ],
+          backgroundColor: [
+            "#dc2626",
+            "#2563eb",
+            "#16a34a",
+            "#9333ea",
+            "#ea580c",
+            "#4b5563",
+            "#0891b2",
+            "#14532d",
+          ],
+          borderWidth: 1,
+          borderColor: "#ffffff",
+        },
+      ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: "bottom" }
-      }
-    }
+        legend: { position: "bottom" },
+      },
+    },
   });
 }
 
@@ -278,7 +441,20 @@ function renderMonthlyMachineChart(records) {
   const ctx = canvas.getContext("2d");
   if (globalMonthlyChart) globalMonthlyChart.destroy();
 
-  const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  const months = [
+    "ม.ค.",
+    "ก.พ.",
+    "มี.ค.",
+    "เม.ย.",
+    "พ.ค.",
+    "มิ.ย.",
+    "ก.ค.",
+    "ส.ค.",
+    "ก.ย.",
+    "ต.ค.",
+    "พ.ย.",
+    "ธ.ค.",
+  ];
 
   const monthlyData = {
     print: new Array(12).fill(0),
@@ -286,11 +462,13 @@ function renderMonthlyMachineChart(records) {
     mono: new Array(12).fill(0),
     drill: new Array(12).fill(0),
     sheet: new Array(12).fill(0),
-    salan: new Array(12).fill(0)
+    salan: new Array(12).fill(0),
   };
 
   records.forEach((r) => {
-    const monthIndex = getMonthIndex(r.incident_datetime || r.datetime || r.created_at);
+    const monthIndex = getMonthIndex(
+      r.incident_datetime || r.datetime || r.created_at,
+    );
     const dept = normalizeDept(r.department);
 
     if (monthIndex < 0 || monthIndex > 11) return;
@@ -298,7 +476,8 @@ function renderMonthlyMachineChart(records) {
     if (dept === "print") monthlyData.print[monthIndex]++;
     else if (dept === "blow" || dept === "tape") monthlyData.blow[monthIndex]++;
     else if (dept === "mono") monthlyData.mono[monthIndex]++;
-    else if (dept === "drill" || dept === "garbage") monthlyData.drill[monthIndex]++;
+    else if (dept === "drill" || dept === "garbage")
+      monthlyData.drill[monthIndex]++;
     else if (dept === "sheet") monthlyData.sheet[monthIndex]++;
     else if (dept === "salan") monthlyData.salan[monthIndex]++;
   });
@@ -308,28 +487,44 @@ function renderMonthlyMachineChart(records) {
     data: {
       labels: months,
       datasets: [
-        { label: "ม้วนพิมพ์", data: monthlyData.print, backgroundColor: "#dc2626" },
-        { label: "เป่าถุง/เทป", data: monthlyData.blow, backgroundColor: "#9333ea" },
+        {
+          label: "ม้วนพิมพ์",
+          data: monthlyData.print,
+          backgroundColor: "#dc2626",
+        },
+        {
+          label: "เป่าถุง/เทป",
+          data: monthlyData.blow,
+          backgroundColor: "#9333ea",
+        },
         { label: "โมโน", data: monthlyData.mono, backgroundColor: "#0891b2" },
-        { label: "ตัดเจาะ/ถุงขยะ", data: monthlyData.drill, backgroundColor: "#ea580c" },
-        { label: "แผ่นหล่อ/ตัดผืน", data: monthlyData.sheet, backgroundColor: "#2563eb" },
-        { label: "สแลน", data: monthlyData.salan, backgroundColor: "#14532d" }
-      ]
+        {
+          label: "ตัดเจาะ/ถุงขยะ",
+          data: monthlyData.drill,
+          backgroundColor: "#ea580c",
+        },
+        {
+          label: "แผ่นหล่อ/ตัดผืน",
+          data: monthlyData.sheet,
+          backgroundColor: "#2563eb",
+        },
+        { label: "สแลน", data: monthlyData.salan, backgroundColor: "#14532d" },
+      ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
         x: { stacked: true },
-        y: { stacked: true, beginAtZero: true }
+        y: { stacked: true, beginAtZero: true },
       },
       plugins: {
         legend: {
           position: "top",
-          labels: { font: { family: "Sarabun", size: 14 } }
-        }
-      }
-    }
+          labels: { font: { family: "Sarabun", size: 14 } },
+        },
+      },
+    },
   });
 }
 
@@ -346,7 +541,7 @@ async function executeModifyCaseStatus(caseId, targetStatus) {
       .update({
         status: targetStatus,
         resolver: actingManager,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq("id", caseId);
 
@@ -368,7 +563,7 @@ async function executeModifyCaseResolution(caseId, updatedText) {
       .update({
         resolution: updatedText,
         resolver: actingManager,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq("id", caseId);
 
@@ -406,7 +601,8 @@ function generateExecutiveSummary(records) {
     }
 
     machineCounter[machine].total++;
-    machineCounter[machine].problems[problem] = (machineCounter[machine].problems[problem] || 0) + 1;
+    machineCounter[machine].problems[problem] =
+      (machineCounter[machine].problems[problem] || 0) + 1;
   });
 
   let topMachine = "";
@@ -429,7 +625,9 @@ function generateExecutiveSummary(records) {
     .slice(0, 3);
 
   const listItems = topProblems
-    .map(([problem, count]) => `<li>${escapeHTML(problem)} (${count} ครั้ง)</li>`)
+    .map(
+      ([problem, count]) => `<li>${escapeHTML(problem)} (${count} ครั้ง)</li>`,
+    )
     .join("");
 
   summaryBox.innerHTML = `
@@ -449,12 +647,18 @@ function generateExecutiveInsight(records) {
   }
 
   const total = records.length;
-  const pending = records.filter((r) => r.status === "pending" || !r.status).length;
+  const pending = records.filter(
+    (r) => r.status === "pending" || !r.status,
+  ).length;
   const progress = records.filter((r) => r.status === "progress").length;
   const resolved = records.filter((r) => r.status === "resolved").length;
 
   const topMachine = findTopValue(records, "machine_no", "ไม่ระบุ");
-  const topDept = findTopValue(records.map((r) => ({ department: normalizeDept(r.department) })), "department", "unknown");
+  const topDept = findTopValue(
+    records.map((r) => ({ department: normalizeDept(r.department) })),
+    "department",
+    "unknown",
+  );
   const topProblem = findTopValue(records, "problem_type", "ไม่ระบุ");
 
   box.innerHTML = `
@@ -494,37 +698,47 @@ function exportToDataExcelCSV() {
     }
 
     let csvRawString = "data:text/csv;charset=utf-8,\uFEFF";
-    csvRawString += "วันเวลาเกิดเหตุ,แผนก,หมายเลขเครื่องจักร,หัวข้อปัญหาขัดข้อง,รายละเอียดอาการ,ผู้แจ้งเรื่อง,สถานะปัจจุบัน,สั่งการแก้ไข,ผู้สั่งงาน\n";
+    csvRawString +=
+      "วันเวลาเกิดเหตุ,แผนก,หมายเลขเครื่องจักร,หัวข้อปัญหาขัดข้อง,รายละเอียดอาการ,ผู้แจ้งเรื่อง,สถานะปัจจุบัน,สั่งการแก้ไข,ผู้สั่งงาน\n";
 
     targetData.forEach((item) => {
       const formattedTime = item.incident_datetime
-        ? new Date(item.incident_datetime).toLocaleString("th-TH").replace(/,/g, "")
+        ? new Date(item.incident_datetime)
+            .toLocaleString("th-TH")
+            .replace(/,/g, "")
         : "";
 
-      const statusText = item.status === "progress"
-        ? "กำลังดำเนินการซ่อม"
-        : item.status === "resolved"
-          ? "แก้ไขสำเร็จปิดงาน"
-          : "รอดำเนินการ";
+      const statusText =
+        item.status === "progress"
+          ? "กำลังดำเนินการซ่อม"
+          : item.status === "resolved"
+            ? "แก้ไขสำเร็จปิดงาน"
+            : "รอดำเนินการ";
 
-      csvRawString += [
-        formattedTime,
-        (item.department || "").toUpperCase(),
-        item.machine_no || "-",
-        item.problem_type || "-",
-        item.detail || item.note || "-",
-        item.reported_by || "-",
-        statusText,
-        item.resolution || "-",
-        item.resolver || "-"
-      ].map(csvCell).join(",") + "\n";
+      csvRawString +=
+        [
+          formattedTime,
+          (item.department || "").toUpperCase(),
+          item.machine_no || "-",
+          item.problem_type || "-",
+          item.detail || item.note || "-",
+          item.reported_by || "-",
+          statusText,
+          item.resolution || "-",
+          item.resolver || "-",
+        ]
+          .map(csvCell)
+          .join(",") + "\n";
     });
 
     const encodedUri = encodeURI(csvRawString);
     const downloader = document.createElement("a");
 
     downloader.setAttribute("href", encodedUri);
-    downloader.setAttribute("download", "รายงานสถิติปัญหาการผลิต_PVT_EXECUTIVE.csv");
+    downloader.setAttribute(
+      "download",
+      "รายงานสถิติปัญหาการผลิต_PVT_EXECUTIVE.csv",
+    );
 
     document.body.appendChild(downloader);
     downloader.click();
@@ -566,7 +780,9 @@ function setText(id, value) {
 }
 
 function normalizeDept(dept) {
-  return String(dept || "").trim().toLowerCase();
+  return String(dept || "")
+    .trim()
+    .toLowerCase();
 }
 
 function getMonthIndex(dateValue) {

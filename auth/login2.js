@@ -72,15 +72,15 @@ async function handlePasswordLogin(event) {
   }
 
   const { data: profile, error: profileError } = await sb
-    .from("users")
-    .select("id, username, full_name, department, role, status")
+    .from("profiles")
+    .select("id, email, username, display_name, department_code, role, status")
     .eq("id", authData.user.id)
     .single();
 
   if (profileError || !profile) {
-    alert("เข้าสู่ระบบได้ แต่ไม่พบข้อมูลผู้ใช้ในตาราง users");
-    return;
-  }
+  alert("เข้าสู่ระบบได้ แต่ไม่พบข้อมูลผู้ใช้ในตาราง profiles");
+  return;
+}
 
   if (profile.status !== "active") {
     alert("บัญชีนี้ถูกปิดใช้งาน");
@@ -88,14 +88,14 @@ async function handlePasswordLogin(event) {
     return;
   }
 
-  saveSession({
-    loginType: "password",
-    userId: profile.id,
-    username: profile.username,
-    fullName: profile.full_name,
-    department: profile.department,
-    role: profile.role
-  });
+saveSession({
+  loginType: "password",
+  userId: profile.id,
+  username: profile.username,
+  fullName: profile.display_name,
+  department: profile.department_code,
+  role: profile.role
+});
 
   if (rememberMe) {
     localStorage.setItem("rememberedUser", username);
@@ -120,7 +120,7 @@ async function checkQrMode() {
 
   const { data: qrData, error: qrError } = await sb
     .from("department_qr_tokens")
-    .select("department, department_name, token, status")
+    .select("id, email, username, display_name, department_code, role, status")
     .eq("department", dept)
     .eq("token", token)
     .eq("status", "active")
@@ -149,8 +149,8 @@ async function loadStaffByDepartment(department) {
   const select = document.getElementById("qrStaffSelect");
 
   const { data: staffList, error } = await sb
-    .from("users")
-    .select("id, username, full_name, department, role, status")
+    .from("profiles")
+    .select("id, email, username, display_name, department_code, role, status")
     .eq("department", department)
     .eq("status", "active")
     .order("full_name", { ascending: true });
@@ -216,10 +216,8 @@ function saveSession(data) {
   localStorage.setItem("activeUser", data.username || "");
   localStorage.setItem("activeName", data.fullName || data.username || "");
   localStorage.setItem("activeDept", data.department || "");
-  localStorage.setItem("activeDeptName", data.departmentName || data.department || "");
   localStorage.setItem("activeRole", data.role || "staff");
 }
-
 // ======================================================
 // REDIRECT BY ROLE
 // ======================================================
@@ -230,7 +228,7 @@ function redirectByRole(role) {
     role === "supervisor" ||
     role === "management"
   ) {
-    window.location.href = "/index.html";
+    window.location.href = "/index2.html";
     return;
   }
 

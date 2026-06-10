@@ -1,4 +1,4 @@
-supabaseClient.js// ===============================
+//supabaseClient.js// ===============================
 // SUPABASE CLIENT SETUP / supabaseClient.js
 // รองรับ Production และ Development Environment
 // ===============================
@@ -7,13 +7,13 @@ supabaseClient.js// ===============================
 const SUPABASE_CONFIG = {
   // 🏪 Production - ใช้งานจริง
   production: {
-    url: "https://xxxxxxxx.supabase.co",
-    anonKey: "xxxxx"
+    url: "https://yviibwmojkodhkxgmkgb.supabase.co",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2aWlid21vamtvZGhreGdta2diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzODE1OTYsImV4cCI6MjA5NTk1NzU5Nn0.5hFnEwWd84pnYdYCZ178sbqJ2b7tmCqjrirZXNQOdOM"
   },
   // 🧪 Development - ทดสอบ (แอคเคาท์ส่วนตัว)
   development: {
-    url: "https://xxxxxxxx.supabase.co",
-    anonKey: "xxxxxx"
+    url: "https://wkbahssqznlpkkghwffg.supabase.co",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrYmFoc3Nxem5scGtrZ2h3ZmZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwOTg2MDYsImV4cCI6MjA5NjY3NDYwNn0.c6XJi91bPcKNikUTw28KqJ4gi7yqPTdT4pUKKAhSsEM"
   }
 };
 
