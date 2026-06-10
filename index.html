@@ -8,7 +8,7 @@
     
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="css/dashboard-style.css">
+    <link rel="stylesheet" href="/index.css">
 
     
     <script>
@@ -21,9 +21,9 @@
                 const role = localStorage.getItem('activeRole');
                 if (!user || (role !== 'management' && role !== 'supervisor' && role !== 'MAN' && role !== 'man')) {
                     alert("🔒 สิทธิ์การเข้าถึงล้มเหลว: เฉพาะผู้บริหารระดับสูง (MAN) และหัวหน้างานเท่านั้น");
-                    window.location.href = 'login.html';
+                    window.location.href = 'login2.html';
                 }
-            } catch (e) { window.location.href = 'login.html'; }
+            } catch (e) { window.location.href = 'login2.html'; }
         })();
 
         function switchDepartment(deptName) {
@@ -630,7 +630,7 @@ document.getElementById('cnt-progress').innerText = records.filter(r => r.status
         function handleDashboardLogout() {
             localStorage.clear();
             alert("🔒 ออกจากระบบเรียบร้อยแล้ว");
-            window.location.href = 'login.html';
+            window.location.href = 'login2.html';
         }
     </script>
 </body>
