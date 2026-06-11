@@ -381,3 +381,29 @@ input {
     grid-template-columns: 1fr;
   }
 }
+
+/* 📱 บังคับให้โครงสร้างแผงการ์ดจัดระเบียบตัวเองตามขนาดหน้าจออัตโนมัติ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* หน้าจอเล็กจะเหลือ 1 คอลัมน์ หน้าจอโน้ตบุ๊กจะขยายเป็น 4 คอลัมน์แนวตั้งเอง */
+  gap: 16px;
+  width: 100%;
+}
+
+/* 📲 แก้ปัญหาตารางทะลุจอในมือถือและแท็บเล็ต */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto; /* มือถือสามารถเอานิ้วปัดซ้าย-ขวาเพื่อดูตารางเต็มๆ ได้ โดยที่โครงสร้างเว็บไม่เบี้ยว */
+  overflow-y: auto; /* หรือ scroll *//* แถมให้: ถ้าอยากควบคุมพฤติกรรมการเลื่อนในเบราว์เซอร์ยุคใหม่ */
+  scroll-behavior: smooth; /* เลื่อนแบบนุ่มนวลเวลาคลิก anchor ลิงก์ */
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+/* 💻 จำกัดขนาดคอนเทนเนอร์หลักไม่ให้บีบจนน่าเกลียด */
+.dashboard-container {
+  width: calc(100% - 24px);
+  max-width: 1400px;
+  margin: 12px auto;
+  padding: 0 8px;
+}

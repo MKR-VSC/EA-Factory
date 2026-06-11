@@ -8,7 +8,7 @@
   <link rel="icon" href="data:;base64,=" />
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" />
-  <link rel="stylesheet" href="/index.css" />
+  <link rel="stylesheet" href="/css/index.css" />
 </head>
 
 <body>
@@ -118,7 +118,7 @@
             เลือกสลับดูภาพรวมสะสมทั้งหมด หรือเจาะลึกรายแผนกได้ทันที
           </p>
 
-          <select id="sel-dept-filter" class="form-select" onchange="loadAndProcessDashboardData()">
+          <select id="sel-dept-filter" class="form-select" aria-label="เลือกแผนกสำหรับกรองรายงาน" onchange="loadAndProcessDashboardData()">
             <option value="all">🔍 ตรวจสอบภาพรวมทุกแผนกการผลิตในโรงงาน</option>
             <option value="print">📠 ม้วนพิมพ์ (PRINT)</option>
             <option value="sheet">💿 แผ่นหล่อ (SHEET)</option>
@@ -171,7 +171,10 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script src="/js/core/supabaseClient.js"></script>
+  
   <script src="/js/index.js"></script>
 </body>
 </html>

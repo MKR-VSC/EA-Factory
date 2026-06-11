@@ -2,12 +2,18 @@
 // index.js
 // แยกจาก HTML แล้ว และใช้ window.supabaseClient
 // =========================================================
+// =================================================================
+// 🛠️ ชุดโค้ดพิเศษสำหรับแก้ปัญหาตารางผิด (แปะไว้บนสุดของไฟล์ index.js)
+// =================================================================
+
+
+// =================================================================
 
 const sb = window.supabaseClient;
 
 const ALLOWED_ROLES = ["management", "supervisor", "admin", "MAN", "man"];
 const LOGIN_PAGE = "/login2.html";
-const FORM_PAGE = "/html/form-department.html";
+const FORM_PAGE = "html/form-department.html";
 
 const DEPARTMENT_LABELS = {
   print: "ม้วนพิมพ์",
@@ -190,6 +196,7 @@ window.addEventListener("DOMContentLoaded", () => {
 // =========================================================
 // SECURITY
 // =========================================================
+
 
 function protectExecutivePage() {
   const user = localStorage.getItem("activeUser");
@@ -839,4 +846,15 @@ function escapeHTML(value) {
 
 function escapeAttr(value) {
   return escapeHTML(value);
+}
+
+// บังคับแก้ชื่อตารางที่ผิดพลาดให้เป็นตาราง daily_waste_reports ที่ถูกต้อง
+if (typeof supabase !== 'undefined' && supabase.from) {
+  const originalFrom = supabase.from;
+  supabase.from = function(tableName) {
+    if (tableName === 'production_reports') {
+      return originalFrom.call(this, 'daily_waste_reports');
+    }
+    return originalFrom.call(this, tableName);
+  };
 }

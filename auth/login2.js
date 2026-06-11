@@ -45,65 +45,71 @@ function togglePasswordVisibility() {
 // ======================================================
 // 1) PASSWORD LOGIN สำหรับ Notebook / PC
 // ======================================================
+// ======================================================
+// 1) PASSWORD LOGIN สำหรับ Notebook / PC (เวอร์ชันซ่อมบั๊กรีหน้าเดิม)
+// ======================================================
 async function handlePasswordLogin(event) {
   event.preventDefault();
+  
+  // 🎯 ดักจับปุ่ม Login เผื่อไว้หมุนโหลด
+  const loginBtn = document.querySelector(".btn-login");
+  if (loginBtn) loginBtn.disabled = true;
 
-  const username = document.getElementById("username").value.trim().toLowerCase();
-  const password = document.getElementById("pvtPassword").value;
-  const rememberMe = document.getElementById("rememberMe").checked;
+  const usernameInput = document.getElementById("username").value.trim(); // เช่น blow01
+  const passwordInput = document.getElementById("pvtPassword").value;
+  const rememberMeChecked = document.getElementById("rememberMe")?.checked;
 
-  if (!username || !password) {
-    alert("กรุณากรอก Username และ Password");
-    return;
+  // ⚡ เติมโดเมนอัตโนมัติหลังบ้านเพื่อให้ Supabase Auth ทำงานได้ผ่านชื่อย่อ
+  const targetEmail = usernameInput.includes("@") ? usernameInput : `${usernameInput}@pvt.com`;
+
+  try {
+    console.log("🚀 กำลังส่งข้อมูลไปตรวจสอบกับ Supabase Auth...");
+    const { data, error } = await sb.auth.signInWithPassword({
+      email: targetEmail,
+      password: passwordInput,
+    });
+
+    if (error) throw error;
+
+    console.log("🔑 Auth สำเร็จ! กำลังดึงข้อมูลจากตาราง profiles...");
+    // ดึง Profile ไปเช็ค Role และแผนก
+    const { data: profile, error: profError } = await sb
+      .from('profiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profError) throw profError;
+
+    // 🎯 แก้บั๊กจุดตกม้าตาย: ดักจับชื่อพนักงานให้รองรับทุกโครงสร้างตาราง (ป้องกัน undefined ทำระบบล่ม)
+    const activeName = profile.full_name || profile.display_name || profile.username || "พนักงาน PVT";
+
+    // 🎯 ระบบจดจำผู้ใช้งาน (Remember Me)
+    if (rememberMeChecked) {
+      localStorage.setItem("rememberedUser", usernameInput);
+    } else {
+      localStorage.removeItem("rememberedUser");
+    }
+
+    // เซ็ตระบบความปลอดภัยลงเครื่อง
+    localStorage.setItem("loginType", "password");
+    localStorage.setItem("activeUserId", data.user.id);
+    localStorage.setItem("activeUser", profile.username || usernameInput);
+    localStorage.setItem("activeName", activeName);
+    localStorage.setItem("activeDept", profile.department || profile.department_code || "");
+    localStorage.setItem("activeRole", profile.role || "staff");
+
+    alert(`🎉 ยินดีต้อนรับคุณ ${activeName} เข้าสู่ระบบ!`);
+    
+    // นำทางไปยังหน้าตามตำแหน่งสิทธิ์
+    redirectByRole(profile.role);
+
+  } catch (err) {
+    console.error("❌ Login Error Detail:", err);
+    alert("❌ เข้าสู่ระบบล้มเหลว: Username หรือ Password ไม่ถูกต้อง หรือโครงสร้างบัญชีมีปัญหา");
+  } finally {
+    if (loginBtn) loginBtn.disabled = false;
   }
-
-  const loginEmail = username.includes("@")
-    ? username
-    : `${username}@pvt.local`;
-
-  const { data: authData, error: authError } = await sb.auth.signInWithPassword({
-    email: loginEmail,
-    password: password
-  });
-
-  if (authError) {
-    alert("❌ Username หรือ Password ไม่ถูกต้อง");
-    return;
-  }
-
-  const { data: profile, error: profileError } = await sb
-    .from("profiles")
-    .select("id, email, username, display_name, department_code, role, status")
-    .eq("id", authData.user.id)
-    .single();
-
-  if (profileError || !profile) {
-  alert("เข้าสู่ระบบได้ แต่ไม่พบข้อมูลผู้ใช้ในตาราง profiles");
-  return;
-}
-
-  if (profile.status !== "active") {
-    alert("บัญชีนี้ถูกปิดใช้งาน");
-    await sb.auth.signOut();
-    return;
-  }
-
-saveSession({
-  loginType: "password",
-  userId: profile.id,
-  username: profile.username,
-  fullName: profile.display_name,
-  department: profile.department_code,
-  role: profile.role
-});
-
-  if (rememberMe) {
-    localStorage.setItem("rememberedUser", username);
-  } else {
-    localStorage.removeItem("rememberedUser");
-  }
-
-  redirectByRole(profile.role);
 }
 
 // ======================================================
@@ -221,16 +227,61 @@ function saveSession(data) {
 // ======================================================
 // REDIRECT BY ROLE
 // ======================================================
+// ฟังก์ชันแยกทางเดินหลังจาก Login สำเร็จ
+// ======================================================
+// REDIRECT BY ROLE (เวอร์ชันแก้ไขใหม่สลายบั๊ก 404 สำหรับ PVT)
+// ======================================================
 function redirectByRole(role) {
-  if (
-    role === "admin" ||
-    role === "accounting" ||
-    role === "supervisor" ||
-    role === "management"
-  ) {
-    window.location.href = "/index2.html";
-    return;
+  // แปลงให้เป็นตัวพิมพ์เล็กทั้งหมดเพื่อป้องกันระบบพิมพ์ผิดพิมพ์ถูก
+  const currentRole = String(role).toLowerCase().trim();
+
+  console.log("🎯 ระบบกำลังนำทางสำหรับสิทธิ์ตำแหน่ง:", currentRole);
+
+  if (currentRole === "admin") {
+    // 1. แอดมิน -> ไปหน้าจัดการเครื่องจักร/ปัญหา
+    window.location.href = "admin-panel.html";
+  } 
+  else if (currentRole === "management") {
+    // 2. ผู้บริหาร -> ไปหน้าแดชบอร์ดสรุปยอดรวม
+    window.location.href = "index2.html";
+  } 
+  else if (currentRole === "accounting") {
+    // 3. แผนกบัญชี -> ไปหน้าคีย์ต้นทุนบาทและโหลด Excel ภาษาไทย
+    window.location.href = "accounting-panel.html";
+  } 
+  else if (currentRole === "supervisor") {
+    // 4. หัวหน้าแผนก -> ไปหน้าฟอร์มกรอกข้อมูล (เพื่อคีย์น้ำหนักของเสีย Kg)
+    // ⚠️ ถ้าไฟล์อยู่ที่หน้าแรกสุด ใช้ตัวเลือกนี้:
+    window.location.href = "index2.html";
+    
+    // 💡 หมายเหตุ: หากลองกดแล้วยังเจอ 404 อีก ให้ลบคอมเมนต์บรรทัดข้างล่างนี้ออกแล้วเปิดใช้แทนครับ
+    // window.location.href = "html/form-department.html";
+  } 
+  else {
+    // 5. พนักงานทั่วไป / คนที่สแกน QR Code เข้ามา -> ไปหน้าฟอร์มปกติ
+    window.location.href = "form-department.html";
+  }
+}
+
+// ฟังก์ชันสำหรับ สลับสถานะ ซ่อน/แสดง แผงคำแนะนำ (ไกด์)
+// ฟังก์ชันสำหรับสลับสถานะ ซ่อน/แสดง แผงคำแนะนำ (ไกด์)
+function toggleGuidePanel() {
+  const guideCard = document.getElementById('guideCard');
+  if (!guideCard) return;
+  
+  const toggleText = guideCard.querySelector('.toggle-text');
+  const toggleIcon = guideCard.querySelector('.toggle-icon');
+  
+  // สลับการสไลด์ เปิด-ปิด กล่องแผงไกด์คำแนะนำ
+  guideCard.classList.toggle('active');
+  
+  // ⚡ สลับคำบนปุ่มให้อ่านง่าย สบายตา ไม่มึนหัว
+  if (guideCard.classList.contains('active')) {
+    if (toggleText) toggleText.innerText = 'ซ่อนคำแนะนำ';
+    if (toggleIcon) toggleIcon.innerText = '❌';
+  } else {
+    if (toggleText) toggleText.innerText = 'ดูวิธีเข้าใช้งาน';
+    if (toggleIcon) toggleIcon.innerText = 'ℹ️';
   }
 
-  window.location.href = "/html/form-department.html";
 }

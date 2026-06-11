@@ -222,9 +222,10 @@ body {
 
 .form-group label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 18px;
     color: var(--text-label);
     font-weight: 600;
+    font-weight: bold;
 }
 
 .required {

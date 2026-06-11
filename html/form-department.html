@@ -33,10 +33,14 @@
             border-radius: 8px !important;
             cursor: pointer;
         }
+
+        #nav-dashboard-link {
+            display: none;
+        }
     </style>
     
 </head>
-<body class="dept-default" id="dept-body">
+< class="dept-default" id="dept-body">
 
     <div class="app-layout">
         <aside class="sidebar">
@@ -59,11 +63,11 @@
                 <div class="menu-group">
                     <span class="menu-label">เมนูระบบ</span>
                     <a href="#" class="active">📝 ฟอร์มบันทึกปัญหา</a>
-                    <a href="index.html" id="nav-dashboard-link" style="display: none;">📊 แดชบอร์ดผู้บริหาร</a>
+                    <a href="index.html" id="nav-dashboard-link">📊 แดชบอร์ดผู้บริหาร</a>
                 </div>
 
                 <div class="sidebar-footer">
-                   <button type="button" class="btn-logout" onclick="handleLogout()">Logout / ออกจากระบบ</button>
+                   <button type="button" id="btn-logout">🚪 ออกจากระบบ</button>
                 </div>
             </nav>
         </aside>
@@ -83,308 +87,88 @@
             <div class="form-container-card">
                 <form id="pvt-production-form" onsubmit="handleFormSubmit(event)">
                     
-                    <div class="form-group">
-                        <label for="incident-datetime">📅 วัน-เวลา ที่เกิดเหตุปัญหาการผลิต <span class="required">*</span></label>
-                        <input type="datetime-local" id="incident-datetime" required>
-                        <small class="helper-text">กรุณาระบุวันและเวลาจริงที่พบปัญหาในกะการทำงานของท่าน</small>
-                    </div>
+                   <!-- 📅 วัน-เวลา -->
+<div class="form-group">
+    <label for="incident-datetime">📅 วัน-เวลา ที่เกิดเหตุปัญหาการผลิต <span class="required">*</span></label>
+    <input type="datetime-local" id="incident-datetime" required>
+    <small class="helper-text">กรุณาระบุวันและเวลาจริงที่พบปัญหาในกะการทำงานของท่าน</small>
+</div>
 
-                    <div class="form-group">
-                        <label for="work-shift">⏰ กะการทำงาน (Shift) <span class="required">*</span></label>
-                        <select id="work-shift" required>
-                            <option value="">-- โปรดเลือกกะการทำงาน --</option>
-                            <option value="กะกลางวัน">☀️ กะกลางวัน (08:00 - 17:00 น.)</option>
-                            <option value="กะกลางคืน">🌙 กะกลางคืน (17:00 - 20:00 น.)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                            <label for="machine-no">🔢 หมายเลขเครื่องจักร / เบอร์เครื่อง <span class="required">*</span></label>
-                                <select id="machine-no">
-                                    <option value="">-- เลือกแผนกก่อน --</option>
-                                </select>
-                    </div>
+<!-- ⏰ กะการทำงาน (ปรับปรุงเวลารองรับ OT ให้ครอบคลุม 24 ชม.) -->
+<div class="form-group">
+    <label for="work-shift">⏰ กะการทำงาน (Shift) <span class="required">*</span></label>
+    <select id="work-shift" required>
+        <option value="">-- โปรดเลือกกะการทำงาน --</option>
+        <option value="กะ A (กลางวัน)">☀️ กะ A (กลางวัน: 08:00 - 17:00 น.)</option>
+        <option value="กะ B (กลางคืน)">🌙 กะ B (กลางคืน/OT: 18:00 - 20:00 น.)</option>
+    </select>
+</div>
 
-                    <div class="form-group">
-                        <label>⚠️ ปัญหาเครื่องจักร</label>
-                            <select id="problem-type">
-                                <option value="">-- เลือกแผนกก่อน --</option>
-                            </select>
-                    </div>
+<!-- 🔢 หมายเลขเครื่องจักร -->
+<div class="form-group">
+    <label for="machine-no">🔢 หมายเลขเครื่องจักร / เบอร์เครื่อง <span class="required">*</span></label>
+    <select id="machine-no" required>
+        <option value="">-- กำลังโหลดรายการเครื่อง --</option>
+    </select>
+</div>
 
-                    <div class="form-group">
-                        <label for="problem-description">📝 รายละเอียดเหตุการณ์ / อาการที่เกิดขึ้น <span class="required">*</span></label>
-                        <textarea id="problem-description" rows="4" placeholder="กรุณาพิมพ์อธิบายอาการขัดข้อง เช่น มอเตอร์ความร้อนสูงเกิน, ใบมีดเจาะไม่ทะลุ, ถุงซีลไม่ติด..." required></textarea>
-                    </div>
+<!-- ⚠️ ปัญหาเครื่องจักร -->
+<div class="form-group">
+    <label for="problem-type">⚠️ ปัญหาที่พบ/อาการเสีย <span class="required">*</span></label>
+    <select id="problem-type" required>
+        <option value="">-- กำลังโหลดรายการปัญหา --</option>
+    </select>
+</div>
 
-                    <div class="form-actions">
-                        <button type="button" class="btn-clear" onclick="resetFormWithConfirm()">🧹 ล้างข้อมูลใหม่</button>
-                        <button type="submit" class="btn-submit">💾 บันทึกส่งข้อมูลเข้าแดชบอร์ด</button>
-                    </div>
+<!-- 🔒 โซนพิเศษเพิ่มใหม่: สำหรับหัวหน้างาน / บัญชี / บริหาร เท่านั้น (พนักงานทั่วไปจะมองไม่เห็น) -->
+<div id="manager-only-section" style="display: none;">
+    <div class="form-group">
+        <label for="waste-weight">⚖️ น้ำหนักของเสีย (กิโลกรัม) <span class="required">*สำหรับหัวหน้า/บัญชี</span></label>
+        <input type="number" id="waste-weight" step="0.01" placeholder="0.00" class="form-input">
+        <small class="helper-text">กรอกน้ำหนักเนื้อฟิล์มหรือเศษเสียชั่งจริง (กก.) เพื่อคำนวณต้นทุน</small>
+    </div>
+</div>
+
+<!-- 📝 รายละเอียดเหตุการณ์ -->
+<div class="form-group">
+    <label for="problem-description">📝 รายละเอียดเหตุการณ์ / อาการที่เกิดขึ้น / หมายเหตุวิศวกร <span class="required">*</span></label>
+    <textarea id="problem-description" rows="4" placeholder="กรุณาพิมพ์อธิบายอาการขัดข้อง เช่น มอเตอร์ความร้อนสูงเกิน, ใบมีดเจาะไม่ทะลุ, ถุงซีลไม่ติด..." required></textarea>
+</div>
+
+<!--  Form Actions -->
+<div class="form-actions">
+    <button type="button" class="btn-clear" onclick="resetFormWithConfirm()">🧹 ล้างข้อมูลใหม่</button>
+    <button type="submit" class="btn-submit">💾 บันทึกส่งข้อมูลเข้าแดชบอร์ด</button>
+</div>
 
                 </form>
             </div>
         </main>
     </div>
 
+<!-- Attach logout handler: prefer handleLogout() from form-department.js, otherwise use a safe fallback -->
 <script>
-    const SUPABASE_URL = "https://yviibwmojkodhkxgmkgb.supabase.co";
-const SUPABASE_KEY = "sb_publishable_3seUH8g6QzA6y7fuYDeoxw_HVV4ZmeL";
+    (function(){
+        var btn = document.getElementById('btn-logout');
+        if(!btn) return;
+        btn.addEventListener('click', function(){
+            if(typeof handleLogout === 'function'){
+                try{ handleLogout(); }catch(e){ console.error(e); fallbackLogout(); }
+            } else {
+                fallbackLogout();
+            }
+        });
 
-const supabase = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-);
-                                    // ===============================
-                    // 👤 USER + DEPT
-                    // ===============================
-                    let activeUser = localStorage.getItem('activeUser') || 'Unknown';
-                    let currentDept = localStorage.getItem('activeDept') || 'print';
-                    let activeRole = localStorage.getItem('activeRole') || 'staff';
+        function fallbackLogout(){
+            try{ sessionStorage.clear(); localStorage.removeItem('authToken'); }catch(e){}
+            window.location.href = '/login.html';
+        }
+    })();
+</script>
+        <script src="js/core/supabaseClient.js"></script> 
 
-                    // ===============================
-                    // 🏭 MACHINE LIST (อัปเดตตรงตามแผนก)
-                    // ===============================
+        <script src="js/form-department.js"></script>
 
-                    // ===============================
-                    // ⚠️ PROBLEM TYPES (FIXED)
-                    // ===============================
-                  // ===============================
-                    // 🏭 MACHINE LIST (อัปเดตตรงตามแผนก)
-                    // ===============================
-                    const MACHINE_LIST = {
-                        print: ["เครื่องพิมพ์1", "เครื่องพิมพ์2"],
-                        sheet: ["ตัดผืน1"],
-                        tape: ["ตัดเทปน้ำพุ่ง"],
-                        blow: ["F1", "F2", "F3", "F4", "F5", "F6", "F7", "เป่าถุง", "เทปน้ำพุ่ง"],
-                        drill: ["ตัดเจาะ1", "ตัดเจาะ2", "ตัดเจาะ3", "ตัดเจาะ4"],
-                        garbage: ["ตัดถุงขยะ-ถุงอเนก"],
-                        mono: ["Mono1", "Mono2", "Mono3"],
-                        salan: ["สแลน ทอ 1", "สแลน ทอ 2", "สแลน ทอ 3", "สแลน ทอ 4", "สแลน ทอ 5", "สแลน ทอ 6", "สแลน ทอ 7", "สแลน ทอ 8", "สแลน ทอ 9", "สแลน ทอ 10", "สแลน ทอ 11", "สแลน ทอ 12", "สแลน ทอ 13", "สแลน ทอ 14", "สแลน ทอ 15", "สแลน ทอ 16", "สแลน ทอ 17", "สแลน ทอ 18"]
-                    };
-
-                    // ===============================
-                    // ⚠️ PROBLEM TYPES (แปลงข้อมูลตามที่ส่งมาล่าสุด)
-                    // ===============================
-                    const PROBLEM_TYPES = {
-                        // ม้วนพิมพ์
-                        print: [
-                            "สกรีนไม่สวย",
-                            "สีเพี้ยน",
-                            "พิมพ์เลอะ",
-                            "อื่นๆ"
-                        ],
-                        
-                        // F1-7 / เป่า / เทป
-                        blow: [
-                            "ทะลุ",
-                            "ตกใบมีด",
-                            "ลูกโปร่งส่าย",
-                            "รอยกรีดไม่สวย",
-                            "รูเจาะไม่ทะลุ",
-                            "เจาะรูไม่ทะลุ",
-                            "เนื้อฟิล์มแข็งเป็นเม็ด",
-                            "สกรีนไม่สวย",
-                            "น้ำหนักไม่ถึง/เกิน",
-                            "จับจีบไม่สวย",
-                            "ไซร้ไม่ได้ขนาด",
-                            "ขี้ดายหลุด",
-                            "เดินเครื่องใหม่",
-                            "เปลี่ยนสี",
-                            "เปลี่ยนไซร้",
-                            "เศษเจาะ",
-                            "ขัดหน้าดาย",
-                            "ตั้งมีดใหม่",
-                            "อื่นๆ",
-                            "ไฟดับ"
-                        ],
-
-                        // ตัดเจาะ 1-4
-                        drill: [
-                            "มีดตัดไม่ขาด",
-                            "ตัดเอียง",
-                            "ซีนไม่ติด",
-                            "ซีนขาด",
-                            "เจาะไม่ทะลุ",
-                            "รูเจาะเอียง",
-                            "ขนาดไม่ได้",
-                            "ถุงเอียง / ก้นถุงใหญ่",
-                            "เช็คดูซีน",
-                            "เปลี่ยนยาง / ลวด / ลวดซีนเคลื่อน",
-                            "เปลี่ยนซีน",
-                            "เปลี่ยนไซร้",
-                            "ซ่อมเครื่อง",
-                            "ไฟดับ",
-                            "อื่นๆ"
-                        ],
-
-                        // ตัดถุงขยะ / ถุงอเนก
-                        garbage: [
-                            "ซีนไม่ติด / ซีนขาด",
-                            "ถุงมีรอยขาด / ขูด",
-                            "ตัดไม่ขาด",
-                            "ถุงเอียง / ก้นถุงใหญ่",
-                            "ขนาดไม่ได้",
-                            "ต้นม้วน / ปลายม้วน",
-                            "เปลี่ยนไซร้",
-                            "ซ่อมเครื่อง",
-                            "ไฟดับ"
-                        ],
-
-                        // ตัดเทปน้ำพุ่ง
-                        tape: [
-                            "ความยาวไม่ถึง",
-                            "ม้วนล้นกระดาษ",
-                            "เข็มหัก",
-                            "รูไม่ทะลุ",
-                            "สกรีนหาย",
-                            "ต้นม้วน / ปลายม้วน",
-                            "ซ่อมเครื่อง",
-                            "ตั้งไซร้",
-                            "ตัดดูรู",
-                            "ไฟดับ",
-                            "รอยต่อม้วน",
-                            "เศษลองน้ำ / ตัดดูรู"
-                        ],
-
-                        // ตัดผืน
-                        sheet: [
-                            "ความยาวไม่ถึง",
-                            "เศษหัวม้วน / ปลายม้วน",
-                            "เครื่องเสีย",
-                            "ส่วนที่เสียจากแผนกสแลน",
-                            "เปลี่ยนเปอร์เซ็นต์การผลิต",
-                            "อื่นๆ"
-                        ],
-
-                        // สแลน ทอ 1 - 18
-                        salan: [
-                            "ฟิล์มขาดยาว",
-                            "โมโนขาด",
-                            "เปลี่ยนความกว้าง",
-                            "สีไม่ได้คุณภาพ",
-                            "น้ำหนักไม่ได้คุณภาพ",
-                            "ความกว้างไม่ถึง",
-                            "เศษฟิล์มปลายม้วน (ดำ, เขียว, เงิน, ฟ้า, ขาว)",
-                            "เศษฟิล์มเส้นข้าง (ดำ, เขียว, เงิน, ฟ้า, ขาว)",
-                            "โมโนปลายม้วน",
-                            "เศษฟิล์มกรีดหา (ดำ, เขียว, เงิน, ฟ้า, ขาว)",
-                            "เศษแสลนทอแล้ว",
-                            "ตัดทิ้ง",
-                            "อื่นๆ"
-                        ],
-
-                        // โมโน
-                        mono: [
-                            "ขาดหน้าดาย", 
-                            "ขาดอ่างน้ำร้อน", 
-                            "ขาดพันลูกกลิ้ง", 
-                            "ตัดเส้นไม่ขาด", 
-                            "ขาดลมร้อน", 
-                            "เดินเครื่องใหม่", 
-                            "เปลี่ยนสีโมโน", 
-                            "ไฟดับ", 
-                            "ก้อนแข็ง", 
-                            "อื่นๆ"
-                        ]
-                    };
-                    // ===============================
-                    // 🚀 INIT (ทำงานตอนเปิดหน้า)
-                    // ===============================
-                    window.addEventListener('DOMContentLoaded', () => {
-
-                        // login check
-                        if (!activeUser) {
-                            alert("🔒 กรุณาเข้าสู่ระบบ");
-                            window.location.href = "login.html";
-                            return;
-                        }
-
-                        // set UI
-                        document.getElementById('display-username').innerText = activeUser;
-
-                        document.getElementById('display-role').innerText =
-                            activeRole === 'management' ? 'ผู้บริหาร' :
-                            activeRole === 'supervisor' ? 'หัวหน้างาน' :
-                            'พนักงาน';
-
-                        document.getElementById('dept-body').className = `dept-${currentDept}`;
-                        document.getElementById('dept-badge-name').innerText = `DEPT: ${currentDept.toUpperCase()}`;
-
-                        // ===============================
-                        // 🏭 MACHINE DROPDOWN
-                        // ===============================
-                        const machineSelect = document.getElementById('machine-no');
-                        machineSelect.innerHTML = '<option value="">-- เลือกเครื่อง --</option>';
-
-                        (MACHINE_LIST[currentDept] || []).forEach(m => {
-                            machineSelect.innerHTML += `<option value="${m}">${m}</option>`;
-                        });
-
-                        // ===============================
-                        // ⚠️ PROBLEM DROPDOWN (FIX)
-                        // ===============================
-                        const problemSelect = document.getElementById('problem-type');
-                        problemSelect.innerHTML = '<option value="">-- เลือกปัญหา --</option>';
-
-                        (PROBLEM_TYPES[currentDept] || ["ทั่วไป"]).forEach(p => {
-                            problemSelect.innerHTML += `<option value="${p}">${p}</option>`;
-                        });
-
-                        // set time
-                        const now = new Date();
-                        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                        document.getElementById('incident-datetime').value =
-                            now.toISOString().slice(0, 16);
-                    });
-
-                       async function handleFormSubmit(event) {
-    event.preventDefault();
-
-    if (!confirm("📋 ยืนยันการส่งข้อมูลเข้าระบบ ?")) {
-        return;
-    }
-
-    const reportData = {
-        incident_datetime: document.getElementById('incident-datetime').value,
-        department: currentDept,
-        machine_no: document.getElementById('machine-no').value,
-        problem_type: document.getElementById('problem-type').value,
-        report_type: "ปัญหาการผลิต",
-        detail: document.getElementById('problem-description').value,
-        status: "pending",
-        reported_by: activeUser
-    };
-
-    try {
-
-        const { error } = await supabase
-            .from('production_reports')
-            .insert([reportData]);
-
-        if (error) throw error;
-
-        alert("✅ บันทึกข้อมูลสำเร็จ");
-
-        document.getElementById('pvt-production-form').reset();
-
-    } catch (err) {
-
-        console.error(err);
-
-        alert("❌ บันทึกไม่สำเร็จ\n" + err.message);
-    }
-    }
-
-    function handleLogout() {
-                    // ล้างข้อมูลการเข้าสู่ระบบทั้งหมด
-                    localStorage.removeItem('activeUser');
-                    localStorage.removeItem('activeDept');
-                    localStorage.removeItem('activeRole');
-
-                    alert("🔒 ออกจากระบบเรียบร้อยแล้ว");
-                    window.location.href = '/login.html'; // เด้งกลับไปหน้าล็อกอิน(ออกจากไฟล์login.htmlไปหาโฟรเดอร์html)
-                }
-     </script>
 
     </body>
 </html>

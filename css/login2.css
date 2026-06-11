@@ -16,23 +16,21 @@ body {
 
 .pvt-top-header h1 {
   margin: 0;
-  font-size: 30px;
+  font-size: 38px;
   color: #1e40af;
 }
 
 .pvt-top-header p {
-  margin: 6px 0 0;
+  margin: 20px 0 0;
   color: #475569;
   font-weight: 600;
 }
 
 .login-page {
-  max-width: 1080px;
-  margin: 28px auto;
+  max-width: 460px;
+  margin: 32px auto;
   padding: 0 18px;
-  display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 24px;
+  position: relative;
 }
 
 .guide-card,
@@ -92,7 +90,7 @@ label {
   border: 1px solid #cbd5e1;
   border-radius: 12px;
   padding: 0 14px;
-  font-size: 15px;
+  font-size: 18px;
   outline: none;
   background: #fff;
 }
@@ -104,11 +102,11 @@ label {
 
 .password-row {
   display: flex;
-  gap: 8px;
+  gap: 12px;
 }
 
 .btn-eye {
-  width: 54px;
+  width: 80px;
   border: none;
   border-radius: 12px;
   background: #dbeafe;
@@ -129,9 +127,33 @@ label {
   border: none;
   border-radius: 14px;
   padding: 14px;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
   cursor: pointer;
+}
+
+/* 📱 ตกแต่งปุ่มสแกน QR Code ให้เด่นและกดง่าย */
+.btn-huge-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: #10b981; /* สีเขียวเด่นชัด */
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 20px;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 25px; /* ดันให้ห่างจากกล่องล็อกอินปกติ */
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+  transition: all 0.2s;
+}
+.btn-huge-qr:active {
+  transform: translateY(3px);
+  box-shadow: none;
 }
 
 .btn-login {
@@ -172,3 +194,109 @@ label {
     font-size: 24px;
   }
 }
+
+/* --- 2. เปลี่ยนให้ Guide Card ไปลอยหลบขอบจอขวา --- */
+.guide-card {
+  position: fixed;
+  top: 120px;
+  right: -380px; /* ซ่อนพ้นขอบจอไปทางขวา */
+  width: 380px;
+  z-index: 999;
+  border-radius: 22px 0 0 22px;
+  border-right: none;
+  box-shadow: -10px 0 40px rgba(30, 64, 175, 0.15);
+  transition: right 0.4s cubic-bezier(0.25, 1, 0.5, 1); /* เอฟเฟกต์สไลด์นุ่มๆ */
+}
+
+/* คลาสที่จะถูกเติมด้วย JS เมื่อกดปุ่ม เพื่อสั่งให้สไลด์ออกมา */
+.guide-card.active {
+  right: 0;
+}
+
+/* --- 3. ปุ่มสำหรับกด ซ่อน/แสดง (ยื่นออกจากตัวการ์ด) --- */
+/* ปรับแต่งปุ่มเปิด/ปิดไกด์ ให้เป็นแนวนอนและอ่านง่ายขึ้น */
+.btn-guide-toggle {
+  position: absolute;
+  left: -150px;          /* ขยับปุ่มออกไปทางซ้ายให้เห็นข้อความแนวนอนครบ */
+  top: 20px;             /* ย้ายไปอยู่มุมบนขวาของการ์ด */
+  background: #1e40af;
+  color: white;
+  border: none;
+  padding: 10px 16px;    /* ปรับช่องไฟให้อ่านง่าย */
+  border-radius: 12px 0 0 12px;
+  cursor: pointer;
+  
+  display: flex;         /* จัดไอคอนกับข้อความให้อยู่แถวเดียวกัน */
+  flex-direction: row;   /* บังคับเป็นแนวนอน */
+  align-items: center;
+  gap: 8px;
+  
+  box-shadow: -4px 4px 12px rgba(30, 64, 175, 0.25);
+  font-family: "Kanit", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+/* เอาคุณสมบัติแนวตั้งอันเก่าออก (สำคัญมาก ต้องลบเขียนทับ) */
+.btn-guide-toggle .toggle-text {
+  writing-mode: horizontal-tb !important; /* บังคับเป็นแนวนอนปกติ */
+  text-orientation: mixed;
+  letter-spacing: 0px;
+}
+
+.btn-guide-toggle:hover {
+  background: #1d4ed8;
+  padding-left: 20px;    /* ยื่นออกมาเล็กน้อยเวลาเอาเมาส์ไปชี้ */
+}
+
+/* จัดตัวอักษร "วิธีเข้าใช้งาน" ให้เรียงเป็นแนวตั้ง */
+.btn-guide-toggle .toggle-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+
+/* ป้องกันหน้าจอมือถือบั๊กตอนสไลด์กางออก */
+body {
+  overflow-x: hidden;
+}
+
+/* รองรับหน้าจอมือถือขนาดเล็ก */
+@media (max-width: 480px) {
+  .guide-card {
+    width: 290px;
+    right: -290px;
+  }
+}
+
+/* 📱 บังคับให้โครงสร้างแผงการ์ดจัดระเบียบตัวเองตามขนาดหน้าจออัตโนมัติ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* หน้าจอเล็กจะเหลือ 1 คอลัมน์ หน้าจอโน้ตบุ๊กจะขยายเป็น 4 คอลัมน์แนวตั้งเอง */
+  gap: 16px;
+  width: 100%;
+}
+
+/* 📲 แก้ปัญหาตารางทะลุจอในมือถือและแท็บเล็ต */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto; /* มือถือสามารถเอานิ้วปัดซ้าย-ขวาเพื่อดูตารางเต็มๆ ได้ โดยที่โครงสร้างเว็บไม่เบี้ยว */
+  overflow-y: auto; /* หรือ scroll */
+  
+  /* แถมให้: ถ้าอยากควบคุมพฤติกรรมการเลื่อนในเบราว์เซอร์ยุคใหม่ */
+  scroll-behavior: smooth; /* เลื่อนแบบนุ่มนวลเวลาคลิก anchor ลิงก์ */
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+/* 💻 จำกัดขนาดคอนเทนเนอร์หลักไม่ให้บีบจนน่าเกลียด */
+.dashboard-container {
+  width: calc(100% - 24px);
+  max-width: 1400px;
+  margin: 12px auto;
+  padding: 0 8px;
+}
+

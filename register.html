@@ -3,92 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>สมัครสมาชิก</title>
+    <title>สมัครสมาชิกใหม่ - PVT</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .form-card {
+            background: #ffffff;
+            max-width: 450px;
+            width: 100%;
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+        }
+        h2 { color: #1e3a8a; text-align: center; margin-bottom: 5px; font-size: 24px; }
+        p.subtitle { color: #64748b; text-align: center; font-size: 14px; margin-bottom: 25px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 14px; font-weight: bold; color: #334155; margin-bottom: 8px; }
+        .form-input {
+            width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1;
+            border-radius: 8px; font-size: 15px; box-sizing: border-box; outline: none;
+        }
+        .form-input:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1); }
+        .btn-submit {
+            width: 100%; padding: 14px; background: #10b981; color: white; border: none;
+            border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.3s;
+        }
+        .btn-submit:hover { background: #059669; }
+        .link-back {
+            display: block; text-align: center; margin-top: 20px; color: #3b82f6;
+            text-decoration: none; font-size: 14px; font-weight: bold;
+        }
+        .link-back:hover { text-decoration: underline; }
+    </style>
 </head>
 <body>
 
-<h2>📝 สมัครสมาชิก</h2>
+    <div class="form-card">
+        <h2>📝 สมัครสมาชิกใหม่</h2>
+        <p class="subtitle">ลงทะเบียนเพื่อเข้าใช้งานระบบรายงานปัญหาการผลิต</p>
 
-<form onsubmit="handleRegister(event)">
+        <form onsubmit="handleRegister(event)">
+            <div class="form-group">
+                <label>👤 รหัสพนักงาน / Username</label>
+                <input type="text" id="username" class="form-input" placeholder="เช่น BLOW01" required>
+            </div>
 
-    <input type="text" id="username" placeholder="Username" required>
-    <br><br>
+            <div class="form-group">
+                <label for="department">🏢 แผนกต้นสังกัด</label>
+                <select id="department" class="form-input" required>
+                    <option value="">-- เลือกแผนก --</option>
+                    <option value="blow">เป่า (BLOW)</option>
+                    <option value="pipe">ท่อ (PIPE)</option>
+                    <option value="mono">โมโน (MONO)</option>
+                    <option value="salan">สแลน (SALAN)</option>
+                    <option value="print">ม้วนพิมพ์ (PRINT)</option>
+                    <option value="drill">ตัดเจาะ (DRILL)</option>
+                </select>
+            </div>
 
-    <input type="text" id="department" placeholder="Department" required>
-    <br><br>
+            <div class="form-group">
+                <label for="role">🎖️ ตำแหน่งงาน (Role)</label>
+                <select id="role" class="form-input" required>
+                    <option value="staff">พนักงานทั่วไป (Staff)</option>
+                    <option value="supervisor">หัวหน้างาน (Supervisor)</option>
+                    <option value="accounting">แผนกบัญชี (Accounting)</option>
+                    <option value="management">ผู้บริหาร (Management)</option>
+                </select>
+            </div>
 
-    <label for="role">Role</label>
-    <select id="role" name="role" aria-label="Role">
-        <option value="staff">Staff</option>
-        <option value="supervisor">Supervisor</option>
-        <option value="management">Management</option>
-    </select>
+            <div class="form-group">
+                <label>📧 อีเมล (สำหรับการกู้คืนระบบ)</label>
+                <input type="email" id="email" class="form-input" placeholder="example@pvt.com" required>
+            </div>
 
-    <br><br>
+            <div class="form-group">
+                <label>🔒 รหัสผ่าน</label>
+                <input type="password" id="password" class="form-input" placeholder="ตั้งรหัสผ่านอย่างน้อย 6 ตัวอักษร" required>
+            </div>
 
-    <input type="email" id="email" placeholder="Email" required>
-    <br><br>
+            <button type="submit" class="btn-submit">✅ ยืนยันการสมัครสมาชิก</button>
+        </form>
 
-    <input type="password" id="password" placeholder="Password" required>
-    <br><br>
+        <a href="login2.html" class="link-back">⬅️ กลับสู่หน้าจอล็อกอิน</a>
+    </div>
 
-    <button type="submit">สมัครสมาชิก</button>
+    <script>
+        // 🔑 ใส่คีย์ Supabase ของโรงงาน
+        const SUPABASE_URL = "https://yviibwmojkodhkxgmkgb.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_3seUH8g6QzA6y7fuYDeoxw_HVV4ZmeL";
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-</form>
+        async function handleRegister(event) {
+            event.preventDefault();
 
-<script>
-const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
-const SUPABASE_KEY = "YOUR_ANON_KEY";
+            const username = document.getElementById('username').value;
+            const department = document.getElementById('department').value;
+            const role = document.getElementById('role').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
 
-const supabase = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-);
+            try {
+                // 1️⃣ สมัครเข้าสู่ระบบ Auth ของ Supabase
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password
+                });
 
-async function handleRegister(event) {
-    event.preventDefault();
+                if (error) throw error;
 
-    const username = document.getElementById('username').value;
-    const department = document.getElementById('department').value;
-    const role = document.getElementById('role').value;
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+                // 2️⃣ บันทึกข้อมูลแผนกและตำแหน่งลงตาราง profiles
+                if (data.user) {
+                    const { error: profileError } = await supabase
+                        .from('profiles')
+                        .insert([{
+                            id: data.user.id,
+                            username: username.toUpperCase().trim(), 
+                            department: department,
+                            role: role
+                        }]);
+                    
+                    if (profileError) console.error("Profile saving note:", profileError.message);
+                }
 
-    // 1️⃣ สมัคร Auth ก่อน
-    const { data, error } = await supabase.auth.signUp({
-        email,
-        password
-    });
+                alert("🎉 สมัครสมาชิกสำเร็จเรียบร้อย! สามารถกลับไปล็อกอินได้เลยครับ");
+                window.location.href = "login2.html"; // วาร์ปกลับไปหน้าล็อกอินเวอร์ชันล่าสุด
 
-    if (error) {
-        alert("สมัครไม่สำเร็จ: " + error.message);
-        return;
-    }
-
-    const userId = data.user.id;
-
-    // 2️⃣ สร้าง profile
-    const { error: profileError } = await supabase
-        .from('users_profile')
-        .insert([
-            {
-                id: userId,
-                username,
-                department,
-                role
+            } catch (err) {
+                alert("❌ สมัครไม่สำเร็จ: " + err.message);
             }
-        ]);
-
-    if (profileError) {
-        alert("สร้าง profile ไม่สำเร็จ: " + profileError.message);
-        return;
-    }
-
-    alert("🎉 สมัครสำเร็จ! ไปหน้า Login ได้เลย");
-    window.location.href = "login.html";
-}
-</script>
-
+        }
+    </script>
 </body>
 </html>
