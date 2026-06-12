@@ -302,12 +302,12 @@ body {
    🎨 ชุดธีมสีแยกตามรายแผนก (Department Colors)
    =================================================== */
 
-/* 📠 แผนกม้วนพิมพ์ - PRINT (แดง) */
-.dept-print .sidebar { background: #991b1b; }
-.dept-print .sidebar-header { background: #991b1b; }
-.dept-print .sidebar-menu a.active { color: #991b1b; }
-.dept-print .btn-submit { background: #ef4444; }
-.dept-print .btn-submit:hover { background: #dc2626; }
+/* 📠 แผนกท่อ - PIPE (แดง) */
+.dept-pipe .sidebar { background: #991b1b; }
+.dept-pipe .sidebar-header { background: #991b1b; }
+.dept-pipe .sidebar-menu a.active { color: #991b1b; }
+.dept-pipe .btn-submit { background: #ef4444; }
+.dept-pipe .btn-submit:hover { background: #dc2626; }
 
 /* 💿 แผนกแผ่นหล่อ - SHEET (น้ำเงิน) */
 .dept-sheet .sidebar { background: #1e40af; }

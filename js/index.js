@@ -30,7 +30,7 @@ const FORM_PAGE = "html/form-department.html";
 // ... โค้ดส่วนอื่นๆ คงเดิม ...
 
 const DEPARTMENT_LABELS = {
-  print: "ม้วนพิมพ์",
+  pipe: "ท่อ",
   sheet: "แผ่นหล่อ",
   tape: "เทปพัน",
   blow: "เป่าถุง",
@@ -41,9 +41,9 @@ const DEPARTMENT_LABELS = {
 };
 
 const EXCEL_MACHINE_PROBLEM_DB = {
-  print: {
-    machines: ["เครื่องพิมพ์1", "เครื่องพิมพ์2"],
-    problems: ["สกรีนไม่สวย", "สีเพี้ยน", "พิมพ์เลอะ", "อื่นๆ"],
+  pipe: {
+    machines: ["ท่อ1", "ท่อ2", "ท่อ3", "ท่อ4"],
+    problems: ["ขี้ดายหลุด", "เข้าม้วนหัก", "โครไม่สวย", "เดินเครื่องใหม่", "ทะลุ", "น้ำท่วมถังแว็ก", "เปลี่ยนไซร้", "ไฟดับ", "แว็กตก", "แว็กสูง", "หนาบางกลางม้วน", "อื่นๆ"]
   },
   mono: {
     machines: ["Mono1", "Mono2", "Mono3"],
@@ -196,7 +196,7 @@ const EXCEL_MACHINE_PROBLEM_DB = {
   },
 };
 
-let currentDept = localStorage.getItem("activeDept") || "print";
+let currentDept = localStorage.getItem("activeDept") || "";
 let globalDeptChart = null;
 let globalMonthlyChart = null;
 
@@ -246,18 +246,39 @@ window.switchDepartment = switchDepartment;
 // =========================================================
 
 async function loadAndProcessDashboardData() {
-  // ดึงค่าเชื่อมต่อหลักแบบหน่วงเวลาเผื่อสคริปต์ภายนอกยังโหลดไม่เสร็จ
   const currentClient = window.supabaseClient || sb;
   
   if (!currentClient) {
     console.warn("⏳ กำลังรอสคริปต์ฐานข้อมูลจัดตั้งตัวแปร... จะลองโหลดใหม่อีกครั้งใน 500ms");
-    // รอครึ่งวินาทีแล้วลองรันตัวเองใหม่ ไม่พ่นข้อความ Error จนเว็บค้าง
     setTimeout(loadAndProcessDashboardData, 500);
     return;
   }
 
   try {
-    // ... โค้ดส่วนดึงข้อมูลเดิมของคุณจากฐานข้อมูล ...
+    // 🛠️ แก้ไข: เปลี่ยนจาก incident_datetime เป็น created_at เพื่อป้องกัน Error คอลัมน์ไม่มีอยู่จริง
+    const { data, error } = await currentClient
+      .from("daily_waste_reports") 
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    if (data) {
+      // ตรวจสอบและแมปข้อมูลกรณีที่ชื่อคอลัมน์ในฐานข้อมูลจริงอาจต่างออกไป
+      const normalizedData = data.map(item => ({
+        ...item,
+        // ถ้าในฐานข้อมูลไม่มี incident_datetime ให้ดึงค่าจาก created_at หรือ datetime มาใช้แทนชั่วคราวในการแสดงผลตาราง
+        incident_datetime: item.incident_datetime || item.datetime || item.created_at
+      }));
+
+      updateMetricCards(normalizedData);
+      renderReportTable(normalizedData);
+      const counters = getDepartmentCounters(normalizedData);
+      renderDoughnutChart(counters);
+      renderMonthlyMachineChart(normalizedData);
+      generateExecutiveSummary(normalizedData);
+      generateExecutiveInsight(normalizedData);
+    }
     
   } catch (error) {
     console.error("โหลดข้อมูลไม่สำเร็จ:", error);
@@ -265,7 +286,6 @@ async function loadAndProcessDashboardData() {
 }
 
 window.loadAndProcessDashboardData = loadAndProcessDashboardData;
-
 function updateMetricCards(records) {
   setText("cnt-total", records.length);
   setText(
@@ -284,7 +304,7 @@ function updateMetricCards(records) {
 
 function getDepartmentCounters(records) {
   const counters = {
-    print: 0,
+    pipe: 0,
     sheet: 0,
     tape: 0,
     blow: 0,
@@ -413,7 +433,7 @@ function renderDoughnutChart(counts) {
       datasets: [
         {
           data: [
-            counts.print,
+            counts.pipe,
             counts.sheet,
             counts.tape,
             counts.blow,
@@ -470,7 +490,7 @@ function renderMonthlyMachineChart(records) {
   ];
 
   const monthlyData = {
-    print: new Array(12).fill(0),
+    pipe: new Array(12).fill(0),
     blow: new Array(12).fill(0),
     mono: new Array(12).fill(0),
     drill: new Array(12).fill(0),
@@ -486,7 +506,7 @@ function renderMonthlyMachineChart(records) {
 
     if (monthIndex < 0 || monthIndex > 11) return;
 
-    if (dept === "print") monthlyData.print[monthIndex]++;
+    if (dept === "pipe") monthlyData.pipe[monthIndex]++;
     else if (dept === "blow" || dept === "tape") monthlyData.blow[monthIndex]++;
     else if (dept === "mono") monthlyData.mono[monthIndex]++;
     else if (dept === "drill" || dept === "garbage")
@@ -502,7 +522,7 @@ function renderMonthlyMachineChart(records) {
       datasets: [
         {
           label: "ม้วนพิมพ์",
-          data: monthlyData.print,
+          data: monthlyData.,
           backgroundColor: "#dc2626",
         },
         {
@@ -874,9 +894,11 @@ if (typeof supabase !== 'undefined' && supabase.from) {
 // =================================================================
 // 📊 ฟังก์ชันเวอร์ชันอัปเกรด: ส่งออก Excel แยกแท็บเครื่องจักร + ผูกสูตรเลือกเดือนได้อิสระ
 // =================================================================
-async function exportComplexpivotRowIdxtExcel() {
+// ========================================================================================
+// 📊 ฟังก์ชันเวอร์ชันอัปเกรด: ส่งออก Excel แยกแท็บเครื่องจักร + ผูกสูตรกล่องดร็อปดาวน์เลือกเดือนได้อิสระ
+// ========================================================================================
+async function exportComplexPivotExcel() {
   try {
-    // ดึงแคชข้อมูลที่ถูกกรองอยู่บนหน้าแดชบอร์ดขณะนั้น
     const rawRecords = window.pvtExecutiveFilteredCache || [];
     if (rawRecords.length === 0) {
       alert("❌ ไม่พบข้อมูลรายงานในเงื่อนไขปัจจุบัน ไม่สามารถส่งออกได้");
@@ -898,20 +920,19 @@ async function exportComplexpivotRowIdxtExcel() {
       { header: 'น้ำหนักผลิต', key: 'prod', width: 15 }
     ];
 
-    // ตกแต่ง Header ฐานข้อมูลหลัก
     dataSheet.getRow(1).eachCell((cell) => {
       cell.font = { name: 'Sarabun', size: 11, bold: true };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE6E6E6' } };
       cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
     });
 
-    // คัดแยกประวัติเติมลงแผ่นงานหลัก
     rawRecords.forEach(item => {
-      const rDate = item.incident_datetime ? new Date(item.incident_datetime).toLocaleDateString('th-TH') : '-';
+      const targetDateStr = item.incident_datetime || item.datetime || item.created_at;
+      const rDate = targetDateStr ? new Date(targetDateStr).toLocaleDateString('th-TH') : '-';
       const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
       let rMonth = "ไม่ระบุ";
-      if(item.incident_datetime) {
-         rMonth = monthNames[new Date(item.incident_datetime).getMonth()];
+      if(targetDateStr) {
+         rMonth = monthNames[new Date(targetDateStr).getMonth()];
       }
 
       dataSheet.addRow({
@@ -926,7 +947,7 @@ async function exportComplexpivotRowIdxtExcel() {
       });
     });
 
-    // 2. แตกกลุ่มสร้างหน้าชีทแยกรายเครื่องจักร (F2, F3, ตัดเจาะ4 ฯลฯ)
+    // 2. แตกกลุ่มสร้างหน้าชีทแยกรายเครื่องจักร
     const machines = [...new Set(rawRecords.map(item => String(item.machine_no || item.machine || "ทั่วไป").trim()))];
 
     machines.forEach(machineKey => {
@@ -936,12 +957,11 @@ async function exportComplexpivotRowIdxtExcel() {
         { width: 18 }, { width: 12 }, { width: 10 }, { width: 12 }, 
         { width: 10 }, { width: 22 }, { width: 15 }, { width: 15 },
         { width: 4 },  
-        { width: 25 }, // J (ป้ายชื่อแถว)
-        { width: 25 }, // K (ผลรวม น้ำหนักสูญเสีย)
-        { width: 25 }  // L (ผลรวม น้ำหนักผลิต)
+        { width: 25 }, // J
+        { width: 25 }, // K
+        { width: 25 }  // L
       ];
 
-      // หัวตารางฝั่งซ้าย (ข้อมูลดิบ)
       const leftHeaders = ['วันที่', 'เดือน', 'Week', 'เครื่อง', 'กะ', 'อาการ', 'น้ำหนักสูญเสีย', 'น้ำหนักผลิต'];
       leftHeaders.forEach((h, i) => {
         const cell = sheet.getCell(3, i + 1);
@@ -952,7 +972,6 @@ async function exportComplexpivotRowIdxtExcel() {
         cell.alignment = { horizontal: 'center' };
       });
 
-      // ดึงข้อมูลดิบมาหยอดเรียงฝั่งซ้าย
       let rowIdx = 4;
       dataSheet.eachRow((row, eIdx) => {
         if(eIdx === 1) return;
@@ -963,14 +982,14 @@ async function exportComplexpivotRowIdxtExcel() {
           sheet.getCell(`D${rowIdx}`).value = row.getCell(4).value;
           sheet.getCell(`E${rowIdx}`).value = row.getCell(5).value;
           sheet.getCell(`F${rowIdx}`).value = row.getCell(6).value;
-          sheet.getCell(`G${rowIdx}`).value = row.getCell(7).value || '-';
-          sheet.getCell(`H${rowIdx}`).value = row.getCell(8).value || '-';
+          sheet.getCell(`G${rowIdx}`).value = row.getCell(7).value || 0;
+          sheet.getCell(`H${rowIdx}`).value = row.getCell(8).value || 0;
           
           ['A','B','C','D','E','F','G','H'].forEach(col => {
             const c = sheet.getCell(`${col}${rowIdx}`);
             c.font = { name: 'Sarabun', size: 11 };
             c.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
-            if(['G','H'].includes(col) && row.getCell(col === 'G' ? 7 : 8).value > 0) {
+            if(['G','H'].includes(col)) {
               c.numFmt = '#,##0.00';
               c.alignment = { horizontal: 'right' };
             } else if(['A','B','C','D','E'].includes(col)) {
@@ -981,10 +1000,10 @@ async function exportComplexpivotRowIdxtExcel() {
         }
       });
 
-      // 3. 🟥 สร้างกล่องเลือกตัวกรองดร็อปดาวน์ที่ช่อง J1:K1
+      // 3. สร้างกล่องเลือกตัวกรองดร็อปดาวน์ที่ช่อง J1:K1
       sheet.getCell('J1').value = 'เลือกตัวกรองเดือน 🔽';
       sheet.getCell('J1').font = { name: 'Sarabun', size: 11, bold: true };
-      sheet.getCell('J1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } }; // พื้นเขียวแบบ Excel
+      sheet.getCell('J1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
       sheet.getCell('J1').border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
 
       sheet.getCell('K1').value = 'ทั้งหมด'; 
@@ -992,20 +1011,19 @@ async function exportComplexpivotRowIdxtExcel() {
       sheet.getCell('K1').border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
       sheet.getCell('K1').alignment = { horizontal: 'center' };
       
-      // สร้างลิสต์ดรอปดาวน์ให้คลิกเลือกเปลี่ยนเดือนได้ในตัว Excel
       sheet.getCell('K1').dataValidation = {
         type: 'list',
         allowBlank: true,
         formulae: ['"ทั้งหมด,มกราคม,กุมภาพันธ์,มีนาคม,เมษายน,พฤษภาคม,มิถุนายน,กรกฎาคม,สิงหาคม,กันยายน,ตุลาคม,พฤศจิกายน,ธันวาคม"']
       };
 
-      // 4. สร้างโครงสร้างหัวตารางสรุปฝั่งขวา (J3:L3) ธีมสีน้ำเงินตัวอักษรขาว
+      // 4. หัวตารางสรุปฝั่งขวา ผูกสูตร SUMIFS
       sheet.getCell('J3').value = 'ป้ายชื่อแถว (อาการเสีย)';
       sheet.getCell('K3').value = 'ผลรวมของ น้ำหนักสูญเสีย';
       sheet.getCell('L3').value = 'ผลรวมของ น้ำหนักผลิต';
 
-      const pivotRowIdxtHeaders = ['J3', 'K3', 'L3'];
-      pivotRowIdxtHeaders.forEach((cellPos, i) => {
+      const pivotHeaders = ['J3', 'K3', 'L3'];
+      pivotHeaders.forEach((cellPos, i) => {
         const cell = sheet.getCell(cellPos);
         cell.font = { name: 'Sarabun', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E78' } }; 
@@ -1013,19 +1031,17 @@ async function exportComplexpivotRowIdxtExcel() {
         cell.alignment = { horizontal: i === 0 ? 'left' : 'right', vertical: 'middle' };
       });
 
-      // ดึงรายชื่ออาการเสียมาตั้งแถวแบบไม่ซ้ำ
       const currentMachineRecords = rawRecords.filter(item => String(item.machine_no || item.machine || "ทั่วไป").trim() === machineKey);
       const uniqueProblems = [...new Set(currentMachineRecords.map(item => item.problem_type || item.detail || "อื่นๆ"))];
 
-      let pivotRowIdxtRowIdx = 4;
+      let pivotRowIdx = 4;
       uniqueProblems.forEach((prob, pIdx) => {
-        const cellJ = sheet.getCell(`J${pivotRowIdxtRowIdx}`);
+        const cellJ = sheet.getCell(`J${pivotRowIdx}`);
         const cellK = sheet.getCell(`K${pivotRowIdx}`);
         const cellL = sheet.getCell(`L${pivotRowIdx}`);
 
         cellJ.value = prob;
 
-        // 🌟 ใส่สูตร SUMIFS ผูกเงื่อนไขกับช่อง K1: ถ้าเลือกเฉพาะเดือนให้รวมแค่เดือนนั้น ถ้าเลือก "ทั้งหมด" ให้พ่นยอดรวมเครื่องจักรทั้งหมดออกทันที
         cellK.value = {
           formula: `=IF($K$1="ทั้งหมด", SUMIFS(G$4:G$${rowIdx-1}, F$4:F$${rowIdx-1}, J${pivotRowIdx}), SUMIFS(G$4:G$${rowIdx-1}, F$4:F$${rowIdx-1}, J${pivotRowIdx}, B$4:B$${rowIdx-1}, $K$1))`
         };
@@ -1041,15 +1057,12 @@ async function exportComplexpivotRowIdxtExcel() {
           c.font = { name: 'Sarabun', size: 11 };
           c.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
           c.alignment = { horizontal: cIdx === 0 ? 'left' : 'right' };
-          if(isZebra) {
-            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } }; // ลายแถวสลับสีฟ้าอ่อน
-          }
+          if(isZebra) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
         });
-
         pivotRowIdx++;
       });
 
-      // 5. แถวผลรวมรวมปิดท้ายตารางล่างสุด (Total Row)
+      // 5. แถวผลรวมทั้งหมด (Total Row)
       const totalJ = sheet.getCell(`J${pivotRowIdx}`);
       const totalK = sheet.getCell(`K${pivotRowIdx}`);
       const totalL = sheet.getCell(`L${pivotRowIdx}`);
@@ -1069,15 +1082,15 @@ async function exportComplexpivotRowIdxtExcel() {
       });
     });
 
-    // 6. ประมวลผลเซฟและสั่งดาวน์โหลดเล่ม Excel สมบูรณ์แบบออกมา
+    // 6. บันทึกและดาวน์โหลดเล่มรายงานจริง
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    saveAs(blob, `รายงานวิเคราะห์สถิติสรุปแบบผูกสูตร_PVT_Plastics.xlsx`);
+    saveAs(blob, `รายงานวิเคราะห์รูปเล่มสรุปเลือกเดือนได้_PVT_Plastics.xlsx`);
 
   } catch (err) {
-    alert("เกิดข้อผิดพลาดในขบวนการสร้างโครงสร้างเล่มรายงาน: " + err.message);
+    alert("เกิดข้อผิดพลาดในการเจนไฟล์วิเคราะห์: " + err.message);
   }
 }
 
-// ผูกระบบเข้าหาปุ่มหน้า HTML หลัก
+// ผูกฟังก์ชันเข้าหน้าต่างระบบเพื่อให้ปุ่มหน้า HTML วิ่งมาเรียกเจอแน่นอน
 window.exportComplexPivotExcel = exportComplexPivotExcel;
