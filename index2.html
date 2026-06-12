@@ -9,14 +9,14 @@
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" />
   <link rel="stylesheet" href="/css/index.css" />
+  
 </head>
-
 <body>
   <div class="dashboard-container">
 
     <header class="exec-header">
       <div class="exec-brand">
-        <h1>📊 แผงควบคุมและศูนย์สั่งการสถิติปัญหาโรงงาน</h1>
+        <h1>📊 สถิติปัญหาโรงงาน</h1>
         <p>บจก.พี.วี.ที.แอนด์ ที.พลาส • ระบบอนุมัติและประมวลผลสำหรับผู้บริหารระดับสูง</p>
       </div>
 
@@ -38,13 +38,13 @@
 
       <div class="nav-grid">
         <button type="button" class="btn-dept d-print" onclick="switchDepartment('print')">📠 ม้วนพิมพ์ (PRINT)</button>
-        <button type="button" class="btn-dept d-sheet" onclick="switchDepartment('sheet')">💿 แผ่นหล่อ (SHEET)</button>
-        <button type="button" class="btn-dept d-tape" onclick="switchDepartment('tape')">🎞️ เทปพัน (TAPE)</button>
+        <button type="button" class="btn-dept d-sheet" onclick="switchDepartment('sheet')">💿  ตัดผืน (SHEET)</button>
+        <button type="button" class="btn-dept d-tape" onclick="switchDepartment('tape')">🎞️ ตัดเทปน้ำพุ่ง (TAPE)</button>
         <button type="button" class="btn-dept d-blow" onclick="switchDepartment('blow')">🎈 เป่าถุง (BLOW)</button>
-        <button type="button" class="btn-dept d-drill" onclick="switchDepartment('drill')">📐 เจาะรู (DRILL)</button>
-        <button type="button" class="btn-dept d-garbage" onclick="switchDepartment('garbage')">🗑️ ถุงขยะ (GARBAGE)</button>
+        <button type="button" class="btn-dept d-drill" onclick="switchDepartment('drill')">📐 ตัดเจาะ (DRILL)</button>
+        <button type="button" class="btn-dept d-garbage" onclick="switchDepartment('garbage')">🗑️ ตัดถุงขยะ-ถุงอเนก (GARBAGE)</button>
         <button type="button" class="btn-dept d-mono" onclick="switchDepartment('mono')">💎 โมโน (MONO)</button>
-        <button type="button" class="btn-dept d-salan" onclick="switchDepartment('salan')">🌿 สแลน</button>
+        <button type="button" class="btn-dept d-salan" onclick="switchDepartment('salan')">🌿 สแลน ทอ</button>
       </div>
     </section>
 
@@ -121,19 +121,19 @@
           <select id="sel-dept-filter" class="form-select" aria-label="เลือกแผนกสำหรับกรองรายงาน" onchange="loadAndProcessDashboardData()">
             <option value="all">🔍 ตรวจสอบภาพรวมทุกแผนกการผลิตในโรงงาน</option>
             <option value="print">📠 ม้วนพิมพ์ (PRINT)</option>
-            <option value="sheet">💿 แผ่นหล่อ (SHEET)</option>
-            <option value="tape">🎞️ เทปพัน (TAPE)</option>
+            <option value="sheet">💿 ตัดผืน (SHEET)</option>
+            <option value="tape">🎞️ ตัดเทปน้ำพุ่ง (TAPE)</option>
             <option value="blow">🎈 เป่าถุง (BLOW)</option>
             <option value="drill">📐 เจาะรู (DRILL)</option>
-            <option value="garbage">🗑️ ถุงขยะ (GARBAGE)</option>
+            <option value="garbage">🗑️ ตัดถุงขยะ-ถุงอเนก (GARBAGE)</option>
             <option value="mono">💎 โมโน (MONO)</option>
-            <option value="salan">🌿 สแลน</option>
+            <option value="salan">🌿 สแลน ทอ</option>
           </select>
         </div>
 
-        <button type="button" class="btn-global btn-excel" onclick="exportToDataExcelCSV()">
-          🟢 ส่งออกข้อมูลรายงานเข้า Excel (.csv ภาษาไทยสมบูรณ์)
-        </button>
+        <button type="button" class="btn-global btn-excel" onclick="exportComplexPivotExcel()">
+  🟢 ส่งออกรายงานวิเคราะห์รูปเล่ม Excel (.xlsx แบบมีโครงสรุปแยกแท็บ)
+</button>
       </section>
     </div>
 
@@ -169,12 +169,16 @@
     </section>
 
   </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // สคริปต์สร้างการเชื่อมต่อหลัก ต้องมีบรรทัดนี้เพื่อส่งเข้าสู่ระบบเดลตาบอร์ด
+    window.supabaseClient = supabase.createClient('https://wkbahssqznlpkkghwffg.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrYmFoc3Nxem5scGtrZ2h3ZmZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwOTg2MDYsImV4cCI6MjA5NjY3NDYwNn0.c6XJi91bPcKNikUTw28KqJ4gi7yqPTdT4pUKKAhSsEM');
+  </script>
 
-  <script src="/js/core/supabaseClient.js"></script>
-  
   <script src="/js/index.js"></script>
 </body>
 </html>

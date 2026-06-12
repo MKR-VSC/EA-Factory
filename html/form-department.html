@@ -40,7 +40,7 @@
     </style>
     
 </head>
-< class="dept-default" id="dept-body">
+<div class="dept-default" id="dept-body">
 
     <div class="app-layout">
         <aside class="sidebar">
@@ -66,9 +66,13 @@
                     <a href="index.html" id="nav-dashboard-link">📊 แดชบอร์ดผู้บริหาร</a>
                 </div>
 
-                <div class="sidebar-footer">
-                   <button type="button" id="btn-logout">🚪 ออกจากระบบ</button>
-                </div>
+               <button type="button" class="btn-back" onclick="history.back()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+    </svg>
+    ย้อนกลับ
+</button>
             </nav>
         </aside>
 
@@ -147,28 +151,12 @@
     </div>
 
 <!-- Attach logout handler: prefer handleLogout() from form-department.js, otherwise use a safe fallback -->
-<script>
-    (function(){
-        var btn = document.getElementById('btn-logout');
-        if(!btn) return;
-        btn.addEventListener('click', function(){
-            if(typeof handleLogout === 'function'){
-                try{ handleLogout(); }catch(e){ console.error(e); fallbackLogout(); }
-            } else {
-                fallbackLogout();
-            }
-        });
 
-        function fallbackLogout(){
-            try{ sessionStorage.clear(); localStorage.removeItem('authToken'); }catch(e){}
-            window.location.href = '/login.html';
-        }
-    })();
-</script>
-        <script src="js/core/supabaseClient.js"></script> 
+       <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-        <script src="js/form-department.js"></script>
+<script src="../js/core/supabaseClient.js"></script>
 
+<script src="../js/form-department.js"></script>
 
     </body>
 </html>

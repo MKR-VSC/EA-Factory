@@ -2,14 +2,7 @@
 // ไฟล์: js/form-department.js (เวอร์ชันแก้บั๊กยกรัง - ปลอดภัยสูงสุด)
 // =========================================================
 
-// 🚪 [ย้ายมาไว้บนสุด] ฟังก์ชันออกจากระบบ เพื่อให้กดได้แน่นอนแม้ระบบส่วนอื่นจะโหลดติดขัด
-function handleLogout() {
-  localStorage.clear();
-  alert("🔒 ออกจากระบบความปลอดภัยเรียบร้อยแล้ว");
-  window.location.href = "login2.html";
-}
-// ผูกเข้ากับ window โดยตรงเพื่อป้องกันหน้า HTML หาฟังก์ชันไม่เจอ
-window.handleLogout = handleLogout;
+
 
 // 🟢 1. ดึงข้อมูลการล็อกอินและสิทธิ์จาก LocalStorage
 const activeUser = localStorage.getItem('activeUser') || 'Unknown';
@@ -299,22 +292,46 @@ async function handleFormSubmit(event) {
   const wasteWeight = weightInput ? parseFloat(weightInput.value) || 0 : 0;
   const detailNote = noteInput ? noteInput.value.trim() : "";
 
-  // ประกอบชุดแพ็กเกจข้อมูลยิงเข้าตาราง
+  // 💡 [ปรับปรุงใหม่] จัดการฟอร์แมตวันที่ให้อยู่ในมาตรฐาน ISO ป้องกัน Database ปฏิเสธค่า
+  let finalDateTime = new Date().toISOString(); 
+  const dateElem = document.getElementById("incident-datetime");
+  if (dateElem && dateElem.value) {
+    try {
+      finalDateTime = new Date(dateElem.value).toISOString();
+    } catch(e) {
+      finalDateTime = new Date().toISOString();
+    }
+  }
+
+  // 💡 [ปรับปรุงใหม่] พยายามดึงข้อมูลผู้ใช้จาก localStorage เผื่อตัวแปร Global หลุดหาย
+ // 💡 [ของเดิมของพี่ที่ส่งคำว่า pvt001 ไปตรงๆ แล้วน่าจะโดนระบบบล็อก]
+  // reported_by: typeof activeUser !== 'undefined' ? activeUser : "Unknown Staff"
+
+  // ==========================================
+
+  // ✅ [ให้แก้ไขเปลี่ยนเป็นดึงรหัส ID แท้ (UUID) จาก LocalStorage แทนครับพี่]
+  const savedUserId = localStorage.getItem("activeUserId"); // ดึง UUID เช่น b962d66c...
+  const savedUser = localStorage.getItem("activeUser") || "Unknown Staff";
+
   const reportData = {
-    incident_datetime: document.getElementById("incident-datetime") ? document.getElementById("incident-datetime").value : new Date().toISOString(),
+    incident_datetime: finalDateTime,
     work_shift: finalShift, 
-    department: typeof currentDept !== 'undefined' ? currentDept : "blow",
+    department: localStorage.getItem("activeDept") || "blow", // ดึงรหัสแผนกที่ผูกไว้ตอนล็อกอิน
     machine_no: finalMachine,
     problem_type: finalProblem,
     report_type: "ปัญหาการผลิต",
     waste_weight_kg: wasteWeight, 
     detail: detailNote,
     status: "pending",
-    reported_by: typeof activeUser !== 'undefined' ? activeUser : "Unknown Staff"
+    
+    // 🎯 เปลี่ยนตรงนี้! ถ้ามีรหัส ID แท้ (UUID) ให้ส่ง ID แท้ไปเลย ถ้าไม่มีค่อยส่ง Username
+    reported_by: savedUserId ? savedUserId : savedUser 
   };
 
   try {
-    // 🔥 บันทึกข้อมูลเข้าตารางกลางสำเร็จชัวร์ ไม่ขึ้นจากค่า undefined แน่นอน
+    console.log("📤 กำลังพยายามส่งแพ็กเกจข้อมูล:", reportData);
+
+    // 🔥 บันทึกข้อมูลเข้าตารางกลางสำเร็จชัวร์
     const { error } = await clientSupabase
       .from("pvt_production_reports")
       .insert([reportData]);
@@ -337,8 +354,12 @@ async function handleFormSubmit(event) {
     if (typeof appSelectedShift !== 'undefined') appSelectedShift = "";
 
   } catch (err) {
-    console.error("❌ บันทึกข้อมูลพลาด:", err);
-    alert("❌ บันทึกไม่สำเร็จ: " + err.message);
+    // 💡 [ปรับปรุงใหม่] สั่งง้างปากให้พ่นข้อความภาษาอังกฤษตรงๆ แทนคำว่า Object
+    console.error("❌ บันทึกข้อมูลพลาดอย่างละเอียด:", err);
+    
+    // ถ้าตัวแปร err มีข้อมูลลึกๆ ให้ดึงข้อความแจ้งเตือนมาพ่นออกหน้าจอเลย
+    const errorMsg = err.message || err.details || JSON.stringify(err);
+    alert("❌ บันทึกไม่สำเร็จเนื่องจาก: " + errorMsg);
   }
 }
 

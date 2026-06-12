@@ -67,8 +67,8 @@
                 <a href="#" class="sidebar-item" onclick="toggleSpecBox()">🖥️ ข้อมูลสเปกเครื่องเซิร์ฟเวอร์</a>
                 <a href="#" class="sidebar-item" onclick="lockAdmin()">🔒 ออกจากระบบ</a>
             </div>
-        </div>
-
+            
+        
         <!-- พื้นที่ส่วนกลางการประมวลผล -->
         <div class="main-workspace">
             <div class="workspace-header">
@@ -78,6 +78,7 @@
                 </div>
                 <button class="btn-gray" onclick="lockAdmin()">🔒 ออกจากระบบ</button>
             </div>
+   
 
             <!-- 📊 กล่องรายงานสถิติขั้นสูงแบบละเอียดสูงสุด (Metrics Grid) -->
             <div class="metrics-grid">
@@ -164,6 +165,58 @@
                 </div>
             </div>
 
+            <div class="dashboard-container">
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <p>⚖️ น้ำหนักของเสียรวมวันนี้</p>
+                <h2 id="dash-total-weight">0.00 <span style="font-size: 16px;">กก.</span></h2>
+            </div>
+            <div class="stat-card pending">
+                <p>📝 รายการที่รอตรวจสอบ (Pending)</p>
+                <h2 id="dash-pending-count">0 <span style="font-size: 16px;">เคส</span></h2>
+            </div>
+        </div>
+
+        <div class="main-management-grid">
+            
+            <div class="admin-box">
+                <h3>⚙️ จัดการเครื่องจักร (Master Machines)</h3>
+                <div class="form-group">
+                    <input type="text" id="machine-input" placeholder="ชื่อเครื่องใหม่ เช่น F4">
+                    <button onclick="MachineModule.add()" class="btn-green">➕ เพิ่มเครื่อง</button>
+                </div>
+                <ul id="machine-list" class="data-list"></ul>
+            </div>
+
+            <div class="admin-box">
+                <h3>⚠️ จัดการหัวข้ออาการเสีย (Master Problems)</h3>
+                <div class="form-group">
+                    <input type="text" id="problem-input" placeholder="อาการเสียใหม่ เช่น ขอบเบี้ยว">
+                    <button onclick="ProblemModule.add()" class="btn-red">➕ เพิ่มปัญหา</button>
+                </div>
+                <ul id="problem-list" class="data-list"></ul>
+            </div>
+
+        </div>
+
+        <div class="log-box">
+            <h3>🪲 รายการบั๊กระบบที่ตรวจพบ (System Logs)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>วัน-เวลาที่เกิด</th>
+                        <th>รหัส Error</th>
+                        <th>ข้อความแจกแจงปัญหาจากระบบ</th>
+                    </tr>
+                </thead>
+                <tbody id="log-table-body">
+                    </tbody>
+            </table>
+        </div>
+
+    </div>
+
             <!-- 📜 ระบบประวัติเหตุการณ์ Log อมตะ ห้ามหายเด็ดขาดสะสมต่อเนื่อง (แปลไทย) -->
             <div class="log-section">
                 <div class="log-title">
@@ -175,6 +228,11 @@
             </div>
 
         </div>
+
+
+        
+
+
     </div>
 
     <script>
@@ -184,6 +242,121 @@
         
         let sessionTimer = 0;
         let globalErrorCount = 0; // ตัวนับนับข้อผิดพลาดสะสม
+
+
+const MachineModule = {
+    // 1. ฟังก์ชันดึงรายชื่อเครื่องจักรมาโชว์
+    async load() {
+        const { data, error } = await clientSupabase
+            .from('master_machines')
+            .select('*')
+            .eq('is_active', true)
+            .order('machine_no', { ascending: true });
+
+        if (error) return console.error('โหลดเครื่องจักรพลาด:', error);
+        
+        const listContainer = document.getElementById('machine-list');
+        listContainer.innerHTML = data.map(m => `<li>เครื่องจักร: <b>${m.machine_no}</b></li>`).join('');
+    },
+
+    // 2. ฟังก์ชันกดเพิ่มเครื่องจักรใหม่
+    async add() {
+        const input = document.getElementById('machine-input');
+        const value = input.value.trim();
+        if (!value) return alert('กรุณากรอกชื่อเครื่องจักรครับพี่!');
+
+        const { error } = await clientSupabase
+            .from('master_machines')
+            .insert([{ machine_no: value, department: 'blow' }]);
+
+        if (error) {
+            alert('เพิ่มเครื่องจักรไม่สำเร็จ: ' + error.message);
+        } else {
+            input.value = '';
+            this.load(); // รีโหลดรายการใหม่
+        }
+    }
+};
+
+
+const ProblemModule = {
+    // 1. ฟังก์ชันดึงรายชื่ออาการเสียมาโชว์
+    async load() {
+        const { data, error } = await clientSupabase
+            .from('master_problems')
+            .select('*')
+            .eq('is_active', true)
+            .order('problem_type', { ascending: true });
+
+        if (error) return console.error('โหลดอาการเสียพลาด:', error);
+        
+        const listContainer = document.getElementById('problem-list');
+        listContainer.innerHTML = data.map(p => `<li>อาการ: <b>${p.problem_type}</b></li>`).join('');
+    },
+
+    // 2. ฟังก์ชันกดเพิ่มอาการเสียใหม่
+    async add() {
+        const input = document.getElementById('problem-input');
+        const value = input.value.trim();
+        if (!value) return alert('กรุณากรอกอาการเสียครับพี่!');
+
+        const { error } = await clientSupabase
+            .from('master_problems')
+            .insert([{ problem_type: value, department: 'blow' }]);
+
+        if (error) {
+            alert('เพิ่มอาการเสียไม่สำเร็จ: ' + error.message);
+        } else {
+            input.value = '';
+            this.load(); // รีโหลดรายการใหม่
+        }
+    }
+};
+
+const DashboardModule = {
+    async load() {
+        // ดึงข้อมูลดิบจากตารางรายงานปัญหาที่เราทำสำเร็จกันเมื่อกี้
+        const { data, error } = await clientSupabase
+            .from('pvt_production_reports')
+            .select('waste_weight_kg, status');
+
+        if (error) return console.error('โหลด Dashboard พลาด:', error);
+
+        // คำนวณน้ำหนักรวม
+        const totalWeight = data.reduce((sum, item) => sum + Number(item.waste_weight_kg || 0), 0);
+        // นับจำนวนสถานะ pending
+        const pendingCount = data.filter(item => item.status === 'pending').length;
+
+        // พ่นตัวเลขลงหน้าเว็บ
+        document.getElementById('dash-total-weight').innerText = totalWeight.toFixed(2);
+        document.getElementById('dash-dash-pending-count').innerText = pendingCount;
+    }
+};
+
+        const LogModule = {
+    async load() {
+        const { data, error } = await clientSupabase
+            .from('system_logs')
+            .select('*')
+            .order('created_at', { ascending: false }); // เอาบั๊กล่าสุดขึ้นก่อน
+
+        if (error) return console.error('โหลด Logs พลาด:', error);
+
+        const tbody = document.getElementById('log-table-body');
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:10px; color:green;">🎉 ตอนนี้ระบบปกติดี ไม่มีบั๊กค้างครับพี่!</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.map(log => `
+            <tr style="color: red;">
+                <td style="padding: 8px;">${new Date(log.created_at).toLocaleString('th-TH')}</td>
+                <td style="padding: 8px;"><b>${log.error_code}</b></td>
+                <td style="padding: 8px;">${log.error_message}</td>
+            </tr>
+        `).join('');
+    }
+};
 
         // ฟังก์ชันระบบบันทึกประวัติแบบอมตะ สะสมต่อเนื่องไม่มีปุ่มล้าง มั่นใจได้ว่า Log เก่าไม่มีวันหาย
         function writeLog(text) {
@@ -251,7 +424,7 @@
             
             try {
                 const { data, error } = await supabase
-    .from('production_reports')
+    .from('pvt_production_reports')
     .select('*')
     .order('incident_datetime', { ascending: false });
 
@@ -367,6 +540,12 @@ records = data;(API_URL);
                 }
             }
         }
+        
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="../js/core/supabaseClient.js"></script>
+
+<script src="../js/form-department.js"></script>
 </body>
 </html>

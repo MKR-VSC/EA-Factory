@@ -9,11 +9,25 @@
 
 // =================================================================
 
-const sb = window.supabaseClient;
+// =========================================================
+// แก้ไขส่วนหัวของไฟล์ index.js เพื่อป้องกันสคริปต์ชนกันเอง
+// =========================================================
 
-const ALLOWED_ROLES = ["management", "supervisor", "admin", "MAN", "man"];
-const LOGIN_PAGE = "/login2.html";
+if (typeof window.sb === 'undefined') {
+    window.sb = window.supabaseClient;
+}
+
+if (typeof window.ALLOWED_ROLES === 'undefined') {
+    window.ALLOWED_ROLES = ["management", "supervisor", "admin", "MAN", "man"];
+}
+
+// นำตัวแปรของ window มาสร้างตัวแปรท้องถิ่นไว้ใช้งานต่อในไฟล์แบบปลอดภัย
+var sb = window.supabaseClient || window.sb;
+var ALLOWED_ROLES = window.ALLOWED_ROLES;
+
+const LOGIN_PAGE = "login2.html";
 const FORM_PAGE = "html/form-department.html";
+// ... โค้ดส่วนอื่นๆ คงเดิม ...
 
 const DEPARTMENT_LABELS = {
   print: "ม้วนพิมพ์",
@@ -232,30 +246,22 @@ window.switchDepartment = switchDepartment;
 // =========================================================
 
 async function loadAndProcessDashboardData() {
-  let records = [];
-
-  try {
-    if (!sb) throw new Error("ไม่พบ window.supabaseClient");
-
-    const { data, error } = await sb
-      .from("production_reports")
-      .select("*")
-      .order("incident_datetime", { ascending: false });
-
-    if (error) throw error;
-
-    records = Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.error("โหลดข้อมูลไม่สำเร็จ:", error);
-    records = [];
+  // ดึงค่าเชื่อมต่อหลักแบบหน่วงเวลาเผื่อสคริปต์ภายนอกยังโหลดไม่เสร็จ
+  const currentClient = window.supabaseClient || sb;
+  
+  if (!currentClient) {
+    console.warn("⏳ กำลังรอสคริปต์ฐานข้อมูลจัดตั้งตัวแปร... จะลองโหลดใหม่อีกครั้งใน 500ms");
+    // รอครึ่งวินาทีแล้วลองรันตัวเองใหม่ ไม่พ่นข้อความ Error จนเว็บค้าง
+    setTimeout(loadAndProcessDashboardData, 500);
+    return;
   }
 
-  updateMetricCards(records);
-  renderDoughnutChart(getDepartmentCounters(records));
-  renderMonthlyMachineChart(records);
-  generateExecutiveSummary(records);
-  generateExecutiveInsight(records);
-  renderReportTable(records);
+  try {
+    // ... โค้ดส่วนดึงข้อมูลเดิมของคุณจากฐานข้อมูล ...
+    
+  } catch (error) {
+    console.error("โหลดข้อมูลไม่สำเร็จ:", error);
+  }
 }
 
 window.loadAndProcessDashboardData = loadAndProcessDashboardData;
@@ -544,7 +550,7 @@ async function executeModifyCaseStatus(caseId, targetStatus) {
 
   try {
     const { error } = await sb
-      .from("production_reports")
+      .from("pvt_production_reports")
       .update({
         status: targetStatus,
         resolver: actingManager,
@@ -566,7 +572,7 @@ async function executeModifyCaseResolution(caseId, updatedText) {
 
   try {
     const { error } = await sb
-      .from("production_reports")
+      .from("pvt_production_reports")
       .update({
         resolution: updatedText,
         resolver: actingManager,
@@ -772,7 +778,7 @@ async function handleDashboardLogout() {
 
   localStorage.clear();
   alert("🔒 ออกจากระบบเรียบร้อยแล้ว");
-  window.location.href = LOGIN_PAGE;
+  window.location.href = "login2.html";
 }
 
 window.handleDashboardLogout = handleDashboardLogout;
@@ -852,9 +858,226 @@ function escapeAttr(value) {
 if (typeof supabase !== 'undefined' && supabase.from) {
   const originalFrom = supabase.from;
   supabase.from = function(tableName) {
-    if (tableName === 'production_reports') {
+    if (tableName === 'pvt_production_reports') {
       return originalFrom.call(this, 'daily_waste_reports');
     }
     return originalFrom.call(this, tableName);
   };
 }
+
+// =================================================================
+// 📊 ฟังก์ชันวิเคราะห์คำนวณและเจนโครงตารางคู่ขนานข้ามหน้าชีทตามตัวอย่างรูปถ่าย Excel
+// =================================================================
+// =================================================================
+// 📊 เวอร์ชันอัปเกรด: ส่งออก Excel เจนโครงสร้าง Pivot + Slicer เลือกเดือนได้อิสระ
+// =================================================================
+// =================================================================
+// 📊 ฟังก์ชันเวอร์ชันอัปเกรด: ส่งออก Excel แยกแท็บเครื่องจักร + ผูกสูตรเลือกเดือนได้อิสระ
+// =================================================================
+async function exportComplexpivotRowIdxtExcel() {
+  try {
+    // ดึงแคชข้อมูลที่ถูกกรองอยู่บนหน้าแดชบอร์ดขณะนั้น
+    const rawRecords = window.pvtExecutiveFilteredCache || [];
+    if (rawRecords.length === 0) {
+      alert("❌ ไม่พบข้อมูลรายงานในเงื่อนไขปัจจุบัน ไม่สามารถส่งออกได้");
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    
+    // 1. สร้างหน้าฐานข้อมูลดิบแฝงไว้
+    const dataSheet = workbook.addWorksheet('Data_Source', { views: [{ showGridLines: true }] });
+    dataSheet.columns = [
+      { header: 'วันที่', key: 'date', width: 15 },
+      { header: 'เดือน', key: 'month', width: 15 },
+      { header: 'Week', key: 'week', width: 12 },
+      { header: 'เครื่องจักร', key: 'machine', width: 15 },
+      { header: 'กะ', key: 'shift', width: 12 },
+      { header: 'อาการขัดข้อง', key: 'problem', width: 25 },
+      { header: 'น้ำหนักสูญเสีย', key: 'loss', width: 15 },
+      { header: 'น้ำหนักผลิต', key: 'prod', width: 15 }
+    ];
+
+    // ตกแต่ง Header ฐานข้อมูลหลัก
+    dataSheet.getRow(1).eachCell((cell) => {
+      cell.font = { name: 'Sarabun', size: 11, bold: true };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE6E6E6' } };
+      cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+    });
+
+    // คัดแยกประวัติเติมลงแผ่นงานหลัก
+    rawRecords.forEach(item => {
+      const rDate = item.incident_datetime ? new Date(item.incident_datetime).toLocaleDateString('th-TH') : '-';
+      const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+      let rMonth = "ไม่ระบุ";
+      if(item.incident_datetime) {
+         rMonth = monthNames[new Date(item.incident_datetime).getMonth()];
+      }
+
+      dataSheet.addRow({
+        date: rDate,
+        month: rMonth,
+        week: item.week_no || "week1",
+        machine: String(item.machine_no || item.machine || "ทั่วไป").trim(),
+        shift: item.shift || "เช้า",
+        problem: item.problem_type || item.detail || "อื่นๆ",
+        loss: item.weight_loss ? parseFloat(item.weight_loss) : 0,
+        prod: item.weight_prod ? parseFloat(item.weight_prod) : 0
+      });
+    });
+
+    // 2. แตกกลุ่มสร้างหน้าชีทแยกรายเครื่องจักร (F2, F3, ตัดเจาะ4 ฯลฯ)
+    const machines = [...new Set(rawRecords.map(item => String(item.machine_no || item.machine || "ทั่วไป").trim()))];
+
+    machines.forEach(machineKey => {
+      const sheet = workbook.addWorksheet(machineKey, { views: [{ showGridLines: true }] });
+      
+      sheet.columns = [
+        { width: 18 }, { width: 12 }, { width: 10 }, { width: 12 }, 
+        { width: 10 }, { width: 22 }, { width: 15 }, { width: 15 },
+        { width: 4 },  
+        { width: 25 }, // J (ป้ายชื่อแถว)
+        { width: 25 }, // K (ผลรวม น้ำหนักสูญเสีย)
+        { width: 25 }  // L (ผลรวม น้ำหนักผลิต)
+      ];
+
+      // หัวตารางฝั่งซ้าย (ข้อมูลดิบ)
+      const leftHeaders = ['วันที่', 'เดือน', 'Week', 'เครื่อง', 'กะ', 'อาการ', 'น้ำหนักสูญเสีย', 'น้ำหนักผลิต'];
+      leftHeaders.forEach((h, i) => {
+        const cell = sheet.getCell(3, i + 1);
+        cell.value = h;
+        cell.font = { name: 'Sarabun', size: 11, bold: true };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF2CC' } };
+        cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+        cell.alignment = { horizontal: 'center' };
+      });
+
+      // ดึงข้อมูลดิบมาหยอดเรียงฝั่งซ้าย
+      let rowIdx = 4;
+      dataSheet.eachRow((row, eIdx) => {
+        if(eIdx === 1) return;
+        if(row.getCell(4).value === machineKey) {
+          sheet.getCell(`A${rowIdx}`).value = row.getCell(1).value;
+          sheet.getCell(`B${rowIdx}`).value = row.getCell(2).value;
+          sheet.getCell(`C${rowIdx}`).value = row.getCell(3).value;
+          sheet.getCell(`D${rowIdx}`).value = row.getCell(4).value;
+          sheet.getCell(`E${rowIdx}`).value = row.getCell(5).value;
+          sheet.getCell(`F${rowIdx}`).value = row.getCell(6).value;
+          sheet.getCell(`G${rowIdx}`).value = row.getCell(7).value || '-';
+          sheet.getCell(`H${rowIdx}`).value = row.getCell(8).value || '-';
+          
+          ['A','B','C','D','E','F','G','H'].forEach(col => {
+            const c = sheet.getCell(`${col}${rowIdx}`);
+            c.font = { name: 'Sarabun', size: 11 };
+            c.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+            if(['G','H'].includes(col) && row.getCell(col === 'G' ? 7 : 8).value > 0) {
+              c.numFmt = '#,##0.00';
+              c.alignment = { horizontal: 'right' };
+            } else if(['A','B','C','D','E'].includes(col)) {
+              c.alignment = { horizontal: 'center' };
+            }
+          });
+          rowIdx++;
+        }
+      });
+
+      // 3. 🟥 สร้างกล่องเลือกตัวกรองดร็อปดาวน์ที่ช่อง J1:K1
+      sheet.getCell('J1').value = 'เลือกตัวกรองเดือน 🔽';
+      sheet.getCell('J1').font = { name: 'Sarabun', size: 11, bold: true };
+      sheet.getCell('J1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } }; // พื้นเขียวแบบ Excel
+      sheet.getCell('J1').border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+
+      sheet.getCell('K1').value = 'ทั้งหมด'; 
+      sheet.getCell('K1').font = { name: 'Sarabun', size: 11, bold: true, color: { argb: 'FFC00000' } };
+      sheet.getCell('K1').border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+      sheet.getCell('K1').alignment = { horizontal: 'center' };
+      
+      // สร้างลิสต์ดรอปดาวน์ให้คลิกเลือกเปลี่ยนเดือนได้ในตัว Excel
+      sheet.getCell('K1').dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: ['"ทั้งหมด,มกราคม,กุมภาพันธ์,มีนาคม,เมษายน,พฤษภาคม,มิถุนายน,กรกฎาคม,สิงหาคม,กันยายน,ตุลาคม,พฤศจิกายน,ธันวาคม"']
+      };
+
+      // 4. สร้างโครงสร้างหัวตารางสรุปฝั่งขวา (J3:L3) ธีมสีน้ำเงินตัวอักษรขาว
+      sheet.getCell('J3').value = 'ป้ายชื่อแถว (อาการเสีย)';
+      sheet.getCell('K3').value = 'ผลรวมของ น้ำหนักสูญเสีย';
+      sheet.getCell('L3').value = 'ผลรวมของ น้ำหนักผลิต';
+
+      const pivotRowIdxtHeaders = ['J3', 'K3', 'L3'];
+      pivotRowIdxtHeaders.forEach((cellPos, i) => {
+        const cell = sheet.getCell(cellPos);
+        cell.font = { name: 'Sarabun', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E78' } }; 
+        cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+        cell.alignment = { horizontal: i === 0 ? 'left' : 'right', vertical: 'middle' };
+      });
+
+      // ดึงรายชื่ออาการเสียมาตั้งแถวแบบไม่ซ้ำ
+      const currentMachineRecords = rawRecords.filter(item => String(item.machine_no || item.machine || "ทั่วไป").trim() === machineKey);
+      const uniqueProblems = [...new Set(currentMachineRecords.map(item => item.problem_type || item.detail || "อื่นๆ"))];
+
+      let pivotRowIdxtRowIdx = 4;
+      uniqueProblems.forEach((prob, pIdx) => {
+        const cellJ = sheet.getCell(`J${pivotRowIdxtRowIdx}`);
+        const cellK = sheet.getCell(`K${pivotRowIdx}`);
+        const cellL = sheet.getCell(`L${pivotRowIdx}`);
+
+        cellJ.value = prob;
+
+        // 🌟 ใส่สูตร SUMIFS ผูกเงื่อนไขกับช่อง K1: ถ้าเลือกเฉพาะเดือนให้รวมแค่เดือนนั้น ถ้าเลือก "ทั้งหมด" ให้พ่นยอดรวมเครื่องจักรทั้งหมดออกทันที
+        cellK.value = {
+          formula: `=IF($K$1="ทั้งหมด", SUMIFS(G$4:G$${rowIdx-1}, F$4:F$${rowIdx-1}, J${pivotRowIdx}), SUMIFS(G$4:G$${rowIdx-1}, F$4:F$${rowIdx-1}, J${pivotRowIdx}, B$4:B$${rowIdx-1}, $K$1))`
+        };
+        cellL.value = {
+          formula: `=IF($K$1="ทั้งหมด", SUMIFS(H$4:H$${rowIdx-1}, F$4:F$${rowIdx-1}, J${pivotRowIdx}), SUMIFS(H$4:H$${rowIdx-1}, F$4:F$${rowIdx-1}, J${pivotRowIdx}, B$4:B$${rowIdx-1}, $K$1))`
+        };
+
+        cellK.numFmt = '#,##0.00';
+        cellL.numFmt = '#,##0.00';
+
+        const isZebra = (pIdx % 2 === 1);
+        [cellJ, cellK, cellL].forEach((c, cIdx) => {
+          c.font = { name: 'Sarabun', size: 11 };
+          c.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+          c.alignment = { horizontal: cIdx === 0 ? 'left' : 'right' };
+          if(isZebra) {
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } }; // ลายแถวสลับสีฟ้าอ่อน
+          }
+        });
+
+        pivotRowIdx++;
+      });
+
+      // 5. แถวผลรวมรวมปิดท้ายตารางล่างสุด (Total Row)
+      const totalJ = sheet.getCell(`J${pivotRowIdx}`);
+      const totalK = sheet.getCell(`K${pivotRowIdx}`);
+      const totalL = sheet.getCell(`L${pivotRowIdx}`);
+
+      totalJ.value = 'ผลรวมทั้งหมด';
+      totalK.value = { formula: `=SUM(K4:K${pivotRowIdx-1})` };
+      totalL.value = { formula: `=SUM(L4:L${pivotRowIdx-1})` };
+
+      totalK.numFmt = '#,##0.00';
+      totalL.numFmt = '#,##0.00';
+
+      [totalJ, totalK, totalL].forEach((c, cIdx) => {
+        c.font = { name: 'Sarabun', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E78' } };
+        c.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+        c.alignment = { horizontal: cIdx === 0 ? 'left' : 'right' };
+      });
+    });
+
+    // 6. ประมวลผลเซฟและสั่งดาวน์โหลดเล่ม Excel สมบูรณ์แบบออกมา
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    saveAs(blob, `รายงานวิเคราะห์สถิติสรุปแบบผูกสูตร_PVT_Plastics.xlsx`);
+
+  } catch (err) {
+    alert("เกิดข้อผิดพลาดในขบวนการสร้างโครงสร้างเล่มรายงาน: " + err.message);
+  }
+}
+
+// ผูกระบบเข้าหาปุ่มหน้า HTML หลัก
+window.exportComplexPivotExcel = exportComplexPivotExcel;

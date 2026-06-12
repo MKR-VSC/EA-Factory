@@ -167,7 +167,7 @@ html, body {
 /* 📊 Layout Grid สำหรับการแสดงสถานะและการตรวจเช็คความละเอียดสูง */
 .metrics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 10fr));
     gap: 15px;
     margin-bottom: 25px;
 }
@@ -326,3 +326,33 @@ tr:hover { background: rgba(255, 255, 255, 0.01); }
     border-bottom: 1px dashed #111827;
     white-space: pre-wrap;
 }
+
+   /* 🎨 ปรับปรุง UI เพิ่มเติมให้ขนาดปุ่ม ช่องกรอกข้อมูล และ Dropdown ใหญ่ขึ้นเต็มตา กดง่ายขึ้น */
+        .form-group label {
+            font-size: 16px !important; 
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .form-group input[type="datetime-local"],
+        .form-group select,
+        .form-group textarea {
+            font-size: 16px !important; 
+            padding: 14px 16px !important; 
+            border-radius: 8px !important; 
+            line-height: 1.5;
+        }
+
+        .form-actions .btn-submit,
+        .form-actions .btn-clear {
+            font-size: 18px !important;
+            padding: 14px 28px !important;
+            font-weight: 700;
+            border-radius: 8px !important;
+            cursor: pointer;
+        }
+
+        #nav-dashboard-link {
+            display: none;
+        }
