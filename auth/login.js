@@ -45,72 +45,147 @@ function togglePasswordVisibility() {
 // ======================================================
 // 1) PASSWORD LOGIN สำหรับ Notebook / PC
 // ======================================================
-// ======================================================
-// 1) PASSWORD LOGIN สำหรับ Notebook / PC (เวอร์ชันซ่อมบั๊กรีหน้าเดิม)
-// ======================================================
+
 async function handlePasswordLogin(event) {
   event.preventDefault();
-  
-  // 🎯 ดักจับปุ่ม Login เผื่อไว้หมุนโหลด
+
   const loginBtn = document.querySelector(".btn-login");
   if (loginBtn) loginBtn.disabled = true;
 
-  const usernameInput = document.getElementById("username").value.trim(); // เช่น blow01
-  const passwordInput = document.getElementById("pvtPassword").value;
-  const rememberMeChecked = document.getElementById("rememberMe")?.checked;
+  const usernameInput = document
+    .getElementById("username")
+    .value
+    .trim()
+    .toUpperCase();
 
-  // ⚡ เติมโดเมนอัตโนมัติหลังบ้านเพื่อให้ Supabase Auth ทำงานได้ผ่านชื่อย่อ
-  const targetEmail = usernameInput.includes("@") ? usernameInput : `${usernameInput}@pvt.com`;
+  const passwordInput = document.getElementById("pvtPassword").value;
+
+  const rememberMeChecked =
+    document.getElementById("rememberMe")?.checked;
 
   try {
-    console.log("🚀 กำลังส่งข้อมูลไปตรวจสอบกับ Supabase Auth...");
-    const { data, error } = await sb.auth.signInWithPassword({
-      email: targetEmail,
-      password: passwordInput,
-    });
+    console.log("🔍 กำลังตรวจสอบ Username และ Password...");
 
-    if (error) throw error;
-
-    console.log("🔑 Auth สำเร็จ! กำลังดึงข้อมูลจากตาราง profiles...");
-    // ดึง Profile ไปเช็ค Role และแผนก
-    const { data: profile, error: profError } = await sb
-      .from('profiles')
-      .select('*')
-      .eq('id', data.user.id)
+    const { data: profile, error } = await sb
+      .from("profiles")
+      .select("*")
+      .eq("username", usernameInput)
+      .eq("password", passwordInput)
+      .eq("status", "active")
       .single();
 
-    if (profError) throw profError;
+    if (error || !profile) {
+      throw new Error("Invalid login");
+    }
 
-    // 🎯 แก้บั๊กจุดตกม้าตาย: ดักจับชื่อพนักงานให้รองรับทุกโครงสร้างตาราง (ป้องกัน undefined ทำระบบล่ม)
-    const activeName = profile.full_name || profile.display_name || profile.username || "พนักงาน PVT";
+    const activeName =
+      profile.full_name ||
+      profile.display_name ||
+      profile.username ||
+      "พนักงาน PVT";
 
-    // 🎯 ระบบจดจำผู้ใช้งาน (Remember Me)
+    // Remember Me
     if (rememberMeChecked) {
       localStorage.setItem("rememberedUser", usernameInput);
     } else {
       localStorage.removeItem("rememberedUser");
     }
 
-    // เซ็ตระบบความปลอดภัยลงเครื่อง
+    // Save Session
     localStorage.setItem("loginType", "password");
-    localStorage.setItem("activeUserId", data.user.id);
-    localStorage.setItem("activeUser", profile.username || usernameInput);
+    localStorage.setItem("activeUserId", profile.id);
+    localStorage.setItem("activeUser", profile.username);
     localStorage.setItem("activeName", activeName);
-    localStorage.setItem("activeDept", profile.department || profile.department_code || "");
-    localStorage.setItem("activeRole", profile.role || "staff");
+    localStorage.setItem(
+      "activeDept",
+      profile.department || ""
+    );
+    localStorage.setItem(
+      "activeRole",
+      profile.role || "staff"
+    );
 
-    alert(`🎉 ยินดีต้อนรับคุณ ${activeName} เข้าสู่ระบบ!`);
-    
-    // นำทางไปยังหน้าตามตำแหน่งสิทธิ์
+    alert(`🎉 ยินดีต้อนรับคุณ ${activeName}`);
+
     redirectByRole(profile.role);
 
   } catch (err) {
-    console.error("❌ Login Error Detail:", err);
-    alert("❌ เข้าสู่ระบบล้มเหลว: Username หรือ Password ไม่ถูกต้อง หรือโครงสร้างบัญชีมีปัญหา");
+    console.error("❌ Login Error:", err);
+
+    alert("❌ Username หรือ Password ไม่ถูกต้อง");
   } finally {
-    if (loginBtn) loginBtn.disabled = false;
+    if (loginBtn) {
+      loginBtn.disabled = false;
+    }
   }
 }
+
+// ======================================================
+// 1) PASSWORD LOGIN สำหรับ Notebook / PC (เวอร์ชันซ่อมบั๊กรีหน้าเดิม)
+// ======================================================
+// async function handlePasswordLogin(event) {
+//   event.preventDefault();
+  
+//   // 🎯 ดักจับปุ่ม Login เผื่อไว้หมุนโหลด
+//   const loginBtn = document.querySelector(".btn-login");
+//   if (loginBtn) loginBtn.disabled = true;
+
+//   const usernameInput = document.getElementById("username").value.trim(); // เช่น blow01
+//   const passwordInput = document.getElementById("pvtPassword").value;
+//   const rememberMeChecked = document.getElementById("rememberMe")?.checked;
+
+//   // ⚡ เติมโดเมนอัตโนมัติหลังบ้านเพื่อให้ Supabase Auth ทำงานได้ผ่านชื่อย่อ
+//   const targetEmail = usernameInput.includes("@") ? usernameInput : `${usernameInput}@pvt.com`;
+
+//   try {
+//     console.log("🚀 กำลังส่งข้อมูลไปตรวจสอบกับ Supabase Auth...");
+//     const { data, error } = await sb.auth.signInWithPassword({
+//       email: targetEmail,
+//       password: passwordInput,
+//     });
+
+//     if (error) throw error;
+
+//     console.log("🔑 Auth สำเร็จ! กำลังดึงข้อมูลจากตาราง profiles...");
+//     // ดึง Profile ไปเช็ค Role และแผนก
+//     const { data: profile, error: profError } = await sb
+//       .from('profiles')
+//       .select('*')
+//       .eq('id', data.user.id)
+//       .single();
+
+//     if (profError) throw profError;
+
+//     // 🎯 แก้บั๊กจุดตกม้าตาย: ดักจับชื่อพนักงานให้รองรับทุกโครงสร้างตาราง (ป้องกัน undefined ทำระบบล่ม)
+//     const activeName = profile.full_name || profile.display_name || profile.username || "พนักงาน PVT";
+
+//     // 🎯 ระบบจดจำผู้ใช้งาน (Remember Me)
+//     if (rememberMeChecked) {
+//       localStorage.setItem("rememberedUser", usernameInput);
+//     } else {
+//       localStorage.removeItem("rememberedUser");
+//     }
+
+//     // เซ็ตระบบความปลอดภัยลงเครื่อง
+//     localStorage.setItem("loginType", "password");
+//     localStorage.setItem("activeUserId", data.user.id);
+//     localStorage.setItem("activeUser", profile.username || usernameInput);
+//     localStorage.setItem("activeName", activeName);
+//     localStorage.setItem("activeDept", profile.department || profile.department_code || "");
+//     localStorage.setItem("activeRole", profile.role || "staff");
+
+//     alert(`🎉 ยินดีต้อนรับคุณ ${activeName} เข้าสู่ระบบ!`);
+    
+//     // นำทางไปยังหน้าตามตำแหน่งสิทธิ์
+//     redirectByRole(profile.role);
+
+//   } catch (err) {
+//     console.error("❌ Login Error Detail:", err);
+//     alert("❌ เข้าสู่ระบบล้มเหลว: Username หรือ Password ไม่ถูกต้อง หรือโครงสร้างบัญชีมีปัญหา");
+//   } finally {
+//     if (loginBtn) loginBtn.disabled = false;
+//   }
+// }
 
 // ======================================================
 // 2) QR MODE สำหรับ Tablet / Mobile
@@ -239,7 +314,7 @@ function redirectByRole(role) {
 
   if (currentRole === "admin") {
     // 1. แอดมิน -> ไปหน้าจัดการเครื่องจักร/ปัญหา
-    window.location.href = "admin-panel.html";
+    window.location.href = "html/admintor.html";
   } 
   else if (currentRole === "management") {
     // 2. ผู้บริหาร -> ไปหน้าแดชบอร์ดสรุปยอดรวม

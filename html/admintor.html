@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel - Daily Defect</title>
+  <link rel="stylesheet" href="/css/admintor.css" />
+  <link rel="icon" href="data:," />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <span class="logo-icon">⚡</span>
+        <div>
+          <strong>Admin Panel</strong>
+          <small>Daily Defect System</small>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu" aria-label="เมนูหลัก">
+        <button class="sidebar-item active" type="button" data-section="dashboard">📊 Dashboard</button>
+        <button class="sidebar-item" type="button" data-section="masters">⚙️ Master Data</button>
+        <button class="sidebar-item" type="button" data-section="logs">🪲 System Logs</button>
+      </nav>
+      <button id="btnLogout" class="btn-red" type="button">
+    ออกจากระบบ
+  </button>
+    </aside>
+
+
+    <!-- ================= MAIN ================= -->
+    <main class="main-workspace">
+      <header class="workspace-header">
+        <div>
+          <h1>แผงควบคุมระบบของเสียรายวัน</h1>
+          <p>ตรวจสอบรายการที่ส่งเข้าระบบ สถานะการตรวจสอบ และจัดการข้อมูลพื้นฐาน</p>
+        </div>
+        <button class="btn btn-secondary" type="button" id="btn-refresh">🔄 โหลดข้อมูลใหม่</button>
+      </header>
+
+      <div id="alert-box" class="alert" hidden></div>
+
+      <!-- ================= DASHBOARD ================= -->
+      <section id="section-dashboard" class="page-section active">
+        <div class="metrics-grid">
+          <article class="metric-card">
+            <span class="metric-label">การเชื่อมต่อ Supabase</span>
+            <strong id="status-api">กำลังตรวจสอบ...</strong>
+            <small id="status-latency">-- ms</small>
+          </article>
+
+          <article class="metric-card">
+            <span class="metric-label">รายการทั้งหมด</span>
+            <strong id="dash-total-count">0</strong>
+            <small>รายการในระบบ</small>
+          </article>
+
+          <article class="metric-card warning">
+            <span class="metric-label">รอตรวจสอบ</span>
+            <strong id="dash-pending-count">0</strong>
+            <small>เคส</small>
+          </article>
+
+          <article class="metric-card success">
+            <span class="metric-label">น้ำหนักของเสียรวม</span>
+            <strong id="dash-total-weight">0.00</strong>
+            <small>กิโลกรัม</small>
+          </article>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>📋 รายการของเสียล่าสุด</h2>
+            <span id="last-update" class="muted">ยังไม่ได้โหลดข้อมูล</span>
+          </div>
+
+          <div class="filter-row">
+            <input id="search-input" type="search" placeholder="ค้นหาแผนก / เครื่องจักร / อาการเสีย / ผู้แจ้ง..." />
+            <select id="status-filter">
+              <option value="all">ทุกสถานะ</option>
+              <option value="pending">รอตรวจสอบ</option>
+              <option value="approved">ตรวจสอบแล้ว</option>
+              <option value="rejected">ไม่ผ่าน</option>
+            </select>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>วันที่</th>
+                  <th>แผนก</th>
+                  <th>เครื่องจักร</th>
+                  <th>อาการเสีย</th>
+                  <th>น้ำหนัก</th>
+                  <th>ผู้แจ้ง</th>
+                  <th>สถานะ</th>
+                </tr>
+              </thead>
+              <tbody id="tb">
+                <tr><td colspan="7" class="tb-empty">กำลังโหลดข้อมูล...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= MASTER DATA ================= -->
+      <section id="section-masters" class="page-section">
+        <div class="master-grid">
+          <article class="panel">
+            <div class="panel-head"><h2>⚙️ จัดการเครื่องจักร</h2></div>
+            <div class="form-row">
+              <input type="text" id="machine-input" placeholder="เช่น F1, F2, เครื่องตัด" />
+              <button class="btn btn-primary" type="button" id="btn-add-machine">เพิ่ม</button>
+            </div>
+            <ul id="machine-list" class="data-list"></ul>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head"><h2>⚠️ จัดการหัวข้ออาการเสีย</h2></div>
+            <div class="form-row">
+              <input type="text" id="problem-input" placeholder="เช่น ขอบเบี้ยว, หนาไม่เท่ากัน" />
+              <button class="btn btn-danger" type="button" id="btn-add-problem">เพิ่ม</button>
+            </div>
+            <ul id="problem-list" class="data-list"></ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- ================= LOGS ================= -->
+      <section id="section-logs" class="page-section">
+        <div class="panel">
+          <div class="panel-head"><h2>🪲 System Logs</h2></div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>เวลา</th>
+                  <th>ประเภท</th>
+                  <th>รายละเอียด</th>
+                </tr>
+              </thead>
+              <tbody id="log-table-body">
+                <tr><td colspan="3" class="tb-empty">ยังไม่มี Log</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/core/supabaseClient.js"></script>
+  <script src="/js/admintor.js"></script>
+</body>
+</html>
