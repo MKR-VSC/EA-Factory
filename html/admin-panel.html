@@ -5,55 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🛡️ แผงควบคุมระบบ  ภาษาไทย</title>
     <link rel="stylesheet" href="/css/admin-style.css">
-    <style>
-        /* Remove inline style from status-total-devices */
-        .value.total-devices { color: var(--neon-blue); }
-        #status-api { color: #64748b; }
-        .login-gate p { color: #64748b; font-size: 13px; }
-        .workspace-title { text-shadow: 0 0 10px rgba(6, 182, 212, 0.2); }
-        .workspace-subtitle { color: #64748b; margin: 4px 0 0 0; font-size: 13px; }
-        #admin-main { display: none; }
-        /* mini glow bar color classes to avoid inline styles */
-        .mini-glow-bar { height: 6px; border-radius: 4px; margin-top: 8px; }
-        .mini-glow-bar.neon-green { background: var(--neon-green); }
-        .mini-glow-bar.neon-purple { background: var(--neon-purple); }
-        .mini-glow-bar.neon-red { background: var(--neon-red); }
-        /* text color utility classes to replace inline styles */
-        .text-neon-green { color: var(--neon-green); }
-        .text-neon-blue { color: var(--neon-blue); }
-        .text-neon-orange { color: var(--neon-orange); }
-        .text-neon-red { color: var(--neon-red); }
-        .text-neon-yellow { color: #f59e0b; }
-        .text-neon-orange { color: var(--neon-orange); }
-        .mono-code { font-family: 'Fira Code'; color: white; }
-        .bold { font-weight: bold; }
-        .spec-header { color: var(--neon-blue); font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #1e293b; padding-bottom: 4px; }
-        .spec-highlight { color: var(--neon-green); }
-        .spec-runtime { color: #f59e0b; }
-        .control-panel { margin-top: 15px; }
-        /* moved inline styles into classes to satisfy lint */
-        .table-header { padding: 15px 20px; font-weight: bold; background: #0c101c; border-bottom: 1px solid #1e293b; }
-        .table-scroll { overflow-x: auto; }
-        .tb-empty { text-align: center; color: #64748b; padding: 25px; }
-        th.w-8 { width: 8%; }
-        th.w-18 { width: 18%; }
-        th.w-12 { width: 12%; }
-        th.w-16 { width: 16%; }
-        .muted { color: #64748b; }
-    </style>
+    <link rel="icon" href="data:,">
 </head>
 <body>
 
-    <!-- 🔒 หน้าต่างล็อกอินสมดุลตรงกลาง 100% -->
-    <div id="auth-gate" class="auth-wrapper">
-        <div class="login-gate">
-            <h2>🛡️ ประตูรักษาความปลอดภัย </h2>
-            <p>กรุณาป้อนรหัสผ่านหลักเพื่อเข้าตรวจสอบสถานะเชิงลึกของระบบ</p>
-            <input type="password" id="adminPassword" class="form-control" placeholder="ใส่รหัสผ่านเพื่อเข้าใช้งาน..." onkeydown="if(event.key==='Enter') verifyAdmin()">
-            <button class="btn-login" onclick="verifyAdmin()">ยืนยันตัวตนเข้าสู่ระบบ</button>
-        </div>
-    </div>
+   <!-- 🔒 หน้าต่างล็อกอินผู้ดูแลระบบ (Admin Login Gate) -->
+ <div id="auth-gate" class="auth-wrapper">
+        <form class="login-gate" onsubmit="event.preventDefault(); event.stopPropagation(); verifyAdminAccount();">
+            <h2>🛡️ ประตูรักษาความปลอดภัย (Admin Panel)</h2>
+            <p>กรุณาระบุบัญชีผู้ดูแลระบบเพื่อเข้าตรวจสอบสถานะเชิงลึก</p>
+            
+            <div style="text-align: left; margin-bottom: 12px;">
+                <label style="font-size: 14px; color: #94a3b8;">ชื่อผู้ใช้งาน (Admin Username):</label>
+                <input type="text" id="pvtAdminUser" class="form-control admin-input" placeholder="กรอกรหัสพนักงาน/ชื่อแอดมิน..." style="margin: 5px 0 15px 0;" autocomplete="username" required>
+            </div>
 
+            <div style="text-align: left; margin-bottom: 15px;">
+                <label style="font-size: 14px; color: #94a3b8;">รหัสผ่านหลัก (Password):</label>
+                <input type="password" id="pvtAdminPass" class="form-control admin-input" placeholder="ใส่รหัสผ่านเพื่อเข้าใช้งาน..." style="margin: 5px 0 5px 0;" autocomplete="current-password" required>
+            </div>
+
+            <button type="submit" class="btn-login">ยืนยันตัวตนเข้าสู่ระบบแอดมิน</button>
+        </form>
+    </div>
     <!-- 📊 แผงแดชบอร์ดควบคุมระบบภาพรวม -->
     <div id="admin-main" class="dashboard-layout">
         
@@ -67,7 +41,7 @@
                 <a href="#" class="sidebar-item" onclick="toggleSpecBox()">🖥️ ข้อมูลสเปกเครื่องเซิร์ฟเวอร์</a>
                 <a href="#" class="sidebar-item" onclick="lockAdmin()">🔒 ออกจากระบบ</a>
             </div>
-            
+        </div>
         
         <!-- พื้นที่ส่วนกลางการประมวลผล -->
         <div class="main-workspace">
@@ -235,317 +209,12 @@
 
     </div>
 
-    <script>
-        // 🔑 รหัสผ่านความปลอดภัยเดิมของพี่ 100% ตามสั่งเป๊ะๆ
-        const ADMIN_SECRET_PASSWORD = "PVT_SECRET_2026"; 
-        const API_URL = 'http://localhost:3000/api/reports';
-        
-        let sessionTimer = 0;
-        let globalErrorCount = 0; // ตัวนับนับข้อผิดพลาดสะสม
-
-
-const MachineModule = {
-    // 1. ฟังก์ชันดึงรายชื่อเครื่องจักรมาโชว์
-    async load() {
-        const { data, error } = await clientSupabase
-            .from('master_machines')
-            .select('*')
-            .eq('is_active', true)
-            .order('machine_no', { ascending: true });
-
-        if (error) return console.error('โหลดเครื่องจักรพลาด:', error);
-        
-        const listContainer = document.getElementById('machine-list');
-        listContainer.innerHTML = data.map(m => `<li>เครื่องจักร: <b>${m.machine_no}</b></li>`).join('');
-    },
-
-    // 2. ฟังก์ชันกดเพิ่มเครื่องจักรใหม่
-    async add() {
-        const input = document.getElementById('machine-input');
-        const value = input.value.trim();
-        if (!value) return alert('กรุณากรอกชื่อเครื่องจักรครับพี่!');
-
-        const { error } = await clientSupabase
-            .from('master_machines')
-            .insert([{ machine_no: value, department: 'blow' }]);
-
-        if (error) {
-            alert('เพิ่มเครื่องจักรไม่สำเร็จ: ' + error.message);
-        } else {
-            input.value = '';
-            this.load(); // รีโหลดรายการใหม่
-        }
-    }
-};
-
-
-const ProblemModule = {
-    // 1. ฟังก์ชันดึงรายชื่ออาการเสียมาโชว์
-    async load() {
-        const { data, error } = await clientSupabase
-            .from('master_problems')
-            .select('*')
-            .eq('is_active', true)
-            .order('problem_type', { ascending: true });
-
-        if (error) return console.error('โหลดอาการเสียพลาด:', error);
-        
-        const listContainer = document.getElementById('problem-list');
-        listContainer.innerHTML = data.map(p => `<li>อาการ: <b>${p.problem_type}</b></li>`).join('');
-    },
-
-    // 2. ฟังก์ชันกดเพิ่มอาการเสียใหม่
-    async add() {
-        const input = document.getElementById('problem-input');
-        const value = input.value.trim();
-        if (!value) return alert('กรุณากรอกอาการเสียครับพี่!');
-
-        const { error } = await clientSupabase
-            .from('master_problems')
-            .insert([{ problem_type: value, department: 'blow' }]);
-
-        if (error) {
-            alert('เพิ่มอาการเสียไม่สำเร็จ: ' + error.message);
-        } else {
-            input.value = '';
-            this.load(); // รีโหลดรายการใหม่
-        }
-    }
-};
-
-const DashboardModule = {
-    async load() {
-        // ดึงข้อมูลดิบจากตารางรายงานปัญหาที่เราทำสำเร็จกันเมื่อกี้
-        const { data, error } = await clientSupabase
-            .from('pvt_production_reports')
-            .select('waste_weight_kg, status');
-
-        if (error) return console.error('โหลด Dashboard พลาด:', error);
-
-        // คำนวณน้ำหนักรวม
-        const totalWeight = data.reduce((sum, item) => sum + Number(item.waste_weight_kg || 0), 0);
-        // นับจำนวนสถานะ pending
-        const pendingCount = data.filter(item => item.status === 'pending').length;
-
-        // พ่นตัวเลขลงหน้าเว็บ
-        document.getElementById('dash-total-weight').innerText = totalWeight.toFixed(2);
-        document.getElementById('dash-dash-pending-count').innerText = pendingCount;
-    }
-};
-
-        const LogModule = {
-    async load() {
-        const { data, error } = await clientSupabase
-            .from('system_logs')
-            .select('*')
-            .order('created_at', { ascending: false }); // เอาบั๊กล่าสุดขึ้นก่อน
-
-        if (error) return console.error('โหลด Logs พลาด:', error);
-
-        const tbody = document.getElementById('log-table-body');
-        if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:10px; color:green;">🎉 ตอนนี้ระบบปกติดี ไม่มีบั๊กค้างครับพี่!</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = data.map(log => `
-            <tr style="color: red;">
-                <td style="padding: 8px;">${new Date(log.created_at).toLocaleString('th-TH')}</td>
-                <td style="padding: 8px;"><b>${log.error_code}</b></td>
-                <td style="padding: 8px;">${log.error_message}</td>
-            </tr>
-        `).join('');
-    }
-};
-
-        // ฟังก์ชันระบบบันทึกประวัติแบบอมตะ สะสมต่อเนื่องไม่มีปุ่มล้าง มั่นใจได้ว่า Log เก่าไม่มีวันหาย
-        function writeLog(text) {
-            const display = document.getElementById('log-display');
-            const time = new Date().toLocaleString('th-TH');
-            const el = document.createElement('div');
-            el.className = 'log-item';
-            el.innerHTML = `<span style="color:#54637a;">[${time}]</span> <span style="color:var(--neon-blue)">[บันทึกระบบ]</span> ${text}`;
-            display.insertBefore(el, display.firstChild);
-        }
-
-        function verifyAdmin() {
-            const inputPass = document.getElementById('adminPassword').value;
-            if (inputPass === ADMIN_SECRET_PASSWORD) {
-                document.getElementById('auth-gate').style.display = 'none';
-                document.getElementById('admin-main').style.display = 'flex';
-                writeLog("🔒 เข้าสู่ระบบสำเร็จ: ตรวจสอบรหัสผ่านถูกต้อง อนุมัติการเข้าถึงแผงควบคุมแอดมิน");
-                loadReports(); 
-                
-                // 🟢 ระบบสุ่มจำลองสถิติอุปกรณ์ผู้ใช้งานตามจริง (โน้ตบุ๊ค / ไอแพด / มือถือ)
-                const laptop = Math.floor(Math.random() * 15) + 5;
-                const ipad = Math.floor(Math.random() * 12) + 3;
-                const mobile = Math.floor(Math.random() * 20) + 8;
-                document.getElementById('dev-laptop').innerText = laptop + " เครื่อง";
-                document.getElementById('dev-ipad').innerText = ipad + " เครื่อง";
-                document.getElementById('dev-mobile').innerText = mobile + " เครื่อง";
-                document.getElementById('status-total-devices').innerText = `${laptop + ipad + mobile} อุปกรณ์`;
-
-                // เริ่มนับเวลาการเปิดใช้งานของเซสชันนี้เป็นวินาที
-                setInterval(() => {
-                    sessionTimer++;
-                    document.getElementById('session-runtime').innerText = `${sessionTimer} วินาที`;
-                }, 1000);
-            } else {
-                globalErrorCount++;
-                document.getElementById('err-accumulator').innerText = globalErrorCount;
-                alert("❌ รหัสผ่านไม่ถูกต้อง! ระบบปฏิเสธสิทธิ์การเข้าถึงข้อมูล");
-                writeLog("⚠️ ตรวจพบข้อผิดพลาด: มีความพยายามระบุรหัสผ่านเข้าสู่ระบบไม่ถูกต้อง");
-                document.getElementById('adminPassword').value = "";
-            }
-        }
-
-        function toggleSpecBox() {
-            const box = document.getElementById('server-spec-box');
-            if (box.style.display === 'block') {
-                box.style.display = 'none';
-                writeLog("🖥️ ซ่อนการแสดงผลหน้าต่างสเปกของเครื่องเซิร์ฟเวอร์");
-            } else {
-                box.style.display = 'block';
-                box.scrollIntoView({ behavior: 'smooth' });
-                writeLog("🖥️ เปิดกล่องตรวจสอบรายละเอียดทางเทคนิค (Hardware Spec) ของเซิร์ฟเวอร์");
-            }
-        }
-
-        async function loadReports(){
-            const tb = document.getElementById('tb');
-            const apiStatus = document.getElementById('status-api');
-            const latencyStatus = document.getElementById('status-latency');
-            const webUpdateTime = document.getElementById('web-update-time');
-            const stagnantStatus = document.getElementById('status-stagnant');
-            const secRisk = document.getElementById('web-sec-risk');
-            
-            tb.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--neon-blue); padding:30px;">🔄 กำลังโหลด: กำลังส่งสัญญาณดึงข้อมูลล่าสุดจากเซิร์ฟเวอร์หลังบ้าน...</td></tr>`;
-            const startTime = performance.now();
-            
-            try {
-                const { data, error } = await supabase
-    .from('pvt_production_reports')
-    .select('*')
-    .order('incident_datetime', { ascending: false });
-
-if (error) throw error;
-
-records = data;(API_URL);
-                const result = await response.json();
-                const endTime = performance.now();
-                const latency = Math.round(endTime - startTime);
-                
-                // บันทึกเวลาที่เว็บดึงข้อมูลสำเร็จล่าสุด
-                const now = new Date();
-                webUpdateTime.innerText = now.toLocaleTimeString('th-TH') + " น.";
-
-                if(result.success && result.data.length > 0) {
-                    tb.innerHTML = '';
-                    let pCount = 0, prCount = 0, sCount = 0;
-                    let stagnantCount = 0; // ตัวนับข้อมูลค้างสะสมในระบบ
-
-                    result.data.forEach(x => {
-                        let statusBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">⏳ รอดำเนินการ</span>`;
-                        if(x.status === 'pending' || !x.status) {
-                            pCount++;
-                            stagnantCount++; // เคสค้างสะสม (รอดำเนินการ)
-                        }
-                        if(x.status === 'progress') {
-                            statusBadge = `<span class="badge" style="background: rgba(6, 182, 212, 0.15); color: var(--neon-blue);">🔧 กำลังซ่อมแซม</span>`;
-                            prCount++;
-                        }
-                        if(x.status === 'resolved') {
-                            statusBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--neon-green);">✅ แก้ไขสำเร็จ</span>`;
-                            sCount++;
-                        }
-
-                        const deptName = x.department ? x.department.toUpperCase() : 'ทั่วไป';
-                        const currentReporter = x.reporter || x.name || 'ไม่ระบุผู้แจ้ง';
-
-                        tb.innerHTML += `<tr>
-                            <td><b>#${x.id}</b></td>
-                            <td>${x.datetime}</td>
-                            <td><span style="color:var(--neon-red); font-weight:bold;">${deptName}</span></td>
-                            <td><span style="background:#141b2f; padding:4px 8px; border-radius:4px; font-size:13px; border:1px solid #1e293b;">${x.reportType || 'ทั่วไป'}</span></td>
-                            <td>${x.detail}</td>
-                            <td><b style="color: #f59e0b;">👤 ${currentReporter}</b></td>
-                            <td>${statusBadge}</td>
-                        </tr>`;
-                    });
-
-                    apiStatus.innerText = "🟢 เซิร์ฟเวอร์ออนไลน์";
-                    apiStatus.style.color = "var(--neon-green)";
-                    latencyStatus.innerText = `ความเร็วการตอบกลับ: ${latency} ms`;
-                    stagnantStatus.innerText = `${stagnantCount} รายการค้างสะสม`;
-                    stagnantStatus.style.color = stagnantCount > 5 ? "var(--neon-red)" : "var(--neon-orange)";
-                    
-                    secRisk.innerText = "ปลอดภัยสูง";
-                    secRisk.style.color = "var(--neon-green)";
-
-                    writeLog(`📥 อัปเดตตารางข้อมูลสำเร็จ: ดึงข้อมูลรายงานเข้ามาทังหมด ${result.data.length} รายการ (ตรวจพบข้อมูลค้างดำเนินการ ${stagnantCount} รายการ)`);
-                } else {
-                    tb.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #64748b; padding:25px;">📭 การเชื่อมต่อปกติ แต่ไม่มีข้อมูลรายงานค้างอยู่ในระบบขณะนี้</td></tr>`;
-                    apiStatus.innerText = "🟢 เซิร์ฟเวอร์ออนไลน์";
-                    apiStatus.style.color = "var(--neon-green)";
-                    stagnantStatus.innerText = "0 รายการค้างสะสม";
-                    writeLog("📭 ตรวจค้นเสร็จสิ้น: การเชื่อมต่อปลายทางสำเร็จ แต่ไม่พบข้อมูลธุรกรรมในฐานข้อมูล");
-                }
-            } catch(error) {
-                globalErrorCount++; // นับแต้มข้อผิดพลาดสะสมเมื่อระบบพัง
-                document.getElementById('err-accumulator').innerText = globalErrorCount;
-
-                tb.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--neon-red); padding:30px;">❌ [เกิดข้อผิดพลาดเน็ตเวิร์ก] เซิร์ฟเวอร์ปลายทางพอร์ต 3000 ปิดอยู่ กรุณาเปิดรันโค้ดระบบหลังบ้าน (API Node.js) ก่อนใช้งาน</td></tr>`;
-                apiStatus.innerText = "🔴 ขาดการติดต่อ";
-                apiStatus.style.color = "var(--neon-red)";
-                latencyStatus.innerText = `ความเร็วการตอบกลับ: หมดเวลาเชื่อมต่อ (999+ ms)`;
-                secRisk.innerText = "แจ้งเตือนระบบ";
-                secRisk.style.color = "var(--neon-red)";
-                
-                writeLog("❌ [วิกฤตเน็ตเวิร์ก] ไม่สามารถติดต่อหรือขอข้อมูลกับเซิร์ฟเวอร์พอร์ต 3000 ได้ ระบบสะสมแต้มข้อผิดพลาดเพิ่มขึ้น");
-            }
-        }
-
-        function clearView(){
-            document.getElementById('tb').innerHTML = `<tr><td colspan="7" style="text-align:center; color:#64748b; padding:25px;">หน้าจอการแสดงผลของตารางข้อมูลถูกเคลียร์ออกชั่วคราวแล้ว</td></tr>`;
-            writeLog("🧹 สั่งล้างการแสดงผลตารางชั่วคราวบนหน้าจอ เพื่อความปลอดภัยของข้อมูล");
-        }
-
-        function lockAdmin() {
-            document.getElementById('adminPassword').value = "";
-            document.getElementById('auth-gate').style.display = 'flex';
-            document.getElementById('admin-main').style.display = 'none';
-            writeLog("🔒 ออกจากระบบสำเร็จ: ทำการปิดหน้าต่างควบคุมแอดมิน เพื่อความปลอดภัยของเซสชัน");
-        }
-
-        // ฟังก์ชันล้างเซิร์ฟเวอร์เดิม กลไกความปลอดภัยเดิมของพี่ครบ 100% (แจ้งเตือนไทยทั้งหมด)
-        async function clearServerDatabase() {
-            if (confirm("⚠️ คำเตือนสิทธิ์แอดมินสูงสุด! คุณมั่นใจหรือไม่ที่จะใช้คำสั่งล้างข้อมูลเพื่อทำลายและลบข้อมูลบนเซิร์ฟเวอร์หลังบ้านทั้งหมดทิ้งแบบถาวร? (ไม่สามารถกู้คืนได้)")) {
-                try {
-                    const response = await fetch('http://localhost:3000/api/reports/clear-all', {
-                        method: 'DELETE',
-                        headers: {
-                            'user-role': 'management',
-                            'x-pvt-secure-key': ADMIN_SECRET_PASSWORD
-                        }
-                    });
-                    const resData = await response.json();
-                    alert("📢 ข้อความแจ้งเตือนจากเซิร์ฟเวอร์: " + resData.message);
-                    writeLog(`🚨 สั่งทำลายข้อมูล: ดำเนินการส่งสัญญาณล้างฐานข้อมูลหลักทั้งหมดเรียบร้อยแล้ว! ผลลัพธ์: ${resData.message}`);
-                    loadReports();
-                } catch (error) {
-                    globalErrorCount++;
-                    document.getElementById('err-accumulator').innerText = globalErrorCount;
-                    alert("เกิดข้อผิดพลาด: พอร์ตเซิร์ฟเวอร์ 3000 ปฏิเสธสัญญาณการลบข้อมูลเนื่องจากเชื่อมต่อไม่ได้");
-                    writeLog("❌ ผิดพลาด: คำสั่งส่งสัญญาณไปล้างฐานข้อมูลล้มเหลวเนื่องจากการสื่อสารเครือข่ายขัดข้อง");
-                }
-            }
-        }
-        
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/core/supabaseClient.js"></script>
+<script src="../js/admin-panel.js?v=999"></script>
+    
 
-<script src="../js/form-department.js"></script>
+</body>
+</html>
 </body>
 </html>

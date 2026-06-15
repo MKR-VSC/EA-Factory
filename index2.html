@@ -96,20 +96,31 @@
       </div>
     </section>
 
-    <section class="panel-card">
-      <div class="panel-title">📉 สรุปแนวโน้มปัญหาของแต่ละเครื่องจักรแยกตามรายเดือน</div>
-      <div class="large-chart-wrapper">
-        <canvas id="dom-monthly-machine-chart"></canvas>
-      </div>
-    </section>
+   <div class="card shadow mb-4">
+  <div class="card-header py-3">
+    <h6 class="m-0 font-weight-bold text-primary">📈 แนวโน้มการเกิดปัญหาประจำปี (รายเดือน)</h6>
+  </div>
+  <div class="card-body">
+    
+    <div style="position: relative; height: 300px; width: 100%;">
+      <canvas id="chart-machine-bar"></canvas>
+    </div>
+    
+  </div>
+</div>
 
-    <div class="analytics-split">
-      <section class="panel-card">
-        <div class="panel-title">📊 สัดส่วนเหตุขัดข้องแยกตามแผนก</div>
-        <div class="chart-wrapper">
-          <canvas id="dom-dept-chart"></canvas>
-        </div>
-      </section>
+    <div class="card shadow mb-4">
+  <div class="card-header py-3">
+    <h6 class="m-0 font-weight-bold text-primary">📊 สัดส่วนปัญหาแยกตามแผนก</h6>
+  </div>
+  <div class="card-body">
+    
+    <div style="position: relative; height: 300px; width: 100%;">
+      <canvas id="chart-dept-donut"></canvas>
+    </div>
+    
+  </div>
+</div>
 
       <section class="panel-card control-box">
         <div>

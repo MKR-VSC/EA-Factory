@@ -300,3 +300,108 @@ body {
   padding: 0 8px;
 }
 
+
+
+/*ปุ่มสมัครใช้งาน  register*/
+
+/* =========================================================
+   สไตล์กล่องและปุ่มสมัครสมาชิกใหม่ (สำหรับหน้าล็อกอิน PVT)
+   ========================================================= */
+
+.register-redirect-container {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px dashed #cbd5e1; /* เส้นประคั่นสัดส่วน */
+    text-align: center;
+}
+
+.register-text {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 10px;
+    margin-top: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.btn-secondary-register {
+    display: inline-block;
+    width: 100%;
+    padding: 12px;
+    background: #ffffff;
+    color: #10b981; /* สีเขียวธีมสมัครสมาชิก */
+    border: 2px solid #10b981;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    text-decoration: none;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: all 0.25s ease-in-out; /* หน่วงเวลาตอนชี้เมาส์ให้นุ่มนวล */
+}
+
+/* เอฟเฟกต์ตอนเอาเมาส์ไปชี้ (Hover) */
+.btn-secondary-register:hover {
+    background: #10b981;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    transform: translateY(-1px); /* ปุ่มลอยขึ้นเล็กน้อย */
+}
+
+/* เอฟเฟกต์ตอนกดคลิกปุ่ม (Active) */
+.btn-secondary-register:active {
+    transform: translateY(1px); /* ปุ่มยุบลงไปเล็กน้อยตอนกด */
+}
+
+
+
+/* reset-password.css */
+
+
+
+/* =========================================================
+   สไตล์กล่องและปุ่มลืมรหัสผ่านแบบบล็อก (สำหรับหน้าล็อกอิน PVT)
+   ========================================================= */
+
+.forgot-redirect-container {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px dashed #cbd5e1; /* เส้นประคั่นแบ่งสัดส่วน */
+    text-align: center;
+}
+
+.forgot-text {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 10px;
+    margin-top: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.btn-secondary-forgot {
+    display: inline-block;
+    width: 100%;
+    padding: 12px;
+    background: #ffffff;
+    color: #e11d48; /* สีแดงชมพู ธีมไอที/ความปลอดภัย */
+    border: 2px solid #e11d48;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: all 0.25s ease-in-out; /* หน่วงเวลาตอนชี้เมาส์ให้นุ่มนวล */
+}
+
+/* เอฟเฟกต์ตอนเอาเมาส์ไปชี้ปุ่มลืมรหัสผ่าน (Hover) */
+.btn-secondary-forgot:hover {
+    background: #e11d48;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.2);
+    transform: translateY(-1px); /* ปุ่มลอยขึ้นเล็กน้อย */
+}
+
+/* เอฟเฟกต์ตอนกดคลิกปุ่ม (Active) */
+.btn-secondary-forgot:active {
+    transform: translateY(1px); /* ปุ่มยุบลงไปเล็กน้อยตอนกด */
+}

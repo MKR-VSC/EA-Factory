@@ -356,3 +356,38 @@ tr:hover { background: rgba(255, 255, 255, 0.01); }
         #nav-dashboard-link {
             display: none;
         }
+
+           /* Remove inline style from status-total-devices */
+        .value.total-devices { color: var(--neon-blue); }
+        #status-api { color: #64748b; }
+        .login-gate p { color: #64748b; font-size: 13px; }
+        .workspace-title { text-shadow: 0 0 10px rgba(6, 182, 212, 0.2); }
+        .workspace-subtitle { color: #64748b; margin: 4px 0 0 0; font-size: 13px; }
+        #admin-main { display: none; }
+        /* mini glow bar color classes to avoid inline styles */
+        .mini-glow-bar { height: 6px; border-radius: 4px; margin-top: 8px; }
+        .mini-glow-bar.neon-green { background: var(--neon-green); }
+        .mini-glow-bar.neon-purple { background: var(--neon-purple); }
+        .mini-glow-bar.neon-red { background: var(--neon-red); }
+        /* text color utility classes to replace inline styles */
+        .text-neon-green { color: var(--neon-green); }
+        .text-neon-blue { color: var(--neon-blue); }
+        .text-neon-orange { color: var(--neon-orange); }
+        .text-neon-red { color: var(--neon-red); }
+        .text-neon-yellow { color: #f59e0b; }
+        .text-neon-orange { color: var(--neon-orange); }
+        .mono-code { font-family: 'Fira Code'; color: white; }
+        .bold { font-weight: bold; }
+        .spec-header { color: var(--neon-blue); font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #1e293b; padding-bottom: 4px; }
+        .spec-highlight { color: var(--neon-green); }
+        .spec-runtime { color: #f59e0b; }
+        .control-panel { margin-top: 15px; }
+        /* moved inline styles into classes to satisfy lint */
+        .table-header { padding: 15px 20px; font-weight: bold; background: #0c101c; border-bottom: 1px solid #1e293b; }
+        .table-scroll { overflow-x: auto; }
+        .tb-empty { text-align: center; color: #64748b; padding: 25px; }
+        th.w-8 { width: 8%; }
+        th.w-18 { width: 18%; }
+        th.w-12 { width: 12%; }
+        th.w-16 { width: 16%; }
+        .muted { color: #64748b; }
