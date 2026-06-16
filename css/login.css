@@ -458,54 +458,249 @@ label {
 }
 
 /* ======================================================
-   MOBILE
+   RESPONSIVE : TABLET / MOBILE FIRST
 ====================================================== */
 
+/* ---------- Tablet แนวตั้ง / มือถือจอใหญ่ ---------- */
 @media (max-width: 768px) {
+  body {
+    background-attachment: fixed;
+  }
+
+  .pvt-top-header {
+    padding: 22px 14px 8px;
+  }
+
+  .logo {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .logo img {
+    width: 150px;
+    height: 150px;
+  }
 
   .pvt-top-header h1 {
     font-size: 24px;
+    line-height: 1.35;
   }
 
+  .pvt-top-header p {
+    font-size: 14px;
+    margin: 6px 0 0;
+  }
+
+  .login-page {
+    width: 100%;
+    max-width: 460px;
+    margin: 12px auto 40px;
+    padding: 0 14px;
+  }
+
+  .login-card,
+  .qr-login-box {
+    border-radius: 20px;
+    padding: 22px;
+  }
+
+  .login-card h2 {
+    font-size: 22px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+  }
+
+  .form-control {
+    height: 48px;
+    font-size: 16px;
+  }
+
+  .password-row {
+    gap: 8px;
+  }
+
+  .btn-eye {
+    width: 54px;
+    flex: 0 0 54px;
+  }
+
+  .btn-login,
+  .btn-qr,
+  .btn-scan-qr {
+    font-size: 16px;
+    padding: 14px;
+  }
+
+  /* คู่มือใช้งาน เปลี่ยนจาก panel ข้างจอเป็นลอยด้านล่าง */
   .guide-card {
-    width: 300px;
-    right: -300px;
+    top: auto;
+    right: 12px;
+    bottom: 16px;
+
+    width: calc(100% - 24px);
+    max-width: 420px;
+
+    padding: 18px;
+
+    transform: translateY(calc(100% + 24px));
+    transition: .35s ease;
+  }
+
+  .guide-card.active {
+    right: 12px;
+    transform: translateY(0);
   }
 
   .btn-guide-toggle {
-    left: -135px;
+    left: auto;
+    right: 0;
+    top: -48px;
+
+    border-radius: 14px 14px 0 0;
+    padding: 10px 14px;
+
     font-size: 13px;
   }
 }
 
+/* ---------- มือถือทั่วไป ---------- */
 @media (max-width: 480px) {
+  .splash-logo img {
+    width: 90px;
+    height: 90px;
+  }
 
-  .login-card,
-  .qr-login-box {
-    padding: 20px;
+  .splash-title {
+    font-size: 24px;
+  }
+
+  .splash-sub {
+    font-size: 14px;
+  }
+
+  .pvt-top-header {
+    padding-top: 18px;
+  }
+
+  .logo img {
+    width: 150px;
+    height: 150px;
+  }
+
+  .logo h2 {
+    font-size: 18px;
+  }
+
+  .logo p {
+    font-size: 12px;
   }
 
   .pvt-top-header h1 {
     font-size: 20px;
   }
+
+  .login-page {
+    margin-top: 10px;
+    padding: 0 12px;
+  }
+
+  .login-card,
+  .qr-login-box {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .login-card h2 {
+    font-size: 20px;
+  }
+
+  label {
+    font-size: 14px;
+  }
+
+  .form-control {
+    height: 46px;
+    border-radius: 12px;
+  }
+
+  .btn-eye {
+    width: 50px;
+    flex: 0 0 50px;
+    border-radius: 12px;
+  }
+
+  .remember-row {
+    font-size: 14px;
+  }
+
+  .btn-login,
+  .btn-qr,
+  .btn-scan-qr {
+    border-radius: 12px;
+    font-size: 15px;
+  }
+
+  .overlay-box {
+    width: calc(100% - 32px);
+    padding: 24px 18px;
+  }
+
+  .guide-card {
+    right: 10px;
+    bottom: 12px;
+    width: calc(100% - 20px);
+    padding: 16px;
+  }
+
+  .guide-card.active {
+    right: 10px;
+  }
+
+  .mode-box {
+    padding: 12px;
+  }
 }
 
+/* ---------- มือถือจอเล็กมาก ---------- */
+@media (max-width: 360px) {
+  .pvt-top-header h1 {
+    font-size: 18px;
+  }
 
+  .login-card,
+  .qr-login-box {
+    padding: 16px;
+  }
 
-.btn-scan-qr {
-  width: 100%;
-  margin-top: 14px;
-  border: none;
-  border-radius: 14px;
-  padding: 15px;
-  background: #10b981;
-  color: white;
-  font-family: inherit;
-  font-size: 18px;
-  font-weight: 700;
-  cursor: pointer;
+  .form-control {
+    font-size: 15px;
+  }
+
+  .btn-login,
+  .btn-qr,
+  .btn-scan-qr {
+    font-size: 14px;
+  }
 }
 
-.btn-scan-qr:hover {
-  background: #059669;
+/* ---------- Tablet แนวนอน ---------- */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .logo img {
+    width: 150px;
+    height: 150px;
+  }
+
+  .pvt-top-header h1 {
+    font-size: 30px;
+  }
+
+  .login-page {
+    max-width: 500px;
+  }
+
+  .guide-card {
+    top: 100px;
+  }
 }

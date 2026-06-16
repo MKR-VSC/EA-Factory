@@ -1,20 +1,25 @@
 /* =========================================================
    ADMIN PANEL - DAILY WASTE REPORTS
-   ใช้งานจริงกับ Supabase + Logout
+   Dashboard + Master Data + User / Role Management
 ========================================================= */
 
 const REPORT_TABLE = "daily_waste_reports";
+const PROFILE_TABLE = "profiles";
 
 const MASTER_TABLES = {
-  machines: ["master_machines", "machines"],
-  problems: ["master_problems", "problems"],
+  machines: ["master_machines", "pvt_machines"],
+  problems: ["master_problems", "pvt_problem_types"],
 };
 
 const LOGIN_PAGE = "/login.html";
 
+const ROLE_OPTIONS = ["staff", "supervisor", "accounting", "management", "admin"];
+const STATUS_OPTIONS = ["active", "inactive"];
+
 const state = {
   supabase: null,
   reports: [],
+  users: [],
   machineTable: null,
   problemTable: null,
   machines: [],
@@ -27,12 +32,12 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* =========================================================
-   AUTH / PROTECT PAGE / LOGOUT
+   AUTH
 ========================================================= */
 
 function protectAdminPage() {
   const user = localStorage.getItem("activeUser");
-  const role = localStorage.getItem("activeRole");
+  const role = String(localStorage.getItem("activeRole") || "").toLowerCase();
 
   const allowRoles = ["admin", "management", "accounting", "supervisor"];
 
@@ -53,28 +58,20 @@ async function logout() {
       await window.supabaseClient.auth.signOut();
     }
 
+    localStorage.removeItem("loginType");
+    localStorage.removeItem("activeUserId");
     localStorage.removeItem("activeUser");
     localStorage.removeItem("activeName");
     localStorage.removeItem("activeRole");
     localStorage.removeItem("activeDept");
+    localStorage.removeItem("activeDeptName");
 
     sessionStorage.clear();
-
     window.location.href = LOGIN_PAGE;
   } catch (err) {
     console.error("Logout error:", err);
     alert("ออกจากระบบไม่สำเร็จ");
   }
-}
-
-function setCurrentUserLabel() {
-  const el = document.getElementById("currentUser");
-  if (!el) return;
-
-  el.textContent =
-    localStorage.getItem("activeName") ||
-    localStorage.getItem("activeUser") ||
-    "-";
 }
 
 /* =========================================================
@@ -83,7 +80,6 @@ function setCurrentUserLabel() {
 
 async function initAdminPanel() {
   bindEvents();
-  setCurrentUserLabel();
 
   state.supabase = window.supabaseClient || window.supabase || null;
 
@@ -107,11 +103,16 @@ function bindEvents() {
   });
 
   document.getElementById("btn-refresh")?.addEventListener("click", loadAll);
+
   document.getElementById("search-input")?.addEventListener("input", renderReports);
   document.getElementById("status-filter")?.addEventListener("change", renderReports);
 
   document.getElementById("btn-add-machine")?.addEventListener("click", addMachine);
   document.getElementById("btn-add-problem")?.addEventListener("click", addProblem);
+
+  document.getElementById("btn-add-user")?.addEventListener("click", addUser);
+  document.getElementById("user-search-input")?.addEventListener("input", renderUsers);
+  document.getElementById("user-status-filter")?.addEventListener("change", renderUsers);
 
   document.getElementById("btnLogout")?.addEventListener("click", logout);
   document.getElementById("btn-logout")?.addEventListener("click", logout);
@@ -146,6 +147,7 @@ async function loadAll() {
   try {
     await loadReports();
     await loadMasters();
+    await loadUsers();
 
     const latency = Math.round(performance.now() - start);
 
@@ -156,10 +158,8 @@ async function loadAll() {
     addLog("INFO", "โหลดข้อมูลสำเร็จ");
   } catch (err) {
     console.error(err);
-
     setText("status-api", "พบข้อผิดพลาด");
     setText("status-latency", "-- ms");
-
     showAlert(err.message || String(err));
     addLog("ERROR", err.message || String(err));
   } finally {
@@ -179,20 +179,19 @@ async function loadReports() {
   }
 
   state.reports = Array.isArray(data) ? data : [];
-
   renderReports();
   updateSummary();
 }
 
 async function loadMasters() {
   const machine = await selectFirstAvailableTable(MASTER_TABLES.machines, "*", {
-    orderColumn: "name",
+    orderColumn: "id",
     ascending: true,
     optional: true,
   });
 
   const problem = await selectFirstAvailableTable(MASTER_TABLES.problems, "*", {
-    orderColumn: "name",
+    orderColumn: "id",
     ascending: true,
     optional: true,
   });
@@ -204,6 +203,32 @@ async function loadMasters() {
 
   renderMasterList("machine-list", state.machines, deleteMachine);
   renderMasterList("problem-list", state.problems, deleteProblem);
+}
+
+async function loadUsers() {
+  const { data, error } = await state.supabase
+    .from(PROFILE_TABLE)
+    .select(`
+      id,
+      username,
+      password,
+      role,
+      department,
+      department_code,
+      display_name,
+      full_name,
+      email,
+      status,
+      created_at
+    `)
+    .order("username", { ascending: true });
+
+  if (error) {
+    throw new Error(`โหลดข้อมูลผู้ใช้งานไม่สำเร็จ: ${error.message}`);
+  }
+
+  state.users = Array.isArray(data) ? data : [];
+  renderUsers();
 }
 
 async function selectFirstAvailableTable(tableNames, columns = "*", options = {}) {
@@ -251,7 +276,7 @@ async function selectFirstAvailableTable(tableNames, columns = "*", options = {}
 }
 
 /* =========================================================
-   RENDER REPORTS
+   REPORTS
 ========================================================= */
 
 function renderReports() {
@@ -266,13 +291,16 @@ function renderReports() {
       row.department_code,
       row.product_name,
       row.machine_no,
+      row.machine,
       row.problem_type,
+      row.problem_detail,
       row.reason_detail,
       row.detail,
       row.corrective_action,
       row.forecast_note,
       row.note,
       row.reported_by,
+      row.reporter_name,
       row.created_by,
     ]
       .filter(Boolean)
@@ -299,12 +327,12 @@ function renderReports() {
 
       return `
         <tr>
-          <td>${escapeHtml(formatDate(row.incident_datetime || row.report_date || row.created_at))}</td>
-          <td>${escapeHtml(row.department || row.department_code || "-")}</td>
-          <td>${escapeHtml(row.machine_no || "-")}</td>
-          <td>${escapeHtml(row.problem_type || row.reason_detail || "-")}</td>
+          <td>${escapeHtml(formatDate(row.incident_datetime || row.report_date || row.date_time || row.created_at))}</td>
+          <td>${escapeHtml(row.department || row.department_code || row.dept || "-")}</td>
+          <td>${escapeHtml(row.machine_no || row.machine || "-")}</td>
+          <td>${escapeHtml(row.problem_type || row.problem_detail || row.reason_detail || row.detail || "-")}</td>
           <td>${escapeHtml(formatWasteWeight(row))}</td>
-          <td>${escapeHtml(row.reported_by || row.created_by || "-")}</td>
+          <td>${escapeHtml(row.reported_by || row.reporter_name || row.created_by || "-")}</td>
           <td>
             <span class="status-pill status-${status}">
               ${escapeHtml(statusText(status))}
@@ -339,7 +367,7 @@ function updateSummary() {
 }
 
 /* =========================================================
-   MASTER MACHINE / PROBLEM
+   MASTER DATA
 ========================================================= */
 
 async function addMachine() {
@@ -374,19 +402,48 @@ async function addMasterItem(inputId, type, currentTable, tableList, reloadFn) {
     const found = await selectFirstAvailableTable(tableList, "*", {
       optional: true,
     });
-
     table = found.table;
   }
 
   if (!table) {
-    showAlert(`ยังไม่พบตารางสำหรับ ${type} ให้สร้างตาราง ${tableList[0]} ก่อน`);
+    showAlert(`ยังไม่พบตารางสำหรับ ${type}`);
     return;
   }
 
-  const { error } = await state.supabase.from(table).insert({
-    name,
-    status: "active",
-  });
+  const department =
+    localStorage.getItem("activeDept") ||
+    localStorage.getItem("activeDeptName") ||
+    "general";
+
+  let payload = {};
+
+  if (table === "master_machines") {
+    payload = {
+      machine_no: name,
+      department,
+      is_active: true,
+    };
+  } else if (table === "master_problems") {
+    payload = {
+      problem_type: name,
+      department,
+      is_active: true,
+    };
+  } else if (table === "pvt_machines") {
+    payload = {
+      machine_name: name,
+      department,
+    };
+  } else if (table === "pvt_problem_types") {
+    payload = {
+      problem_name: name,
+      department,
+    };
+  } else {
+    payload = { name };
+  }
+
+  const { error } = await state.supabase.from(table).insert(payload);
 
   if (error) {
     showAlert(`เพิ่มข้อมูลไม่สำเร็จ: ${error.message}`);
@@ -395,9 +452,7 @@ async function addMasterItem(inputId, type, currentTable, tableList, reloadFn) {
   }
 
   input.value = "";
-
   addLog("INFO", `เพิ่ม ${type}: ${name}`);
-
   await reloadFn();
 }
 
@@ -423,6 +478,7 @@ async function deleteMasterItem(table, id, reloadFn) {
     return;
   }
 
+  addLog("INFO", `ลบข้อมูลจาก ${table} สำเร็จ`);
   await reloadFn();
 }
 
@@ -431,11 +487,7 @@ function renderMasterList(elementId, rows, onDelete) {
   if (!list) return;
 
   if (!rows.length) {
-    list.innerHTML = `
-      <li>
-        <span class="muted">ยังไม่มีข้อมูล หรือยังไม่ได้สร้างตาราง Master</span>
-      </li>
-    `;
+    list.innerHTML = `<li><span class="muted">ยังไม่มีข้อมูล</span></li>`;
     return;
   }
 
@@ -446,25 +498,235 @@ function renderMasterList(elementId, rows, onDelete) {
 
     const name =
       row.name ||
-      row.machine_name ||
-      row.problem_name ||
       row.machine_no ||
+      row.machine_name ||
+      row.problem_type ||
+      row.problem_name ||
+      row.reason_name ||
       "-";
+
+    const department = row.department || row.department_code || "";
 
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = "ลบ";
     btn.addEventListener("click", () => onDelete(row.id));
 
-    li.innerHTML = `<span>${escapeHtml(name)}</span>`;
-    li.appendChild(btn);
+    li.innerHTML = `
+      <span>
+        ${escapeHtml(name)}
+        ${department ? `<small class="muted"> / ${escapeHtml(department)}</small>` : ""}
+      </span>
+    `;
 
+    li.appendChild(btn);
     list.appendChild(li);
   });
 }
 
 /* =========================================================
-   FORMAT / HELPERS
+   USER / ROLE MANAGEMENT
+========================================================= */
+
+function renderUsers() {
+  const tbody = document.getElementById("user-table-body");
+  if (!tbody) return;
+
+  const keyword = getValue("user-search-input").toLowerCase();
+  const statusFilter = getValue("user-status-filter") || "all";
+
+  const rows = state.users.filter((user) => {
+    const status = String(user.status || "active").toLowerCase();
+
+    const text = [
+      user.username,
+      user.display_name,
+      user.full_name,
+      user.department,
+      user.department_code,
+      user.email,
+      user.role,
+      user.status,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    const matchKeyword = !keyword || text.includes(keyword);
+    const matchStatus = statusFilter === "all" || status === statusFilter;
+
+    return matchKeyword && matchStatus;
+  });
+
+  if (!rows.length) {
+    renderEmptyTable("user-table-body", 6, "ไม่พบข้อมูลผู้ใช้งาน");
+    return;
+  }
+
+  tbody.innerHTML = rows
+    .map((user) => {
+      const userId = escapeHtml(user.id);
+      const username = escapeHtml(user.username || "-");
+      const displayName = escapeHtml(user.display_name || user.full_name || "-");
+      const department = escapeHtml(user.department || user.department_code || "-");
+      const role = String(user.role || "staff").toLowerCase();
+      const status = String(user.status || "active").toLowerCase();
+
+      return `
+        <tr>
+          <td><strong>${username}</strong></td>
+          <td>${displayName}</td>
+          <td>${department}</td>
+          <td>
+            <select data-user-role="${userId}" onchange="updateUserRole('${userId}', this.value)">
+              ${ROLE_OPTIONS.map((r) => `
+                <option value="${r}" ${r === role ? "selected" : ""}>${r}</option>
+              `).join("")}
+            </select>
+          </td>
+          <td>
+            <select data-user-status="${userId}" onchange="updateUserStatus('${userId}', this.value)">
+              ${STATUS_OPTIONS.map((s) => `
+                <option value="${s}" ${s === status ? "selected" : ""}>${s}</option>
+              `).join("")}
+            </select>
+          </td>
+          <td>
+            <button type="button" onclick="deleteUser('${userId}')">ลบ</button>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+async function addUser() {
+  const username = getValue("user-username").toUpperCase();
+  const password = getValue("user-password");
+  const displayName = getValue("user-display-name");
+  const department = getValue("user-department");
+  const role = getValue("user-role") || "staff";
+
+  if (!username || !password) {
+    showAlert("กรุณากรอก Username และ Password");
+    return;
+  }
+
+  const exists = state.users.some((u) => {
+    return String(u.username || "").toUpperCase() === username;
+  });
+
+  if (exists) {
+    showAlert(`Username ${username} มีอยู่แล้ว`);
+    return;
+  }
+
+  const payload = {
+    id: createUuid(),
+    username,
+    password,
+    role,
+    status: "active",
+    display_name: displayName || username,
+    full_name: displayName || username,
+    department: department || "",
+    department_code: department || "",
+    email: `${username.toLowerCase()}@pvt.local`,
+  };
+
+  const { error } = await state.supabase.from(PROFILE_TABLE).insert(payload);
+
+  if (error) {
+    showAlert(`เพิ่ม User ไม่สำเร็จ: ${error.message}`);
+    addLog("ERROR", error.message);
+    return;
+  }
+
+  clearUserForm();
+  addLog("INFO", `เพิ่ม User: ${username}`);
+  await loadUsers();
+}
+
+async function updateUserRole(userId, role) {
+  if (!userId || !role) return;
+
+  const { error } = await state.supabase
+    .from(PROFILE_TABLE)
+    .update({
+      role,
+    })
+    .eq("id", userId);
+
+  if (error) {
+    showAlert(`เปลี่ยน Role ไม่สำเร็จ: ${error.message}`);
+    addLog("ERROR", error.message);
+    await loadUsers();
+    return;
+  }
+
+  addLog("INFO", `เปลี่ยน Role สำเร็จ`);
+  await loadUsers();
+}
+
+async function updateUserStatus(userId, status) {
+  if (!userId || !status) return;
+
+  const { error } = await state.supabase
+    .from(PROFILE_TABLE)
+    .update({
+      status,
+    })
+    .eq("id", userId);
+
+  if (error) {
+    showAlert(`เปลี่ยน Status ไม่สำเร็จ: ${error.message}`);
+    addLog("ERROR", error.message);
+    await loadUsers();
+    return;
+  }
+
+  addLog("INFO", `เปลี่ยน Status สำเร็จ`);
+  await loadUsers();
+}
+
+async function deleteUser(userId) {
+  if (!userId) return;
+
+  const currentUserId = localStorage.getItem("activeUserId");
+
+  if (userId === currentUserId) {
+    showAlert("ไม่สามารถลบ User ที่กำลัง Login อยู่ได้");
+    return;
+  }
+
+  const ok = confirm("ต้องการลบ User นี้ใช่ไหม?");
+  if (!ok) return;
+
+  const { error } = await state.supabase
+    .from(PROFILE_TABLE)
+    .delete()
+    .eq("id", userId);
+
+  if (error) {
+    showAlert(`ลบ User ไม่สำเร็จ: ${error.message}`);
+    addLog("ERROR", error.message);
+    return;
+  }
+
+  addLog("INFO", "ลบ User สำเร็จ");
+  await loadUsers();
+}
+
+function clearUserForm() {
+  setValue("user-username", "");
+  setValue("user-password", "");
+  setValue("user-display-name", "");
+  setValue("user-department", "");
+  setValue("user-role", "staff");
+}
+
+/* =========================================================
+   HELPERS
 ========================================================= */
 
 function normalizeStatus(value) {
@@ -540,7 +802,6 @@ function addLog(type, message) {
 
 function renderEmptyTable(tbodyId, colspan, message) {
   const tbody = document.getElementById(tbodyId);
-
   if (!tbody) return;
 
   tbody.innerHTML = `
@@ -561,9 +822,13 @@ function getValue(id) {
   return document.getElementById(id)?.value?.trim() || "";
 }
 
+function setValue(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.value = value;
+}
+
 function showAlert(message) {
   const box = document.getElementById("alert-box");
-
   if (!box) return;
 
   box.textContent = message;
@@ -572,10 +837,7 @@ function showAlert(message) {
 
 function hideAlert() {
   const box = document.getElementById("alert-box");
-
-  if (box) {
-    box.hidden = true;
-  }
+  if (box) box.hidden = true;
 }
 
 function toNumber(value) {
@@ -604,9 +866,24 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function createUuid() {
+  if (window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 /* =========================================================
    GLOBAL
 ========================================================= */
 
 window.loadAdminPanel = loadAll;
 window.logout = logout;
+window.updateUserRole = updateUserRole;
+window.updateUserStatus = updateUserStatus;
+window.deleteUser = deleteUser;

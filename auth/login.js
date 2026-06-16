@@ -121,23 +121,27 @@ async function handlePasswordLogin(event) {
       .from("profiles")
       .select(
         `
-        id,
-        email,
-        username,
-        full_name,
-        display_name,
-        department,
-        department_code,
-        role,
-        status
-      `
+    id,
+    email,
+    username,
+    full_name,
+    display_name,
+    department,
+    department_code,
+    role,
+    status
+  `,
       )
-      .eq("username", usernameInput)
+      .ilike("username", usernameInput)
       .eq("password", passwordInput)
-      .eq("status", "active")
-      .single();
+      .in("status", ["active", "Active", "ACTIVE"])
+      .maybeSingle();
 
-    if (error || !profile) {
+    if (error) {
+      throw error;
+    }
+
+    if (!profile) {
       throw new Error("Invalid login");
     }
 
@@ -146,12 +150,6 @@ async function handlePasswordLogin(event) {
       profile.display_name ||
       profile.username ||
       "พนักงาน PVT";
-
-    if (rememberMeChecked) {
-      localStorage.setItem("rememberedUser", usernameInput);
-    } else {
-      localStorage.removeItem("rememberedUser");
-    }
 
     saveSession({
       loginType: "password",
@@ -206,8 +204,7 @@ async function checkQrMode() {
       throw new Error("Invalid QR");
     }
 
-    const departmentCode =
-      qrData.department_code || qrData.department || dept;
+    const departmentCode = qrData.department_code || qrData.department || dept;
 
     const departmentName =
       qrData.department_name || qrData.department || departmentCode;
@@ -251,7 +248,7 @@ async function loadStaffByDepartment(departmentCode) {
         department_code,
         role,
         status
-      `
+      `,
       )
       .eq("department_code", departmentCode)
       .eq("status", "active")
@@ -311,7 +308,8 @@ function handleQrLogin() {
     userId: select.value,
     username: selected.dataset.username || "",
     fullName: selected.dataset.fullName || "",
-    department: selected.dataset.department || localStorage.getItem("qrDept") || "",
+    department:
+      selected.dataset.department || localStorage.getItem("qrDept") || "",
     departmentName:
       selected.dataset.departmentName ||
       localStorage.getItem("qrDeptName") ||
@@ -332,8 +330,14 @@ function saveSession(data) {
   localStorage.setItem("activeUser", data.username || "");
   localStorage.setItem("activeName", data.fullName || data.username || "");
   localStorage.setItem("activeDept", data.department || "");
-  localStorage.setItem("activeDeptName", data.departmentName || data.department || "");
-  localStorage.setItem("activeRole", String(data.role || "staff").toLowerCase());
+  localStorage.setItem(
+    "activeDeptName",
+    data.departmentName || data.department || "",
+  );
+  localStorage.setItem(
+    "activeRole",
+    String(data.role || "staff").toLowerCase(),
+  );
 }
 
 /* ======================================================
@@ -341,14 +345,16 @@ function saveSession(data) {
 ====================================================== */
 
 function redirectByRole(role) {
-  const currentRole = String(role || "staff").toLowerCase().trim();
+  const currentRole = String(role || "staff")
+    .toLowerCase()
+    .trim();
 
   const rolePages = {
     admin: "/html/admintor.html",
     accounting: "/html/accounting-panel.html",
-    management: "/html/index2.html",
-    manager: "/html/index2.html",
-    executive: "/html/index2.html",
+    management: "/index.html",
+    manager: "/index.html",
+    executive: "/index.html",
     supervisor: "/html/form-department.html",
     staff: "/html/form-department.html",
     staff_qr: "/html/form-department.html",
