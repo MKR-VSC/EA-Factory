@@ -618,6 +618,96 @@ label {
   color: var(--text-light);
 }
 
+
+/* ======================================================
+   QR SCAN BUTTON
+====================================================== */
+
+.btn-scan-qr {
+  width: 100%;
+  margin-top: 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  border: none;
+  border-radius: 14px;
+
+  padding: 14px;
+
+  background: #10b981;
+  color: white;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.btn-scan-qr:hover {
+  background: #059669;
+}
+
+/* ======================================================
+   QR MODAL
+====================================================== */
+
+.qr-modal {
+  position: fixed;
+  inset: 0;
+
+  background: rgba(0,0,0,.7);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 99999;
+}
+
+.qr-modal.hidden {
+  display: none;
+}
+
+.qr-modal-box {
+  width: 95%;
+  max-width: 500px;
+
+  background: white;
+  border-radius: 24px;
+
+  padding: 20px;
+}
+
+.qr-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.qr-close {
+  border: none;
+  background: transparent;
+
+  font-size: 24px;
+  cursor: pointer;
+}
+
+#qr-reader {
+  width: 100%;
+  margin-top: 15px;
+}
+
+.qr-hint {
+  text-align: center;
+  color: #64748b;
+  margin-top: 12px;
+}
+
+
+
 /* ======================================================
    RESPONSIVE : TABLET / MOBILE
 ====================================================== */

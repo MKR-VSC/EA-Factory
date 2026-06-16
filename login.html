@@ -152,7 +152,7 @@
 
           <button type="submit" class="btn-login">เข้าสู่ระบบ</button>
 
-          <button type="button" class="btn-scan-qr" onclick="openQrScanner()">
+          <button type="button" class="btn-scan-qr" onclick="showQrScanner()">
             <span class="material-symbols-outlined"> qr_code_scanner </span>
             สแกน QR Code
           </button>
@@ -169,6 +169,21 @@
           </div> -->
         </form>
       </section>
+      <div id="qrScannerModal" class="qr-modal hidden">
+        <div class="qr-modal-box">
+          <div class="qr-modal-header">
+            <h3>สแกน QR Code</h3>
+
+            <button type="button" class="qr-close" onclick="closeQrScanner()">
+              ✕
+            </button>
+          </div>
+
+          <div id="qr-reader"></div>
+
+          <p class="qr-hint">นำกล้องไปส่อง QR Code ประจำแผนก</p>
+        </div>
+      </div>
 
       <!-- QR Login Box -->
       <section class="qr-login-box hidden" id="qrLoginBox">
@@ -187,7 +202,7 @@
         </button>
       </section>
     </main>
-
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <!-- JS -->
     <script src="/auth/login.js"></script>
   </body>

@@ -393,3 +393,75 @@ function openQrScanner() {
   // ถ้าต้องการให้ไปหน้าสแกน QR แยก
   // window.location.href = "/html/qr-scanner.html";
 }
+
+
+let qrScanner = null;
+
+/* ======================================================
+   QR SCANNER
+====================================================== */
+
+function showQrScanner() {
+
+  const modal =
+    document.getElementById("qrScannerModal");
+
+  if (!modal) return;
+
+  modal.classList.remove("hidden");
+
+  qrScanner = new Html5Qrcode("qr-reader");
+
+  qrScanner
+    .start(
+      {
+        facingMode: "environment",
+      },
+      {
+        fps: 10,
+        qrbox: 250,
+      },
+      onQrScanSuccess
+    )
+    .catch((err) => {
+      console.error(err);
+      alert("ไม่สามารถเปิดกล้องได้");
+    });
+}
+
+function closeQrScanner() {
+
+  const modal =
+    document.getElementById("qrScannerModal");
+
+  if (qrScanner) {
+    qrScanner
+      .stop()
+      .then(() => {
+        qrScanner.clear();
+        qrScanner = null;
+      })
+      .catch(console.error);
+  }
+
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+}
+
+function onQrScanSuccess(decodedText) {
+
+  console.log("QR =", decodedText);
+
+  if (qrScanner) {
+    qrScanner.stop();
+  }
+
+  /*
+    ตัวอย่าง QR
+
+    https://prod-ea-factory.pages.dev/login?dept=blow&token=BLOW001
+  */
+
+  window.location.href = decodedText;
+}
