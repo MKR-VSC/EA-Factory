@@ -346,9 +346,9 @@ function redirectByRole(role) {
   const rolePages = {
     admin: "/html/admintor.html",
     accounting: "/html/accounting-panel.html",
-    management: "/html/index2.html",
-    manager: "/html/index2.html",
-    executive: "/html/index2.html",
+    management: "/html/index.html",
+    manager: "/html/index.html",
+    executive: "/html/index.html",
     supervisor: "/html/form-department.html",
     staff: "/html/form-department.html",
     staff_qr: "/html/form-department.html",
