@@ -1,319 +1,593 @@
 // =========================================================
-// ไฟล์: js/form-department.js (เวอร์ชันแก้บั๊กยกรัง - ปลอดภัยสูงสุด 100%)
+// ไฟล์: js/form-department.js
+// ใช้กับหน้า form-department.html
 // =========================================================
 
-// 🟢 1. ดึงข้อมูลการล็อกอินและสิทธิ์จาก LocalStorage แบบปลอดภัย
-// =========================================================
-// ไฟล์: js/form-department.js (เวอร์ชันล็อกโครงสร้างข้อมูลเข้าตารางเสถียร 100%)
-// =========================================================
+const activeUser = localStorage.getItem("activeUser") || "";
+const activeName = localStorage.getItem("activeName") || activeUser || "Unknown";
+const activeRoleRaw = localStorage.getItem("activeRole") || "staff";
+const activeUserId = localStorage.getItem("activeUserId") || "";
+const currentDeptRaw = localStorage.getItem("activeDept") || "blow";
 
-const activeUser = localStorage.getItem('activeUser') || 'Unknown';
-const currentDeptRaw = localStorage.getItem('activeDept') || 'blow'; 
-const activeRoleRaw = localStorage.getItem('activeRole') || 'staff';
-
-function isStaffRole(role) {
-  if (!role) return true;
-  const r = role.toLowerCase().trim();
-  // คืนค่าความเป็นจริง (true) หากตรงกับคำที่กำหนด
-  return r === 'staff' || r === 'พนักงาน' || r === 'พนักงานทั่วไป';
-}
-window.isStaffRole = isStaffRole;
-
-function normalizeDept(dept) {
-  if (!dept) return 'blow';
-  const d = dept.toLowerCase().trim();
-  if (d === 'blow' || d === 'เป่าถุง') return 'blow';
-  if (d === 'pipe' || d === 'ท่อ') return 'pipe';
-  if (d === 'sheet' || d === 'ตัดผืน' || d === 'แผ่นหล่อ') return 'sheet';
-  if (d === 'tape' || d === 'เทปน้ำพุ่ง' || d === 'เทปพัน') return 'tape';
-  if (d === 'drill' || d === 'ตัดเจาะ' || d === 'เจาะรู') return 'drill';
-  if (d === 'garbage' || d === 'ถุงขยะ') return 'garbage';
-  if (d === 'mono' || d === 'โมโน') return 'mono';
-  if (d === 'salan' || d === 'สแลน') return 'salan';
-  return d;
-}
-window.normalizeDept = normalizeDept;
-const currentDept = normalizeDept(currentDeptRaw);
-
+let currentDept = normalizeDept(currentDeptRaw);
 let appSelectedMachine = "";
 let appSelectedProblem = "";
-let appSelectedShift = ""; 
+
+// =========================================================
+// DEPARTMENT
+// =========================================================
+
+function normalizeDept(dept) {
+  const d = String(dept || "blow").toLowerCase().trim();
+
+  const map = {
+    blow: "blow",
+    เป่าถุง: "blow",
+
+    pipe: "pipe",
+    ท่อ: "pipe",
+
+    sheet: "sheet",
+    ตัดผืน: "sheet",
+    แผ่นหล่อ: "sheet",
+
+    tape: "tape",
+    เทปน้ำพุ่ง: "tape",
+    เทปพัน: "tape",
+
+    drill: "drill",
+    ตัดเจาะ: "drill",
+    เจาะรู: "drill",
+
+    garbage: "garbage",
+    ถุงขยะ: "garbage",
+
+    mono: "mono",
+    โมโน: "mono",
+
+    salan: "salan",
+    สแลน: "salan",
+  };
+
+  return map[d] || d;
+}
+
+function getDeptDisplayName(dept) {
+  const map = {
+    blow: "เป่าถุง",
+    pipe: "ท่อ",
+    sheet: "ตัดผืน / แผ่นหล่อ",
+    tape: "เทปน้ำพุ่ง",
+    drill: "ตัดเจาะ",
+    garbage: "ถุงขยะ",
+    mono: "โมโน",
+    salan: "สแลน",
+  };
+
+  return map[dept] || dept || "-";
+}
+
+// =========================================================
+// ROLE
+// =========================================================
+
+function normalizeRole(role) {
+  return String(role || "").toLowerCase().trim();
+}
+
+function isStaffRole(role) {
+  const r = normalizeRole(role);
+
+  return ["staff", "user", "employee", "พนักงาน", "พนักงานทั่วไป"].includes(r);
+}
+
+function canSeeDashboard(role) {
+  const r = normalizeRole(role);
+
+  return [
+    "admin",
+    "accounting",
+    "supervisor",
+    "management",
+    "manager",
+    "executive",
+    "หัวหน้า",
+    "บัญชี",
+    "ผู้บริหาร",
+  ].includes(r);
+}
+
+function isValidUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || "")
+  );
+}
+
+// =========================================================
+// INIT
+// =========================================================
 
 window.addEventListener("DOMContentLoaded", async () => {
   try {
-    // 🔒 1. ป้องกันความปลอดภัย: ถ้าไม่ได้ล็อกอิน ให้เด้งไปหน้า Login ทันที
-    if (!localStorage.getItem("activeUser")) {
-      alert("🔒 กรุณาเข้าสู่ระบบก่อนใช้งานครับ");
-      window.location.href = "login2.html";
-      return;
-    }
+    const canContinue = protectPage();
+    if (!canContinue) return;
 
-    // 🏷️ 2. แปะชื่อพนักงานแสดงความโปร่งใสบนมุมขวา
-    const userText = document.getElementById("display-username");
-    if (userText) userText.innerText = activeUser;
+    renderUserInfo();
+    renderDeptInfo();
+    setupManagerOnlySection();
+    setupDashboardMenu();
+    setupDefaultDateTime();
+    setupNetworkStatus();
+    setupFormSubmit();
+    setupDropdownListeners();
 
-    // ⚖️ 3. จัดการสิทธิ์ช่องน้ำหนักของเสีย (หากเป็น staff ทั่วไปจะถูกซ่อนแบบเด็ดขาด)
-    const managerSection = document.getElementById("manager-only-section");
-    if (managerSection) {
-      if (isStaffRole(activeRoleRaw)) {
-        managerSection.style.setProperty("display", "none", "important");
-      } else {
-        managerSection.style.setProperty("display", "block", "important");
-      }
-    }
-
-    // 🕒 4. ใส่ค่าวันเวลาปัจจุบันเข้าสู่ช่องเลือกปฏิทินในหน้าจอแบบเรียลไทม์
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    const dateTimeInput = document.getElementById("incident-datetime");
-    if (dateTimeInput) {
-      dateTimeInput.value = now.toISOString().slice(0, 16);
-    }
-
-    // 🔌 5. เรียกสั่งโหลดข้อมูล Master Data ปุ่มกดทั้งหมด
-    if (typeof loadMasterDataAndRender === "function") {
-      await loadMasterDataAndRender();
-    }
-
-    // 📥 6. ตรวจจับการกดส่งแบบฟอร์มเพื่อบันทึกข้อมูล
-    const formElem = document.getElementById("department-waste-form");
-    if (formElem) {
-      formElem.addEventListener("submit", handleFormSubmit);
-    }
-
+    await loadMasterDataAndRender();
   } catch (err) {
-    console.error("❌ เกิดข้อผิดพลาดตอนตั้งค่าเริ่มต้นหน้าจอ:", err);
+    console.error("❌ Init Error:", err);
+    alert("เกิดข้อผิดพลาดตอนเปิดหน้าฟอร์ม: " + (err.message || err));
+  } finally {
+    hideSplash();
   }
 });
 
-function selectShift(shiftName, element) {
-  // บันทึกชื่อกะลงตัวแปร Global เพื่อส่งต่อให้ระบบส่งข้อมูล
-  appSelectedShift = shiftName;
-  
-  const hiddenInput = document.getElementById("selected-shift");
-  if (hiddenInput) hiddenInput.value = shiftName;
+// =========================================================
+// LOGIN PROTECT
+// =========================================================
 
-  // 🧹 ล้างสีไฮไลท์เขียวของปุ่มกะตัวเก่าออกทั้งหมดก่อน
-  const shiftContainer = document.getElementById("shift-buttons-container");
-  if (shiftContainer) {
-    shiftContainer.querySelectorAll(".btn-option").forEach((b) => b.classList.remove("selected"));
+function protectPage() {
+  if (!activeUser) {
+    alert("🔒 กรุณาเข้าสู่ระบบก่อนใช้งาน");
+    window.location.href = "/login2.html";
+    return false;
   }
-  
-  // 🟢 เติมสีไฮไลท์เขียวให้กับปุ่มล่าสุดที่นิ้วพนักงานกดจิ้มเลือก
-  if (element) element.classList.add("selected");
+
+  return true;
 }
-window.selectShift = selectShift;
 
-// 💾 4. ฟังก์ชันหลักในการบันทึกข้อมูลส่งไปยังฐานข้อมูล Supabase (เวอร์ชันซ่อมแซมระบบส่งข้อมูล)
-async function handleFormSubmit(event) {
-  event.preventDefault();
-  const clientSupabase = window.supabaseClient || window.supabase;
-  if (!clientSupabase) { alert("❌ ไม่สามารถเชื่อมต่อฐานข้อมูลได้"); return; }
+// =========================================================
+// USER INFO
+// =========================================================
 
-  const mSelect = document.getElementById("machine-no");
-  const pSelect = document.getElementById("problem-type");
-  const finalMachine = mSelect && mSelect.value ? mSelect.value : appSelectedMachine;
-  const finalProblem = pSelect && pSelect.value ? pSelect.value : appSelectedProblem;
+function renderUserInfo() {
+  const usernameEl = document.getElementById("display-username");
+  const roleEl = document.getElementById("display-role");
 
-  if (!appSelectedShift) { alert("🛑 กรุณาเลือกกะการทำงานก่อนครับ!"); return; }
-  if (!finalMachine) { alert("🛑 กรุณาเลือกหมายเลขเครื่องจักรก่อนครับ!"); return; }
-  if (!finalProblem) { alert("🛑 กรุณาเลือกอาการเสีย/ปัญหาที่พบก่อนครับ!"); return; }
+  if (usernameEl) usernameEl.textContent = activeName || activeUser || "Unknown";
+  if (roleEl) roleEl.textContent = activeRoleRaw || "staff";
+}
 
-  if (!confirm("📋 ยืนยันการบันทึกรายงานปัญหานี้เข้าสู่ระบบของโรงงาน?")) return;
+// =========================================================
+// SPLASH / OVERLAY
+// =========================================================
 
-  const weightInput = document.getElementById("waste-weight");
-  const noteInput = document.getElementById("problem-description");
-  const wasteWeight = weightInput ? parseFloat(weightInput.value) || 0 : 0;
-  const detailNote = noteInput ? noteInput.value.trim() : "";
+function hideSplash() {
+  setTimeout(() => {
+    const splash = document.getElementById("splash-screen");
+    if (splash) splash.classList.add("hide");
+  }, 600);
+}
 
-  let finalDateTime = new Date().toISOString();
-  const dateElem = document.getElementById("incident-datetime");
-  if (dateElem && dateElem.value) { finalDateTime = new Date(dateElem.value).toISOString(); }
+function showLoginOverlay(text = "กำลังบันทึกข้อมูล...") {
+  const overlay = document.getElementById("login-overlay");
+  if (!overlay) return;
 
-  const savedUserId = localStorage.getItem("activeUserId");
-  const savedUser = localStorage.getItem("activeUser") || "Unknown Staff";
+  const title = overlay.querySelector("h3");
+  const desc = overlay.querySelector("p");
 
-  // 📦 ประกอบข้อมูลแบบกระจายลงฟิลด์แฝดตามสคีมาจริง เพื่อให้แดชบอร์ดดึงช่องไหนก็เจอ
-  const reportData = {
-    report_date: finalDateTime.slice(0, 10),
-    incident_datetime: finalDateTime,
-    
-    // เรื่องกะ
-    shift: appSelectedShift,
-    work_shift: appSelectedShift,
-    
-    // เรื่องแผนก (NOT NULL ตัวสำคัญ)
-    department_code: currentDept, 
-    department: currentDept,
-    
-    // เรื่องเครื่องจักร
-    machine_no: finalMachine,
-    product_name: "ปัญหาการผลิต",
-    
-    // เรื่องปัญหา (ยัดเข้าฟิลด์ที่เป็นข้อความ text ทั้งหมด หลีกเลี่ยง reason_id ที่เป็น UUID)
-    problem_type: finalProblem,
-    reason_detail: finalProblem,
-    
-    // เรื่องรายละเอียดโน้ต
-    note: detailNote,
-    detail: detailNote,
-    
-    // เรื่องน้ำหนักของเสีย (กระจายลงคอลัมน์แฝดทุกช่องตามสคีมา)
-    waste_qty: wasteWeight,
-    waste_weight_kg: wasteWeight,
-    total_qty: wasteWeight,
-    unit: "kg",
-    
-    status: "pending",
-    
-    // เรื่องผู้บันทึกข้อมูล
-    reported_by: savedUser,
-    // ตรวจสอบ UUID ถ้าเป็นรหัสพนักงานที่ยาว 36 ตัวอักษรปกติถึงจะส่ง ถ้าไม่ใช่ส่งเป็น null ป้องกันตารางเอ๋อ
-    created_by: savedUserId && savedUserId.length === 36 ? savedUserId : null
-  };
+  if (title) title.textContent = text;
+  if (desc) desc.textContent = "กรุณารอสักครู่";
 
-  try {
-    const { error } = await clientSupabase.from("daily_waste_reports").insert([reportData]);
-    if (error) throw error;
+  overlay.classList.remove("hidden");
+}
 
-    alert("🎉 บันทึกข้อมูลเข้าคลังเรียบร้อย แดชบอร์ดอัปเดตแน่นอนครับ!");
-    window.location.reload();
-  } catch (err) {
-    console.error("❌ SQL Insert Error:", err);
-    alert("❌ ข้อผิดพลาดสคีมาตาราง: " + err.message);
+function hideLoginOverlay() {
+  const overlay = document.getElementById("login-overlay");
+  if (overlay) overlay.classList.add("hidden");
+}
+
+// =========================================================
+// DEPARTMENT UI
+// =========================================================
+
+function renderDeptInfo() {
+  const deptName = getDeptDisplayName(currentDept);
+
+  const titleEl = document.getElementById("dept-title-main");
+  const badgeEl = document.getElementById("dept-badge-name");
+  const bodyEl = document.getElementById("dept-body");
+
+  if (titleEl) {
+    titleEl.textContent = `📋 ฟอร์มบันทึกข้อมูลปัญหาแผนก${deptName}`;
   }
+
+  if (badgeEl) {
+    badgeEl.textContent = `DEPT: ${deptName}`;
+  }
+
+  if (bodyEl) {
+    bodyEl.classList.remove("dept-default");
+    bodyEl.classList.add(`dept-${currentDept}`);
+  }
+}
+
+function setupManagerOnlySection() {
+  const managerSection = document.getElementById("manager-only-section");
+  if (!managerSection) return;
+
+  managerSection.style.display = isStaffRole(activeRoleRaw) ? "none" : "block";
+}
+
+function setupDashboardMenu() {
+  const dashboardLink = document.getElementById("nav-dashboard-link");
+  if (!dashboardLink) return;
+
+  dashboardLink.style.display = canSeeDashboard(activeRoleRaw)
+    ? "block"
+    : "none";
+}
+
+// =========================================================
+// FORM SETUP
+// =========================================================
+
+function setupDefaultDateTime() {
+  const input = document.getElementById("incident-datetime");
+  if (!input) return;
+
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+
+  input.value = now.toISOString().slice(0, 16);
+}
+
+function setupNetworkStatus() {
+  const el = document.getElementById("network-status");
+  if (!el) return;
+
+  function updateStatus() {
+    if (navigator.onLine) {
+      el.textContent = "🟢 ระบบออนไลน์";
+      el.className = "badge badge-status-online";
+    } else {
+      el.textContent = "🔴 ระบบออฟไลน์";
+      el.className = "badge badge-status-offline";
+    }
+  }
+
+  updateStatus();
+
+  window.addEventListener("online", updateStatus);
+  window.addEventListener("offline", updateStatus);
+}
+
+function setupFormSubmit() {
+  const form = document.getElementById("department-waste-form");
+  if (!form) return;
+
+  form.addEventListener("submit", handleFormSubmit);
+}
+
+function setupDropdownListeners() {
+  const machineSelect = document.getElementById("machine-no");
+  const problemSelect = document.getElementById("problem-type");
+
+  if (machineSelect) {
+    machineSelect.addEventListener("change", (event) => {
+      appSelectedMachine = event.target.value;
+    });
+  }
+
+  if (problemSelect) {
+    problemSelect.addEventListener("change", (event) => {
+      appSelectedProblem = event.target.value;
+    });
+  }
+}
+
+// =========================================================
+// MASTER DATA
+// =========================================================
 
 async function loadMasterDataAndRender() {
   const BACKUP_MACHINES = {
     mono: ["Mono1", "Mono2", "Mono3"],
     pipe: ["ท่อ1", "ท่อ2", "ท่อ3", "ท่อ4"],
     blow: ["F1", "F2", "F3", "F4", "F5", "F6", "F7"],
-    salan: ["สแลน ทอ 1", "สแลน ทอ 2"]
+    salan: ["สแลน ทอ 1", "สแลน ทอ 2"],
+    sheet: ["Sheet1", "Sheet2"],
+    tape: ["Tape1", "Tape2"],
+    drill: ["Drill1", "Drill2"],
+    garbage: ["Garbage1", "Garbage2"],
   };
 
   const BACKUP_PROBLEMS = {
     blow: ["ทะลุ", "ตกใบมีด", "ลูกโปร่งส่าย", "อื่นๆ"],
-    pipe: ["ขี้ดายหลุด", "เข้าม้วนหัก", "อื่นๆ"]
+    pipe: ["ขี้ดายหลุด", "เข้าม้วนหัก", "อื่นๆ"],
+    mono: ["เส้นขาด", "ม้วนเสีย", "อื่นๆ"],
+    salan: ["ทอขาด", "สีเพี้ยน", "อื่นๆ"],
+    sheet: ["แผ่นเสีย", "ความหนาไม่ได้", "อื่นๆ"],
+    tape: ["เส้นเทปขาด", "ม้วนไม่เรียบ", "อื่นๆ"],
+    drill: ["รูไม่ตรง", "เจาะไม่ทะลุ", "อื่นๆ"],
+    garbage: ["ซีลไม่ติด", "ถุงขาด", "อื่นๆ"],
   };
 
   let finalMachinesList = [];
   let finalProblemsList = [];
 
-  try {
-    const clientSupabase = window.supabaseClient || window.supabase;
-    if (clientSupabase) {
-      // 🛠️ ดึงจากตาราง master_machines โดยใช้คอลัมน์ machine_no ตามสคีมาจริง
-      const { data: dbMachines } = await clientSupabase
-        .from('master_machines')
-        .select('machine_no')
-        .eq('department', currentDept)
-        .eq('is_active', true);
-        
-      if (dbMachines && dbMachines.length > 0) {
-        finalMachinesList = dbMachines.map(item => item.machine_no);
-      } else {
-        // แผนสำรองถ้าตาราง master ว่าง ให้ลองดึงจาก pvt_machines
-        const { data: pvtM } = await clientSupabase.from('pvt_machines').select('machine_name').eq('department', currentDept);
-        if (pvtM) finalMachinesList = pvtM.map(item => item.machine_name);
-      }
+  const clientSupabase = window.supabaseClient || window.supabase;
 
-      // 🛠️ ดึงจากตาราง master_problems โดยใช้คอลัมน์ problem_type ตามสคีมาจริง
-      const { data: dbProblems } = await clientSupabase
-        .from('master_problems')
-        .select('problem_type')
-        .eq('department', currentDept)
-        .eq('is_active', true);
-        
-      if (dbProblems && dbProblems.length > 0) {
-        finalProblemsList = dbProblems.map(item => item.problem_type);
-      } else {
-        // แผนสำรองถ้าตาราง master ว่าง ให้ลองดึงจาก pvt_problem_types
-        const { data: pvtP } = await clientSupabase.from('pvt_problem_types').select('problem_name').eq('department', currentDept);
-        if (pvtP) finalProblemsList = pvtP.map(item => item.problem_name);
-      }
+  if (clientSupabase) {
+    finalMachinesList = await loadMachinesFromDatabase(clientSupabase);
+    finalProblemsList = await loadProblemsFromDatabase(clientSupabase);
+  }
+
+  if (finalMachinesList.length === 0) {
+    finalMachinesList = BACKUP_MACHINES[currentDept] || ["M1"];
+  }
+
+  if (finalProblemsList.length === 0) {
+    finalProblemsList = BACKUP_PROBLEMS[currentDept] || ["อื่นๆ"];
+  }
+
+  renderMachineDropdown(finalMachinesList);
+  renderProblemDropdown(finalProblemsList);
+}
+
+async function loadMachinesFromDatabase(clientSupabase) {
+  try {
+    const { data, error } = await clientSupabase
+      .from("master_machines")
+      .select("machine_no")
+      .eq("department", currentDept)
+      .eq("is_active", true)
+      .order("machine_no", { ascending: true });
+
+    if (!error && data?.length > 0) {
+      return data.map((item) => item.machine_no).filter(Boolean);
     }
   } catch (err) {
-    console.warn("⚠️ ระบบคิวรี่ฐานข้อมูลขัดข้อง สลับไปใช้ข้อมูลสำรองในสคริปต์");
+    console.warn("⚠️ master_machines ใช้งานไม่ได้:", err);
   }
 
-  if (finalMachinesList.length === 0) finalMachinesList = BACKUP_MACHINES[currentDept] || ["M1"];
-  if (finalProblemsList.length === 0) finalProblemsList = BACKUP_PROBLEMS[currentDept] || ["อื่นๆ"];
+  try {
+    const { data, error } = await clientSupabase
+      .from("pvt_machines")
+      .select("machine_name")
+      .eq("department", currentDept)
+      .order("machine_name", { ascending: true });
 
-  // --- ส่วนโครงสร้างเรนเดอร์ปุ่ม HTML ---
-  const mContainer = document.getElementById("machine-buttons-container");
-  const mDropdown = document.getElementById("machine-no");
-  const pContainer = document.getElementById("problem-buttons-container");
-  const pDropdown = document.getElementById("problem-type");
+    if (!error && data?.length > 0) {
+      return data.map((item) => item.machine_name).filter(Boolean);
+    }
+  } catch (err) {
+    console.warn("⚠️ pvt_machines ใช้งานไม่ได้:", err);
+  }
 
-  if (mContainer) {
-    mContainer.innerHTML = "";
-    finalMachinesList.forEach((m) => {
-      const btn = document.createElement("button"); btn.type = "button"; btn.className = "btn-option"; btn.textContent = m;
-      btn.onclick = () => {
-        appSelectedMachine = m;
-        document.querySelectorAll("#machine-buttons-container .btn-option").forEach(b => b.classList.remove("selected"));
-        btn.classList.add("selected");
-        if (mDropdown) mDropdown.value = m;
-      };
-      mContainer.appendChild(btn);
-    });
+  return [];
+}
+
+async function loadProblemsFromDatabase(clientSupabase) {
+  try {
+    const { data, error } = await clientSupabase
+      .from("master_problems")
+      .select("problem_type")
+      .eq("department", currentDept)
+      .eq("is_active", true)
+      .order("problem_type", { ascending: true });
+
+    if (!error && data?.length > 0) {
+      return data.map((item) => item.problem_type).filter(Boolean);
+    }
+  } catch (err) {
+    console.warn("⚠️ master_problems ใช้งานไม่ได้:", err);
   }
-  if (mDropdown) {
-    mDropdown.innerHTML = '<option value="">-- โปรดเลือกเครื่องจักร --</option>';
-    finalMachinesList.forEach(m => { const opt = document.createElement("option"); opt.value = m; opt.textContent = m; mDropdown.appendChild(opt); });
+
+  try {
+    const { data, error } = await clientSupabase
+      .from("pvt_problem_types")
+      .select("problem_name")
+      .eq("department", currentDept)
+      .order("problem_name", { ascending: true });
+
+    if (!error && data?.length > 0) {
+      return data.map((item) => item.problem_name).filter(Boolean);
+    }
+  } catch (err) {
+    console.warn("⚠️ pvt_problem_types ใช้งานไม่ได้:", err);
   }
-  if (pContainer) {
-    pContainer.innerHTML = "";
-    finalProblemsList.forEach((p) => {
-      const btn = document.createElement("button"); btn.type = "button"; btn.className = "btn-option"; btn.textContent = p;
-      btn.onclick = () => {
-        appSelectedProblem = p;
-        document.querySelectorAll("#problem-buttons-container .btn-option").forEach(b => b.classList.remove("selected"));
-        btn.classList.add("selected");
-        if (pDropdown) pDropdown.value = p;
-      };
-      pContainer.appendChild(btn);
-    });
+
+  return [];
+}
+
+function renderMachineDropdown(machineList) {
+  const select = document.getElementById("machine-no");
+  if (!select) return;
+
+  select.innerHTML = `<option value="">-- โปรดเลือกเครื่องจักร --</option>`;
+
+  machineList.forEach((machine) => {
+    const option = document.createElement("option");
+    option.value = machine;
+    option.textContent = machine;
+    select.appendChild(option);
+  });
+}
+
+function renderProblemDropdown(problemList) {
+  const select = document.getElementById("problem-type");
+  if (!select) return;
+
+  select.innerHTML = `<option value="">-- โปรดเลือกปัญหาที่พบ --</option>`;
+
+  problemList.forEach((problem) => {
+    const option = document.createElement("option");
+    option.value = problem;
+    option.textContent = problem;
+    select.appendChild(option);
+  });
+}
+
+// =========================================================
+// SUBMIT
+// =========================================================
+
+async function handleFormSubmit(event) {
+  event.preventDefault();
+
+  const clientSupabase = window.supabaseClient || window.supabase;
+
+  if (!clientSupabase) {
+    alert("❌ ไม่สามารถเชื่อมต่อฐานข้อมูลได้");
+    return;
   }
-  if (pDropdown) {
-    pDropdown.innerHTML = '<option value="">-- โปรดเลือกปัญหาที่พบ --</option>';
-    finalProblemsList.forEach(p => { const opt = document.createElement("option"); opt.value = p; opt.textContent = p; pDropdown.appendChild(opt); });
+
+  const submitButton = event.submitter || document.querySelector(".btn-submit");
+
+  const dateInput = document.getElementById("incident-datetime");
+  const shiftSelect = document.getElementById("work-shift");
+  const machineSelect = document.getElementById("machine-no");
+  const problemSelect = document.getElementById("problem-type");
+  const weightInput = document.getElementById("waste-weight");
+  const noteInput = document.getElementById("problem-description");
+
+  const finalShift = shiftSelect?.value || "";
+  const finalMachine = machineSelect?.value || appSelectedMachine || "";
+  const finalProblem = problemSelect?.value || appSelectedProblem || "";
+  const detailNote = noteInput?.value.trim() || "";
+  const wasteWeight = parseFloat(weightInput?.value || "0") || 0;
+
+  if (!dateInput?.value) return alert("🛑 กรุณาระบุวัน-เวลาเกิดเหตุ");
+  if (!finalShift) return alert("🛑 กรุณาเลือกกะการทำงาน");
+  if (!finalMachine) return alert("🛑 กรุณาเลือกหมายเลขเครื่องจักร");
+  if (!finalProblem) return alert("🛑 กรุณาเลือกอาการเสีย/ปัญหาที่พบ");
+  if (!detailNote) return alert("🛑 กรุณากรอกรายละเอียดเหตุการณ์");
+
+  const confirmed = confirm("📋 ยืนยันการบันทึกรายงานปัญหานี้เข้าสู่ระบบ?");
+  if (!confirmed) return;
+
+  const finalDateTime = new Date(dateInput.value).toISOString();
+
+  const reportData = {
+    report_date: finalDateTime.slice(0, 10),
+    incident_datetime: finalDateTime,
+
+    shift: finalShift,
+    work_shift: finalShift,
+
+    department_code: currentDept,
+    department: currentDept,
+
+    machine_no: finalMachine,
+    product_name: "ปัญหาการผลิต",
+
+    problem_type: finalProblem,
+    reason_detail: finalProblem,
+
+    note: detailNote,
+    detail: detailNote,
+
+    waste_qty: wasteWeight,
+    waste_weight_kg: wasteWeight,
+    total_qty: wasteWeight,
+    good_qty: 0,
+    unit: "kg",
+
+    status: "pending",
+
+    reported_by: activeName || activeUser || "Unknown Staff",
+  };
+
+  if (isValidUuid(activeUserId)) {
+    reportData.created_by = activeUserId;
+  }
+
+  try {
+    setSubmitLoading(submitButton, true);
+    showLoginOverlay("กำลังบันทึกข้อมูล...");
+
+    const { error } = await clientSupabase
+      .from("daily_waste_reports")
+      .insert([reportData]);
+
+    if (error) throw error;
+
+    alert("🎉 บันทึกข้อมูลเรียบร้อยแล้ว");
+    resetFormAfterSubmit();
+  } catch (err) {
+    console.error("❌ SQL Insert Error:", err);
+    alert("❌ บันทึกข้อมูลไม่สำเร็จ: " + (err.message || err));
+  } finally {
+    hideLoginOverlay();
+    setSubmitLoading(submitButton, false);
   }
 }
 
-// ฟังก์ชันล้างค่าฟอร์มด้วยปุ่มเคลียร์
-// 🧹 6. ฟังก์ชันล้างค่าฟอร์มด้วยปุ่มเคลียร์ (เวอร์ชันสมบูรณ์ปิดท้ายไฟล์)
+function setSubmitLoading(button, isLoading) {
+  if (!button) return;
+
+  button.disabled = isLoading;
+  button.dataset.originalText ||= button.textContent;
+
+  button.textContent = isLoading
+    ? "⏳ กำลังบันทึก..."
+    : button.dataset.originalText;
+}
+
+// =========================================================
+// RESET
+// =========================================================
+
+function resetFormAfterSubmit() {
+  const form = document.getElementById("department-waste-form");
+
+  if (form) form.reset();
+
+  appSelectedMachine = "";
+  appSelectedProblem = "";
+
+  setupDefaultDateTime();
+}
+
 function resetFormWithConfirm() {
-  if (confirm("🧹 คุณต้องการล้างข้อมูลเพื่อกรอกรายงานใหม่ทั้งหมดใช่หรือไม่?")) {
-    const form = document.getElementById("department-waste-form");
-    if (form) form.reset();
-    
-    // ล้างสถานะไฮไลท์สีเขียวออกจากปุ่มตัวเลือกทั้งหมด
-    document.querySelectorAll(".btn-option").forEach((b) => b.classList.remove("selected"));
-    
-    // รีเซ็ตค่าตัวแปรในระบบให้กลับเป็นค่าว่าง
-    appSelectedMachine = ""; 
-    appSelectedProblem = ""; 
-    appSelectedShift = "";
-    
-    alert("🧹 ล้างข้อมูลบนหน้าฟอร์มเรียบร้อยแล้วครับ");
+  const confirmed = confirm("🧹 ต้องการล้างข้อมูลทั้งหมดใช่หรือไม่?");
+  if (!confirmed) return;
+
+  resetFormAfterSubmit();
+  alert("🧹 ล้างข้อมูลเรียบร้อยแล้ว");
+}
+
+// =========================================================
+// LOGOUT
+// =========================================================
+
+async function handleLogout() {
+  const confirmed = confirm("ต้องการออกจากระบบใช่ไหม?");
+  if (!confirmed) return;
+
+  try {
+    const clientSupabase = window.supabaseClient || window.supabase;
+
+    if (clientSupabase?.auth) {
+      await clientSupabase.auth.signOut();
+    }
+  } catch (err) {
+    console.warn("⚠️ Supabase signOut error:", err);
   }
+
+  localStorage.removeItem("activeUser");
+  localStorage.removeItem("activeName");
+  localStorage.removeItem("activeRole");
+  localStorage.removeItem("activeUserId");
+  localStorage.removeItem("activeDept");
+
+  window.location.href = "/login2.html";
 }
 
-// 8. สายไฟดักจับค่าเครื่องจักรจากกล่อง Dropdown
-if (document.getElementById("machine-no")) {
-  document.getElementById("machine-no").addEventListener("change", function(e) {
-    appSelectedMachine = e.target.value;
-  }); // 🔑 จบในตัวเองตรงนี้
-}
+// =========================================================
+// EXPORT TO HTML
+// =========================================================
 
-// 9. สายไฟดักจับค่าปัญหาจากกล่อง Dropdown
-if (document.getElementById("problem-type")) {
-  document.getElementById("problem-type").addEventListener("change", function(e) {
-    appSelectedProblem = e.target.value;
-  }); // 🔑 จบในตัวเองตรงนี้
-}
-
-// ⚠️ บังคับผูกเข้ากับ window เพื่อให้หน้าจอ HTML เรียกใช้งานปุ่มกดได้แน่นอน
 window.resetFormWithConfirm = resetFormWithConfirm;
-}
+window.handleLogout = handleLogout;
+window.normalizeDept = normalizeDept;
+window.isStaffRole = isStaffRole;
