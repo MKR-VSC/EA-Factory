@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
@@ -59,18 +59,18 @@
     </div>
 
     <!-- Header -->
-    <header class="pvt-top-header">
+    <!-- <header class="pvt-top-header">
       <div class="logo">
         <img src="/assets/icons/logo_512.png" alt="EA Factory Logo" />
-        <div>
-          <!-- <h2>EA Factory</h2> -->
-          <!-- <p>ศูนย์รวมข้อมูลและระบบงาน</p> -->
-        </div>
+        <div> -->
+    <!-- <h2>EA Factory</h2> -->
+    <!-- <p>ศูนย์รวมข้อมูลและระบบงาน</p> -->
+    <!-- </div>
       </div>
 
       <h1>ระบบบันทึกข้อมูลของเสียจากการผลิต</h1>
       <p>บริษัท พี.วี.ที.แอนด์ ที.พลาส จำกัด</p>
-    </header>
+    </header> -->
 
     <!-- Guide Panel -->
     <!-- <section class="guide-card" id="guideCard">
@@ -91,13 +91,24 @@
         <p>สแกน QR Code ประจำแผนก แล้วเลือกชื่อผู้บันทึก</p>
       </div>
     </section> -->
+    <div class="pvt-top-header">
+      <div class="logo">
+        <img src="/assets/icons/logo_512.png" alt="EA Factory Logo" />
+        <div>
+          <!-- <h2>EA Factory</h2> -->
+          <!-- <p>ศูนย์รวมข้อมูลและระบบงาน</p> -->
+        </div>
+      </div>
 
+      <h1>ระบบบันทึกข้อมูลของเสียจากการผลิต</h1>
+      <p>บริษัท พี.วี.ที.แอนด์ ที.พลาส จำกัด</p>
+    </div>
     <!-- Main Login -->
     <main class="login-page">
       <section class="login-card">
         <form id="loginForm" onsubmit="handlePasswordLogin(event)">
           <h2>🔐 เข้าสู่ระบบ</h2>
-          <p class="subtitle">สำหรับ Notebook / PC</p>
+          <!-- <p class="subtitle">สำหรับ Notebook / PC</p> -->
 
           <div class="form-group">
             <label for="username">Username</label>
@@ -126,9 +137,10 @@
                 type="button"
                 class="btn-eye"
                 onclick="togglePasswordVisibility()"
-                aria-label="แสดง/ซ่อนรหัสผ่าน"
               >
-                👁️
+                <span class="material-symbols-outlined" id="eyeIcon">
+                  visibility
+                </span>
               </button>
             </div>
           </div>
@@ -141,10 +153,11 @@
           <button type="submit" class="btn-login">เข้าสู่ระบบ</button>
 
           <button type="button" class="btn-scan-qr" onclick="openQrScanner()">
-            📷 สแกน QR Code
+            <span class="material-symbols-outlined"> qr_code_scanner </span>
+            สแกน QR Code
           </button>
 
-          <div class="forgot-redirect-container">
+          <!-- <div class="forgot-redirect-container">
             <p class="forgot-text">ลืมรหัสผ่าน หรือเข้าใช้งานไม่ได้?</p>
             <button
               type="button"
@@ -153,7 +166,7 @@
             >
               แจ้งลืมรหัสผ่าน
             </button>
-          </div>
+          </div> -->
         </form>
       </section>
 

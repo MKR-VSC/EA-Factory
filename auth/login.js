@@ -68,16 +68,16 @@ function loadRememberedUser() {
 
 function togglePasswordVisibility() {
   const input = document.getElementById("pvtPassword");
-  const btn = document.querySelector(".btn-eye");
+  const icon = document.getElementById("eyeIcon");
 
   if (!input) return;
 
   if (input.type === "password") {
     input.type = "text";
-    if (btn) btn.textContent = "🙈";
+    if (icon) icon.textContent = "visibility_off";
   } else {
     input.type = "password";
-    if (btn) btn.textContent = "👁️";
+    if (icon) icon.textContent = "visibility";
   }
 }
 
