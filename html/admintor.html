@@ -4,12 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Panel - Daily Defect</title>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
   <link rel="stylesheet" href="/css/admintor.css" />
   <link rel="icon" href="data:," />
 </head>
+
 <body>
   <div class="app-shell">
-    <!-- ================= SIDEBAR ================= -->
     <aside class="sidebar">
       <div class="sidebar-logo">
         <span class="logo-icon">⚡</span>
@@ -22,27 +28,24 @@
       <nav class="sidebar-menu" aria-label="เมนูหลัก">
         <button class="sidebar-item active" type="button" data-section="dashboard">📊 Dashboard</button>
         <button class="sidebar-item" type="button" data-section="masters">⚙️ Master Data</button>
+        <button class="sidebar-item" type="button" data-section="users">👥 Users / Roles</button>
         <button class="sidebar-item" type="button" data-section="logs">🪲 System Logs</button>
       </nav>
-      <button id="btnLogout" class="btn-red" type="button">
-    ออกจากระบบ
-  </button>
+
+      <button id="btnLogout" class="btn-red" type="button">ออกจากระบบ</button>
     </aside>
 
-
-    <!-- ================= MAIN ================= -->
     <main class="main-workspace">
       <header class="workspace-header">
         <div>
           <h1>แผงควบคุมระบบของเสียรายวัน</h1>
-          <p>ตรวจสอบรายการที่ส่งเข้าระบบ สถานะการตรวจสอบ และจัดการข้อมูลพื้นฐาน</p>
+          <p>ตรวจสอบรายการ จัดการข้อมูลพื้นฐาน และกำหนดสิทธิ์ผู้ใช้งาน</p>
         </div>
         <button class="btn btn-secondary" type="button" id="btn-refresh">🔄 โหลดข้อมูลใหม่</button>
       </header>
 
       <div id="alert-box" class="alert" hidden></div>
 
-      <!-- ================= DASHBOARD ================= -->
       <section id="section-dashboard" class="page-section active">
         <div class="metrics-grid">
           <article class="metric-card">
@@ -107,7 +110,6 @@
         </div>
       </section>
 
-      <!-- ================= MASTER DATA ================= -->
       <section id="section-masters" class="page-section">
         <div class="master-grid">
           <article class="panel">
@@ -130,7 +132,59 @@
         </div>
       </section>
 
-      <!-- ================= LOGS ================= -->
+      <section id="section-users" class="page-section">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>👥 จัดการ User และ Role</h2>
+            <span class="muted">Admin เพิ่ม / ลบ / เปลี่ยนสิทธิ์ได้จากหน้านี้</span>
+          </div>
+
+          <div class="form-row">
+            <input type="text" id="user-username" placeholder="Username เช่น ADMIN01" />
+            <input type="text" id="user-password" placeholder="Password" />
+            <input type="text" id="user-display-name" placeholder="ชื่อแสดงผล" />
+            <input type="text" id="user-department" placeholder="แผนก เช่น blow" />
+
+            <select id="user-role">
+              <option value="staff">staff</option>
+              <option value="supervisor">supervisor</option>
+              <option value="accounting">accounting</option>
+              <option value="management">management</option>
+              <option value="admin">admin</option>
+            </select>
+
+            <button class="btn btn-primary" type="button" id="btn-add-user">เพิ่ม User</button>
+          </div>
+
+          <div class="filter-row">
+            <input id="user-search-input" type="search" placeholder="ค้นหา username / ชื่อ / แผนก / role..." />
+            <select id="user-status-filter">
+              <option value="all">ทุกสถานะ</option>
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+            </select>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>ชื่อ</th>
+                  <th>แผนก</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="user-table-body">
+                <tr><td colspan="6" class="tb-empty">กำลังโหลดผู้ใช้งาน...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <section id="section-logs" class="page-section">
         <div class="panel">
           <div class="panel-head"><h2>🪲 System Logs</h2></div>

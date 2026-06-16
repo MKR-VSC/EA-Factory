@@ -25,7 +25,7 @@ if (typeof window.ALLOWED_ROLES === 'undefined') {
 var sb = window.supabaseClient || window.sb;
 var ALLOWED_ROLES = window.ALLOWED_ROLES;
 
-const LOGIN_PAGE = "login2.html";
+const LOGIN_PAGE = "login.html";
 const FORM_PAGE = "html/form-department.html";
 // ... โค้ดส่วนอื่นๆ คงเดิม ...
 
@@ -877,7 +877,7 @@ async function handleDashboardLogout() {
 
   localStorage.clear();
   alert("🔒 ออกจากระบบเรียบร้อยแล้ว");
-  window.location.href = "login2.html";
+  window.location.href = "login.html";
 }
 
 window.handleDashboardLogout = handleDashboardLogout;
