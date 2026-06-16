@@ -1,76 +1,246 @@
-* {
+/* ======================================================
+   RESET
+====================================================== */
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+
+  --success: #10b981;
+  --success-dark: #059669;
+
+  --danger: #e11d48;
+
+  --text: #0f172a;
+  --text-light: #64748b;
+
+  --border: #dbeafe;
+
+  --card-bg: #ffffff;
+  --body-bg: linear-gradient(
+    135deg,
+    #eff6ff 0%,
+    #dbeafe 50%,
+    #f8fafc 100%
+  );
 }
 
 body {
   margin: 0;
   font-family: "Kanit", "Noto Sans Thai", sans-serif;
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
-  color: #0f172a;
+  color: var(--text);
+  background: var(--body-bg);
+  min-height: 100vh;
+  overflow-x: hidden;
 }
+
+/* ======================================================
+   SPLASH SCREEN
+====================================================== */
+
+#splash-screen {
+  position: fixed;
+  inset: 0;
+  background: white;
+  z-index: 99999;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  transition: all .4s ease;
+}
+
+#splash-screen.hide {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.splash-logo img {
+  width: 120px;
+  height: 120px;
+}
+
+.splash-title {
+  margin-top: 18px;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.splash-sub {
+  color: var(--text-light);
+  margin-top: 6px;
+}
+
+.splash-dots {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.splash-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: dotBounce 1s infinite ease-in-out;
+}
+
+.splash-dots span:nth-child(2) {
+  animation-delay: .2s;
+}
+
+.splash-dots span:nth-child(3) {
+  animation-delay: .4s;
+}
+
+@keyframes dotBounce {
+  0%,100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* ======================================================
+   LOGIN OVERLAY
+====================================================== */
+
+#login-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,.5);
+  backdrop-filter: blur(4px);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 9999;
+}
+
+.overlay-box {
+  background: white;
+  width: 320px;
+  border-radius: 20px;
+  text-align: center;
+  padding: 30px;
+}
+
+.overlay-ring {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 16px;
+
+  border: 4px solid #dbeafe;
+  border-top: 4px solid var(--primary);
+  border-radius: 50%;
+
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ======================================================
+   HEADER
+====================================================== */
 
 .pvt-top-header {
   text-align: center;
-  padding: 28px 16px 8px;
+  padding: 30px 20px 10px;
 }
 
-.pvt-top-header h1 {
-  margin: 0;
-  font-size: 38px;
-  color: #1e40af;
-}
-
-.pvt-top-header p {
-  margin: 20px 0 0;
-  color: #475569;
-  font-weight: 600;
-}
-
-.login-page {
-  max-width: 460px;
-  margin: 32px auto;
-  padding: 0 18px;
-  position: relative;
-}
-
-.guide-card,
-.login-card,
-.qr-login-box {
-  background: #fff;
-  border-radius: 22px;
-  padding: 26px;
-  box-shadow: 0 16px 40px rgba(30, 64, 175, 0.13);
-  border: 1px solid #dbeafe;
-}
-
-.guide-card h3,
-.login-card h2 {
-  margin-top: 0;
-  color: #1e40af;
-}
-
-.mode-box {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 16px;
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 14px;
 }
 
-.mode-box p {
-  margin: 6px 0 0;
-  color: #475569;
+.logo img {
+  width: 150px;
+  height: 150px;
+}
+
+.logo h2 {
+  margin: 0;
+  color: var(--primary);
+}
+
+.logo p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.pvt-top-header h1 {
+  margin: 10px 0;
+  color: var(--primary);
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.pvt-top-header p {
+  color: var(--text-light);
+}
+
+/* ======================================================
+   MAIN
+====================================================== */
+
+.login-page {
+  max-width: 520px;
+  margin: 20px auto 60px;
+  padding: 0 16px;
+}
+
+.login-card,
+.qr-login-box,
+.guide-card {
+  background: var(--card-bg);
+  border-radius: 24px;
+  border: 1px solid var(--border);
+
+  box-shadow:
+    0 12px 30px rgba(30,64,175,.08),
+    0 2px 8px rgba(0,0,0,.05);
+}
+
+/* ======================================================
+   LOGIN CARD
+====================================================== */
+
+.login-card {
+  padding: 28px;
+}
+
+.login-card h2 {
+  text-align: center;
+  margin-top: 0;
+  color: var(--primary);
 }
 
 .subtitle {
   text-align: center;
-  color: #64748b;
-  margin-top: -6px;
+  color: var(--text-light);
   margin-bottom: 24px;
-}
-
-.login-card h2 {
-  text-align: center;
 }
 
 .form-group {
@@ -79,36 +249,45 @@ body {
 
 label {
   display: block;
+  margin-bottom: 6px;
   font-weight: 600;
-  margin-bottom: 7px;
-  color: #334155;
 }
 
 .form-control {
   width: 100%;
-  height: 46px;
+  height: 50px;
+
   border: 1px solid #cbd5e1;
-  border-radius: 12px;
+  border-radius: 14px;
+
   padding: 0 14px;
-  font-size: 18px;
-  outline: none;
-  background: #fff;
+
+  font-size: 16px;
+  font-family: inherit;
+
+  transition: .2s;
 }
 
 .form-control:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  outline: none;
+
+  border-color: var(--primary);
+
+  box-shadow:
+    0 0 0 3px rgba(37,99,235,.15);
 }
 
 .password-row {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .btn-eye {
-  width: 80px;
+  width: 60px;
+
   border: none;
-  border-radius: 12px;
+  border-radius: 14px;
+
   background: #dbeafe;
   cursor: pointer;
 }
@@ -116,292 +295,217 @@ label {
 .remember-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 400;
-  margin: 6px 0 20px;
+  gap: 10px;
+
+  margin-top: 8px;
+  margin-bottom: 20px;
 }
+
+/* ======================================================
+   BUTTON
+====================================================== */
 
 .btn-login,
 .btn-qr {
   width: 100%;
   border: none;
   border-radius: 14px;
-  padding: 14px;
-  font-size: 20px;
-  font-weight: 700;
-  cursor: pointer;
-}
 
-/* 📱 ตกแต่งปุ่มสแกน QR Code ให้เด่นและกดง่าย */
-.btn-huge-qr {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  background: #10b981; /* สีเขียวเด่นชัด */
-  color: white;
-  border: none;
-  border-radius: 12px;
-  padding: 20px;
-  font-size: 22px;
-  font-weight: bold;
+  padding: 14px;
+
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+
   cursor: pointer;
-  margin-bottom: 25px; /* ดันให้ห่างจากกล่องล็อกอินปกติ */
-  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
-  transition: all 0.2s;
-}
-.btn-huge-qr:active {
-  transform: translateY(3px);
-  box-shadow: none;
 }
 
 .btn-login {
-  background: #2563eb;
+  background: var(--primary);
   color: white;
 }
 
 .btn-login:hover {
-  background: #1d4ed8;
+  background: var(--primary-dark);
 }
 
-.qr-login-box {
-  margin-top: 18px;
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+.btn-login:disabled {
+  opacity: .7;
+  cursor: wait;
 }
 
 .btn-qr {
-  margin-top: 16px;
-  background: #16a34a;
+  background: var(--success);
   color: white;
 }
 
 .btn-qr:hover {
-  background: #15803d;
+  background: var(--success-dark);
 }
 
-.hidden {
-  display: none;
+/* ======================================================
+   QR BOX
+====================================================== */
+
+.qr-login-box {
+  margin-top: 20px;
+  padding: 24px;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
 }
 
-@media (max-width: 860px) {
-  .login-page {
-    grid-template-columns: 1fr;
-  }
+/* ======================================================
+   GUIDE PANEL
+====================================================== */
 
-  .pvt-top-header h1 {
-    font-size: 24px;
-  }
-}
-
-/* --- 2. เปลี่ยนให้ Guide Card ไปลอยหลบขอบจอขวา --- */
 .guide-card {
   position: fixed;
+
   top: 120px;
-  right: -380px; /* ซ่อนพ้นขอบจอไปทางขวา */
-  width: 380px;
+  right: -360px;
+
+  width: 360px;
+
+  padding: 22px;
+
+  transition: .4s ease;
+
   z-index: 999;
-  border-radius: 22px 0 0 22px;
-  border-right: none;
-  box-shadow: -10px 0 40px rgba(30, 64, 175, 0.15);
-  transition: right 0.4s cubic-bezier(0.25, 1, 0.5, 1); /* เอฟเฟกต์สไลด์นุ่มๆ */
 }
 
-/* คลาสที่จะถูกเติมด้วย JS เมื่อกดปุ่ม เพื่อสั่งให้สไลด์ออกมา */
 .guide-card.active {
   right: 0;
 }
 
-/* --- 3. ปุ่มสำหรับกด ซ่อน/แสดง (ยื่นออกจากตัวการ์ด) --- */
-/* ปรับแต่งปุ่มเปิด/ปิดไกด์ ให้เป็นแนวนอนและอ่านง่ายขึ้น */
 .btn-guide-toggle {
   position: absolute;
-  left: -150px;          /* ขยับปุ่มออกไปทางซ้ายให้เห็นข้อความแนวนอนครบ */
-  top: 20px;             /* ย้ายไปอยู่มุมบนขวาของการ์ด */
-  background: #1e40af;
-  color: white;
-  border: none;
-  padding: 10px 16px;    /* ปรับช่องไฟให้อ่านง่าย */
-  border-radius: 12px 0 0 12px;
-  cursor: pointer;
-  
-  display: flex;         /* จัดไอคอนกับข้อความให้อยู่แถวเดียวกัน */
-  flex-direction: row;   /* บังคับเป็นแนวนอน */
+
+  left: -155px;
+  top: 18px;
+
+  display: flex;
   align-items: center;
   gap: 8px;
-  
-  box-shadow: -4px 4px 12px rgba(30, 64, 175, 0.25);
-  font-family: "Kanit", sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
 
-/* เอาคุณสมบัติแนวตั้งอันเก่าออก (สำคัญมาก ต้องลบเขียนทับ) */
-.btn-guide-toggle .toggle-text {
-  writing-mode: horizontal-tb !important; /* บังคับเป็นแนวนอนปกติ */
-  text-orientation: mixed;
-  letter-spacing: 0px;
+  border: none;
+  border-radius: 14px 0 0 14px;
+
+  background: var(--primary);
+  color: white;
+
+  padding: 12px 18px;
+
+  cursor: pointer;
 }
 
 .btn-guide-toggle:hover {
-  background: #1d4ed8;
-  padding-left: 20px;    /* ยื่นออกมาเล็กน้อยเวลาเอาเมาส์ไปชี้ */
+  background: var(--primary-dark);
 }
 
-/* จัดตัวอักษร "วิธีเข้าใช้งาน" ให้เรียงเป็นแนวตั้ง */
-.btn-guide-toggle .toggle-text {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 1px;
+.mode-box {
+  background: #f8fafc;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+
+  padding: 14px;
+  margin-bottom: 12px;
 }
 
-/* ป้องกันหน้าจอมือถือบั๊กตอนสไลด์กางออก */
-body {
-  overflow-x: hidden;
+.mode-box p {
+  margin: 6px 0 0;
+  color: var(--text-light);
 }
 
-/* รองรับหน้าจอมือถือขนาดเล็ก */
-@media (max-width: 480px) {
-  .guide-card {
-    width: 290px;
-    right: -290px;
-  }
-}
-
-/* 📱 บังคับให้โครงสร้างแผงการ์ดจัดระเบียบตัวเองตามขนาดหน้าจออัตโนมัติ */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* หน้าจอเล็กจะเหลือ 1 คอลัมน์ หน้าจอโน้ตบุ๊กจะขยายเป็น 4 คอลัมน์แนวตั้งเอง */
-  gap: 16px;
-  width: 100%;
-}
-
-/* 📲 แก้ปัญหาตารางทะลุจอในมือถือและแท็บเล็ต */
-.table-responsive {
-  width: 100%;
-  overflow-x: auto; /* มือถือสามารถเอานิ้วปัดซ้าย-ขวาเพื่อดูตารางเต็มๆ ได้ โดยที่โครงสร้างเว็บไม่เบี้ยว */
-  overflow-y: auto; /* หรือ scroll */
-  
-  /* แถมให้: ถ้าอยากควบคุมพฤติกรรมการเลื่อนในเบราว์เซอร์ยุคใหม่ */
-  scroll-behavior: smooth; /* เลื่อนแบบนุ่มนวลเวลาคลิก anchor ลิงก์ */
-  border-radius: 8px;
-  border: 1px solid var(--border);
-}
-
-/* 💻 จำกัดขนาดคอนเทนเนอร์หลักไม่ให้บีบจนน่าเกลียด */
-.dashboard-container {
-  width: calc(100% - 24px);
-  max-width: 1400px;
-  margin: 12px auto;
-  padding: 0 8px;
-}
-
-
-
-/*ปุ่มสมัครใช้งาน  register*/
-
-/* =========================================================
-   สไตล์กล่องและปุ่มสมัครสมาชิกใหม่ (สำหรับหน้าล็อกอิน PVT)
-   ========================================================= */
-
-.register-redirect-container {
-    margin-top: 25px;
-    padding-top: 20px;
-    border-top: 1px dashed #cbd5e1; /* เส้นประคั่นสัดส่วน */
-    text-align: center;
-}
-
-.register-text {
-    font-size: 13px;
-    color: #64748b;
-    margin-bottom: 10px;
-    margin-top: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.btn-secondary-register {
-    display: inline-block;
-    width: 100%;
-    padding: 12px;
-    background: #ffffff;
-    color: #10b981; /* สีเขียวธีมสมัครสมาชิก */
-    border: 2px solid #10b981;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: bold;
-    text-decoration: none;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    transition: all 0.25s ease-in-out; /* หน่วงเวลาตอนชี้เมาส์ให้นุ่มนวล */
-}
-
-/* เอฟเฟกต์ตอนเอาเมาส์ไปชี้ (Hover) */
-.btn-secondary-register:hover {
-    background: #10b981;
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
-    transform: translateY(-1px); /* ปุ่มลอยขึ้นเล็กน้อย */
-}
-
-/* เอฟเฟกต์ตอนกดคลิกปุ่ม (Active) */
-.btn-secondary-register:active {
-    transform: translateY(1px); /* ปุ่มยุบลงไปเล็กน้อยตอนกด */
-}
-
-
-
-/* reset-password.css */
-
-
-
-/* =========================================================
-   สไตล์กล่องและปุ่มลืมรหัสผ่านแบบบล็อก (สำหรับหน้าล็อกอิน PVT)
-   ========================================================= */
+/* ======================================================
+   FORGOT PASSWORD
+====================================================== */
 
 .forgot-redirect-container {
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px dashed #cbd5e1; /* เส้นประคั่นแบ่งสัดส่วน */
-    text-align: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px dashed #cbd5e1;
 }
 
 .forgot-text {
-    font-size: 13px;
-    color: #64748b;
-    margin-bottom: 10px;
-    margin-top: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  text-align: center;
+  color: var(--text-light);
+  font-size: 13px;
 }
 
 .btn-secondary-forgot {
-    display: inline-block;
-    width: 100%;
-    padding: 12px;
-    background: #ffffff;
-    color: #e11d48; /* สีแดงชมพู ธีมไอที/ความปลอดภัย */
-    border: 2px solid #e11d48;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: bold;
-    cursor: pointer;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    transition: all 0.25s ease-in-out; /* หน่วงเวลาตอนชี้เมาส์ให้นุ่มนวล */
+  width: 100%;
+
+  padding: 12px;
+
+  border-radius: 10px;
+  border: 2px solid var(--danger);
+
+  background: white;
+  color: var(--danger);
+
+  font-family: inherit;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: .2s;
 }
 
-/* เอฟเฟกต์ตอนเอาเมาส์ไปชี้ปุ่มลืมรหัสผ่าน (Hover) */
 .btn-secondary-forgot:hover {
-    background: #e11d48;
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.2);
-    transform: translateY(-1px); /* ปุ่มลอยขึ้นเล็กน้อย */
+  background: var(--danger);
+  color: white;
 }
 
-/* เอฟเฟกต์ตอนกดคลิกปุ่ม (Active) */
-.btn-secondary-forgot:active {
-    transform: translateY(1px); /* ปุ่มยุบลงไปเล็กน้อยตอนกด */
+/* ======================================================
+   MOBILE
+====================================================== */
+
+@media (max-width: 768px) {
+
+  .pvt-top-header h1 {
+    font-size: 24px;
+  }
+
+  .guide-card {
+    width: 300px;
+    right: -300px;
+  }
+
+  .btn-guide-toggle {
+    left: -135px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .login-card,
+  .qr-login-box {
+    padding: 20px;
+  }
+
+  .pvt-top-header h1 {
+    font-size: 20px;
+  }
+}
+
+
+
+.btn-scan-qr {
+  width: 100%;
+  margin-top: 14px;
+  border: none;
+  border-radius: 14px;
+  padding: 15px;
+  background: #10b981;
+  color: white;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-scan-qr:hover {
+  background: #059669;
 }
