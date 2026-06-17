@@ -21,6 +21,7 @@
     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#4caf8a" />
+    <meta name="msapplication-TileColor" content="#4caf8a" />
 
     <link
       rel="icon"
@@ -74,10 +75,12 @@
 
     <!-- Guide Panel -->
     <!-- <section class="guide-card" id="guideCard">
+      <div class="guide-toggle" style="display: inline-flex; align-items: center; gap: 4px;">
       <button type="button" class="btn-guide-toggle" onclick="toggleGuidePanel()">
-        <span class="toggle-icon">ℹ️</span>
-        <span class="toggle-text"></span>
+          <span class="toggle-text">ดูวิธีเข้าใช้งาน</span> 
+          <span class="material-symbols-outlined toggle-icon" style="font-size: 18px; vertical-align: middle;">info</span>
       </button>
+      </div>
 
       <h3>วิธีเข้าใช้งาน</h3>
 
@@ -107,7 +110,7 @@
     <main class="login-page">
       <section class="login-card">
         <form id="loginForm" onsubmit="handlePasswordLogin(event)">
-          <h2>🔐 เข้าสู่ระบบ</h2>
+         <h2><span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 5px;">lock</span>เข้าสู่ระบบ</h2>
           <!-- <p class="subtitle">สำหรับ Notebook / PC</p> -->
 
           <div class="form-group">
@@ -153,8 +156,7 @@
           <button type="submit" class="btn-login">เข้าสู่ระบบ</button>
 
           <button type="button" class="btn-scan-qr" onclick="showQrScanner()">
-            <span class="material-symbols-outlined"> qr_code_scanner </span>
-            สแกน QR Code
+            <span class="material-symbols-outlined">qr_code_scanner</span> เปิดกล้องสแกน QR Code
           </button>
 
           <!-- <div class="forgot-redirect-container">
@@ -182,7 +184,28 @@
           <div id="qr-reader"></div>
 
           <p class="qr-hint">นำกล้องไปส่อง QR Code ประจำแผนก</p>
-        </div>
+        <div class="multi-dept-qr-container" style="margin-top: 25px; padding: 15px; background: #f4fbf8; border: 1px dashed #4caf8a; border-radius: 12px; text-align: center;">
+<label for="deptQrSelector" style="font-weight: 600; color: #2c3e50; display: block; margin-bottom: 8px; font-size: 14px;">
+    🖨️ เลือกแผนกเพื่อสร้างป้าย QR Code ประจำเครื่อง
+  </label>
+  
+  <select id="deptQrSelector" class="form-control" style="width: 100%; padding: 8px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc;" onchange="updateDeptQrCode()">
+    <option value="">-- เลือกแผนกที่ต้องการ --</option>
+    <option value="blow">แผนกเป่าถุง (Blow)</option>
+    <option value="pipe">แผนกท่อ (Pipe)</option>
+    <option value="mono">แผนกโมโน (Mono)</option>
+    <option value="drill">แผนกตัดเจาะ (Drill)</option>
+    <option value="garbage">แผนกตัดถุงขยะ (Garbage)</option>
+    <option value="tape">แผนกตัดเทปน้ำพุ่ง (Tape)</option>
+    <option value="sheet">แผนกตัดผืน (Sheet)</option>
+    <option value="salan">แผนกสแลนทอ (Salan)</option>
+  </select>
+
+  <div id="qrArea" class="hidden" style="margin-top: 10px;">
+    <img id="generatedDeptQr" src="" alt="Department QR Code" style="width: 160px; height: 160px; border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+    <p id="qrLabelText" style="font-size: 13px; font-weight: bold; color: #4caf8a; margin-top: 5px;"></p>
+    <p style="font-size: 11px; color: #777; margin-top: -3px;">(พี่สามารถคลิกขวาที่รูปภาพเพื่อ "บันทึกรูปภาพเป็น..." เอาไปปรินต์แปะหน้าเครื่องได้เลยครับ)</p>
+  </div>
       </div>
 
       <!-- QR Login Box -->
@@ -205,5 +228,7 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <!-- JS -->
     <script src="/auth/login.js"></script>
+    
   </body>
+  
 </html>

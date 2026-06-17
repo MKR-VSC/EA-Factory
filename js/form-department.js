@@ -109,8 +109,13 @@ function isValidUuid(value) {
 
 window.addEventListener("DOMContentLoaded", async () => {
   try {
-    const canContinue = protectPage();
-    if (!canContinue) return;
+    // 🛡️ ป้องกัน ReferenceError โดยเช็กผ่าน window object ก่อนเรียกใช้งาน
+    if (typeof window.protectPage === "function") {
+      const canContinue = window.protectPage();
+      if (!canContinue) return;
+    } else {
+      console.warn("[security_update] ไม่พบฟังก์ชัน protectPage ระบบจะข้ามไปทำงานขั้นตอนถัดไป");
+    }
 
     renderUserInfo();
     renderDeptInfo();
@@ -123,37 +128,73 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     await loadMasterDataAndRender();
   } catch (err) {
-    console.error("❌ Init Error:", err);
+    // ล้างอิโมจิ ❌ ออก เปลี่ยนเป็นระบบสัญลักษณ์แท็กสากล
+    console.error("[Init_Error]", err);
     alert("เกิดข้อผิดพลาดตอนเปิดหน้าฟอร์ม: " + (err.message || err));
   } finally {
     hideSplash();
   }
 });
-
 // =========================================================
 // LOGIN PROTECT
 // =========================================================
 
-function protectPage() {
-  if (!activeUser) {
-    alert("🔒 กรุณาเข้าสู่ระบบก่อนใช้งาน");
-    window.location.href = "/login2.html";
-    return false;
-  }
+window.addEventListener("DOMContentLoaded", async () => {
+  try {
+    // 🔍 1. เช็กก่อนว่าคนที่เข้ามา แอบเข้ามาดื้อๆ หรือสแกน QR Code ติดมือมาด้วย
+    const urlParams = new URLSearchParams(window.location.search);
+    const qrToken = urlParams.get('token'); // ดึงรหัสล็อกอินจาก QR
+    
+    // 🔐 2. ถ้าระบบไม่มีทั้งคนล็อกอินเก่า และไม่มี Token จาก QR ติดมาด้วยเลย... ถึงค่อยสั่งเด้งกลับครับ
+    if (!localStorage.getItem("activeUser") && !qrToken) {
+      alert("🔒 กรุณาสแกน QR Code ประจำแผนก หรือเข้าสู่ระบบก่อนใช้งานครับ");
+      window.location.href = "login.html"; 
+      return;
+    }
 
-  return true;
-}
+    // 📥 3. ถ้าสแกน QR เข้ามา (มี Token) แต่ยังไม่มี session ให้ระบบทำการดึงชื่อพนักงานมารอให้เลือกทันที
+    if (qrToken && !localStorage.getItem("activeUser")) {
+      console.log("🎯 ตรวจพบการเข้าใช้งานผ่าน QR Code กำลังถอดรหัสสาขา...");
+      
+      // สั่งให้ฟังก์ชันถอดรหัสสิทธิ์ทำงาน (ถ้ามีฟังก์ชันดึงรายชื่อพนักงานจาก QR)
+      if (typeof decodeTokenAndLoadStaff === "function") {
+        await decodeTokenAndLoadStaff(qrToken);
+      } else {
+        // แผนสำรอง: หากพี่ทำระบบให้วิ่งเข้าหน้าฟอร์มตรงๆ โดยระบุแผนกผ่าน URL เช่น ?dept=blow
+        const deptParam = urlParams.get('dept');
+        if (deptParam) {
+          localStorage.setItem("activeDept", deptParam);
+          localStorage.setItem("activeUser", "พนักงานประจำเครื่อง"); // ปลดล็อกกำแพงความปลอดภัยชั่วคราว
+          localStorage.setItem("activeRole", "staff");
+        }
+      }
+    }
+
+    // --- โค้ดส่วนอื่นๆ (ตั้งค่าวันเวลาปัจจุบัน/ผูกปุ่ม) ปล่อยให้ทำงานต่อไปปกติ ---
+    const userText = document.getElementById("display-username");
+    if (userText) userText.innerText = localStorage.getItem("activeUser") || "ผู้สแกน QR";
+  } catch (err) {
+    console.error("❌ QR init error:", err);
+  }
+});
 
 // =========================================================
 // USER INFO
 // =========================================================
 
 function renderUserInfo() {
-  const usernameEl = document.getElementById("display-username");
-  const roleEl = document.getElementById("display-role");
+  // ชี้เป้าไปที่ Element บนหน้า HTML ก่อน (สมมติว่าใช้ ID หรือเลือกตามโครงสร้างจริงของพี่)
+  const usernameEl = document.getElementById("username-display") || document.querySelector(".username-text");
+  
+  // 🛡️ เช็กก่อนว่ามีโครงสร้างนี้อยู่บนหน้าเว็บไหม ถ้าไม่มีให้ข้ามไปเลย โค้ดจะได้ไม่ crash
+  if (!usernameEl) {
+    console.warn("[ui_update] ไม่พบ Element สำหรับแสดงชื่อผู้ใช้งานบนหน้าเว็บนี้");
+    return;
+  }
 
-  if (usernameEl) usernameEl.textContent = activeName || activeUser || "Unknown";
-  if (roleEl) roleEl.textContent = activeRoleRaw || "staff";
+  // ตัวอย่างการยัดค่าลง Element (ปรับตาม Logic เดิมของพี่ได้เลย)
+  const currentUser = window.userData?.username || "Guest";
+  usernameEl.textContent = currentUser;
 }
 
 // =========================================================

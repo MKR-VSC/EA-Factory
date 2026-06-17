@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
-
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
     <!-- ================= FAVICON ================= -->
     <link rel="icon" href="data:;base64,=" />
 
@@ -75,23 +75,24 @@
               <span class="menu-label">ข้อมูลผู้ใช้งาน</span>
 
               <div class="user-profile-box">
-                <div class="user-avatar">👤</div>
-
-                <div class="user-info-text">
-                  <strong id="display-username">กำลังโหลด...</strong>
-                  <span id="display-role">พนักงาน</span>
-                </div>
+                <div class="user-info" style="display: flex; align-items: center; gap: 6px; font-weight: bold; color: #2c3e50;">
+  
+                            <span class="material-symbols-outlined" style="vertical-align: middle; color: #4caf8a;">account_circle</span> 
+                            
+                            <span>ผู้บันทึกข้อมูล:</span>
+                            <span id="display-username" style="color: #4caf8a;">กำลังโหลด...</span>
+                  </div>
               </div>
             </div>
 
             <!-- เมนูระบบ -->
             <div class="menu-group">
-              <span class="menu-label">เมนูระบบ</span>
+             <a href="#" class="menu-link active" style="display: flex; align-items: center; gap: 8px;"> 
+                <span class="material-symbols-outlined" style="font-size: 20px;">edit_document</span> ฟอร์มบันทึกปัญหา 
+              </a>
 
-              <a href="#" class="menu-link active"> 📝 ฟอร์มบันทึกปัญหา </a>
-
-              <a href="index.html" class="menu-link" id="nav-dashboard-link">
-                📊 แดชบอร์ดผู้บริหาร
+              <a href="index.html" class="menu-link" id="nav-dashboard-link" style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">bar_chart</span> แดชบอร์ดผู้บริหาร
               </a>
             </div>
 
@@ -114,8 +115,8 @@
             </button>
 
             <!-- ปุ่มออกจากระบบ -->
-            <button type="button" class="btn-logout" onclick="handleLogout()">
-              🚪 ออกจากระบบ
+            <button type="button" class="btn-logout" onclick="handleLogout()" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">logout</span> ออกจากระบบ
             </button>
           </nav>
         </aside>
@@ -125,7 +126,9 @@
           <!-- Header -->
           <header class="content-header">
             <div class="header-title-area">
-              <h1 id="dept-title-main">📋 ฟอร์มบันทึกข้อมูลปัญหาประจำแผนก</h1>
+              <h1 id="dept-title-main" style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="font-size: 28px; color: #2c3e50; vertical-align: middle;">assignment</span> ฟอร์มบันทึกข้อมูลปัญหาประจำแผนก
+              </h1>
 
               <p class="subtitle">
                 กรุณากรอกข้อมูลปัญหาค้างคาให้ครบถ้วน
@@ -138,8 +141,8 @@
                 DEPT: LOADING
               </span>
 
-              <span class="badge badge-status-online" id="network-status">
-                🟢 ระบบออนไลน์
+              <span class="badge badge-status-online" id="network-status" style="display: inline-flex; align-items: center; gap: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 14px; color: #10b981; animation: pulse 2s infinite;">fiber_manual_record</span> ระบบออนไลน์
               </span>
             </div>
           </header>
@@ -149,9 +152,8 @@
             <form id="department-waste-form">
               <!-- วัน-เวลา -->
               <div class="form-group">
-                <label for="incident-datetime">
-                  📅 วัน-เวลา ที่เกิดเหตุปัญหาการผลิต
-                  <span class="required">*</span>
+               <label for="incident-datetime" style="display: inline-flex; align-items: center; gap: 6px;">
+                  <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; color: #2563eb;">calendar_month</span> วัน-เวลา ที่เกิดเหตุปัญหาการผลิต <span class="required">*</span>
                 </label>
 
                 <input type="datetime-local" id="incident-datetime" required />
@@ -163,28 +165,22 @@
 
               <!-- กะการทำงาน -->
               <div class="form-group">
-                <label for="work-shift">
-                  ⏰ กะการทำงาน (Shift)
-                  <span class="required">*</span>
+                                <label for="work-shift" style="display: inline-flex; align-items: center; gap: 6px;">
+                  <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; color: #f59e0b;">schedule</span> กะการทำงาน (Shift) <span class="required">*</span>
                 </label>
 
                 <select id="work-shift" required>
                   <option value="">-- โปรดเลือกกะการทำงาน --</option>
-                  <option value="กะ A (กลางวัน)">
-                    ☀️ กะ A (กลางวัน: 08:00 - 17:00 น.)
-                  </option>
-                  <option value="กะ B (กลางคืน/OT)">
-                    🌙 กะ B (กลางคืน/OT: 18:00 - 20:00 น.)
-                  </option>
+                  <option value="กะ A (กลางวัน)">กะ A (กลางวัน: 08:00 - 17:00 น.)</option>
+                  <option value="กะ B (กลางคืน/OT)">กะ B (กลางคืน/OT: 18:00 - 20:00 น.)</option>
                 </select>
               </div>
 
               <!-- หมายเลขเครื่องจักร -->
               <div class="form-group">
-                <label for="machine-no">
-                  🔢 หมายเลขเครื่องจักร / เบอร์เครื่อง
-                  <span class="required">*</span>
-                </label>
+                <label for="machine-no" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; color: #2563eb;">precision_manufacturing</span> หมายเลขเครื่องจักร / เบอร์เครื่อง <span class="required">*</span>
+                  </label>
 
                 <select id="machine-no" required>
                   <option value="">-- กำลังโหลดรายการเครื่อง --</option>
@@ -193,10 +189,9 @@
 
               <!-- ประเภทปัญหา -->
               <div class="form-group">
-                <label for="problem-type">
-                  ⚠️ ปัญหาที่พบ / อาการเสีย
-                  <span class="required">*</span>
-                </label>
+               <label for="problem-type" style="display: inline-flex; align-items: center; gap: 6px;">
+                  <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; color: #ef4444;">error</span> เลือกหมวดหมู่ประเภทปัญหาที่พบ <span class="required">*</span>
+              </label>
 
                 <select id="problem-type" required>
                   <option value="">-- กำลังโหลดรายการปัญหา --</option>
@@ -206,9 +201,8 @@
               <!-- เฉพาะหัวหน้า / บัญชี / บริหาร -->
               <div id="manager-only-section" class="manager-only-section">
                 <div class="form-group">
-                  <label for="waste-weight">
-                    ⚖️ น้ำหนักของเสีย (กิโลกรัม)
-                    <span class="required">*สำหรับหัวหน้า/บัญชี</span>
+                  <label for="waste-weight" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; color: #16a34a;">scale</span> น้ำหนักของเสียที่เกิดขึ้น (กิโลกรัม) <span class="required">*</span>
                   </label>
 
                   <input
@@ -228,9 +222,8 @@
 
               <!-- รายละเอียดเหตุการณ์ -->
               <div class="form-group">
-                <label for="problem-description">
-                  📝 รายละเอียดเหตุการณ์ / อาการที่เกิดขึ้น / หมายเหตุวิศวกร
-                  <span class="required">*</span>
+                <label for="problem-description" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle; color: #2563eb;">edit_note</span> รายละเอียดเหตุการณ์ / อาการที่เกิดขึ้น / หมายเหตุวิศวกร <span class="required">*</span>
                 </label>
 
                 <textarea

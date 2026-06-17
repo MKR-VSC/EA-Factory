@@ -356,58 +356,58 @@ function renderReportTable(records) {
 
   tbody.innerHTML = "";
 
-  displayRecords.forEach((row) => {
-    const tr = document.createElement("tr");
-    const dept = normalizeDept(row.department);
-    const renderedDate = row.incident_datetime
-      ? new Date(row.incident_datetime).toLocaleString("th-TH")
-      : "-";
+ displayRecords.forEach((row) => {
+  const tr = document.createElement("tr");
+  const dept = normalizeDept(row.department);
+  const renderedDate = row.incident_datetime
+    ? new Date(row.incident_datetime).toLocaleString("th-TH")
+    : "-";
 
-    tr.innerHTML = `
-      <td class="nowrap strong">${escapeHTML(renderedDate)}</td>
-      <td>
-        <span class="btn-dept d-${escapeHTML(dept)} dept-pill">
-          ${escapeHTML((row.department || "-").toUpperCase())}
-        </span>
-      </td>
-      <td class="machine-cell">${escapeHTML(row.machine_no || "-")}</td>
-      <td class="strong">${escapeHTML(row.problem_type || "-")}</td>
-      <td><div class="cell-detail">${escapeHTML(row.detail || row.note || "-")}</div></td>
-      <td><span class="reporter-code">${escapeHTML(row.reported_by || "คนงาน")}</span></td>
-      <td>
-        <div class="status-space">${getStatusBadge(row.status)}</div>
-        <select class="select-inline-status" onchange="executeModifyCaseStatus('${escapeHTML(row.id)}', this.value)">
-          <option value="pending" ${row.status === "pending" || !row.status ? "selected" : ""}>⏳ ตั้งรับเรื่อง</option>
-          <option value="progress" ${row.status === "progress" ? "selected" : ""}>⚙️ กำลังซ่อม</option>
-          <option value="resolved" ${row.status === "resolved" ? "selected" : ""}>✅ ปิดงาน</option>
-        </select>
-      </td>
-      <td>
-        <input
-          type="text"
-          class="input-inline-note"
-          placeholder="พิมพ์ข้อสั่งการ/วิธีแก้ไข..."
-          value="${escapeAttr(row.resolution || "")}"
-          onchange="executeModifyCaseResolution('${escapeHTML(row.id)}', this.value)"
-        />
-        ${row.resolver ? `<small class="small-note">📌 ผู้สั่งงานล่าสุด: <strong>${escapeHTML(row.resolver)}</strong></small>` : ""}
-      </td>
-    `;
+  // แก้ไขเปลี่ยน escapeHTML และ escapeAttr เป็น escapeHtml พร้อมถอดอิโมจิออกทั้งหมด
+  tr.innerHTML = `
+    <td class="nowrap strong">${escapeHtml(renderedDate)}</td>
+    <td>
+      <span class="btn-dept d-${escapeHtml(dept)} dept-pill">
+        ${escapeHtml((row.department || "-").toUpperCase())}
+      </span>
+    </td>
+    <td class="machine-cell">${escapeHtml(row.machine_no || "-")}</td>
+    <td class="strong">${escapeHtml(row.problem_type || "-")}</td>
+    <td><div class="cell-detail">${escapeHtml(row.detail || row.note || "-")}</div></td>
+    <td><span class="reporter-code">${escapeHtml(row.reported_by || "คนงาน")}</span></td>
+    <td>
+      <div class="status-space">${getStatusBadge(row.status)}</div>
+      <select class="select-inline-status" onchange="executeModifyCaseStatus('${escapeHtml(row.id)}', this.value)">
+        <option value="pending" ${row.status === "pending" || !row.status ? "selected" : ""}>ตั้งรับเรื่อง</option>
+        <option value="progress" ${row.status === "progress" ? "selected" : ""}>กำลังซ่อม</option>
+        <option value="resolved" ${row.status === "resolved" ? "selected" : ""}>ปิดงาน</option>
+      </select>
+    </td>
+    <td>
+      <input
+        type="text"
+        class="input-inline-note"
+        placeholder="พิมพ์ข้อสั่งการ/วิธีแก้ไข..."
+        value="${escapeHtml(row.resolution || "")}"
+        onchange="executeModifyCaseResolution('${escapeHtml(row.id)}', this.value)"
+      />
+      ${row.resolver ? `<small class="small-note">ผู้สั่งงานล่าสุด: <strong>${escapeHtml(row.resolver)}</strong></small>` : ""}
+    </td>
+  `;
 
-    tbody.appendChild(tr);
-  });
-}
+  tbody.appendChild(tr);
+});
 
 function getStatusBadge(status) {
   if (status === "progress") {
-    return `<span class="badge-status status-progress">⚙️ กำลังซ่อม</span>`;
+    return `<span class="badge-status status-progress">กำลังซ่อม</span>`;
   }
 
   if (status === "resolved") {
-    return `<span class="badge-status status-resolved">✅ ปิดงานสำเร็จ</span>`;
+    return `<span class="badge-status status-resolved">ปิดงานสำเร็จ</span>`;
   }
 
-  return `<span class="badge-status status-pending">⏳ รอดำเนินการ</span>`;
+  return `<span class="badge-status status-pending">รอดำเนินการ</span>`;
 }
 
 // =========================================================
@@ -421,9 +421,9 @@ function renderMonthlyMachineChart(records) {
   // ชี้เป้าไปที่กล่อง Canvas ของกราฟแท่งบนหน้า HTML
   const ctx = document.getElementById("chart-machine-bar");
   if (!ctx) {
-    console.warn("⚠️ ไม่พบ Element ID 'chart-machine-bar' บนหน้าเว็บนี้");
-    return;
-  }
+  console.warn("ไม่พบ Element ID 'chart-machine-bar' บนหน้าเว็บนี้");
+  return;
+}
 
   // 🧹 ทำลายกราฟเก่าในความจำเพื่อเคลียร์พื้นที่แสดงผลใหม่
   if (monthlyChartInstance) {
@@ -537,11 +537,16 @@ function executeDateRangeFilter() {
   const endInput = document.getElementById("inp-end-date")?.value;
 
   // 2. ถ้าผู้ใช้ไม่ได้เลือกวันที่ ให้แจ้งเตือนระบบและหยุดทำงานทันที ไม่ให้โค้ดเอ๋อ
-  if (!startInput || !endInput) {
-    alert("📅 กรุณาเลือกวันที่เริ่มต้นและสิ้นสุดให้ครบถ้วนก่อนกดค้นหาครับ");
-    return;
-  }
-
+  // ตัวอย่างกรณีใช้ SweetAlert2 เพื่อยิงไอคอนระบบขึ้นมาโชว์คู่กับข้อความเตือน
+if (!startInput || !endInput) {
+  Swal.fire({
+    title: 'แจ้งเตือนระบบ',
+    html: '<div style="display: flex; align-items: center; justify-content: center; gap: 8px;"><span class="material-symbols-outlined" style="color: #f59e0b; font-size: 28px;">calendar_month</span> กรุณาเลือกวันที่เริ่มต้นและสิ้นสุดให้ครบถ้วนก่อนกดค้นหาครับ</div>',
+    icon: 'warning',
+    confirmButtonText: 'ตกลง'
+  });
+  return;
+}
   // 3. กำหนดช่วงเวลาให้ครอบคลุมตั้งแต่วินาทีแรกของวันเริ่ม จนถึงวินาทีสุดท้ายของวันสิ้นสุด
   const start = new Date(startInput + "T00:00:00");
   const end = new Date(endInput + "T23:59:59");
@@ -603,11 +608,12 @@ function renderDepartmentDonutChart(counters) {
   // ชี้เป้าไปที่กล่อง Canvas บนหน้า HTML
   const ctx = document.getElementById("chart-dept-donut");
   if (!ctx) {
-    console.warn("⚠️ ไม่พบ Element ID 'chart-dept-donut' บนหน้าเว็บนี้");
+    // เปลี่ยนจากอิโมจิสามเหลี่ยมเตือนภัย ⚠️ เป็นระบบมาร์กเกอร์แท็กไอคอนของระบบแทน
+    console.warn("[error_outline] ไม่พบ Element ID 'chart-dept-donut' บนหน้าเว็บนี้");
     return;
   }
 
-  // 🧹 หากมีกราฟเก่าฝังอยู่ในความจำเครื่อง ให้ทำลายทิ้งก่อนเพื่อเคลียร์แรม (กันบั๊กกราฟกระพริบซ้อน)
+  // หากมีกราฟเก่าฝังอยู่ในความจำเครื่อง ให้ทำลายทิ้งก่อนเพื่อเคลียร์แรม (กันบั๊กกราฟกระพริบซ้อน)
   if (donutChartInstance) {
     donutChartInstance.destroy();
   }
@@ -774,24 +780,48 @@ function generateExecutiveInsight(records) {
   const topProblem = findTopValue(records, "problem_type", "ไม่ระบุ");
 
   box.innerHTML = `
-    <div>📊 งานทั้งหมด: <b>${total}</b> รายการ</div>
-    <div>⏳ รอดำเนินการ: <b>${pending}</b></div>
-    <div>⚙️ กำลังซ่อม: <b>${progress}</b></div>
-    <div>✅ ปิดงานแล้ว: <b>${resolved}</b></div>
+    <div style="margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+      <span class="material-symbols-outlined" style="font-size: 18px; color: #2563eb;">bar_chart</span>
+      <span>งานทั้งหมด: <b>${total}</b> รายการ</span>
+    </div>
+    <div style="margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+      <span class="material-symbols-outlined" style="font-size: 18px; color: #f59e0b;">pending_actions</span>
+      <span>รอดำเนินการ: <b>${pending}</b></span>
+    </div>
+    <div style="margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+      <span class="material-symbols-outlined" style="font-size: 18px; color: #6b21a8;">build</span>
+      <span>กำลังซ่อม: <b>${progress}</b></span>
+    </div>
+    <div style="margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+      <span class="material-symbols-outlined" style="font-size: 18px; color: #16a34a;">check_circle</span>
+      <span>ปิดงานแล้ว: <b>${resolved}</b></span>
+    </div>
 
     <hr class="insight-line" />
 
-    <div>🚨 เครื่องที่เกิดปัญหาสูงสุด: <b>${escapeHTML(topMachine.value)}</b></div>
-    <div>⚠️ ปัญหาที่พบมากที่สุด: <b>${escapeHTML(topProblem.value)}</b></div>
-    <div>🏭 แผนกที่มีปัญหาสูงสุด: <b>${escapeHTML(topDept.value.toUpperCase())}</b></div>
+    <div style="margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+      <span class="material-symbols-outlined" style="font-size: 18px; color: #dc2626;">gpp_maybe</span>
+      <span>เครื่องที่เกิดปัญหาสูงสุด: <b>${escapeHtml(topMachine.value)}</b></span>
+    </div>
+    <div style="margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+      <span class="material-symbols-outlined" style="font-size: 18px; color: #ea580c;">error</span>
+      <span>ปัญหาที่พบมากที่สุด: <b>${escapeHtml(topProblem.value)}</b></span>
+    </div>
+    <div style="margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+      <span class="material-symbols-outlined" style="font-size: 18px; color: #4b5563;">factory</span>
+      <span>แผนกที่มีปัญหาสูงสุด: <b>${escapeHtml(topDept.value.toUpperCase())}</b></span>
+    </div>
 
     <hr class="insight-line" />
 
-    <div class="insight-warning">
-      💡 ข้อเสนอแนะ:
-      ควรตรวจสอบเครื่อง <b>${escapeHTML(topMachine.value)}</b>
-      เนื่องจากพบปัญหา "<b>${escapeHTML(topProblem.value)}</b>"
-      บ่อยที่สุดในระบบ
+    <div class="insight-warning" style="display: flex; align-items: flex-start; gap: 6px;">
+      <span class="material-symbols-outlined" style="font-size: 20px; color: #eab308; flex-shrink: 0;">lightbulb</span>
+      <div>
+        <b>ข้อเสนอแนะ:</b> 
+        ควรตรวจสอบเครื่อง <b>${escapeHtml(topMachine.value)}</b>
+        เนื่องจากพบปัญหา "<b>${escapeHtml(topProblem.value)}</b>"
+        บ่อยที่สุดในระบบ
+      </div>
     </div>
   `;
 }
@@ -1080,7 +1110,7 @@ async function exportComplexPivotExcel() {
       });
 
       // 3. สร้างกล่องเลือกตัวกรองดร็อปดาวน์ที่ช่อง J1:K1
-      sheet.getCell('J1').value = 'เลือกตัวกรองเดือน 🔽';
+     sheet.getCell('J1').value = 'เลือกตัวกรองเดือน (คลิกเลือก)';
       sheet.getCell('J1').font = { name: 'Sarabun', size: 11, bold: true };
       sheet.getCell('J1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
       sheet.getCell('J1').border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
@@ -1171,7 +1201,17 @@ async function exportComplexPivotExcel() {
   }
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 // ผูกฟังก์ชันเข้าหน้าต่างระบบเพื่อให้ปุ่มหน้า HTML วิ่งมาเรียกเจอแน่นอน
 window.exportComplexPivotExcel = exportComplexPivotExcel;
 // 🔗 แปะเพิ่มที่บรรทัดท้ายสุดของไฟล์ เพื่อทำป้ายชื่อเล่นผูกสัญญาณข้ามหากันอัตโนมัติ
 window.renderDoughnutChart = window.renderDepartmentDonutChart;
+}

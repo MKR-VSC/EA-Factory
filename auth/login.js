@@ -465,3 +465,88 @@ function onQrScanSuccess(decodedText) {
 
   window.location.href = decodedText;
 }
+
+// ฟังก์ชันสำหรับเจนภาพ QR Code แผนกอัตโนมัติจากฐานข้อมูล
+// 🔄 ฟังก์ชันสลับเปลี่ยนภาพ QR Code ตามแผนกที่พี่เลือก (ดึงค่า Token จากฐานข้อมูล Supabase จริง)
+
+// ฟังก์ชันสำหรับเจนภาพ QR Code แผนกอัตโนมัติจากฐานข้อมูล
+async function generateDeptQrOnScreen(deptCode) {
+  const currentClient = window.supabaseClient || window.sb;
+  if (!currentClient) return;
+
+  // วิ่งไปดึง Token ล่าสุดของแผนกจากตารางใน Supabase ที่พี่ส่งมา
+  const { data, error } = await currentClient
+    .from('department_qr_tokens')
+    .select('token')
+    .eq('department_code', deptCode)
+    .eq('status', 'active')
+    .single();
+
+  if (data && data.token) {
+    // ผูกลิงก์ระบบของโรงงานเข้ากับรหัส Token
+    const targetUrl = `https://ea-factory.pvt.com/login2.html?token=${data.token}`;
+    
+    // สั่งเปลี่ยนรูปภาพบนหน้าเว็บให้เป็น QR Code ลิงก์นั้นทันที
+    const qrImageElement = document.getElementById("dept-qr-image");
+    if (qrImageElement) {
+      qrImageElement.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(targetUrl)}`;
+    }
+  }
+}
+
+async function updateDeptQrCode() {
+  const selector = document.getElementById("deptQrSelector");
+  const qrArea = document.getElementById("qrArea");
+  const qrImage = document.getElementById("generatedDeptQr");
+  const qrLabel = document.getElementById("qrLabelText");
+
+  if (!selector || !selector.value) {
+    if (qrArea) qrArea.classList.add("hidden");
+    return;
+  }
+
+  const selectedDept = selector.value;
+  const deptText = selector.options[selector.selectedIndex].text;
+  
+  // เรียกใช้ไคลเอนต์ Supabase 
+  const currentClient = window.supabaseClient || window.sb;
+  
+  let token = selectedDept; // ค่าตั้งต้นกรณีฉุกเฉินดึงฐานข้อมูลไม่ได้ ให้ใช้ชื่อแผนกเป็น Token ตรงๆ
+
+  if (currentClient) {
+    try {
+      // วิ่งไปค้นหารหัส Token แท้ๆ จากตารางตามที่พี่ส่งสคีมามาเลยครับ
+      const { data, error } = await currentClient
+        .from('department_qr_tokens')
+        .select('token')
+        .eq('department_code', selectedDept)
+        .eq('status', 'active')
+        .limit(1);
+
+      if (data && data.length > 0) {
+        token = data[0].token;
+      }
+    } catch (err) {
+      console.warn("⚠️ คิวรี่ Token ไม่สำเร็จ ระบบจะใช้แผนสำรองสร้าง QR จากรหัสแผนกโดยตรง");
+    }
+  }
+
+  // 🔗 ประกอบ URL ปลายทางที่พนักงานจะวิ่งไปหน้าฟอร์มกรอกข้อมูลหลังจากสแกนสำเร็จ
+  // (เปลี่ยนคำว่า yourdomain.com เป็นชื่อโดเมนเว็บจริงของโรงงานพี่ได้เลยครับ)
+  const currentDomain = window.location.origin; 
+  const targetUrl = `${currentDomain}/login2.html?token=${token}`;
+
+  // 🖼️ ยิงเข้า API เพื่อเสกรูป QR Code ออกมาแบบสดๆ
+ // ✅ แก้ไขใหม่ในไฟล์ /auth/login.js ให้เป็นแบบนี้ครับ:
+if (qrImage && qrArea && qrLabel) {
+  qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(targetUrl)}`;
+  
+  // เปลี่ยนมาใช้ .innerHTML และใส่โค้ดไอคอน Google แทนอิโมจิเดิม
+  qrLabel.innerHTML = `<span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 5px; color: #4caf8a;">track_changes</span> ป้าย QR Code ประจำ: ${deptText}`;
+  
+  qrArea.classList.remove("hidden");
+}
+}
+
+// ผูกฟังก์ชันเข้ากับ window เผื่อหน้า HTML เรียกหา
+window.updateDeptQrCode = updateDeptQrCode;
