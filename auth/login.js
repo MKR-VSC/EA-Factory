@@ -558,7 +558,7 @@ async function updateDeptQrCode() {
   // 🔗 ประกอบ URL ปลายทางที่พนักงานจะวิ่งไปหน้าฟอร์มกรอกข้อมูลหลังจากสแกนสำเร็จ
   // (เปลี่ยนคำว่า yourdomain.com เป็นชื่อโดเมนเว็บจริงของโรงงานพี่ได้เลยครับ)
   const currentDomain = window.location.origin; 
-  const targetUrl = `${currentDomain}/login2.html?token=${token}`;
+  const targetUrl = `${currentDomain}/login.html?token=${token}`;
 
   // 🖼️ ยิงเข้า API เพื่อเสกรูป QR Code ออกมาแบบสดๆ
  // ✅ แก้ไขใหม่ในไฟล์ /auth/login.js ให้เป็นแบบนี้ครับ:
@@ -570,7 +570,5 @@ if (qrImage && qrArea && qrLabel) {
   
   qrArea.classList.remove("hidden");
 }
-}
-
 // ผูกฟังก์ชันเข้ากับ window เผื่อหน้า HTML เรียกหา
 window.updateDeptQrCode = updateDeptQrCode;
