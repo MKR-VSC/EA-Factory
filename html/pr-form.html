@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ใบขอซื้อ / จัดหา (Real Signature)</title>
+    <link rel="stylesheet" href="../css/pr-form.css">
+</head>
+<body>
+
+    <div class="form-container">
+        <h2>ใบขอซื้อ / จัดหา (Purchase Requisition)</h2>
+        
+        <div class="form-header">
+            <div class="form-group">
+                <label for="department">แผนกที่ใช้งาน:</label>
+                <select id="department" required>
+                    <option value="">-- เลือกแผนกที่ต้องการ --</option>
+                    <option value="blow">แผนกเป่าถุง (Blow)</option>
+                    <option value="pipe">แผนกท่อ (Pipe)</option>
+                    <option value="mono">แผนกโมโน (Mono)</option>
+                    <option value="drill">แผนกตัดเจาะ (Drill)</option>
+                    <option value="garbage">แผนกตัดถุงขยะ (Garbage)</option>
+                    <option value="tape">แผนกตัดเทปน้ำพุ่ง (Tape)</option>
+                    <option value="sheet">แผนกตัดผืน (Sheet)</option>
+                    <option value="salan">แผนกสแลนทอ (Salan)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="req-date">วันที่:</label>
+                <input type="date" id="req-date" required>
+            </div>
+        </div>
+
+        <table id="items-table">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">ลำดับ</th>
+                    <th style="width: 45%;">รายการ</th>
+                    <th style="width: 15%;">จำนวน</th>
+                    <th style="width: 20%;">เครื่องผลิตที่ใช้</th>
+                    <th style="width: 15%;">การจัดการ</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                </tbody>
+        </table>
+        
+        <button type="button" id="add-item-btn" class="btn btn-secondary">+ เพิ่มรายการ</button>
+
+        <div class="form-group margin-top-md">
+            <label for="remarks">หมายเหตุ:</label>
+            <textarea id="remarks" rows="3" placeholder="ระบุรายละเอียด"></textarea>
+        </div>
+
+        <hr>
+
+        <div class="signature-section">
+            
+            <div class="sig-container" id="sig-container-buyer">
+                <label class="sig-label">1. ผู้ซื้อ/ผู้ขออนุมัติ</label>
+                <div class="sig-pad-wrapper">
+                    <canvas id="buyer-canvas" class="sig-canvas" width="280" height="120"></canvas>
+                    <div class="sig-timestamp" id="buyer-time-display"></div>
+                    <img id="buyer-sig-image" class="sig-image-result" style="display:none;">
+                </div>
+                <div class="sig-actions">
+                    <button type="button" class="btn-clear" onclick="clearSignature('buyer')">ล้าง</button>
+                    <button type="button" class="btn-sig" onclick="lockSignature('buyer')">ลงชื่อ & บันทึกเวลา</button>
+                </div>
+            </div>
+
+            <div class="sig-container" id="sig-container-checker">
+                <label class="sig-label">2. ผู้ตรวจสอบ</label>
+                <div class="sig-pad-wrapper">
+                    <canvas id="checker-canvas" class="sig-canvas" width="280" height="120"></canvas>
+                    <div class="sig-timestamp" id="checker-time-display"></div>
+                    <img id="checker-sig-image" class="sig-image-result" style="display:none;">
+                </div>
+                <div class="sig-actions">
+                    <button type="button" class="btn-clear" onclick="clearSignature('checker')">ล้าง</button>
+                    <button type="button" class="btn-sig" onclick="lockSignature('checker')">ตรวจสอบเรียบร้อย</button>
+                </div>
+            </div>
+
+            <div class="sig-container future-feature" id="sig-container-approver">
+                <label class="sig-label">3. ผู้อนุมัติ (อนาคต)</label>
+                <div class="sig-pad-wrapper">
+                    <canvas id="approver-canvas" class="sig-canvas" width="280" height="120"></canvas>
+                    <div class="sig-timestamp" id="approver-time-display"></div>
+                    <img id="approver-sig-image" class="sig-image-result" style="display:none;">
+                </div>
+                <div class="sig-actions">
+                    <button type="button" class="btn-clear" disabled>ล้าง</button>
+                    <button type="button" class="btn-sig" disabled>อนุมัติ</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-primary btn-lg" onclick="submitForm()">ส่งฟอร์มข้อมูล</button>
+        </div>
+    </div>
+
+    <script src="/js/pr-form.js"></script>
+</body>
+</html>

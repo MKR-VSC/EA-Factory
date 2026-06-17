@@ -1,0 +1,194 @@
+:root {
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --danger-color: #dc3545;
+    --success-color: #198754;
+    --gray-bg: #f8f9fa;
+    --border-color: #ced4da;
+    --sig-pen-color: #000000;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Helvetica Neue', Arial;
+    background-color: #f0f2f5;
+    margin: 0;
+    padding: 20px;
+    -webkit-user-select: none; /* ป้องกันการคลุมดำตอนวาดบนมือถือ */
+    user-select: none;
+}
+
+.form-container {
+    max-width: 980px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 25px;
+    border-bottom: 3px solid var(--primary-color);
+    padding-bottom: 15px;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+label { font-weight: bold; margin-bottom: 7px; color: #444; }
+
+input[type="text"], input[type="date"], input[type="number"], select, textarea {
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 15px;
+    box-sizing: border-box;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    background: #fff;
+}
+
+th, td {
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    text-align: left;
+}
+
+th { background-color: #e9ecef; color: #333; font-weight: bold; }
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.btn-primary { background-color: var(--primary-color); color: white; }
+.btn-secondary { background-color: var(--secondary-color); color: white; }
+.btn-danger { background-color: var(--danger-color); color: white; padding: 7px 14px; border: none; border-radius: 5px; cursor: pointer; }
+.btn-lg { padding: 15px 30px; font-size: 16px; }
+
+.margin-top-md { margin-top: 25px; }
+hr { border: 0; border-top: 2px solid #eee; margin: 35px 0; }
+
+/* Signature Section Styling (เซ็นได้จริง) */
+.signature-section {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.sig-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sig-label { font-size: 16px; margin-bottom: 10px; color: #333; text-align: center; width: 100%; }
+
+.sig-pad-wrapper {
+    position: relative;
+    width: 280px;
+    height: 120px;
+    background-color: #fff;
+    border: 2px solid #ADB5BD;
+    border-radius: 8px;
+    cursor: crosshair;
+}
+
+.sig-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.sig-image-result {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    border-radius: 8px;
+    object-fit: contain;
+}
+
+.sig-timestamp {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    font-size: 11px;
+    color: #fff;
+    background-color: rgba(0,0,0,0.6);
+    padding: 2px 5px;
+    border-radius: 3px;
+    display: none; /* ซ่อนตอนแรก */
+}
+
+.sig-actions {
+    display: flex;
+    gap: 10px;
+    width: 280px;
+    margin-top: 10px;
+}
+
+.btn-sig {
+    flex: 1;
+    background-color: var(--success-color);
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.btn-clear {
+    width: 60px;
+    background-color: #e0e0e0;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.sig-container.locked .sig-pad-wrapper {
+    border: 2px solid var(--success-color);
+    cursor: default;
+}
+
+.sig-container.locked .btn-sig { display: none; }
+.sig-container.locked .btn-clear { display: none; }
+.sig-container.locked .sig-timestamp { display: block; }
+
+.future-feature .sig-pad-wrapper { background-color: #e9ecef; border: 2px solid #ccc; }
+.future-feature .sig-label { color: #888; }
+.future-feature button { opacity: 0.5; cursor: not-allowed; }
+
+.form-actions { margin-top: 50px; text-align: center; }

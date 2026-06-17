@@ -128,18 +128,51 @@
       </div>
     </section>
 
+   <div class="row">
+  <div class="col-xl-6 col-lg-6">
     <div class="card shadow mb-4">
       <div class="card-header py-3" style="display: flex; align-items: center; gap: 8px;">
-        <span class="material-symbols-outlined" style="color: #1cc88a;">bar_chart</span>
-        <h6 class="m-0 font-weight-bold text-primary">แนวโน้มการเกิดปัญหาประจำปี (รายเดือน)</h6>
+        <span class="material-symbols-outlined" style="color: #4e73df;">bar_chart</span>
+        <h6 class="m-0 font-weight-bold text-primary">สถิติการเกิดปัญหาประจำปี (จำนวนครั้ง)</h6>
       </div>
       <div class="card-body">
         <div style="position: relative; height: 300px; width: 100%;">
-          <canvas id="chart-machine-bar"></canvas>
+          <canvas id="chart-problem-count-bar"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <div class="col-xl-6 col-lg-6">
+    <div class="card shadow mb-4">
+      <div class="card-header py-3" style="display: flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-outlined" style="color: #1cc88a;">analytics</span>
+        <h6 class="m-0 font-weight-bold text-success">ปริมาณของเสียสะสมประจำปี (น้ำหนัก kg)</h6>
+      </div>
+      <div class="card-body">
+        <div style="position: relative; height: 300px; width: 100%;">
+          <canvas id="chart-waste-weight-bar"></canvas>
         </div>
       </div>
     </div>
 
+
+<div class="card shadow mb-4">
+  <div class="card-header py-3" style="display: flex; align-items: center; gap: 8px;">
+    <span class="material-symbols-outlined" style="color: #e74a3b;">stacked_line_chart</span>
+    <h6 class="m-0 font-weight-bold text-danger">ปริมาณของเสียสะสมแยกรายสัปดาห์ (น้ำหนัก kg)</h6>
+  </div>
+  <div class="card-body">
+    <div style="position: relative; height: 320px; width: 100%;">
+      <canvas id="chart-waste-weekly-line"></canvas>
+    </div>
+  </div>
+</div>
+
+  </div>
+</div>
     <div class="card shadow mb-4">
       <div class="card-header py-3" style="display: flex; align-items: center; gap: 8px;">
         <span class="material-symbols-outlined" style="color: #4e73df;">pie_chart</span>
@@ -214,10 +247,14 @@
 
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+ 
+  
+  
   <script src="/js/index.js"></script>
 </body>
 </html>

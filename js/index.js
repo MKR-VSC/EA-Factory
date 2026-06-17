@@ -1,17 +1,77 @@
-// =========================================================
-// index.js
-// แยกจาก HTML แล้ว และใช้ window.supabaseClient
-// =========================================================
-// =================================================================
-// 🛠️ ชุดโค้ดพิเศษสำหรับแก้ปัญหาตารางผิด (แปะไว้บนสุดของไฟล์ index.js)
-// =================================================================
+
+// 🛡️ เช็กว่าตัวแปร supabase มีการประกาศ Client ตัวจริงไว้แล้วหรือยัง
+// ถ้าระบบยังไม่ได้สร้าง ให้ทำการสร้าง Client ตัวจริงขึ้นมาตรงนี้เลยครับ
+if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+  
+  // 💡 ใส่ URL และ ANON_KEY ประจำโปรเจกต์ Supabase ของพี่ลงในช่องว่างด้านล่างนี้ได้เลยครับ
+  const supabaseUrl = "https://wkbahssqznlpkkghwffg.supabase.co"; // <--- ใส่ URL จริงของพี่
+  const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrYmFoc3Nxem5scGtrZ2h3ZmZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwOTg2MDYsImV4cCI6MjA5NjY3NDYwNn0.c6XJi91bPcKNikUTw28KqJ4gi7yqPTdT4pUKKAhSsEM"; // <--- ใส่ Anon Key จริงของพี่
+
+  // ประกาศตัวแปร supabase ให้เป็น global instance ของไฟล์นี้
+  window.supabaseClientInstance = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+}
+
+function normalizeDept(dept) {
+  return String(dept || "")
+    .trim()
+    .toLowerCase();
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.textContent = value;
+  } else {
+    // ใส่ล็อกแจ้งเตือนเบาๆ เผื่อหน้า HTML ไม่มี ID นี้ โค้ดจะได้ไม่พัง
+    console.warn(`[ui_update] ไม่พบ Element ID: "${id}" บนหน้าจอหลัก`);
+  }
+}
+
+/**
+ * 🛡️ CENTRAL DEBUG DISPATCHER
+ * แปะโค้ดชุดนี้ไว้บรรทัดบนสุดของไฟล์สคริปต์เพื่อดักจับและรายงานบั๊กทุกจุดในหน้าจอ
+ */
+(function() {
+  window.addEventListener('error', function(event) {
+    console.error(`[Runtime_Error] ไฟล์: ${event.filename}\nบรรทัดที่: ${event.lineno} | ข้อความ: ${event.message}`);
+    return false;
+  });
+  window.addEventListener('unhandledrejection', function(event) {
+    console.error(`[Async_Rejection_Error] สาเหตุ: ${event.reason?.message || event.reason}`);
+  });
+  if (typeof window.pvtDashboardRawCache === 'undefined') { window.pvtDashboardRawCache = null; }
+})();
+
+// 3. ฟังก์ชันสำหรับทำหน้าที่กระจายงานวาดกราฟและตาราง (แยกสัดส่วนชัดเจน)
+function executeDashboardRendering() {
+  const records = window.pvtDashboardRawCache;
+  if (!records) return;
+
+  console.log('[ui_update] กำลังส่งชุดข้อมูลไปประมวลผลบนหน้าสกรีน...');
+
+  if (typeof window.renderReportTable === 'function') {
+    window.renderReportTable(records);
+  }
+  if (typeof window.updateMetricCards === 'function') {
+    window.updateMetricCards(records);
+  }
+  if (typeof window.renderPivotSummaryTable === 'function') {
+    window.renderPivotSummaryTable(records);
+  }
+  if (typeof window.generateExecutiveInsight === 'function') {
+    window.generateExecutiveInsight(records);
+  }
+  if (typeof window.getDepartmentCounters === 'function') {
+    const counters = window.getDepartmentCounters(records);
+    if (typeof window.renderDepartmentDonutChart === 'function') {
+      window.renderDepartmentDonutChart(counters);
+    }
+  }
+}
+
+// 4. สั่งสคริปต์ทำงานทันทีที่โครงสร้างหน้าเว็บพร้อม
 
 
-// =================================================================
-
-// =========================================================
-// แก้ไขส่วนหัวของไฟล์ index.js เพื่อป้องกันสคริปต์ชนกันเอง
-// =========================================================
 
 if (typeof window.sb === 'undefined') {
     window.sb = window.supabaseClient;
@@ -248,84 +308,198 @@ window.switchDepartment = switchDepartment;
 // LOAD DATA
 // =========================================================
 
+let databaseRetryCount = 0;
+const MAX_DATABASE_RETRIES = 10;
+
 async function loadAndProcessDashboardData() {
-  const currentClient = window.supabaseClient || sb;
-  
-  if (!currentClient) {
-    console.warn("⏳ กำลังรอสคริปต์ฐานข้อมูลจัดตั้งตัวแปร... จะลองโหลดใหม่อีกครั้งใน 500ms");
-    setTimeout(loadAndProcessDashboardData, 500);
-    return;
-  }
-
   try {
-    // 🛠️ แก้ไข: เปลี่ยนจาก incident_datetime เป็น created_at เพื่อป้องกัน Error คอลัมน์ไม่มีอยู่จริง
-    const { data, error } = await currentClient
-      .from("daily_waste_reports") 
-      .select("*")
-      .order("created_at", { ascending: false });
+    // 1. ตรวจสอบและดึงข้อมูลจาก Supabase
+    if (!window.pvtDashboardRawCache) {
+      console.log('[database_connected] กำลังดึงข้อมูลสดจาก Supabase...');
+      const client = window.supabaseClientInstance || window.supabase;
+      if (!client || typeof client.from !== 'function') {
+        throw new Error('Supabase Client ยังตั้งค่าไม่สมบูรณ์ หรือตัวแปรหลุดหาย');
+      }
 
-    if (error) throw error;
+      const { data, error } = await client
+        .from('daily_waste_reports')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (data) {
-      // ตรวจสอบและแมปข้อมูลกรณีที่ชื่อคอลัมน์ในฐานข้อมูลจริงอาจต่างออกไป
-      const normalizedData = data.map(item => ({
-        ...item,
-        // ถ้าในฐานข้อมูลไม่มี incident_datetime ให้ดึงค่าจาก created_at หรือ datetime มาใช้แทนชั่วคราวในการแสดงผลตาราง
-        incident_datetime: item.incident_datetime || item.datetime || item.created_at
-      }));
-
-      // ✅ แก้ไขใหม่ให้เป็นแบบนี้ (หน้าตาหลังแก้เสร็จ):
-      updateMetricCards(normalizedData);
-      renderReportTable(normalizedData);
-      const counters = getDepartmentCounters(normalizedData);
-      renderDepartmentDonutChart(counters); // ✨ เติมคำว่า Department และแก้ตัวสะกด Donut ให้ถูก
-      renderMonthlyMachineChart(normalizedData);
-      generateExecutiveSummary(normalizedData);
-      generateExecutiveInsight(normalizedData);
+      if (error) throw error;
+      window.pvtDashboardRawCache = data || [];
     }
-    
-  } catch (error) {
-    console.error("โหลดข้อมูลไม่สำเร็จ:", error);
+
+    let records = window.pvtDashboardRawCache;
+    console.log(`[ui_update] โหลดดาต้าสำเร็จจำนวน: ${records.length} รายการ`);
+
+    // 🎨 2. รันฟังก์ชันพื้นฐานของระบบเดิม (ดักจับเซฟตี้แยกชิ้น)
+    try { if (typeof window.renderReportTable === 'function') window.renderReportTable(records); } catch(e){ console.error('Table Error:', e); }
+    try { if (typeof window.updateMetricCards === 'function') window.updateMetricCards(records); } catch(e){ console.error('Cards Error:', e); }
+    try { if (typeof window.renderPivotSummaryTable === 'function') window.renderPivotSummaryTable(records); } catch(e){ console.error('Pivot Error:', e); }
+
+    // 📊 3. เตรียมตัวแปรคำนวณแยกมิติ
+    const monthLabels = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const monthlyCounts = Array(12).fill(0);
+    const monthlyWeights = Array(12).fill(0);
+    const weeklyWeights = {};
+    let totalWasteWeight = 0;
+
+    // ลอจิกหาเลขสัปดาห์แบบคณิตศาสตร์เพียวๆ ป้องกัน NaN
+    function getWeekNumber(date) {
+      if (!date || isNaN(date.getTime())) return 0;
+      const start = new Date(date.getFullYear(), 0, 1);
+      const diff = date - start + ((start.getDay() + 1) * 86400000);
+      return Math.ceil(diff / 604800000);
+    }
+
+    // 🔄 วนลูปคัดกรองข้อมูลลงถังสะสมแบบมีเซฟตี้ทุกแถว
+    records.forEach(row => {
+      if (!row) return;
+      const wasteWeight = parseFloat(row.waste_qty || row.waste_weight_kg || 0);
+      totalWasteWeight += wasteWeight;
+
+      const dateStr = row.report_date || row.created_at;
+      if (dateStr) {
+        const cleanStr = String(dateStr).substring(0, 10);
+        const dateObj = new Date(cleanStr);
+
+        if (!isNaN(dateObj.getTime())) {
+          // ลงถังรายเดือน
+          const mIdx = dateObj.getMonth();
+          if (mIdx >= 0 && mIdx < 12) {
+            monthlyCounts[mIdx] += 1;
+            monthlyWeights[mIdx] += wasteWeight;
+          }
+          // ลงถังรายสัปดาห์
+          const wNum = getWeekNumber(dateObj);
+          if (wNum > 0 && wNum <= 54) {
+            weeklyWeights[`สัปดาห์ที่ ${wNum}`] = (weeklyWeights[`สัปดาห์ที่ ${wNum}`] || 0) + wasteWeight;
+          }
+        }
+      }
+    });
+
+    // ✍️ 4. อัปเดตกล่อง Insight ข้อความ
+    const execBox = document.getElementById('exec-insight-box');
+    if (execBox) {
+      execBox.innerHTML = `🎯 <strong>วิเคราะห์ภาพรวม:</strong> ยอดรวมของเสียสะสมทั้งหมด <strong>${totalWasteWeight.toLocaleString()} kg</strong> กระจายข้อมูลลงกราฟแท่งรายสัปดาห์และรายเดือนเรียบร้อยแล้วครับพี่`;
+    }
+
+    // 📊 5. [ปรับปรุงใหม่] กล่องวาดกราฟ "แท่ง" รายสัปดาห์ (Weekly Bar Chart)
+    try {
+      const weeklyCanvas = document.getElementById('chart-waste-weekly-line'); // ใช้ canvas id เดิมได้เลย ไม่ต้องแก้ HTML
+      if (weeklyCanvas && typeof Chart !== 'undefined') {
+        // จัดเรียงลำดับสัปดาห์จากน้อยไปมาก (สัปดาห์ที่ 1 -> 52)
+        const sortedWeeks = Object.keys(weeklyWeights).sort((a, b) => parseInt(a.replace('สัปดาห์ที่ ', '')) - parseInt(b.replace('สัปดาห์ที่ ', '')));
+        const sortedValues = sortedWeeks.map(w => weeklyWeights[w]);
+
+        if (window.myGlobalWeeklyChart) { window.myGlobalWeeklyChart.destroy(); }
+        window.myGlobalWeeklyChart = new Chart(weeklyCanvas.getContext('2d'), {
+          type: 'bar', // 🎯 เปลี่ยนจาก 'line' เป็น 'bar' ตามสั่งครับพี่
+          data: {
+            labels: sortedWeeks.length > 0 ? sortedWeeks : ['ไม่มีข้อมูล'],
+            datasets: [{ 
+              label: 'ปริมาณของเสียรายอาทิตย์ (kg)', 
+              data: sortedValues.length > 0 ? sortedValues : [0], 
+              backgroundColor: '#f6c23e', // เปลี่ยนเป็นสีเหลืองส้มสไตล์ Warning ให้เด่นตา
+              borderRadius: 4,
+              borderWidth: 0
+            }]
+          },
+          options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            scales: {
+              y: { beginAtZero: true, title: { display: true, text: 'น้ำหนัก (kg)' } }
+            }
+          }
+        });
+        console.log('[chart_success] อัปเดตกราฟรายสัปดาห์เป็นกราฟแท่งสำเร็จ');
+      }
+    } catch(err) { console.error('Weekly Chart Crash:', err); }
+
+    // 📊 6. กล่องวาดกราฟแท่งจำนวนครั้งรายเดือน
+    try {
+      const countCanvas = document.getElementById('chart-problem-count-bar');
+      if (countCanvas && typeof Chart !== 'undefined') {
+        if (window.myGlobalCountChart) { window.myGlobalCountChart.destroy(); }
+        window.myGlobalCountChart = new Chart(countCanvas.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: monthLabels,
+            datasets: [{ label: 'จำนวนครั้งที่เกิดปัญหา (ครั้ง)', data: monthlyCounts, backgroundColor: '#4e73df', borderRadius: 4 }]
+          },
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+      }
+    } catch(err) { console.error('Count Chart Crash:', err); }
+
+    // 📊 7. กล่องวาดกราฟแท่งน้ำหนักรายเดือน
+    try {
+      const weightCanvas = document.getElementById('chart-waste-weight-bar');
+      if (weightCanvas && typeof Chart !== 'undefined') {
+        if (window.myGlobalWeightChart) { window.myGlobalWeightChart.destroy(); }
+        window.myGlobalWeightChart = new Chart(weightCanvas.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: monthLabels,
+            datasets: [{ label: 'น้ำหนักของเสียรวมรายเดือน (kg)', data: monthlyWeights, backgroundColor: '#1cc88a', borderRadius: 4 }]
+          },
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+      }
+    } catch(err) { console.error('Weight Chart Crash:', err); }
+
+    // 🍩 8. กราฟโดนัทแผนกเดิม
+    try {
+      if (typeof window.getDepartmentCounters === 'function' && typeof window.renderDepartmentDonutChart === 'function') {
+        window.renderDepartmentDonutChart(window.getDepartmentCounters(records));
+      }
+    } catch(e) { console.error('Donut Chart Crash:', e); }
+
+  } catch (err) {
+    console.error('[database_error] วงจรหลักแดชบอร์ดขัดข้อง:', err.message || err);
   }
 }
+// 3. ผูกระบบให้เปิดงานทันทีเมื่อโหลดหน้าเว็บสำเร็จ
+window.addEventListener('DOMContentLoaded', () => {
+  loadAndProcessDashboardData();
+});
 
 window.loadAndProcessDashboardData = loadAndProcessDashboardData;
 function updateMetricCards(records) {
+  if (!Array.isArray(records)) return;
+
+  // แสดงจำนวนรวมทั้งหมดจากตาราง pvt_production_reports
   setText("cnt-total", records.length);
+  
+  // กรองนับจำนวนแยกตามสถานะ
   setText(
     "cnt-pending",
-    records.filter((r) => r.status === "pending" || !r.status).length,
+    records.filter((r) => r.status === "pending" || !r.status).length
   );
+  
   setText(
     "cnt-progress",
-    records.filter((r) => r.status === "progress").length,
+    records.filter((r) => r.status === "progress").length
   );
+  
   setText(
     "cnt-resolved",
-    records.filter((r) => r.status === "resolved").length,
+    records.filter((r) => r.status === "resolved").length
   );
 }
 
 function getDepartmentCounters(records) {
-  const counters = {
-    pipe: 0,
-    sheet: 0,
-    tape: 0,
-    blow: 0,
-    drill: 0,
-    garbage: 0,
-    mono: 0,
-    salan: 0,
-  };
-
-  records.forEach((item) => {
-    const dept = normalizeDept(item.department);
-    if (counters[dept] !== undefined) counters[dept]++;
+  const counters = {};
+  records.forEach(row => {
+    // 🎯 แก้จาก row.department เป็น row.department_code
+    const dept = row.department_code || 'ไม่ระบุแผนก'; 
+    counters[dept] = (counters[dept] || 0) + 1;
   });
-
   return counters;
 }
-
 // =========================================================
 // TABLE
 // =========================================================
@@ -415,65 +589,76 @@ function getStatusBadge(status) {
 // =========================================================
 
 // 📊 ฟังก์ชันสร้างกราฟแท่งแนวโน้มการเกิดปัญหาประจำปี (แยกโครงสร้างละเอียด)
-let monthlyChartInstance = null; // ตัวแปรเก็บสถานะกราฟแท่งรายเดือนระดับ Global ของไฟล์
-
+// 🚀 วางทับแทนฟังก์ชัน renderMonthlyMachineChart เดิมได้เลยครับพี่
 function renderMonthlyMachineChart(records) {
-  // ชี้เป้าไปที่กล่อง Canvas ของกราฟแท่งบนหน้า HTML
-  const ctx = document.getElementById("chart-machine-bar");
-  if (!ctx) {
-  console.warn("ไม่พบ Element ID 'chart-machine-bar' บนหน้าเว็บนี้");
-  return;
-}
+  const canvas = document.getElementById('chart-monthly-bar'); 
+  if (!canvas) return;
 
-  // 🧹 ทำลายกราฟเก่าในความจำเพื่อเคลียร์พื้นที่แสดงผลใหม่
-  if (monthlyChartInstance) {
-    monthlyChartInstance.destroy();
+  // 🛡️ 1. สลายร่างกราฟเก่าในระบบป้องกันปัญหา Canvas ซ้ำซ้อน
+  if (typeof window.myGlobalMachineBarChart !== 'undefined' && window.myGlobalMachineBarChart !== null) {
+    try {
+      window.myGlobalMachineBarChart.destroy();
+      window.myGlobalMachineBarChart = null;
+      console.log('[chart_cleanup] ทำลายกราฟแท่งเครื่องจักรตัวเก่าสำเร็จ');
+    } catch (destroyError) {
+      console.warn('[chart_cleanup_warn] ไม่สามารถทำลายกราฟแท่งได้:', destroyError);
+    }
   }
 
-  // สร้างกล่องสล็อตจำลองไว้ 12 ช่อง (แทนเดือน ม.ค. - ธ.ค.) ตั้งค่าเริ่มต้นเป็นเลข 0 ครั้ง
-  const monthlyCounts = Array(12).fill(0);
+  try {
+    const ctx = canvas.getContext('2d');
 
-  // วนลูปตรวจสอบข้อมูลทีละแถวเพื่อจัดหมวดหมู่ลงเดือน
-  records.forEach(row => {
-    const rawDate = row.incident_datetime || row.created_at;
-    
-    // 🛡️ ซ่อมจุดเปราะบาง: ถ้าไม่มีวันที่ระบุ ให้ข้ามไปทันทีเพื่อป้องกัน TypeError ล่มกลางคัน
-    if (!rawDate) return;
+    // เตรียมโครงสร้างเดือน ม.ค. - ธ.ค.
+    const labels = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const dataValues = Array(12).fill(0);
 
-    const parsedDate = new Date(rawDate);
-    const monthIndex = parsedDate.getMonth(); // จะได้เลข index เดือน 0 = ม.ค. ถึง 11 = ธ.ค.
+    // 🔄 2. ลอจิกใหม่: เปลี่ยนจากวิ่งหา object มาคัดแยก Array ดิบของตาราง daily_waste_reports
+    if (Array.isArray(records)) {
+      records.forEach(row => {
+        // 🎯 ดึงคอลัมน์วันที่จริง 'report_date' (จาก Log: 2026-06-17)
+        const dateStr = row.report_date || row.created_at;
+        
+        if (dateStr) {
+          const dateObj = new Date(dateStr);
+          const monthIndex = dateObj.getMonth(); // ม.ค. = 0, มิ.ย. = 5, ธ.ค. = 11
 
-    if (monthIndex >= 0 && monthIndex <= 11) {
-      monthlyCounts[monthIndex]++; // บวกจำนวนครั้งเพิ่มเข้าไปในเดือนนั้นๆ
+          if (monthIndex >= 0 && monthIndex < 12) {
+            // 💡 หยอดสถิตินับจำนวนครั้งสะสม หรือจะเปลี่ยนเป็นบวกค่า row.waste_qty ก็ได้ครับ
+            dataValues[monthIndex] += 1; 
+          }
+        }
+      });
     }
-  });
 
-  // สั่งวาดโครงสร้างกราฟแท่งลงหน้าจอ
-  monthlyChartInstance = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."],
-      datasets: [{
-        label: "จำนวนปัญหาที่พบ (ครั้ง/เดือน)",
-        data: monthlyCounts,
-        backgroundColor: "#4e73df", // ใช้สีน้ำเงินหลักของระบบแดชบอร์ด
-        borderColor: "#4e73df",
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            stepSize: 1 // บังคับให้สเกลตัวเลขเป็นจำนวนเต็ม (เพราะจำนวนครั้งนับเป็นจำนวนเต็ม)
+    console.log('[chart_debug] ผลรวมจำนวนปัญหาแยกตาม 12 เดือนที่คัดเสร็จแล้ว:', dataValues);
+
+    // 🎨 3. สั่งวาดกราฟแท่งตัวใหม่
+    window.myGlobalMachineBarChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'แนวโน้มการรายงานของเสียรายเดือน (ครั้ง)',
+          data: dataValues,
+          backgroundColor: '#3b82f6', 
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { 
+            beginAtZero: true,
+            ticks: { stepSize: 1 } // เหมาะสำหรับตอนเริ่มต้นที่ยังมีข้อมูลน้อย (5 รายการ)
           }
         }
       }
-    }
-  });
+    });
+
+  } catch (err) {
+    console.error('[chart_error] ฟังก์ชัน renderMonthlyMachineChart ทำงานล้มเหลว:', err.message || err);
+  }
 }
 window.renderMonthlyMachineChart = renderMonthlyMachineChart;
 
@@ -602,55 +787,51 @@ window.clearDateFilter = clearDateFilter;
 
 
 // 📊 ฟังก์ชันสร้างกราฟวงกลมจำแนกปัญหารายแผนก (แยกโครงสร้างชัดเจน)
-let donutChartInstance = null; // ตัวแปรเก็บสถานะกราฟวงกลมระดับ Global ของไฟล์
+// 1. ประกาศตัวแปร Global ไว้บนสุดนอกฟังก์ชัน (เพื่อใช้จำว่าตอนนี้มีกราฟวาดค้างอยู่ไหม)
+let departmentDonutChartInstance = null;
+let monthlyBarChartInstance = null;
 
 function renderDepartmentDonutChart(counters) {
-  // ชี้เป้าไปที่กล่อง Canvas บนหน้า HTML
-  const ctx = document.getElementById("chart-dept-donut");
-  if (!ctx) {
-    // เปลี่ยนจากอิโมจิสามเหลี่ยมเตือนภัย ⚠️ เป็นระบบมาร์กเกอร์แท็กไอคอนของระบบแทน
-    console.warn("[error_outline] ไม่พบ Element ID 'chart-dept-donut' บนหน้าเว็บนี้");
-    return;
+  const canvas = document.getElementById('chart-dept-donut');
+  if (!canvas) return;
+
+  // 🛡️ เปลี่ยนมาใช้ window.myGlobalDonutChart ในการจดจำและเช็กสถานะกราฟเก่า
+  if (typeof window.myGlobalDonutChart !== 'undefined' && window.myGlobalDonutChart !== null) {
+    try {
+      window.myGlobalDonutChart.destroy();
+      window.myGlobalDonutChart = null; // ล้างค่าทิ้งให้สะอาดเคลียร์หน่วยความจำ
+      console.log('[chart_cleanup] ทำลายกราฟโดนัทตัวเก่าสำเร็จ');
+    } catch (destroyError) {
+      console.warn('[chart_cleanup_warn] ไม่สามารถทำลายกราฟได้อัตโนมัติ:', destroyError);
+    }
   }
 
-  // หากมีกราฟเก่าฝังอยู่ในความจำเครื่อง ให้ทำลายทิ้งก่อนเพื่อเคลียร์แรม (กันบั๊กกราฟกระพริบซ้อน)
-  if (donutChartInstance) {
-    donutChartInstance.destroy();
-  }
+  try {
+    const ctx = canvas.getContext('2d');
+    const labels = Object.keys(counters);
+    const dataValues = Object.values(counters);
 
-  // ดึงชื่อป้ายกำกับภาษาไทยมาจับคู่กับค่าคีย์ภาษาอังกฤษ
-  const chartLabels = Object.keys(counters).map(key => {
-    return typeof DEPARTMENT_LABELS !== "undefined" && DEPARTMENT_LABELS[key] 
-      ? DEPARTMENT_LABELS[key] 
-      : key;
-  });
-  
-  const chartDataValues = Object.values(counters);
-
-  // สั่งวาดกราฟวงกลมตัวใหม่ลงหน้าจอ
-  donutChartInstance = new Chart(ctx, {
-    type: "doughnut",
-    data: {
-      labels: chartLabels,
-      datasets: [{
-        data: chartDataValues,
-        // ชุดสีมาตรฐานสำหรับแบ่งแยกแท่งแผนกงานโรงงาน
-        backgroundColor: [
-          "#4e73df", "#1cc88a", "#36b9cc", "#f6c23e", 
-          "#e74a3b", "#858796", "#5a5c69", "#f8f9fc"
-        ]
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom' // ย้ายคำอธิบายสีไปไว้ด้านล่างกราฟเพื่อความสวยงาม
+    // 🎨 สร้างกราฟใหม่และจัดเก็บไว้ที่เซฟกลางของบราวเซอร์ (window)
+    window.myGlobalDonutChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: dataValues,
+          backgroundColor: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#6366f1', '#ec4899']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' }
         }
       }
-    }
-  });
+    });
+  } catch (err) {
+    console.error('[chart_error] กราฟโดนัทพัง:', err.message || err);
+  }
 }
 window.renderDepartmentDonutChart = renderDepartmentDonutChart;
 
@@ -756,74 +937,35 @@ function generateExecutiveSummary(records) {
 }
 
 function generateExecutiveInsight(records) {
-  const box = document.getElementById("exec-insight-box");
-  if (!box) return;
-
-  if (records.length === 0) {
-    box.textContent = "ไม่มีข้อมูลในระบบ";
+  // ดักจับ Element กล่องข้อความสรุปผู้บริหาร
+  const summaryBox = document.getElementById('executive-summary-box') || document.querySelector('.psychology + div') || document.getElementById('insight-container');
+  
+  if (!records || records.length === 0) {
+    if (summaryBox) summaryBox.textContent = "ไม่พบข้อมูลรายงานของเสียในระบบ";
     return;
   }
 
-  const total = records.length;
-  const pending = records.filter(
-    (r) => r.status === "pending" || !r.status,
-  ).length;
-  const progress = records.filter((r) => r.status === "progress").length;
-  const resolved = records.filter((r) => r.status === "resolved").length;
+  try {
+    let totalWaste = 0;
+    records.forEach(row => {
+      // 🎯 ดึงคอลัมน์จำนวนของเสียจริงมาคำนวณ
+      totalWaste += parseFloat(row.waste_qty || row.waste_weight_kg || 0);
+    });
 
-  const topMachine = findTopValue(records, "machine_no", "ไม่ระบุ");
-  const topDept = findTopValue(
-    records.map((r) => ({ department: normalizeDept(r.department) })),
-    "department",
-    "unknown",
-  );
-  const topProblem = findTopValue(records, "problem_type", "ไม่ระบุ");
+    // ✍️ จุดสำคัญ: สั่งเขียนข้อความทับคำว่า "กำลังวิเคราะห์..." ทันที
+    if (summaryBox) {
+      summaryBox.textContent = `วิเคราะห์ภาพรวมสำเร็จ: มีรายงานทั้งหมด ${records.length} รายการ พบยอดของเสียสะสมรวม ${totalWaste.toLocaleString()} kg โดยระบบตรวจพบความเคลื่อนไหวล่าสุดในกะการทำงานปัจจุบัน`;
+    }
 
-  box.innerHTML = `
-    <div style="margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-      <span class="material-symbols-outlined" style="font-size: 18px; color: #2563eb;">bar_chart</span>
-      <span>งานทั้งหมด: <b>${total}</b> รายการ</span>
-    </div>
-    <div style="margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-      <span class="material-symbols-outlined" style="font-size: 18px; color: #f59e0b;">pending_actions</span>
-      <span>รอดำเนินการ: <b>${pending}</b></span>
-    </div>
-    <div style="margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-      <span class="material-symbols-outlined" style="font-size: 18px; color: #6b21a8;">build</span>
-      <span>กำลังซ่อม: <b>${progress}</b></span>
-    </div>
-    <div style="margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-      <span class="material-symbols-outlined" style="font-size: 18px; color: #16a34a;">check_circle</span>
-      <span>ปิดงานแล้ว: <b>${resolved}</b></span>
-    </div>
+    // 🎯 ถ้ามีกล่องข้อความ "สรุปปัญหาอัตโนมัติ" ตัวบนด้วย ให้เคลียร์คำว่า "กำลังวิเคราะห์..." ของมันออกด้วยครับ
+    const autoSummaryBox = document.getElementById('auto-summary-box') || document.querySelector('.art_toy + div');
+    if (autoSummaryBox) {
+      autoSummaryBox.textContent = `พบรายการของเสียล่าสุดประจำวันที่เรียบร้อยแล้ว`;
+    }
 
-    <hr class="insight-line" />
-
-    <div style="margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-      <span class="material-symbols-outlined" style="font-size: 18px; color: #dc2626;">gpp_maybe</span>
-      <span>เครื่องที่เกิดปัญหาสูงสุด: <b>${escapeHtml(topMachine.value)}</b></span>
-    </div>
-    <div style="margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-      <span class="material-symbols-outlined" style="font-size: 18px; color: #ea580c;">error</span>
-      <span>ปัญหาที่พบมากที่สุด: <b>${escapeHtml(topProblem.value)}</b></span>
-    </div>
-    <div style="margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-      <span class="material-symbols-outlined" style="font-size: 18px; color: #4b5563;">factory</span>
-      <span>แผนกที่มีปัญหาสูงสุด: <b>${escapeHtml(topDept.value.toUpperCase())}</b></span>
-    </div>
-
-    <hr class="insight-line" />
-
-    <div class="insight-warning" style="display: flex; align-items: flex-start; gap: 6px;">
-      <span class="material-symbols-outlined" style="font-size: 20px; color: #eab308; flex-shrink: 0;">lightbulb</span>
-      <div>
-        <b>ข้อเสนอแนะ:</b> 
-        ควรตรวจสอบเครื่อง <b>${escapeHtml(topMachine.value)}</b>
-        เนื่องจากพบปัญหา "<b>${escapeHtml(topProblem.value)}</b>"
-        บ่อยที่สุดในระบบ
-      </div>
-    </div>
-  `;
+  } catch (err) {
+    console.error('[insight_error]', err);
+  }
 }
 
 // =========================================================
@@ -916,16 +1058,6 @@ window.handleDashboardLogout = handleDashboardLogout;
 // HELPERS
 // =========================================================
 
-function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
-}
-
-function normalizeDept(dept) {
-  return String(dept || "")
-    .trim()
-    .toLowerCase();
-}
 
 function getMonthIndex(dateValue) {
   if (!dateValue) return -1;
@@ -1215,3 +1347,6 @@ window.exportComplexPivotExcel = exportComplexPivotExcel;
 // 🔗 แปะเพิ่มที่บรรทัดท้ายสุดของไฟล์ เพื่อทำป้ายชื่อเล่นผูกสัญญาณข้ามหากันอัตโนมัติ
 window.renderDoughnutChart = window.renderDepartmentDonutChart;
 }
+window.addEventListener('DOMContentLoaded', () => {
+  loadAndProcessDashboardData();
+});
