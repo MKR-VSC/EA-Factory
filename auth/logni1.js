@@ -1,3 +1,4 @@
+
 /* ======================================================
    LOGIN SYSTEM - EA Factory
    Notebook / PC = Username + Password
@@ -183,43 +184,57 @@ async function handlePasswordLogin(event) {
 
 async function checkQrMode() {
   const params = new URLSearchParams(window.location.search);
-  const dept = params.get("dept");
   const token = params.get("token");
+  // แม้ไม่มี dept ส่งมา โค้ดจะอนุญาตให้ทำงานต่อเพื่อนำ token ไปค้นหาแผนกจริงหลังบ้าน
+  const dept = params.get("dept"); 
 
-  if (!dept || !token) return;
+  if (!token) return; // หากไม่มี token เลยค่อยยกเลิก
+
+  console.log("[qr_process] พบรหัส Token จากการสแกน:", token);
 
   const qrBox = document.getElementById("qrLoginBox");
   const qrDeptName = document.getElementById("qrDeptName");
 
   try {
+    showLoginOverlay(); // เปิดแอนิเมชันกำลังโหลด
+
+    // วิ่งไปค้นหาข้อมูลแผนกจากฐานข้อมูลโดยใช้สิทธิ์ของ Token ตัวเดียวเพื่อความปลอดภัย
     const { data: qrData, error: qrError } = await sb
       .from("department_qr_tokens")
       .select("*")
-      .eq("department_code", dept)
       .eq("token", token)
       .eq("status", "active")
-      .single();
+      .maybeSingle();
 
     if (qrError || !qrData) {
-      throw new Error("Invalid QR");
+      throw new Error("QR Code นี้ไม่มีอยู่ในระบบ หรือถูกยกเลิกการใช้งานแล้ว");
     }
 
-    const departmentCode = qrData.department_code || qrData.department || dept;
+    // สกัดดึงรหัสแผนก และชื่อแผนกจริงออกมาจากแถวข้อมูลในฐานข้อมูล
+    const departmentCode = qrData.department_code || qrData.department;
+    const departmentName = qrData.department_name || qrData.department || departmentCode;
 
-    const departmentName =
-      qrData.department_name || qrData.department || departmentCode;
+    if (!departmentCode) {
+      throw new Error("ข้อมูล Token นี้ไม่ได้ผูกกับรหัสแผนกใดๆ");
+    }
 
+    // 🎯 1. เปิดกล่องเลือกรายชื่อพนักงานขึ้นมาโชว์บนหน้าจอ
     if (qrBox) qrBox.classList.remove("hidden");
-    if (qrDeptName) qrDeptName.textContent = departmentName;
+    if (qrDeptName) qrDeptName.textContent = `แผนก: ${departmentName}`;
 
+    // 🎯 2. จำลองบันทึกค่าลงเครื่องชั่วคราว
     localStorage.setItem("qrDept", departmentCode);
     localStorage.setItem("qrDeptName", departmentName);
     localStorage.setItem("qrToken", token);
 
+    // 🎯 3. สั่งโหลดรายชื่อเพื่อนพนักงานในแผนกนั้นมาใส่ใน Select Option
     await loadStaffByDepartment(departmentCode);
+
   } catch (err) {
     console.error("QR Login Error:", err);
-    alert("QR Code นี้ไม่ถูกต้อง หรือถูกปิดใช้งานแล้ว");
+    alert(err.message || "QR Code นี้ไม่ถูกต้อง หรือถูกปิดใช้งานแล้ว");
+  } finally {
+    hideLoginOverlay(); // ปิดแอนิเมชันโหลด
   }
 }
 
@@ -465,3 +480,96 @@ function onQrScanSuccess(decodedText) {
 
   window.location.href = decodedText;
 }
+
+// ฟังก์ชันสำหรับเจนภาพ QR Code แผนกอัตโนมัติจากฐานข้อมูล
+// 🔄 ฟังก์ชันสลับเปลี่ยนภาพ QR Code ตามแผนกที่พี่เลือก (ดึงค่า Token จากฐานข้อมูล Supabase จริง)
+
+// ฟังก์ชันสำหรับเจนภาพ QR Code แผนกอัตโนมัติจากฐานข้อมูล
+async function generateDeptQrOnScreen(deptCode) {
+  const currentClient = window.supabaseClient || window.sb;
+  if (!currentClient) return;
+
+  // วิ่งไปดึง Token ล่าสุดของแผนกจากตารางใน Supabase ที่พี่ส่งมา
+  const { data, error } = await currentClient
+    .from('department_qr_tokens')
+    .select('token')
+    .eq('department_code', deptCode)
+    .eq('status', 'active')
+    .single();
+
+  if (data && data.token) {
+    // ผูกลิงก์ระบบของโรงงานเข้ากับรหัส Token
+    const targetUrl = `https://ea-factory.pvt.com/login2.html?token=${data.token}`;
+    
+    // สั่งเปลี่ยนรูปภาพบนหน้าเว็บให้เป็น QR Code ลิงก์นั้นทันที
+    const qrImageElement = document.getElementById("dept-qr-image");
+    if (qrImageElement) {
+      qrImageElement.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(targetUrl)}`;
+    }
+  }
+}
+
+async function updateDeptQrCode() {
+  const selector = document.getElementById("deptQrSelector");
+  const qrArea = document.getElementById("qrArea");
+  const qrImage = document.getElementById("generatedDeptQr");
+  const qrLabel = document.getElementById("qrLabelText");
+
+  if (!selector || !selector.value) {
+    if (qrArea) qrArea.classList.add("hidden");
+    return;
+  }
+
+  const selectedDept = selector.value;
+  const deptText = selector.options[selector.selectedIndex].text;
+  
+  const currentClient = window.supabaseClient || window.sb;
+  let token = selectedDept; 
+
+  if (currentClient) {
+    try {
+      const { data, error } = await currentClient
+        .from('department_qr_tokens')
+        .select('token')
+        .eq('department_code', selectedDept)
+        .eq('status', 'active')
+        .limit(1);
+
+      if (data && data.length > 0) {
+        token = data[0].token;
+      }
+    } catch (err) {
+      console.warn("⚠️ คิวรี่ Token ไม่สำเร็จ ใช้แผนสำรองสร้าง QR ตรงๆ");
+    }
+  }
+
+  // 🔗 ประกอบ URL: แก้ไขให้วิ่งเข้าไฟล์หลักที่พนักงานใช้ล็อกอิน (เช่น login.html) 
+  // และพ่วง Token ตัวจริงเพื่อส่งไปประมวลผลต่อฝั่งพนักงานสแกนครับ
+  const currentDomain = window.location.origin; 
+  const targetUrl = `${currentDomain}/login.html?token=${token}`;
+
+  // 🖼️ ยิงสร้างภาพ QR Code ชิ้นงาน
+  if (qrImage && qrArea && qrLabel) {
+    qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(targetUrl)}`;
+    qrLabel.innerHTML = `<span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 5px; color: #4caf8a;">track_changes</span> ป้าย QR Code ประจำ: ${deptText}`;
+    qrArea.classList.remove("hidden");
+  }
+}
+
+  // 🔗 ประกอบ URL ปลายทางที่พนักงานจะวิ่งไปหน้าฟอร์มกรอกข้อมูลหลังจากสแกนสำเร็จ
+  // (เปลี่ยนคำว่า yourdomain.com เป็นชื่อโดเมนเว็บจริงของโรงงานพี่ได้เลยครับ)
+  const currentDomain = window.location.origin; 
+  const targetUrl = `${currentDomain}/login2.html?token=${token}`;
+
+  // 🖼️ ยิงเข้า API เพื่อเสกรูป QR Code ออกมาแบบสดๆ
+ // ✅ แก้ไขใหม่ในไฟล์ /auth/login.js ให้เป็นแบบนี้ครับ:
+if (qrImage && qrArea && qrLabel) {
+  qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(targetUrl)}`;
+  
+  // เปลี่ยนมาใช้ .innerHTML และใส่โค้ดไอคอน Google แทนอิโมจิเดิม
+  qrLabel.innerHTML = `<span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 5px; color: #4caf8a;">track_changes</span> ป้าย QR Code ประจำ: ${deptText}`;
+  
+  qrArea.classList.remove("hidden");
+}
+// ผูกฟังก์ชันเข้ากับ window เผื่อหน้า HTML เรียกหา
+window.updateDeptQrCode = updateDeptQrCode;
