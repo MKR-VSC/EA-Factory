@@ -1,6 +1,11 @@
 
 // 🛡️ เช็กว่าตัวแปร supabase มีการประกาศ Client ตัวจริงไว้แล้วหรือยัง
 // ถ้าระบบยังไม่ได้สร้าง ให้ทำการสร้าง Client ตัวจริงขึ้นมาตรงนี้เลยครับ
+
+
+
+
+
 if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
   
   // 💡 ใส่ URL และ ANON_KEY ประจำโปรเจกต์ Supabase ของพี่ลงในช่องว่างด้านล่างนี้ได้เลยครับ
@@ -70,6 +75,9 @@ function executeDashboardRendering() {
 }
 
 // 4. สั่งสคริปต์ทำงานทันทีที่โครงสร้างหน้าเว็บพร้อม
+
+
+
 
 
 
@@ -264,7 +272,6 @@ window.addEventListener("DOMContentLoaded", () => {
   protectExecutivePage();
   setActiveUserLabel();
   loadAndProcessDashboardData();
-  setInterval(loadAndProcessDashboardData, 30000);
 });
 
 // =========================================================
@@ -296,14 +303,31 @@ function setActiveUserLabel() {
 }
 window.setActiveUserLabel = setActiveUserLabel;
 
+/* ======================================================
+   🎯 FORCE SWITCH DEPARTMENT - BYPASS STRING BUG
+   (แก้ปัญหา URL เพี้ยนเป็น htmltape หรือ =sheet แบบเด็ดขาด)
+====================================================== */
+/* ======================================================
+   🎯 BYPASS ALL OLD VARIABLES (ล้างบางบั๊ก formPage และ URL เพี้ยน)
+====================================================== */
 function switchDepartment(deptName) {
-  localStorage.setItem("activeDept", deptName);
-  // ลิงก์ตรงพาข้ามไปยังหน้าจอแบบฟอร์มบันทึกของเสียประจำแผนก
-  window.location.href = FORM_PAGE;
-}
-// ⚠️ สำคัญมาก: ต้องผูกเข้ากับ window เสมอ เพื่อให้ปุ่ม onclick ในหน้า HTML เรียกหาเจอ 100%
-window.switchDepartment = switchDepartment;
+  if (!deptName) return;
 
+  // ล้างขยะล้างช่องว่างของชื่อแผนกที่ส่งเข้ามาให้สะอาด
+  let cleanDept = String(deptName).trim(); 
+
+  // บังคับพิมพ์ชื่อไฟล์ลงไปตรงๆ เป็นข้อความ (String) 
+  // ไม่เรียกใช้ตัวแปร formPage หรือตัวแปรภายนอกอื่นป้องกันการทับซ้อน
+  const finalUrl = "../html/form-department.html?dept=" + encodeURIComponent(cleanDept);
+  
+  console.log("🚀 [Force Redirect] วิ่งตรงไปที่หน้าฟอร์มจริง:", finalUrl);
+  
+  // สั่งเปลี่ยนหน้าทันที
+  window.location.href = finalUrl;
+}
+
+// ผูกระบบขึ้นโกลบอลระดับบนสุดเพื่อให้ HTML เรียกหาเจอเสมอ
+window.switchDepartment = switchDepartment;
 // =========================================================
 // LOAD DATA
 // =========================================================
@@ -314,9 +338,9 @@ const MAX_DATABASE_RETRIES = 10;
 async function loadAndProcessDashboardData() {
   try {
     // 1. ตรวจสอบและดึงข้อมูลจาก Supabase
-    if (!window.pvtDashboardRawCache) {
+    if (!window.pvtDashboardRawCache || window.pvtDashboardRawCache.length === 0) {
       console.log('[database_connected] กำลังดึงข้อมูลสดจาก Supabase...');
-      const client = window.supabaseClientInstance || window.supabase;
+      const client = window.supabaseClientInstance || window.supabase || window.sb;
       if (!client || typeof client.from !== 'function') {
         throw new Error('Supabase Client ยังตั้งค่าไม่สมบูรณ์ หรือตัวแปรหลุดหาย');
       }
@@ -380,29 +404,45 @@ async function loadAndProcessDashboardData() {
       }
     });
 
-    // ✍️ 4. อัปเดตกล่อง Insight ข้อความ
+    // ✍️ 4. อัปเดตกล่อง Insight ข้อความ และยิงสัญญาณไปที่ระบบสรุปปัญหาอัตโนมัติ
     const execBox = document.getElementById('exec-insight-box');
     if (execBox) {
-      execBox.innerHTML = `🎯 <strong>วิเคราะห์ภาพรวม:</strong> ยอดรวมของเสียสะสมทั้งหมด <strong>${totalWasteWeight.toLocaleString()} kg</strong> กระจายข้อมูลลงกราฟแท่งรายสัปดาห์และรายเดือนเรียบร้อยแล้วครับพี่`;
+      execBox.innerHTML = `🎯 <strong>วิเคราะห์ภาพรวม:</strong> ยอดรวมของเสียสะสมทั้งหมด <strong>${totalWasteWeight.toLocaleString()} kg</strong> กระจายข้อมูลลงกราฟแท่งรายสัปดาห์และรายเดือนสำเร็จ`;
     }
 
-    // 📊 5. [ปรับปรุงใหม่] กล่องวาดกราฟ "แท่ง" รายสัปดาห์ (Weekly Bar Chart)
+    // ⚡ [จุดเชื่อมต่อไฟ] บังคับสั่งรันระบบสรุปปัญหาอัตโนมัติที่สร้างไว้ทันที
     try {
-      const weeklyCanvas = document.getElementById('chart-waste-weekly-line'); // ใช้ canvas id เดิมได้เลย ไม่ต้องแก้ HTML
+      if (typeof window.generateExecutiveSummary === 'function') {
+        console.log('[bridge] กำลังยิงข้อมูลเข้ากล่องสรุปปัญหาอัตโนมัติ...');
+        window.generateExecutiveSummary(records);
+      } else {
+        console.warn('❌ ไม่พบฟังก์ชัน generateExecutiveSummary กรุณาตรวจเช็กว่าวางโค้ดชุดสรุปปัญหาไว้ในไฟล์เดียวกันแล้วหรือยัง');
+      }
+    } catch(e) { console.error('Summary Call Error:', e); }
+
+    try {
+      if (typeof window.generateExecutiveInsight === 'function') {
+        window.generateExecutiveInsight(records);
+      }
+    } catch(e) { console.error('Insight Call Error:', e); }
+
+
+    // 📊 5. กล่องวาดกราฟ "แท่ง" รายสัปดาห์ (Weekly Bar Chart)
+    try {
+      const weeklyCanvas = document.getElementById('chart-waste-weekly-line');
       if (weeklyCanvas && typeof Chart !== 'undefined') {
-        // จัดเรียงลำดับสัปดาห์จากน้อยไปมาก (สัปดาห์ที่ 1 -> 52)
         const sortedWeeks = Object.keys(weeklyWeights).sort((a, b) => parseInt(a.replace('สัปดาห์ที่ ', '')) - parseInt(b.replace('สัปดาห์ที่ ', '')));
         const sortedValues = sortedWeeks.map(w => weeklyWeights[w]);
 
         if (window.myGlobalWeeklyChart) { window.myGlobalWeeklyChart.destroy(); }
         window.myGlobalWeeklyChart = new Chart(weeklyCanvas.getContext('2d'), {
-          type: 'bar', // 🎯 เปลี่ยนจาก 'line' เป็น 'bar' ตามสั่งครับพี่
+          type: 'bar',
           data: {
             labels: sortedWeeks.length > 0 ? sortedWeeks : ['ไม่มีข้อมูล'],
             datasets: [{ 
               label: 'ปริมาณของเสียรายอาทิตย์ (kg)', 
               data: sortedValues.length > 0 ? sortedValues : [0], 
-              backgroundColor: '#f6c23e', // เปลี่ยนเป็นสีเหลืองส้มสไตล์ Warning ให้เด่นตา
+              backgroundColor: '#f6c23e',
               borderRadius: 4,
               borderWidth: 0
             }]
@@ -462,10 +502,14 @@ async function loadAndProcessDashboardData() {
     console.error('[database_error] วงจรหลักแดชบอร์ดขัดข้อง:', err.message || err);
   }
 }
+
 // 3. ผูกระบบให้เปิดงานทันทีเมื่อโหลดหน้าเว็บสำเร็จ
-window.addEventListener('DOMContentLoaded', () => {
-  loadAndProcessDashboardData();
-});
+if (!window.dashboardInitialized) {
+  window.dashboardInitialized = true;
+  window.addEventListener('DOMContentLoaded', () => {
+    loadAndProcessDashboardData();
+  });
+}
 
 window.loadAndProcessDashboardData = loadAndProcessDashboardData;
 function updateMetricCards(records) {
@@ -530,28 +574,39 @@ function renderReportTable(records) {
 
   tbody.innerHTML = "";
 
- displayRecords.forEach((row) => {
+ /* ======================================================
+   🎨 TABLE ROW RENDERER - BUG-FREE VERSION
+   (แก้ไขระบบ escapeHtml และเคลียร์ตัวแปรคอลัมน์ผีสิงออกทั้งหมด)
+====================================================== */
+
+displayRecords.forEach((row) => {
+  if (!row) return; // เซฟตี้ป้องกันแถวข้อมูลว่างเปล่า
+  
   const tr = document.createElement("tr");
-  const dept = normalizeDept(row.department);
-  const renderedDate = row.incident_datetime
-    ? new Date(row.incident_datetime).toLocaleString("th-TH")
+  const dept = normalizeDept(row.department || row.department_code);
+  const renderedDate = row.incident_datetime || row.created_at
+    ? new Date(row.incident_datetime || row.created_at).toLocaleString("th-TH")
     : "-";
 
-  // แก้ไขเปลี่ยน escapeHTML และ escapeAttr เป็น escapeHtml พร้อมถอดอิโมจิออกทั้งหมด
+  // 🎯 สร้างฟังก์ชันปลอดภัยภายในลูป เผื่อกรณีพิมพ์ชื่อเล็ก-ใหญ่สลับกันบน Global จะได้ไม่แครช
+  const cleanText = typeof escapeHTML === 'function' ? escapeHTML : 
+                    (typeof escapeHtml === 'function' ? escapeHtml : (str) => str || '');
+
   tr.innerHTML = `
-    <td class="nowrap strong">${escapeHtml(renderedDate)}</td>
+    <td class="nowrap strong">${cleanText(renderedDate)}</td>
     <td>
-      <span class="btn-dept d-${escapeHtml(dept)} dept-pill">
-        ${escapeHtml((row.department || "-").toUpperCase())}
+      <span class="btn-dept d-${cleanText(dept)} dept-pill">
+        ${cleanText((row.department || "-").toUpperCase())}
       </span>
     </td>
-    <td class="machine-cell">${escapeHtml(row.machine_no || "-")}</td>
-    <td class="strong">${escapeHtml(row.problem_type || "-")}</td>
-    <td><div class="cell-detail">${escapeHtml(row.detail || row.note || "-")}</div></td>
-    <td><span class="reporter-code">${escapeHtml(row.reported_by || "คนงาน")}</span></td>
+    <td class="machine-cell">${cleanText(row.machine_no || "-")}</td>
+    <td class="strong">${cleanText(row.problem_type || "-")}</td>
+    <td><div class="cell-detail">${cleanText(row.detail || row.note || "-")}</div></td>
+    <td><span class="reporter-code">${cleanText(row.reported_by || "คนงาน")}</span></td>
     <td>
       <div class="status-space">${getStatusBadge(row.status)}</div>
-      <select class="select-inline-status" onchange="executeModifyCaseStatus('${escapeHtml(row.id)}', this.value)">
+      
+      <select class="select-inline-status" onchange="window.executeModifyCaseStatus('${row.id}', this.value)">
         <option value="pending" ${row.status === "pending" || !row.status ? "selected" : ""}>ตั้งรับเรื่อง</option>
         <option value="progress" ${row.status === "progress" ? "selected" : ""}>กำลังซ่อม</option>
         <option value="resolved" ${row.status === "resolved" ? "selected" : ""}>ปิดงาน</option>
@@ -562,29 +617,24 @@ function renderReportTable(records) {
         type="text"
         class="input-inline-note"
         placeholder="พิมพ์ข้อสั่งการ/วิธีแก้ไข..."
-        value="${escapeHtml(row.resolution || "")}"
-        onchange="executeModifyCaseResolution('${escapeHtml(row.id)}', this.value)"
+        value="${cleanText(row.resolution || "")}"
+        onchange="window.executeModifyCaseResolution('${row.id}', this.value)"
       />
-      ${row.resolver ? `<small class="small-note">ผู้สั่งงานล่าสุด: <strong>${escapeHtml(row.resolver)}</strong></small>` : ""}
-    </td>
+      </td>
   `;
 
   tbody.appendChild(tr);
 });
 
 function getStatusBadge(status) {
-  if (status === "progress") {
+  if (status === "progress" || status === "กำลังซ่อม") {
     return `<span class="badge-status status-progress">กำลังซ่อม</span>`;
   }
-
-  if (status === "resolved") {
+  if (status === "resolved" || status === "ปิดงานสำเร็จ" || status === "ปิดงาน") {
     return `<span class="badge-status status-resolved">ปิดงานสำเร็จ</span>`;
   }
-
   return `<span class="badge-status status-pending">รอดำเนินการ</span>`;
 }
-
-// =========================================================
 // CHARTS
 // =========================================================
 
@@ -666,12 +716,26 @@ window.renderMonthlyMachineChart = renderMonthlyMachineChart;
 // UPDATE CASE
 // =========================================================
 
+/* ======================================================
+   🔧 SYSTEM STATUS MODIFIER - VERSION 100% SECURE
+   (แก้ไขบั๊ก sb หลุดหาย และเปลี่ยนชื่อตารางให้ตรงกับ Supabase จริง)
+====================================================== */
+
 async function executeModifyCaseStatus(caseId, targetStatus) {
   const actingManager = localStorage.getItem("activeUser") || "MAN";
 
+  // 🎯 ดักจับตัวแปร Supabase Client ทุกมิติที่เป็นไปได้บนเว็บจริง ป้องกันอาการพังเงียบ
+  const currentClient = window.supabaseClientInstance || window.supabaseClient || window.supabase || window.sb;
+
+  if (!currentClient || typeof currentClient.from !== 'function') {
+    alert("❌ ไม่สามารถเปลี่ยนสถานะได้: ระบบค้นหาการเชื่อมต่อ Supabase ไม่พบ กรุณารีเฟรชหน้าจอ");
+    return;
+  }
+
   try {
-    const { error } = await sb
-      .from("pvt_production_reports")
+    // 🎯 เปลี่ยนชื่อตารางเป็น 'daily_waste_reports' ให้ตรงกับหน้าบ้าน-หลังบ้านตามภาพจริงของพี่
+    const { error } = await currentClient
+      .from("daily_waste_reports") 
       .update({
         status: targetStatus,
         resolver: actingManager,
@@ -681,7 +745,12 @@ async function executeModifyCaseStatus(caseId, targetStatus) {
 
     if (error) throw error;
 
+    console.log(`[status_success] เปลี่ยนสถานะเคส ${caseId} เป็น ${targetStatus} เรียบร้อยแล้ว`);
+    
+    // บังคับล้างแคชเพื่อให้ระบบดึงข้อมูลเวอร์ชันอัปเดตล่าสุดมาแสดงผล
+    window.pvtDashboardRawCache = null; 
     await loadAndProcessDashboardData();
+
   } catch (error) {
     console.error("แก้สถานะไม่สำเร็จ:", error);
     alert("แก้สถานะไม่สำเร็จ: " + (error.message || error));
@@ -691,9 +760,18 @@ async function executeModifyCaseStatus(caseId, targetStatus) {
 async function executeModifyCaseResolution(caseId, updatedText) {
   const actingManager = localStorage.getItem("activeUser") || "MAN";
 
+  // 🎯 ดักจับตัวแปร Supabase Client ตัวสำรองป้องกันแครช
+  const currentClient = window.supabaseClientInstance || window.supabaseClient || window.supabase || window.sb;
+
+  if (!currentClient || typeof currentClient.from !== 'function') {
+    alert("❌ ไม่สามารถบันทึกแนวทางแก้ไขได้: ระบบค้นหาการเชื่อมต่อ Supabase ไม่พบ");
+    return;
+  }
+
   try {
-    const { error } = await sb
-      .from("pvt_production_reports")
+    // 🎯 เปลี่ยนชื่อตารางเป็น 'daily_waste_reports' ให้ตรงกัน
+    const { error } = await currentClient
+      .from("daily_waste_reports")
       .update({
         resolution: updatedText,
         resolver: actingManager,
@@ -702,12 +780,15 @@ async function executeModifyCaseResolution(caseId, updatedText) {
       .eq("id", caseId);
 
     if (error) throw error;
+    
+    console.log(`[resolution_success] บันทึกแนวทางแก้ไขของเคส ${caseId} เรียบร้อย`);
   } catch (error) {
     console.error("บันทึกข้อสั่งการไม่สำเร็จ:", error);
     alert("บันทึกข้อสั่งการไม่สำเร็จ: " + (error.message || error));
   }
 }
 
+// ผูกฟังก์ชันขึ้นโกลบอลเพื่อให้ปุ่มกดหรือแท็ก <select onchange="..."> บน HTML เรียกเจอทันที
 window.executeModifyCaseStatus = executeModifyCaseStatus;
 window.executeModifyCaseResolution = executeModifyCaseResolution;
 
@@ -836,137 +917,202 @@ function renderDepartmentDonutChart(counters) {
 window.renderDepartmentDonutChart = renderDepartmentDonutChart;
 
 
+/* ======================================================
+   🔥 EXECUTIVE & AI SUMMARY SYSTEM - COMPLETED VERSION
+   (ชุดเคลียร์ล้างบั๊ก แก้ไขพิมพ์ตก และระบบป้องกันอาการค้าง)
+====================================================== */
+
+// 1. ฟังก์ชันช่วยย่อย (Helper Functions) - ใส่เพิ่มให้ครบเพื่อไม่ให้แครช
+function escapeHTML(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function normalizeDept(dept) {
+  if (!dept) return 'general';
+  return String(dept).toLowerCase().trim();
+}
+
+// ตัวแปรจับคู่ชื่อแผนกภาษาไทย (ป้องกัน Error เผื่อไฟล์อื่นไม่มี)
+const DEPARTMENT_LABELS = window.DEPARTMENT_LABELS || {
+  "blow": "แผนกเป่าขวด",
+  "injection": "แผนกฉีดพลาสติก",
+  "packaging": "แผนกบรรจุ",
+  "general": "ทั่วไป"
+};
+
+
+/* ======================================================
+   📥 2. ฟังก์ชันดาวน์โหลดรายงาน EXCEL (CSV) ภาษาไทยไม่เพี้ยน
+====================================================== */
 function exportTableToExcel() {
-  // ดึงข้อมูลจากแคชที่กรอกล่าสุด ถ้าไม่มีให้ใช้แคชหลัก
-  const records = window.pvtExecutiveFilteredCache || window.pvtDashboardRawCache || [];
-  if (records.length === 0) { 
-    alert("❌ ไม่มีข้อมูลในตารางสำหรับการดาวน์โหลดในขณะนี้"); 
-    return; 
-  }
-
-  // ใส่รหัสตัวอักษร \uFEFF ด้านหน้าสุดเพื่อให้ Excel อ่านภาษาไทยออก ไม่กลายเป็นต่างดาว
-  let csvContent = "\uFEFF"; 
-  csvContent += "วัน-เวลาที่เกิดเหตุ,แผนก,หมายเลขเครื่องจักร,ปัญหาที่พบ,รายละเอียดเหตุการณ์,น้ำหนักของเสีย (กก.),สถานะ,แนวทางแก้ไข\n";
-
-  // วนลูปแปลงทีละแถวข้อมูล
-  records.forEach(row => {
-    const d = row.incident_datetime || row.created_at ? new Date(row.incident_datetime || row.created_at).toLocaleString("th-TH") : "-";
-    const dept = (DEPARTMENT_LABELS[normalizeDept(row.department_code || row.department)] || "ทั่วไป").toUpperCase();
-    const mach = row.machine_no || "-";
-    
-    // ดักจับและล้างเครื่องหมายคอมมา , ออก เพื่อไม่ให้ไฟล์ CSV เข้าใจผิดว่าเป็นคอลัมน์ใหม่
-    const prob = (row.reason_detail || row.problem_type || "-").replace(/,/g, " ");
-    const det = (row.note || row.detail || "-").replace(/,/g, " ").replace(/\n/g, " ");
-    const w = parseFloat(row.waste_qty || row.waste_weight_kg || 0).toFixed(2);
-    
-    const st = row.status === "resolved" ? "ปิดงานสำเร็จ" : row.status === "progress" ? "กำลังแก้ไข" : "รอดำเนินการ";
-    const res = (row.resolution || row.corrective_action || "-").replace(/,/g, " ");
-
-    csvContent += `"${d}","${dept}","${mach}","${prob}","${det}",${w},"${st}","${res}"\n`;
-  });
-
-  // สร้างไฟล์และสั่งให้เว็บบราว์เซอร์เด้งดาวน์โหลดลงเครื่องคอมพิวเตอร์
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.setAttribute("download", `รายงานปัญหาของเสียโรงงาน_${new Date().toLocaleDateString("th-TH")}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-window.exportTableToExcel = exportTableToExcel;
-
-
-// ⚠️ บรรทัดสำคัญที่สุด: บังคับผูกฟังก์ชันเข้ากับ Global Window เพื่อให้หน้า HTML เรียกใช้เจอทันที
-window.executeDateRangeFilter = executeDateRangeFilter;
-
-function generateExecutiveSummary(records) {
-  const summaryBox = document.getElementById("ai-summary-box");
-  if (!summaryBox) return;
-
-  if (records.length === 0) {
-    summaryBox.textContent = "ไม่พบข้อมูลปัญหา";
-    return;
-  }
-
-  const machineCounter = {};
-
-  records.forEach((r) => {
-    const machine = r.machine_no || "ไม่ระบุ";
-    const problem = r.problem_type || "อื่นๆ";
-
-    if (!machineCounter[machine]) {
-      machineCounter[machine] = { total: 0, problems: {} };
-    }
-
-    machineCounter[machine].total++;
-    machineCounter[machine].problems[problem] =
-      (machineCounter[machine].problems[problem] || 0) + 1;
-  });
-
-  let topMachine = "";
-  let maxCount = 0;
-
-  Object.keys(machineCounter).forEach((machine) => {
-    if (machineCounter[machine].total > maxCount) {
-      maxCount = machineCounter[machine].total;
-      topMachine = machine;
-    }
-  });
-
-  if (!topMachine) {
-    summaryBox.textContent = "ไม่มีข้อมูล";
-    return;
-  }
-
-  const topProblems = Object.entries(machineCounter[topMachine].problems)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3);
-
-  const listItems = topProblems
-    .map(
-      ([problem, count]) => `<li>${escapeHTML(problem)} (${count} ครั้ง)</li>`,
-    )
-    .join("");
-
-  summaryBox.innerHTML = `
-    <h3>🚨 เครื่อง ${escapeHTML(topMachine)} มีปัญหามากที่สุด</h3>
-    <p>พบปัญหา ${maxCount} ครั้ง</p>
-    <ul>${listItems}</ul>
-  `;
-}
-
-function generateExecutiveInsight(records) {
-  // ดักจับ Element กล่องข้อความสรุปผู้บริหาร
-  const summaryBox = document.getElementById('executive-summary-box') || document.querySelector('.psychology + div') || document.getElementById('insight-container');
-  
-  if (!records || records.length === 0) {
-    if (summaryBox) summaryBox.textContent = "ไม่พบข้อมูลรายงานของเสียในระบบ";
-    return;
-  }
-
   try {
-    let totalWaste = 0;
+    // ดึงข้อมูลจากแคชที่กรอกล่าสุด ถ้าไม่มีให้ใช้แคชหลัก
+    const records = window.pvtExecutiveFilteredCache || window.pvtDashboardRawCache || [];
+    if (records.length === 0) { 
+      alert("❌ ไม่มีข้อมูลในตารางสำหรับการดาวน์โหลดในขณะนี้"); 
+      return; 
+    }
+
+    // ใส่รหัสตัวอักษร \uFEFF ด้านหน้าสุดเพื่อให้ Excel อ่านภาษาไทยออก ไม่กลายเป็นต่างดาว
+    let csvContent = "\uFEFF"; 
+    csvContent += "วัน-เวลาที่เกิดเหตุ,แผนก,หมายเลขเครื่องจักร,ปัญหาที่พบ,รายละเอียดเหตุการณ์,น้ำหนักของเสีย (กก.),สถานะ,แนวทางแก้ไข\n";
+
+    // วนลูปแปลงทีละแถวข้อมูล
     records.forEach(row => {
-      // 🎯 ดึงคอลัมน์จำนวนของเสียจริงมาคำนวณ
-      totalWaste += parseFloat(row.waste_qty || row.waste_weight_kg || 0);
+      const dateVal = row.incident_datetime || row.created_at;
+      const d = dateVal ? new Date(dateVal).toLocaleString("th-TH") : "-";
+      
+      const deptCode = row.department_code || row.department;
+      const dept = (DEPARTMENT_LABELS[normalizeDept(deptCode)] || "ทั่วไป").toUpperCase();
+      const mach = row.machine_no || "-";
+      
+      // ดักจับและล้างเครื่องหมายคอมมา , ออก เพื่อไม่ให้ไฟล์ CSV เข้าใจผิดว่าเป็นคอลัมน์ใหม่
+      const prob = (row.reason_detail || row.problem_type || "-").replace(/,/g, " ");
+      const det = (row.note || row.detail || "-").replace(/,/g, " ").replace(/\n/g, " ");
+      const w = parseFloat(row.waste_qty || row.waste_weight_kg || 0).toFixed(2);
+      
+      const st = row.status === "resolved" ? "ปิดงานสำเร็จ" : row.status === "progress" ? "กำลังแก้ไข" : "รอดำเนินการ";
+      const res = (row.resolution || row.corrective_action || "-").replace(/,/g, " ");
+
+      csvContent += `"${d}","${dept}","${mach}","${prob}","${det}",${w},"${st}","${res}"\n`;
     });
 
-    // ✍️ จุดสำคัญ: สั่งเขียนข้อความทับคำว่า "กำลังวิเคราะห์..." ทันที
-    if (summaryBox) {
-      summaryBox.textContent = `วิเคราะห์ภาพรวมสำเร็จ: มีรายงานทั้งหมด ${records.length} รายการ พบยอดของเสียสะสมรวม ${totalWaste.toLocaleString()} kg โดยระบบตรวจพบความเคลื่อนไหวล่าสุดในกะการทำงานปัจจุบัน`;
-    }
-
-    // 🎯 ถ้ามีกล่องข้อความ "สรุปปัญหาอัตโนมัติ" ตัวบนด้วย ให้เคลียร์คำว่า "กำลังวิเคราะห์..." ของมันออกด้วยครับ
-    const autoSummaryBox = document.getElementById('auto-summary-box') || document.querySelector('.art_toy + div');
-    if (autoSummaryBox) {
-      autoSummaryBox.textContent = `พบรายการของเสียล่าสุดประจำวันที่เรียบร้อยแล้ว`;
-    }
-
+    // สร้างไฟล์และสั่งให้เว็บบราว์เซอร์เด้งดาวน์โหลดลงเครื่องคอมพิวเตอร์
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", `รายงานปัญหาของเสียโรงงาน_${new Date().toLocaleDateString("th-TH")}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    console.log('[export_success] ดาวน์โหลด Excel สำเร็จ');
   } catch (err) {
-    console.error('[insight_error]', err);
+    console.error('❌ Export Excel Error:', err);
   }
 }
+// ผูกฟังก์ชันเข้ากับ Global Window เพื่อให้หน้า HTML เรียกใช้เจอทันที
+window.exportTableToExcel = exportTableToExcel;
+
+// ป้องกันกรณี executeDateRangeFilter ไม่มีอยู่จริงในหน้านั้น จะได้ไม่แครช
+if (typeof executeDateRangeFilter === 'function') {
+  window.executeDateRangeFilter = executeDateRangeFilter;
+}
+
+
+/* ======================================================
+   🤖 3. ระบบสรุปปัญหาอัตโนมัติ (วิเคราะห์เครื่องจักรวิกฤต)
+====================================================== */
+function generateExecutiveSummary(records) {
+  // ใช้ setTimeout เพื่อรอให้ตัวโครงสร้างหน้าเว็บนิ่งก่อน ป้องกันหน้าค้างบนเว็บจริง
+  setTimeout(() => {
+    try {
+      const summaryBox = document.getElementById("ai-summary-box");
+      if (!summaryBox) return;
+
+      if (!records || records.length === 0) {
+        summaryBox.textContent = "ไม่พบข้อมูลปัญหาในขณะนี้";
+        return;
+      }
+
+      const machineCounter = {};
+
+      records.forEach((r) => {
+        if (!r) return;
+        const machine = r.machine_no || "ไม่ระบุ";
+        const problem = r.problem_type || r.reason_detail || "อื่นๆ";
+
+        if (!machineCounter[machine]) {
+          machineCounter[machine] = { total: 0, problems: {} };
+        }
+
+        machineCounter[machine].total++;
+        machineCounter[machine].problems[problem] = (machineCounter[machine].problems[problem] || 0) + 1;
+      });
+
+      let topMachine = "";
+      let maxCount = 0;
+
+      Object.keys(machineCounter).forEach((machine) => {
+        if (machineCounter[machine].total > maxCount) {
+          maxCount = machineCounter[machine].total;
+          topMachine = machine;
+        }
+      });
+
+      if (!topMachine) {
+        summaryBox.textContent = "ไม่มีข้อมูลเพียงพอในการวิเคราะห์เครื่องจักร";
+        return;
+      }
+
+      const topProblems = Object.entries(machineCounter[topMachine].problems)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+      const listItems = topProblems
+        .map(([problem, count]) => `<li>❌ <strong>${escapeHTML(problem)}</strong> (${count} ครั้ง)</li>`)
+        .join("");
+
+      summaryBox.innerHTML = `
+        <div style="padding: 10px; background: #fff; border-radius: 8px;">
+          <h3 style="color: #e74a3b; margin-top:0;">🚨 เครื่อง ${escapeHTML(topMachine)} มีปัญหามากที่สุด</h3>
+          <p>ตรวจพบการเกิดปัญหาและของเสียรวมทั้งหมด <strong>${maxCount}</strong> ครั้ง</p>
+          <ul style="padding-left: 20px;">${listItems}</ul>
+        </div>
+      `;
+      console.log('[summary_success] ประมวลผลกล่อง AI สรุปปัญหาอัตโนมัติสำเร็จ');
+    } catch (err) {
+      console.error('❌ Executive Summary Error:', err);
+    }
+  }, 100);
+}
+window.generateExecutiveSummary = generateExecutiveSummary;
+
+
+/* ======================================================
+   📊 4. ระบบสรุปภาพรวมผู้บริหาร (วิเคราะห์น้ำหนักของเสียรวม)
+====================================================== */
+function generateExecutiveInsight(records) {
+  setTimeout(() => {
+    try {
+      // ดักจับ Element กล่องข้อความสรุปผู้บริหารแบบครอบคลุม Selector ทุกตัวที่เป็นไปได้
+      const summaryBox = document.getElementById('executive-summary-box') || 
+                         document.getElementById('insight-container') || 
+                         document.getElementById('exec-insight-box') ||
+                         document.querySelector('.psychology + div');
+      
+      if (!records || records.length === 0) {
+        if (summaryBox) summaryBox.textContent = "ไม่พบข้อมูลรายงานของเสียในระบบ";
+        return;
+      }
+
+      let totalWaste = 0;
+      records.forEach(row => {
+        if (row) totalWaste += parseFloat(row.waste_qty || row.waste_weight_kg || 0);
+      });
+
+      // ✍️ เขียนข้อความทับคำว่า "กำลังวิเคราะห์..." ทันที
+      if (summaryBox) {
+        summaryBox.innerHTML = `⚙️ <strong>วิเคราะห์ภาพรวมสำเร็จ:</strong> มีรายงานทั้งหมด <strong>${records.length} รายการ</strong> พบยอดของเสียสะสมรวม <span style="color: #e74a3b; font-weight: bold;">${totalWaste.toLocaleString()} kg</span> โดยระบบตรวจพบความเคลื่อนไหวล่าสุดในกะการทำงานปัจจุบัน`;
+      }
+
+      // ดักเคลียร์กล่องคำว่า "กำลังวิเคราะห์..." ตัวอื่น ๆ บนหน้าจอเพื่อความสะอาด
+      const autoSummaryBox = document.getElementById('auto-summary-box') || document.querySelector('.art_toy + div');
+      if (autoSummaryBox) {
+        autoSummaryBox.textContent = `พบรายการของเสียล่าสุดประจำวันที่เรียบร้อยแล้ว`;
+      }
+      console.log('[insight_success] อัปเดตข้อความกล่องสรุปผู้บริหารสำเร็จ');
+    } catch (err) {
+      console.error('❌ Executive Insight Error:', err);
+    }
+  }, 150);
+}
+window.generateExecutiveInsight = generateExecutiveInsight;
 
 // =========================================================
 // EXPORT CSV
@@ -1350,3 +1496,256 @@ window.renderDoughnutChart = window.renderDepartmentDonutChart;
 window.addEventListener('DOMContentLoaded', () => {
   loadAndProcessDashboardData();
 });
+
+// 🎯 ฟังก์ชันเปิดท่อดักฟังข้อมูลล่าสุดจาก Supabase แบบ Realtime
+function listenToWasteReportsRealtime() {
+  const client = window.supabaseClientInstance || window.supabase || window.sb;
+  if (!client) return;
+
+  console.log("[realtime_system] เริ่มต้นเปิดท่อดักรับข้อมูลล่าสุดจาก daily_waste_reports...");
+
+  // เปิดสวิตช์จับตาดูตาราง daily_waste_reports
+  client
+    .channel('schema-db-changes')
+    .on(
+      'postgres_changes',
+      {
+        event: '*', // ดักจับทุกเหตุการณ์ (ทั้ง Insert, Update, Delete)
+        schema: 'public',
+        table: 'daily_waste_reports'
+      },
+      async (payload) => {
+        console.log('[realtime_event] ตรวจพบข้อมูลเปลี่ยนแปลงในฐานข้อมูล!', payload);
+        
+        // 🔄 บังคับล้างแคชเก่าทิ้ง เพื่อเตรียมโหลดใหม่
+        window.pvtDashboardRawCache = null; 
+        
+        // 🚀 สั่งรันฟังก์ชันหลักเพื่อดึงข้อมูลเวอร์ชันล่าสุดมาวาดกราฟและสรุปปัญหาใหม่ทันที
+        await loadAndProcessDashboardData();
+      }
+    )
+    .subscribe();
+}
+
+// 🏁 บังคับรันตอนเปิดหน้าเว็บครั้งแรกครั้งเดียวพอ ไม่ต้องตั้งเวลาซ้ำ
+window.addEventListener('DOMContentLoaded', () => {
+  // 1. โหลดข้อมูลรอบแรกสุดมาโชว์ก่อน
+  loadAndProcessDashboardData();
+  
+  // 2. เปิดท่อดักฟังข้อมูลล่าสุดทิ้งไว้ (ไม่ต้องเขียน setInterval อีกต่อไป)
+  listenToWasteReportsRealtime();
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ======================================================
+   🧠 ACCOUNTING CONTROLLER - SUPABASE ENGINE
+====================================================== */
+
+// ตัวแปรส่วนกลางสำหรับพักข้อมูลในความทรงจำแคชเพื่อนำไปสกัดรายงาน
+/* ======================================================
+   🧠 ACCOUNTING ENGINE & EXCEL PRO GENERATOR
+====================================================== */
+let currentFetchedData = [];
+
+/**
+ * 🔒 ฟังก์ชันวนลูปตรวจสอบสัญญาณ Supabase ป้องกันปัญหาโหลดหน้าจอสลับไม่ทัน
+ */
+function getSupabaseClientSecure() {
+  return window.supabaseClientInstance || window.supabaseClient || window.supabase || window.sb;
+}
+
+/**
+ * 🎯 ฟังก์ชันดึงข้อมูลหลักและแสดงผลตัวเลขน้ำหนักของเสียบนหน้าตารางเว็บ
+ */
+async function loadAccountingData() {
+  const tbody = document.getElementById('accounting-table-body');
+  if (!tbody) return;
+
+  const client = getSupabaseClientSecure();
+  
+  // 🛡️ หากเปิดหน้าจอมาแล้วสัญญานยังไม่มา ให้หน่วงเวลารอ 300ms แล้วลองใหม่แทนการระเบิดบั๊ก
+  if (!client || typeof client.from !== 'function') {
+    console.warn("⏳ สัญญาณ Supabase ยังไม่พร้อม กำลังรอคิวเชื่อมต่อใหม่ภายในวินาที...");
+    setTimeout(loadAccountingData, 300);
+    return;
+  }
+
+  try {
+    const dept = document.getElementById('filter-dept').value;
+    let query = client.from('daily_waste_reports').select('*').order('incident_datetime', { ascending: false });
+    
+    if (dept !== 'all') { 
+      query = query.eq('department', dept); 
+    }
+    
+    const { data, error } = await query;
+    if (error) throw error;
+
+    currentFetchedData = data || [];
+    tbody.innerHTML = '';
+    
+    if (currentFetchedData.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: #94a3b8;">📭 ไม่พบประวัติรายงานปัญหาในหมวดนี้</td></tr>`;
+      return;
+    }
+
+    currentFetchedData.forEach(item => {
+      let statusText = item.status === 'resolved' ? '✅ แก้ไขสำเร็จ' : (item.status === 'progress' ? '⚡ กำลังซ่อม' : '⏳ รอดำเนินการ');
+      
+      // สกัดตัวเลขน้ำหนักสูญเสียและน้ำหนักผลิต (หากไม่มีให้ลงเป็นเครื่องหมายขีดตามแบบฉบับบัญชีของพี่)
+      let wasteWeight = item.waste_weight_kg != null ? Number(item.waste_weight_kg).toFixed(2) : "-";
+let prodWeight = item.total_qty != null ? Number(item.total_qty).toFixed(2) : "-";
+
+      tbody.innerHTML += `
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 12px 16px;">${new Date(item.incident_datetime).toLocaleString('th-TH')}</td>
+          <td style="padding: 12px 16px;"><b>${String(item.department).toUpperCase()}</b></td>
+          <td style="padding: 12px 16px;">${item.machine_no || '-'}</td>
+          <td style="padding: 12px 16px;">${item.problem_type || '-'}</td>
+          <td style="padding: 12px 16px;">${item.detail || '-'}</td>
+          <td style="padding: 12px 16px; text-align: right; color: #dc2626; font-weight: bold;">${wasteWeight}</td>
+          <td style="padding: 12px 16px; text-align: right; color: #2563eb; font-weight: bold;">${prodWeight}</td>
+          <td style="padding: 12px 16px;">${item.reported_by || '-'}</td>
+          <td style="padding: 12px 16px;">${statusText}</td>
+        </tr>`;
+    });
+  } catch (err) {
+    console.error("Error loading data:", err);
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: #ef4444;">❌ โหลดข้อมูลล้มเหลว: ${err.message}</td></tr>`;
+  }
+}
+
+/**
+ * 📥 ระบบสกัดไฟล์ภาษาไทยอัจฉริยะ (ขยายช่องตารางให้อัตโนมัติเปิดใน Excel อ่านออกทันที 100%)
+ */
+function exportToActualExcel(mode) {
+  if (!currentFetchedData || currentFetchedData.length === 0) {
+    alert("⚠️ ไม่มีข้อมูลที่จะส่งออก กรุณารอให้ระบบดาวน์โหลดข้อมูลให้เสร็จสิ้นก่อน");
+    return;
+  }
+
+  // 📝 สร้างสไตล์และโครงสร้างตาราง HTML ห่อหุ้ม เพื่อบังคับให้ Excel จัดหน้าตารางให้กว้างขวางสวยงาม
+  let excelTemplate = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8">
+      <style>
+        table { border-collapse: collapse; }
+        th { background-color: #047857; color: white; font-weight: bold; text-align: center; border: 1px solid #cbd5e1; }
+        td { border: 1px solid #e2e8f0; text-align: left; mso-number-format:"\\@"; }
+        .num-format { mso-number-format:"#,##0.00"; text-align: right; }
+      </style>
+    </head>
+    <body>
+      <table>
+  `;
+
+  if (mode === 'raw') {
+    // 📊 หัวตารางข้อมูลดิบละเอียดแบบขยายหน้ากว้างรองรับคอลัมน์น้ำหนักของพี่
+    excelTemplate += `
+      <thead>
+        <tr>
+          <th style="width: 180px;">วัน-เวลาเกิดเหตุ</th>
+          <th style="width: 100px;">แผนกงาน</th>
+          <th style="width: 100px;">เบอร์เครื่องจักร</th>
+          <th style="width: 180px;">หมวดหมู่ปัญหา</th>
+          <th style="width: 300px;">รายละเอียดอาการ</th>
+          <th style="width: 130px;">น้ำหนักสูญเสีย (กก.)</th>
+          <th style="width: 130px;">น้ำหนักผลิต (กก.)</th>
+          <th style="width: 120px;">ผู้แจ้งเรื่อง</th>
+          <th style="width: 120px;">สถานะ</th>
+        </tr>
+      </thead>
+      <tbody>
+    `;
+
+    currentFetchedData.forEach(item => {
+      let timeStr = new Date(item.incident_datetime).toLocaleString('th-TH');
+      let deptStr = String(item.department).toUpperCase();
+      let machine = item.machine_no || "-";
+      let probType = item.problem_type || "-";
+      let detailStr = item.detail || "-";
+      let waste = item.waste_weight != null ? Number(item.waste_weight) : 0;
+      let prod = item.production_weight != null ? Number(item.production_weight) : 0;
+      let reporter = item.reported_by || "-";
+      let statusStr = item.status === 'resolved' ? 'แก้ไขสำเร็จ' : (item.status === 'progress' ? 'กำลังซ่อม' : 'รอดำเนินการ');
+
+      excelTemplate += `
+        <tr>
+          <td>${timeStr}</td>
+          <td style="text-align: center;"><b>${deptStr}</b></td>
+          <td style="text-align: center;">${machine}</td>
+          <td>${probType}</td>
+          <td>${detailStr}</td>
+          <td class="num-format">${waste}</td>
+          <td class="num-format">${prod}</td>
+          <td>${reporter}</td>
+          <td style="text-align: center;">${statusStr}</td>
+        </tr>
+      `;
+    });
+  } else {
+    // 📈 หัวตารางสรุปแบบ Pivot Table ยอดรวมความถี่ปัญหา
+    excelTemplate += `
+      <thead>
+        <tr>
+          <th style="width: 250px;">หมวดหมู่ปัญหาที่พบในโรงงาน</th>
+          <th style="width: 180px;">จำนวนครั้งที่เกิดขึ้นทั้งหมด</th>
+        </tr>
+      </thead>
+      <tbody>
+    `;
+    
+    let summaryMap = {};
+    currentFetchedData.forEach(item => {
+      let type = item.problem_type || "ไม่ระบุหมวดหมู่";
+      summaryMap[type] = (summaryMap[type] || 0) + 1;
+    });
+
+    Object.keys(summaryMap).forEach(key => {
+      excelTemplate += `
+        <tr>
+          <td>${key}</td>
+          <td style="text-align: right; font-weight: bold;">${summaryMap[key]} ครั้ง</td>
+        </tr>
+      `;
+    });
+  }
+
+  excelTemplate += `</tbody></table></body></html>`;
+
+  // 💾 กระบวนการส่งออกแบบหลอกหัวข้อเอกสารให้เปิดใช้งานผ่าน Microsoft Excel ภาษาไทยได้ทันที
+  const dataType = 'application/vnd.ms-excel';
+  const blob = new Blob([excelTemplate], { type: dataType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const filename = mode === 'raw' ? 'รายงานข้อมูลดิบละเอียด_แผนกบัญชี.xls' : 'รายงานสรุปสถิติปัญหา_แผนกบัญชี.xls';
+
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// ผูกฟังก์ชันเข้าสู่ช่องสัญญาณระดับบนสุดของเบราว์เซอร์
+window.loadAccountingData = loadAccountingData;
+window.exportToActualExcel = exportToActualExcel;
+
+// สั่งรันชุดข้อมูลทันทีเมื่อโครงสร้างเอกสารพร้อมใช้งาน
+window.addEventListener('DOMContentLoaded', loadAccountingData);

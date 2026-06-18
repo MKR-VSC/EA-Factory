@@ -465,3 +465,4 @@ function onQrScanSuccess(decodedText) {
 
   window.location.href = decodedText;
 }
+

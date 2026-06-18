@@ -621,7 +621,7 @@ async function handleLogout() {
   localStorage.removeItem("activeUserId");
   localStorage.removeItem("activeDept");
 
-  window.location.href = "/login2.html";
+  window.location.href = "login.html";
 }
 
 // =========================================================

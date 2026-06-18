@@ -35,6 +35,39 @@
       </div>
     </header>
 
+    <aside class="sidebar" style="width: 260px; background: #111827; color: white; height: 100vh; position: fixed; top: 0; left: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 20px 15px; box-sizing: border-box; z-index: 9999; box-shadow: 4px 0 10px rgba(0,0,0,0.15);">
+  
+  <div class="sidebar-menu-wrapper">
+    <div class="sidebar-brand" style="padding: 15px 10px; font-weight: bold; border-bottom: 1px solid #1f2937; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; font-size: 18px; color: #f9fafb;">
+      <span class="material-symbols-outlined" style="color: #3b82f6;">factory</span>
+      <span>ระบบจัดการโรงงาน</span>
+    </div>
+
+    <nav class="sidebar-nav" style="display: flex; flex-direction: column; gap: 8px;">
+      <a href="/index.html" class="nav-item" style="display: flex; align-items: center; gap: 12px; color: #f3f4f6; text-decoration: none; padding: 12px 16px; border-radius: 8px; font-weight: 500; background: #1f2937;">
+        <span class="material-symbols-outlined">monitoring</span>
+        <span>ตรวจสอบความเคลื่อนไหว</span>
+      </a>
+
+      <a href="../html/form-department.html" class="nav-item" style="display: flex; align-items: center; gap: 12px; color: #9ca3af; text-decoration: none; padding: 12px 16px; border-radius: 8px; font-weight: 500; transition: all 0.2s;">
+        <span class="material-symbols-outlined">edit_note</span>
+        <span>ฟอร์มประจำแผนก</span>
+      </a>
+
+      <a href="../html/accounting-panel.html" class="nav-item" style="display: flex; align-items: center; gap: 12px; color: #9ca3af; text-decoration: none; padding: 12px 16px; border-radius: 8px; font-weight: 500; transition: all 0.2s;">
+        <span class="material-symbols-outlined">payments</span>
+        <span>หน้าต่างแผนกบัญชี</span>
+      </a>
+    </nav>
+  </div>
+
+  <div class="sidebar-footer" style="padding-top: 20px; border-top: 1px solid #1f2937;">
+    <button onclick="handleLogout()" class="btn-logout" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; color: #ef4444; background: #271616; border: 1px solid #7f1d1d; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">
+      <span class="material-symbols-outlined" style="font-size: 20px;">logout</span>
+      <span>ออกจากระบบ (Log Out)</span>
+    </button>
+  </div>
+</aside>
     <section class="nav-section">
       <div class="nav-title" style="display: flex; align-items: center; gap: 8px;">
         <span class="material-symbols-outlined" style="color: #3b82f6;">domain</span> เมนูสลับหน้าต่างตรวจสอบความเคลื่อนไหว: คลิกเพื่อสลับไปหน้าฟอร์มประจำแผนก

@@ -42,7 +42,7 @@ function protectAdminPage() {
   const allowRoles = ["admin", "management", "accounting", "supervisor"];
 
   if (!user || !allowRoles.includes(role)) {
-    window.location.href = LOGIN_PAGE;
+    window.location.href = "login.html";
     return false;
   }
 
@@ -67,7 +67,7 @@ async function logout() {
     localStorage.removeItem("activeDeptName");
 
     sessionStorage.clear();
-    window.location.href = LOGIN_PAGE;
+    window.location.href = "login.html";
   } catch (err) {
     console.error("Logout error:", err);
     alert("ออกจากระบบไม่สำเร็จ");

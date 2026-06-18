@@ -4,100 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ระบบตรวจสอบและสรุปข้อมูลต้นทุน - แผนกบัญชี</title>
-  <link rel="stylesheet" href="/css/index.css">
+  
+  <link rel="stylesheet" href="/css/accounting-panel.css">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-  <style>
-    .exec-header {
-      background: #047857;
-      padding: 20px;
-      color: white;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    .exec-header h1 {
-      margin: 0;
-    }
-    .exec-header p {
-      margin: 5px 0 0 0;
-      opacity: 0.9;
-    }
-    .filter-bar {
-      display: flex;
-      gap: 15px;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .filter-group {
-      display: flex;
-      align-items: center;
-    }
-    .filter-group label {
-      font-weight: bold;
-      margin-right: 8px;
-    }
-    .filter-group select {
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid #cbd5e1;
-    }
-    .btn-global {
-      cursor: pointer;
-      padding: 8px 16px;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-weight: bold;
-    }
-    .btn-excel {
-      padding: 8px 16px;
-    }
-    .btn-excel:first-of-type {
-      background: #10b981;
-    }
-    .btn-excel:last-of-type {
-      background: #1e40af;
-    }
-    .panel-card {
-      background: white;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-      overflow-x: auto;
-    }
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-    }
-    .data-table thead tr {
-      background: #f8fafc;
-      border-bottom: 2px solid #e2e8f0;
-    }
-    .data-table th {
-      padding: 12px 16px;
-    }
-    .data-table td {
-      padding: 12px 16px;
-    }
-    .data-table tbody tr {
-      border-bottom: 1px solid #f1f5f9;
-    }
-    .loading-cell {
-      text-align: center;
-      padding: 20px;
-      color: #64748b;
-    }
-    .no-data-cell {
-      text-align: center;
-      padding: 20px;
-      color: #94a3b8;
-    }
-    .error-cell {
-      text-align: center;
-      padding: 20px;
-      color: #ef4444;
-    }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></style>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/core/supabaseClient.js"></script>
 </head>
 <body>
@@ -107,11 +18,17 @@
         <h1 style="margin: 0;">💰 แผงควบคุมสถิติและข้อมูลดิบ - สำหรับแผนกบัญชี</h1>
         <p style="margin: 5px 0 0 0; opacity: 0.9;">ตรวจสอบรายงานปัญหาโรงงานเพื่อคำนวณมูลค่าความเสียหายและสรุปงบประจำเดือน</p>
       </div>
+      <div class="back-navigation-bar" style="margin-bottom: 15px;">
+  <a href="/index.html" class="btn-back" style="display: inline-flex; align-items: center; gap: 8px; color: #475569; text-decoration: none; font-weight: bold; background: #e2e8f0; padding: 8px 16px; border-radius: 6px; transition: all 0.2s;">
+    <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
+    <span>ย้อนกลับออกจากแผนกบัญชี</span>
+  </a>
+</div>
     </header>
 
     <section class="filter-bar" style="display: flex; gap: 15px; align-items: center; margin-bottom: 20px;">
       <div class="filter-group">
-        <label style="font-weight: bold; margin-right: 8px;">ดึงรายงานแยกตามแผนก:</label>
+        <label for="filter-dept" style="font-weight: bold; margin-right: 8px;">ดึงรายงานแยกตามแผนก:</label>
         <select id="filter-dept" onchange="loadAccountingData()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1;">
           <option value="all">📊 แสดงทุกแผนกงานรวมกัน</option>
           <option value="blow">เป่า (BLOW)</option>
@@ -119,8 +36,8 @@
           <option value="mono">โมโน (MONO)</option>
         </select>
       </div>
-      <button class="btn-global btn-excel" onclick="exportExcel('summary')" style="cursor: pointer; padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold;">📥 โหลดรายงานสรุปสถิติ</button>
-      <button class="btn-global btn-excel" onclick="exportExcel('raw')" style="cursor: pointer; padding: 8px 16px; background: #1e40af; color: white; border: none; border-radius: 6px; font-weight: bold;">📋 โหลดข้อมูลดิบละเอียดทั้งหมด</button>
+      <button class="btn-global" onclick="exportToActualExcel('summary')" style="cursor: pointer; padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold;">📥 โหลดรายงานสรุปสถิติ</button>
+      <button class="btn-global" onclick="exportToActualExcel('raw')" style="cursor: pointer; padding: 8px 16px; background: #1e40af; color: white; border: none; border-radius: 6px; font-weight: bold;">📋 โหลดข้อมูลดิบละเอียดทั้งหมด</button>
     </section>
 
     <section class="panel-card" style="background: white; border-radius: 8px; border: 1px solid #e2e8f0; overflow-x: auto;">
@@ -132,121 +49,21 @@
             <th style="padding: 12px 16px;">เครื่องจักร</th>
             <th style="padding: 12px 16px;">หมวดหมู่ปัญหา</th>
             <th style="padding: 12px 16px;">รายละเอียดอาการ</th>
+            <th style="padding: 12px 16px; text-align: right;">น้ำหนักสูญเสีย (กก.)</th>
+            <th style="padding: 12px 16px; text-align: right;">น้ำหนักผลิต (กก.)</th>
             <th style="padding: 12px 16px;">ผู้แจ้งเรื่อง</th>
             <th style="padding: 12px 16px;">สถานะปิดงาน</th>
           </tr>
         </thead>
         <tbody id="accounting-table-body">
           <tr>
-            <td colspan="7" style="text-align: center; padding: 20px; color: #64748b;">🔄 กำลังโหลดข้อมูลรายงาน...</td>
+            <td colspan="9" style="text-align: center; padding: 20px; color: #64748b;">🔄 กำลังโหลดข้อมูลรายงาน...</td>
           </tr>
         </tbody>
       </table>
     </section>
   </div>
 
-  <script>
-    // ตัวแปรส่วนกลางสำหรับเก็บข้อมูลไว้ส่งออก Excel
-    let currentFetchedData = [];
-
-    async function loadAccountingData() {
-      try {
-        const dept = document.getElementById('filter-dept').value;
-        const client = window.supabaseClient || window.supabase;
-        
-        if (!client) {
-          console.error("❌ ไม่พบความเชื่อมต่อของ Supabase Client");
-          return;
-        }
-
-        let query = client.from('daily_waste_reports').select('*').order('incident_datetime', {ascending:false});
-        
-        if(dept !== 'all') { 
-          query = query.eq('department', dept); 
-        }
-        
-        const { data, error } = await query;
-        if (error) throw error;
-
-        currentFetchedData = data || [];
-        const tbody = document.getElementById('accounting-table-body');
-        tbody.innerHTML = '';
-        
-        if (currentFetchedData.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: #94a3b8;">📭 ไม่พบประวัติรายงานปัญหาในหมวดนี้</td></tr>`;
-          return;
-        }
-
-        currentFetchedData.forEach(item => {
-          let statusText = item.status === 'resolved' ? '✅ แก้ไขสำเร็จ' : (item.status === 'progress' ? '⚡ กำลังซ่อม' : '⏳ รอดำเนินการ');
-          tbody.innerHTML += `
-            <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 12px 16px;">${new Date(item.incident_datetime).toLocaleString('th-TH')}</td>
-              <td style="padding: 12px 16px;"><b>${String(item.department).toUpperCase()}</b></td>
-              <td style="padding: 12px 16px;">${item.machine_no || '-'}</td>
-              <td style="padding: 12px 16px;">${item.problem_type || '-'}</td>
-              <td style="padding: 12px 16px;">${item.detail || '-'}</td>
-              <td style="padding: 12px 16px;">${item.reported_by || '-'}</td>
-              <td style="padding: 12px 16px;">${statusText}</td>
-            </tr>`;
-        });
-      } catch (err) {
-        console.error("Error loading data:", err);
-        document.getElementById('accounting-table-body').innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: #ef4444;">❌ โหลดข้อมูลล้มเหลว: ${err.message}</td></tr>`;
-      }
-    }
-
-    // 📥 ฟังก์ชันสำหรับแผนกบัญชีส่งออกไฟล์ Excel (.CSV ภาษาไทยสมบูรณ์ 100%)
-    function exportExcel(mode) {
-      if (!currentFetchedData || currentFetchedData.length === 0) {
-        alert("⚠️ ไม่มีข้อมูลที่จะส่งออก กรุณารอให้ตารางดาวน์โหลดข้อมูลให้เสร็จสิ้นก่อน");
-        return;
-      }
-
-      let csvContent = "";
-      
-      if (mode === 'raw') {
-        // หัวตารางแบบข้อมูลดิบละเอียดทั้งหมด
-        csvContent = "\uFEFFวัน-เวลาเกิดเหตุ,แผนกงาน,เบอร์เครื่องจักร,หมวดหมู่ปัญหา,รายละเอียดอาการ,ผู้แจ้งเรื่อง,สถานะ\n";
-        currentFetchedData.forEach(item => {
-          let timeStr = new Date(item.incident_datetime).toLocaleString('th-TH').replace(/,/g, '');
-          let deptStr = String(item.department).toUpperCase();
-          let machine = item.machine_no ? `"${item.machine_no.replace(/"/g, '""')}"` : "-";
-          let probType = item.problem_type ? `"${item.problem_type.replace(/"/g, '""')}"` : "-";
-          let detailStr = item.detail ? `"${item.detail.replace(/"/g, '""').replace(/\n/g, ' ')}"` : "-";
-          let reporter = item.reported_by || "-";
-          let statusStr = item.status || "pending";
-          
-          csvContent += `${timeStr},${deptStr},${machine},${probType},${detailStr},${reporter},${statusStr}\n`;
-        });
-      } else {
-        // หัวตารางแบบสรุปสถิติจำนวนปัญหาแยกตามหมวดหมู่ (Summary)
-        csvContent = "\uFEFFหมวดหมู่ปัญหาที่พบ,จำนวนครั้งที่เกิดขึ้นทั้งหมดในระบบ\n";
-        let summaryMap = {};
-        currentFetchedData.forEach(item => {
-          let type = item.problem_type || "ไม่ระบุหมวดหมู่";
-          summaryMap[type] = (summaryMap[type] || 0) + 1;
-        });
-        Object.keys(summaryMap).forEach(key => {
-          csvContent += `"${key.replace(/"/g, '""')}",${summaryMap[key]}\n`;
-        });
-      }
-
-      // ดำเนินการสร้างไฟล์และดาวน์โหลดลงเครื่องคอมพิวเตอร์
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      const filename = mode === 'raw' ? 'รายงานข้อมูลดิบละเอียด_แผนกบัญชี.csv' : 'รายงานสรุปสถิติปัญหา_แผนกบัญชี.csv';
-      
-      link.setAttribute("href", url);
-      link.setAttribute("download", filename);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    window.addEventListener('DOMContentLoaded', loadAccountingData);
-  </script>
+  <script src="/js/index.js"></script>
 </body>
 </html>

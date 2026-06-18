@@ -46,7 +46,7 @@ document.getElementById('form-reset-password').addEventListener('submit', async 
         if (error) throw error;
 
         alert(`📬 ส่งคำขอรีเซ็ทรหัสผ่านของ Username: ${username} สำเร็จ!\nกรุณาแจ้งฝ่ายไอทีให้ตรวจสอบและอนุมัติในระบบหลังบ้านครับ`);
-        window.location.href = 'login2.html'; 
+        window.location.href = 'login.html'; 
 
     } catch (err) {
         console.error("Reset Error:", err);

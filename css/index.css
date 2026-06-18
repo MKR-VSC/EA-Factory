@@ -47,7 +47,7 @@ input {
   border-radius: 22px;
   background: var(--card);
   border: 1px solid var(--border);
-  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 14px 35px rgba(14, 16, 22, 0.801);
 }
 
 .exec-brand h1 {
@@ -407,3 +407,50 @@ input {
   margin: 12px auto;
   padding: 0 8px;
 }
+
+/* ใส่เพิ่มเข้าไปในไฟล์ css เพื่อดึงกล่องเนื้อหาหลักไม่ให้มุดไปใต้เมนูข้าง */
+/* 1. ล้างค่าขอบรากฐานของบราวเซอร์ไม่ให้แอบบวมออกข้าง */
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* 🛡️ ล็อกตายตัว ห้ามเกิดแถบเลื่อนแนวนอนเด็ดขาด */
+  box-sizing: border-box;
+}
+
+/* 2. บังคับกล่องเนื้อหาหลักให้คำนวณขนาดแบบหักลบพื้นที่ Sidebar */
+.dashboard-container {
+  margin-left: 260px; /* ขยับหลบสไลด์บาร์พอดีเป๊ะ */
+  
+  /* ✨ สูตรเด็ด: ความกว้างต้องเอา 100% ของจอ ไปหักลบพื้นที่ของสไลด์บาร์ออก (260px) */
+  width: calc(100% - 260px); 
+  
+  padding: 24px; /* ระยะห่างเนื้อหาด้านใน */
+  box-sizing: border-box; /* บังคับให้นับ Padding รวมอยู่ในความกว้าง ไม่ให้บวมเพิ่ม */
+  min-height: 100vh;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

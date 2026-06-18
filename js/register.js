@@ -49,7 +49,7 @@ document.getElementById('form-register-pvt').addEventListener('submit', async fu
         }
 
         alert("🎉 สมัครสมาชิกสำเร็จเรียบร้อย! สามารถนำบัญชีไปล็อกอินเข้าใช้งานระบบได้ทันทีครับ");
-        window.location.href = "login2.html"; 
+        window.location.href = "login.html"; 
 
     } catch (err) {
         alert("❌ สมัครไม่สำเร็จ: " + err.message);
@@ -108,7 +108,7 @@ async function handleRegister(event) {
             alert(`🎉 สมัครสมาชิกสำเร็จ! รหัสพนักงานของคุณคือ: ${usernameInput}`);
             
             // วาร์ปพนักงานกลับไปหน้าล็อกอินหลัก
-            window.location.href = "login2.html";
+            window.location.href = "login.html";
         }
 
     } catch (error) {
