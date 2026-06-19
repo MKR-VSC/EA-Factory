@@ -10,7 +10,7 @@
 // =========================================================
 
 const LOGIN_PAGE = "login.html";
-const FORM_PAGE = "html/form-department.html";
+const FORM_PAGE = "pages/form-department.html";
 
 const ALLOWED_ROLES = [
   "admin",
