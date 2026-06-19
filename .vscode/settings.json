@@ -1,4 +1,13 @@
 {
-    "folder-color.pathColors": [],
-    "liveServer.settings.port": 5501
+  "folder-color.pathColors": [],
+  "liveServer.settings.port": 5501,
+
+  "[markdown]": {
+    "editor.spellCheck": false
+  },
+
+  "cSpell.enabled": false,
+  "errorLens.enabled": false,
+  "cSpell.diagnosticLevel": "Hint",
+"cSpell.enableFiletypes": []
 }

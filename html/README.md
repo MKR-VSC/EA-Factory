@@ -1,0 +1,17 @@
+# Pages
+
+เก็บหน้าต่าง ๆ ของระบบ
+
+## โครงสร้าง
+
+- dashboard/
+- accounting/
+- production/
+- management/
+- admin/
+
+แต่ละโฟลเดอร์ควรมี
+
+- html
+- css
+- js
