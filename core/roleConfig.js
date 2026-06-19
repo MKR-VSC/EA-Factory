@@ -1,151 +1,149 @@
 // ======================================================
-// roleConfig.js
-// กำหนดสิทธิ์และหน้า default ของแต่ละ role
-// โหลดไฟล์นี้ก่อน auth.js ทุกหน้า
-//
-// ⚠️ สำคัญ: role key ต้องตรงกับค่าที่เก็บใน DB (profiles.role)
-//    - admin, adminQc, manager, executive, sales, user
-//    - ใช้ camelCase → "adminQc" (ไม่ใช่ "adminQC")
+// ROLE CONFIGURATION
+// src/core/roleConfig.js
 // ======================================================
 
-const ROLE_CONFIG = {
-
-  // -------------------------------------------------------
-  // ADMIN — เข้าได้ทุกหน้า
-  // -------------------------------------------------------
-  admin: {
-    defaultPage: '/pages/admin/adminDashboard.html',
-    allowedPages: [
-      '/pages/admin/adminDashboard.html',
-      '/pages/admin/admintor.html',
-      '/pages/admin/adminSales.html',
-      '/pages/admin/adminShops.html',
-      '/pages/admin/adminUsers.html',
-      '/pages/admin/AddProductSpec.html',
-      '/pages/manager/index.html',
-      '/pages/manager/managerDashboard.html',
-      '/pages/manager/reportManager.html',
-      '/pages/qc/qcDashboard.html',
-      '/pages/executive/executiveDashboard.html',
-      '/pages/sales/salesDashboard.html',
-      '/pages/sales/salesReport.html',
-      '/pages/executive/rfmDashboard.html',   // ← เพิ่มบรรทัดนี้
-      '/pages/admin/rfmImport.html',           // ← เพิ่มบรรทัดนี้
-      '/pages/admin/Adminannouncements.html'
-      // ✅ เพิ่มหน้าใหม่ตรงนี้
-    ]
-  },
-
-  // -------------------------------------------------------
-  // ADMIN QC — จัดการ QC dashboard
-  // ⚠️ key ต้องเป็น "adminQc" (ตัว c เล็ก) ให้ตรงกับ DB
-  // -------------------------------------------------------
-  adminQc: {
-    defaultPage: '/pages/dashboard/QcDashboard.html',
-    allowedPages: [
-      '/pages/dashboard/QcDashboard.html',
-      '/pages/admin/adminQc.html',
-      
-      // ✅ เพิ่มหน้าใหม่ตรงนี้
-    ]
-  },
-
-  // -------------------------------------------------------
-  // MANAGER — ดูรายงานและ dashboard ของตัวเอง
-  // -------------------------------------------------------
-  manager: {
-    defaultPage: '/index.html',
-    allowedPages: [
-      '/index.html',
-      '/pages/dashboard/RfmDashboard.html',
-      '/pages/reports/reportTracker.html',
-      '/pages/components/rfmImport.html',
-      '/pages/reports/reportManager.html',
-      '/pages/dashboard/managerDashboard.html',
-      '/pages/admin/Adminannouncements.html',
-      // ✅ เพิ่มหน้าใหม่ตรงนี้
-    ]
-  },
-
-  // -------------------------------------------------------
-  // EXECUTIVE — ดู dashboard ภาพรวมและรายงาน
-  // -------------------------------------------------------
-  executive: {
-    defaultPage: '/pages/executive/executive-Dashboard.html',
-    allowedPages: [
-      '/pages/executive/executiveHome.html',
-      '/pages/Qc-claim/claim-evaluation.html',
-      '/pages/executive/executive-Dashboard.html',
-      '/pages/executive/rfmDashboard.html', 
-      '/pages/manager/reportManager.html',
-      // ✅ เพิ่มหน้าใหม่ตรงนี้
-    ]
-  },
-
-  // -------------------------------------------------------
-  // SALES — หน้า sales ของตัวเอง
-  // -------------------------------------------------------
-  sales: {
-    defaultPage: '/index.html',
-    allowedPages: [
-      '/pages/sales/salesDashboard.html',
-      '/pages/sales/salesReport.html',
-      '/pages/forms/formActual.html',
-      '/pages/forms/formHub.html',
-      '/pages/forms/formClaim.html',
-      '/pages/forms/credit-limit-sale.html',
-      // ✅ เพิ่มหน้าใหม่ตรงนี้
-    ]
-  },
-
-  // -------------------------------------------------------
-  // USER — ผู้ใช้ทั่วไป (ยังไม่ได้รับ role อื่น)
-  // -------------------------------------------------------
-  user: {
-    defaultPage: '/pages/sales/salesDashboard.html',
-    allowedPages: [
-      '/pages/sales/salesDashboard.html',
-      // ✅ เพิ่มหน้าใหม่ตรงนี้
-    ]
-  }
-
+/**
+ * 🎯 รายชื่อ Role ที่รองรับ
+ */
+export const ROLES = {
+  ADMIN: "admin",
+  MANAGEMENT: "management",
+  ACCOUNTING: "accounting",
+  SUPERVISOR: "supervisor",
+  STAFF: "staff",
 };
 
-// ======================================================
-// 🔧 HELPER FUNCTIONS
-// ======================================================
+/**
+ * 🎯 ชื่อแสดงผลภาษาไทย
+ */
+export const ROLE_LABELS = {
+  admin: "ผู้ดูแลระบบ",
+  management: "ผู้บริหาร",
+  accounting: "ฝ่ายบัญชี",
+  supervisor: "หัวหน้างาน",
+  staff: "พนักงาน",
+};
 
 /**
- * ดึง config ของ role นั้น
- * @param {string} role
- * @returns {object|null}
+ * 🎯 หน้าแรกของแต่ละ Role
  */
-function getRoleConfig(role) {
-  return ROLE_CONFIG[role] || null;
+export const ROLE_HOME_PAGES = {
+  admin: "/html/admintor.html",
+  management: "/html/dashboard.html",
+  accounting: "/html/accounting-panel.html",
+  supervisor: "/pages/form-department.html",
+  staff: "/pages/form-department.html",
+};
+
+/**
+ * 🎯 Normalize Role
+ */
+export function normalizeRole(role) {
+  return String(role || "")
+    .toLowerCase()
+    .trim();
 }
 
 /**
- * หน้า default ของ role นั้น
- * ถ้าไม่มี config → ไปหน้า login
- * @param {string} role
- * @returns {string}
+ * 🎯 ตรวจสอบ Role ถูกต้องหรือไม่
  */
-function getDefaultPage(role) {
-  return ROLE_CONFIG[role]?.defaultPage || '/pages/auth/login.html';
+export function isValidRole(role) {
+  return Object.values(ROLES).includes(normalizeRole(role));
 }
 
 /**
- * เช็คว่า role นั้นเข้าหน้านี้ได้ไหม
- * @param {string} role
- * @param {string} path — window.location.pathname
- * @returns {boolean}
+ * 🎯 คืนชื่อภาษาไทย
  */
-function canAccessPage(role, path) {
-  const config = ROLE_CONFIG[role];
-  if (!config) return false;
-  // admin เข้าได้ทุกหน้า
-  if (role === 'admin') return true;
-  return config.allowedPages.some(p => path.includes(p));
+export function getRoleLabel(role) {
+  const currentRole = normalizeRole(role);
+
+  return (
+    ROLE_LABELS[currentRole] ||
+    ROLE_LABELS.staff
+  );
 }
 
-console.log('✅ roleConfig.js loaded');
+/**
+ * 🎯 คืนหน้าแรกตาม Role
+ */
+export function getHomePage(role) {
+  const currentRole = normalizeRole(role);
+
+  return (
+    ROLE_HOME_PAGES[currentRole] ||
+    ROLE_HOME_PAGES.staff
+  );
+}
+
+/**
+ * 🎯 กลุ่มผู้บริหาร
+ */
+export function isManagement(role) {
+  const currentRole = normalizeRole(role);
+
+  return [
+    ROLES.ADMIN,
+    ROLES.MANAGEMENT,
+  ].includes(currentRole);
+}
+
+/**
+ * 🎯 กลุ่มอนุมัติ
+ */
+export function canApprove(role) {
+  const currentRole = normalizeRole(role);
+
+  return [
+    ROLES.ADMIN,
+    ROLES.MANAGEMENT,
+    ROLES.SUPERVISOR,
+  ].includes(currentRole);
+}
+
+/**
+ * 🎯 กลุ่มดูรายงานทั้งหมด
+ */
+export function canViewAllReports(role) {
+  const currentRole = normalizeRole(role);
+
+  return [
+    ROLES.ADMIN,
+    ROLES.MANAGEMENT,
+    ROLES.ACCOUNTING,
+  ].includes(currentRole);
+}
+
+/**
+ * 🎯 กลุ่มจัดการ User
+ */
+export function canManageUsers(role) {
+  const currentRole = normalizeRole(role);
+
+  return currentRole === ROLES.ADMIN;
+}
+
+/**
+ * 🎯 กลุ่มจัดการข้อมูลต้นทุน
+ */
+export function canManageCost(role) {
+  const currentRole = normalizeRole(role);
+
+  return [
+    ROLES.ADMIN,
+    ROLES.ACCOUNTING,
+  ].includes(currentRole);
+}
+
+/**
+ * 🎯 กลุ่มกรอกข้อมูลของเสีย
+ */
+export function canCreateWasteReport(role) {
+  const currentRole = normalizeRole(role);
+
+  return [
+    ROLES.ADMIN,
+    ROLES.SUPERVISOR,
+    ROLES.STAFF,
+  ].includes(currentRole);
+}

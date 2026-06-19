@@ -60,7 +60,11 @@
           autocomplete="name"
         />
 
-        <button type="button" class="btn-start-form" onclick="confirmStaffName()">
+        <button
+          type="button"
+          class="btn-start-form"
+          onclick="confirmStaffName()"
+        >
           เริ่มกรอกข้อมูล
         </button>
 
@@ -160,16 +164,19 @@
               </span>
 
               <span class="badge badge-status-online" id="network-status">
-                <span class="material-symbols-outlined">fiber_manual_record</span>
+                <span class="material-symbols-outlined"
+                  >fiber_manual_record</span
+                >
                 ระบบออนไลน์
               </span>
             </div>
           </header>
 
-          <section class="qr-info-card">
-            <strong>ลิงก์แผนกนี้สำหรับทำ QR:</strong>
-            <span id="current-dept-link">กำลังโหลดลิงก์...</span>
-          </section>
+          <div class="current-dept-box">
+            <span class="material-symbols-outlined">location_on</span>
+            <strong>แผนกปัจจุบัน :</strong>
+            <span id="current-dept-label">-</span>
+          </div>
 
           <section class="form-container-card">
             <form id="department-waste-form">
@@ -237,29 +244,27 @@
                 </select>
               </div>
 
-              <div id="manager-only-section" class="manager-only-section">
-                <div class="form-group">
-                  <label for="waste-weight">
-                    <span class="material-symbols-outlined label-icon green">
-                      scale
-                    </span>
-                    น้ำหนักของเสียที่เกิดขึ้น (กิโลกรัม)
-                    <span class="required">*</span>
-                  </label>
+              <div class="form-group">
+                <label for="waste-weight">
+                  <span class="material-symbols-outlined label-icon green">
+                    scale
+                  </span>
+                  น้ำหนักของเสียที่เกิดขึ้น (กิโลกรัม)
+                  <span class="required">*</span>
+                </label>
 
-                  <input
-                    type="number"
-                    id="waste-weight"
-                    step="0.01"
-                    placeholder="0.00"
-                    class="form-input"
-                  />
+                <input
+                  type="number"
+                  id="waste-weight"
+                  step="0.01"
+                  placeholder="0.00"
+                  class="form-input"
+                />
 
-                  <small class="helper-text">
-                    กรอกน้ำหนักเนื้อฟิล์มหรือเศษเสียชั่งจริง (กก.)
-                    เพื่อคำนวณต้นทุน
-                  </small>
-                </div>
+                <small class="helper-text">
+                  กรอกน้ำหนักเนื้อฟิล์มหรือเศษเสียชั่งจริง (กก.)
+                  เพื่อคำนวณต้นทุน
+                </small>
               </div>
 
               <div class="form-group">

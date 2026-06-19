@@ -16,6 +16,43 @@ const LOGIN_PAGE = "/login.html";
 const ROLE_OPTIONS = ["staff", "supervisor", "accounting", "management", "admin"];
 const STATUS_OPTIONS = ["active", "inactive"];
 
+/* =========================================================
+   DEPARTMENT QR CONFIG
+   ---------------------------------------------------------
+   ส่วนนี้คือ "รายการแผนก" ที่แอดมินจะเอาไปสร้าง QR Code
+
+   วิธีแก้:
+   - name = ชื่อแผนกภาษาไทยที่อยากให้แสดงบนหน้า Admin
+   - code = รหัสแผนกที่จะส่งไปกับ URL
+   - path = path หน้าฟอร์มที่พนักงานจะเปิดจาก QR
+
+   ตัวอย่าง URL ที่ได้:
+   https://เว็บของเรา/pages/department-form.html?dept=BLOW
+
+   หมายเหตุ:
+   ถ้าหน้าฟอร์มของคุณไม่ได้ชื่อ department-form.html
+   ให้แก้ path ตรงนี้ให้ตรงกับไฟล์จริงได้เลยค่ะ
+========================================================= */
+
+const DEPARTMENT_QR_LIST = [
+  {
+    name: "เป่าถุง",
+    code: "BLOW",
+    path: "/pages/department-form.html?dept=BLOW",
+  },
+  {
+    name: "ท่อ",
+    code: "PIPE",
+    path: "/pages/department-form.html?dept=PIPE",
+  },
+  {
+    name: "ตัดผืน",
+    code: "SHEET",
+    path: "/pages/department-form.html?dept=SHEET",
+  },
+];
+
+
 const state = {
   supabase: null,
   reports: [],
@@ -90,6 +127,10 @@ async function initAdminPanel() {
     renderEmptyTable("tb", 7, "ไม่พบ Supabase Client");
     return;
   }
+
+  // วาดรายการ QR แผนกทันที
+  // เมนูนี้ไม่ต้องรอ Supabase เพราะเป็นลิงก์คงที่สำหรับทำ QR
+  renderDepartmentQrList();
 
   await loadAll();
 }
@@ -725,6 +766,96 @@ function clearUserForm() {
   setValue("user-role", "staff");
 }
 
+
+/* =========================================================
+   DEPARTMENT QR MANAGEMENT
+   ---------------------------------------------------------
+   ใช้สำหรับหน้า "จัดการ QR แผนก"
+
+   สิ่งที่โค้ดส่วนนี้ทำ:
+   1) เอารายการจาก DEPARTMENT_QR_LIST มาแสดงเป็นการ์ด
+   2) สร้างลิงก์เต็มจากโดเมนเว็บปัจจุบัน เช่น https://xxx.pages.dev
+   3) ปุ่ม "คัดลอกลิงก์" จะ copy URL ให้แอดมินเอาไปใช้
+   4) ปุ่ม "สร้าง QR" จะเปิดหน้า QR Code ใหม่
+========================================================= */
+
+function renderDepartmentQrList() {
+  const box = document.getElementById("department-qr-list");
+
+  // ถ้าใน HTML ยังไม่มี id="department-qr-list"
+  // ให้หยุดทำงาน เพื่อไม่ให้หน้าอื่น error
+  if (!box) return;
+
+  // origin คือโดเมนเว็บปัจจุบัน เช่น
+  // https://prod-ea-factory.pages.dev
+  const origin = window.location.origin;
+
+  box.innerHTML = DEPARTMENT_QR_LIST.map((dept) => {
+    const fullUrl = `${origin}${dept.path}`;
+
+    return `
+      <article class="qr-dept-card">
+        <div class="qr-dept-info">
+          <strong>${escapeHtml(dept.name)} (${escapeHtml(dept.code)})</strong>
+          <small>${escapeHtml(fullUrl)}</small>
+        </div>
+
+        <div class="qr-dept-actions">
+          <button
+            class="btn btn-secondary"
+            type="button"
+            onclick="copyDepartmentLink('${escapeAttr(fullUrl)}')"
+          >
+            คัดลอกลิงก์
+          </button>
+
+          <button
+            class="btn btn-primary"
+            type="button"
+            onclick="openDepartmentQr('${escapeAttr(fullUrl)}')"
+          >
+            สร้าง QR
+          </button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function copyDepartmentLink(url) {
+  if (!url) return;
+
+  try {
+    // navigator.clipboard ใช้สำหรับ copy ข้อความเข้าคลิปบอร์ด
+    // ใช้งานได้ดีบนเว็บ https
+    await navigator.clipboard.writeText(url);
+    alert("คัดลอกลิงก์แล้วค่ะ");
+    addLog("INFO", `คัดลอกลิงก์ QR: ${url}`);
+  } catch (err) {
+    // บางเครื่อง / บางเบราว์เซอร์ อาจไม่อนุญาตให้ copy อัตโนมัติ
+    // จึงเปิด prompt ให้ผู้ใช้กด Ctrl+C เองแทน
+    prompt("คัดลอกลิงก์นี้:", url);
+  }
+}
+
+function openDepartmentQr(url) {
+  if (!url) return;
+
+  /*
+    ใช้ QuickChart สร้าง QR Code แบบฟรี
+    ไม่ต้องติดตั้ง library เพิ่มในโปรเจกต์
+
+    ถ้าภายหลังอยากทำ QR เองในหน้าเว็บ
+    ค่อยเปลี่ยนเป็น qrcode.js ได้ค่ะ
+  */
+  const qrUrl =
+    "https://quickchart.io/qr?size=500&text=" + encodeURIComponent(url);
+
+  window.open(qrUrl, "_blank", "noopener,noreferrer");
+  addLog("INFO", `เปิด QR Code: ${url}`);
+}
+
+
 /* =========================================================
    HELPERS
 ========================================================= */
@@ -866,6 +997,15 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+
+function escapeAttr(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+
 function createUuid() {
   if (window.crypto?.randomUUID) {
     return window.crypto.randomUUID();
@@ -887,3 +1027,7 @@ window.logout = logout;
 window.updateUserRole = updateUserRole;
 window.updateUserStatus = updateUserStatus;
 window.deleteUser = deleteUser;
+
+// ให้ปุ่มใน HTML เรียกใช้ฟังก์ชัน QR ได้
+window.copyDepartmentLink = copyDepartmentLink;
+window.openDepartmentQr = openDepartmentQr;

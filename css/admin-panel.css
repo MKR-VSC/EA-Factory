@@ -1,394 +1,570 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Sarabun:wght@400;500;600;700&display=swap');
+/* =========================================================
+   ADMIN PANEL STYLE
+   แยกออกจาก HTML แล้ว
+========================================================= */
 
 :root {
-    --bg-base: #060913;
-    --bg-surface: #0d1220;
-    --bg-card: #141b2f;
-    --neon-blue: #06b6d4;
-    --neon-green: #10b981;
-    --neon-red: #ef4444;
-    --neon-purple: #a855f7;
-    --neon-orange: #f59e0b;
-    --border-glow: #1e293b;
-    --text-primary: #f8fafc;
-    --text-muted: #64748b;
+  --bg: #0f172a;
+  --panel: #111827;
+  --panel-soft: #172033;
+  --panel-border: rgba(148, 163, 184, 0.18);
+  --text: #e5e7eb;
+  --muted: #94a3b8;
+  --blue: #38bdf8;
+  --green: #22c55e;
+  --red: #ef4444;
+  --orange: #f97316;
+  --purple: #a855f7;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
 }
 
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    background-color: var(--bg-base);
-    font-family: 'Sarabun', 'Fira Code', sans-serif;
-    color: var(--text-primary);
+* {
+  box-sizing: border-box;
 }
 
-/* 🔒 หน้าต่างล็อกอินกึ่งกลางหน้าจอ 100% */
-.auth-wrapper {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: radial-gradient(circle at center, #111827 0%, #030712 100%);
-    z-index: 9999;
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Kanit", "Noto Sans Thai", system-ui, -apple-system, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 35%),
+    radial-gradient(circle at top right, rgba(168, 85, 247, 0.12), transparent 35%),
+    var(--bg);
 }
 
-.login-gate {
-    background: var(--bg-surface);
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 0 30px rgba(6, 182, 212, 0.2);
-    text-align: center;
-    max-width: 420px;
-    width: 100%;
-    border: 2px solid var(--neon-blue);
-    box-sizing: border-box;
-}
-
-.login-gate h2 {
-    color: var(--neon-blue);
-    margin-top: 0;
-    text-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
-    font-size: 24px;
-}
-
-.form-control {
-    width: 100%;
-    padding: 14px;
-    margin: 20px 0;
-    border-radius: 6px;
-    border: 1px solid #334155;
-    background: #020617;
-    color: #ffffff;
-    font-size: 16px;
-    box-sizing: border-box;
-    text-align: center;
-    font-family: 'Fira Code', monospace;
-}
-.form-control:focus {
-    outline: none;
-    border-color: var(--neon-green);
-    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
-}
-
-.btn-login {
-    background: transparent;
-    color: var(--neon-green);
-    border: 2px solid var(--neon-green);
-    padding: 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    width: 100%;
-    text-transform: uppercase;
-    transition: all 0.3s ease;
-}
-.btn-login:hover {
-    background: var(--neon-green);
-    color: #000000;
-    box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
-}
-
-/* 📊 แผงโครงสร้างหลัก Sidebar Menu + Workspace */
-.dashboard-layout {
-    display: flex;
-    min-height: 100vh;
-    width: 100%;
-}
-
-.sidebar {
-    width: 260px;
-    background: var(--bg-surface);
-    border-right: 1px solid #1e293b;
-    display: flex;
-    flex-direction: column;
-}
-
-.sidebar-logo {
-    padding: 24px;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--neon-blue);
-    text-shadow: 0 0 8px rgba(6, 182, 212, 0.3);
-    border-bottom: 1px solid #1e293b;
-}
-
-.sidebar-menu {
-    padding: 20px 0;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.sidebar-item {
-    padding: 14px 24px;
-    color: #94a3b8;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    transition: all 0.2s;
-}
-.sidebar-item:hover, .sidebar-item.active {
-    color: white;
-    background: rgba(6, 182, 212, 0.05);
-}
-.sidebar-item.active {
-    border-left: 4px solid var(--neon-blue);
-    color: var(--neon-blue);
-    font-weight: bold;
-}
-
-.main-workspace {
-    flex: 1;
-    padding: 30px;
-    background: var(--bg-base);
-    overflow-y: auto;
-}
-
-.workspace-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-    border-bottom: 1px solid #1e293b;
-    padding-bottom: 15px;
-}
-.workspace-header h1 {
-    margin: 0;
-    font-size: 24px;
-    color: white;
-}
-
-/* 📊 Layout Grid สำหรับการแสดงสถานะและการตรวจเช็คความละเอียดสูง */
-.metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 10fr));
-    gap: 15px;
-    margin-bottom: 25px;
-}
-
-.metric-card {
-    background: var(--bg-surface);
-    border: 1px solid #1e293b;
-    padding: 18px;
-    border-radius: 10px;
-    position: relative;
-    overflow: hidden;
-}
-
-.metric-card .title {
-    font-size: 12px;
-    color: #94a3b8;
-    text-transform: uppercase;
-    font-weight: 600;
-}
-
-.metric-card .value {
-    font-size: 24px;
-    font-weight: bold;
-    margin-top: 5px;
-}
-
-.metric-card .subtitle {
-    font-size: 12px;
-    color: #64748b;
-    margin-top: 4px;
-}
-
-.mini-glow-bar {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 3px;
-}
-
-/* ⚙️ บล็อกย่อยสำหรับการแจกแจงอุปกรณ์และระบบความปลอดภัยภายในตัวการ์ด */
-.sub-stat-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    color: #94a3b8;
-    margin-top: 5px;
-}
-
-/* 🔘 ปุ่มคำสั่งจัดการ */
-.control-panel {
-    background: var(--bg-surface);
-    border: 1px solid #1e293b;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    display: flex;
-    gap: 10px;
+button,
+input {
+  font: inherit;
 }
 
 button {
-    padding: 10px 18px;
-    border-radius: 6px;
-    border: none;
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s;
+  cursor: pointer;
+  border: 0;
 }
 
-.btn-blue { background: transparent; color: var(--neon-blue); border: 1px solid var(--neon-blue); }
-.btn-blue:hover { background: var(--neon-blue); color: black; box-shadow: 0 0 10px rgba(6, 182, 212, 0.4); }
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
 
-.btn-gray { background: #1e293b; color: white; }
-.btn-gray:hover { background: #334155; }
+/* =========================================================
+   SIDEBAR
+========================================================= */
 
-.btn-red { background: transparent; color: var(--neon-red); border: 1px solid var(--neon-red); }
-.btn-red:hover { background: var(--neon-red); color: white; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 22px 16px;
+  background: rgba(15, 23, 42, 0.88);
+  border-right: 1px solid var(--panel-border);
+  backdrop-filter: blur(14px);
+}
 
-/* 📊 ส่วนแสดงผลตารางฐานข้อมูล */
-.data-table-container {
-    background: var(--bg-surface);
-    border: 1px solid #1e293b;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 25px;
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px 22px;
+  font-weight: 700;
+  color: white;
+}
+
+.sidebar-menu {
+  display: grid;
+  gap: 8px;
+}
+
+.sidebar-item {
+  display: block;
+  padding: 12px 14px;
+  color: var(--muted);
+  text-decoration: none;
+  border-radius: 14px;
+  transition: 0.18s ease;
+}
+
+.sidebar-item:hover,
+.sidebar-item.active {
+  color: white;
+  background: rgba(56, 189, 248, 0.12);
+}
+
+/* =========================================================
+   LAYOUT
+========================================================= */
+
+.main-workspace {
+  padding: 26px;
+}
+
+.workspace-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.workspace-title {
+  margin: 0 0 8px;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.2;
+}
+
+.workspace-subtitle {
+  margin: 0;
+  max-width: 900px;
+  color: var(--muted);
+}
+
+/* =========================================================
+   CARDS
+========================================================= */
+
+.metrics-grid,
+.stats-grid,
+.main-management-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.metrics-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.metric-card,
+.stat-card,
+.admin-box,
+.log-box,
+.spec-box,
+.data-table-container,
+.log-section {
+  background: rgba(17, 24, 39, 0.86);
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+
+.metric-card {
+  position: relative;
+  overflow: hidden;
+  padding: 18px;
+}
+
+.metric-card .title {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.metric-card .value {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.subtitle,
+.sub-stat-row {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.sub-stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+}
+
+.stat-value,
+.bold {
+  font-weight: 800;
+}
+
+.mono-code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.mini-glow-bar {
+  height: 3px;
+  margin-top: 14px;
+  border-radius: 99px;
+}
+
+.neon-green { background: var(--green); box-shadow: 0 0 18px var(--green); }
+.neon-blue { background: var(--blue); box-shadow: 0 0 18px var(--blue); }
+.neon-purple { background: var(--purple); box-shadow: 0 0 18px var(--purple); }
+.neon-red { background: var(--red); box-shadow: 0 0 18px var(--red); }
+
+.text-neon-green { color: var(--green); }
+.text-neon-blue { color: var(--blue); }
+.text-neon-orange { color: var(--orange); }
+.text-neon-red { color: var(--red); }
+
+/* =========================================================
+   SERVER SPEC
+========================================================= */
+
+.spec-box {
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.spec-header {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.spec-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  border-top: 1px solid var(--panel-border);
+  color: var(--muted);
+}
+
+.spec-line span:last-child {
+  color: var(--text);
+  text-align: right;
+}
+
+.spec-highlight,
+.spec-runtime {
+  color: var(--blue) !important;
+}
+
+/* =========================================================
+   BUTTONS / FORM
+========================================================= */
+
+.control-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.btn-blue,
+.btn-gray,
+.btn-red,
+.btn-green {
+  padding: 10px 14px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 700;
+}
+
+.btn-blue { background: #0284c7; }
+.btn-gray { background: #475569; }
+.btn-red { background: #dc2626; }
+.btn-green { background: #16a34a; }
+
+.btn-blue:hover,
+.btn-gray:hover,
+.btn-red:hover,
+.btn-green:hover {
+  filter: brightness(1.12);
+}
+
+.form-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.form-group input {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  color: var(--text);
+  background: #0b1220;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  outline: none;
+}
+
+.form-group input:focus {
+  border-color: rgba(56, 189, 248, 0.65);
+}
+
+/* =========================================================
+   TABLES
+========================================================= */
+
+.data-table-container,
+.log-box {
+  overflow: hidden;
+}
+
+.table-header {
+  padding: 14px 18px;
+  font-weight: 800;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.table-scroll {
+  overflow-x: auto;
 }
 
 table {
-    width: 100%;
-    border-collapse: collapse;
+  width: 100%;
+  border-collapse: collapse;
 }
 
-th, td {
-    padding: 14px 18px;
-    border-bottom: 1px solid #1e293b;
-    font-size: 14px;
+th,
+td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--panel-border);
+  text-align: left;
+  vertical-align: top;
 }
 
 th {
-    background: #090d16;
-    color: var(--neon-blue);
-    font-weight: bold;
-    font-size: 13px;
+  color: var(--muted);
+  font-size: 13px;
+  background: rgba(15, 23, 42, 0.8);
 }
 
-tr:hover { background: rgba(255, 255, 255, 0.01); }
-
-.badge {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: bold;
+td {
+  color: #d1d5db;
 }
 
-/* 🖥️ กล่องเปิดแสดงรายละเอียดเซิร์ฟเวอร์ */
-.spec-box {
-    background: #020617;
-    border: 1px dashed #334155;
-    border-radius: 8px;
-    padding: 15px;
-    margin-top: 10px;
-    font-size: 14px;
-    color: #e2e8f0;
-    display: none;
-}
-.spec-line {
-    margin-bottom: 5px;
-    display: flex;
-    justify-content: space-between;
+.tb-empty {
+  padding: 28px;
+  color: var(--muted);
+  text-align: center;
 }
 
-/* 📜 Terminal Logs อมตะห้ามล็อกหาย */
+.w-8 { width: 8%; }
+.w-12 { width: 12%; }
+.w-16 { width: 16%; }
+.w-18 { width: 18%; }
+
+/* =========================================================
+   DAILY DEFECT ADMIN
+========================================================= */
+
+.dashboard-container {
+  margin-top: 18px;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  padding: 18px;
+}
+
+.stat-card p {
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+
+.stat-card h2 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.stat-card h2 span {
+  font-size: 16px;
+}
+
+.pending {
+  border-color: rgba(249, 115, 22, 0.35);
+}
+
+.main-management-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-box,
+.log-box,
 .log-section {
-    background: #020617;
-    border: 1px solid #1e293b;
-    border-radius: 10px;
-    padding: 15px;
+  padding: 18px;
 }
+
+.admin-box h3,
+.log-box h3 {
+  margin: 0 0 8px;
+}
+
+.data-list {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 16px 0 0;
+  list-style: none;
+}
+
+.data-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+}
+
+.log-box {
+  margin-top: 16px;
+}
+
+/* =========================================================
+   SYSTEM LOG
+========================================================= */
+
+.log-section {
+  margin-top: 18px;
+}
+
 .log-title {
-    font-size: 14px;
-    color: var(--neon-purple);
-    font-weight: bold;
-    margin-bottom: 10px;
+  font-weight: 800;
+  margin-bottom: 12px;
 }
+
 .log-container {
-    max-height: 220px;
-    overflow-y: auto;
-    font-family: 'Fira Code', 'Sarabun', monospace;
-    font-size: 12px;
-    color: var(--neon-green);
-    background: #000000;
-    padding: 12px;
-    border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow: auto;
 }
+
 .log-item {
-    margin-bottom: 4px;
-    border-bottom: 1px dashed #111827;
-    white-space: pre-wrap;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  color: #d1d5db;
 }
 
-   /* 🎨 ปรับปรุง UI เพิ่มเติมให้ขนาดปุ่ม ช่องกรอกข้อมูล และ Dropdown ใหญ่ขึ้นเต็มตา กดง่ายขึ้น */
-        .form-group label {
-            font-size: 16px !important; 
-            font-weight: 600;
-            margin-bottom: 8px;
-            display: block;
-        }
-        
-        .form-group input[type="datetime-local"],
-        .form-group select,
-        .form-group textarea {
-            font-size: 16px !important; 
-            padding: 14px 16px !important; 
-            border-radius: 8px !important; 
-            line-height: 1.5;
-        }
+.log-item.muted {
+  color: var(--muted);
+}
 
-        .form-actions .btn-submit,
-        .form-actions .btn-clear {
-            font-size: 18px !important;
-            padding: 14px 28px !important;
-            font-weight: 700;
-            border-radius: 8px !important;
-            cursor: pointer;
-        }
+/* =========================================================
+   RESPONSIVE
+========================================================= */
 
-        #nav-dashboard-link {
-            display: none;
-        }
+@media (max-width: 1200px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
-           /* Remove inline style from status-total-devices */
-        .value.total-devices { color: var(--neon-blue); }
-        #status-api { color: #64748b; }
-        .login-gate p { color: #64748b; font-size: 13px; }
-        .workspace-title { text-shadow: 0 0 10px rgba(6, 182, 212, 0.2); }
-        .workspace-subtitle { color: #64748b; margin: 4px 0 0 0; font-size: 13px; }
-        #admin-main { display: none; }
-        /* mini glow bar color classes to avoid inline styles */
-        .mini-glow-bar { height: 6px; border-radius: 4px; margin-top: 8px; }
-        .mini-glow-bar.neon-green { background: var(--neon-green); }
-        .mini-glow-bar.neon-purple { background: var(--neon-purple); }
-        .mini-glow-bar.neon-red { background: var(--neon-red); }
-        /* text color utility classes to replace inline styles */
-        .text-neon-green { color: var(--neon-green); }
-        .text-neon-blue { color: var(--neon-blue); }
-        .text-neon-orange { color: var(--neon-orange); }
-        .text-neon-red { color: var(--neon-red); }
-        .text-neon-yellow { color: #f59e0b; }
-        .text-neon-orange { color: var(--neon-orange); }
-        .mono-code { font-family: 'Fira Code'; color: white; }
-        .bold { font-weight: bold; }
-        .spec-header { color: var(--neon-blue); font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #1e293b; padding-bottom: 4px; }
-        .spec-highlight { color: var(--neon-green); }
-        .spec-runtime { color: #f59e0b; }
-        .control-panel { margin-top: 15px; }
-        /* moved inline styles into classes to satisfy lint */
-        .table-header { padding: 15px 20px; font-weight: bold; background: #0c101c; border-bottom: 1px solid #1e293b; }
-        .table-scroll { overflow-x: auto; }
-        .tb-empty { text-align: center; color: #64748b; padding: 25px; }
-        th.w-8 { width: 8%; }
-        th.w-18 { width: 18%; }
-        th.w-12 { width: 12%; }
-        th.w-16 { width: 16%; }
-        .muted { color: #64748b; }
-        {}
+@media (max-width: 900px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+  }
+
+  .workspace-header,
+  .spec-line {
+    flex-direction: column;
+  }
+
+  .spec-line span:last-child {
+    text-align: left;
+  }
+
+  .main-management-grid,
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .main-workspace {
+    padding: 16px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .control-panel,
+  .form-group {
+    flex-direction: column;
+  }
+
+  .btn-blue,
+  .btn-gray,
+  .btn-red,
+  .btn-green {
+    width: 100%;
+  }
+}
+
+
+:root{
+  --bg:#0f172a;--surface:#111c33;--panel:#16223b;--panel2:#1c2b48;--text:#e5edf8;--muted:#8ea0bd;
+  --line:rgba(148,163,184,.18);--primary:#38bdf8;--success:#22c55e;--warning:#f59e0b;--danger:#ef4444;
+  --radius:18px;--shadow:0 20px 60px rgba(0,0,0,.32)
+}
+*{box-sizing:border-box} body{margin:0;font-family:"Noto Sans Thai","Kanit",system-ui,sans-serif;background:var(--bg);color:var(--text)}
+.app-shell{display:grid;grid-template-columns:280px 1fr;min-height:100vh}.sidebar{background:#0b1224;border-right:1px solid var(--line);padding:22px;position:sticky;top:0;height:100vh}.sidebar-logo{display:flex;gap:12px;align-items:center;margin-bottom:24px}.logo-icon{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,#38bdf8,#22c55e);display:grid;place-items:center}.sidebar-logo strong{display:block}.sidebar-logo small{color:var(--muted)}.sidebar-menu{display:grid;gap:10px}.sidebar-item{border:1px solid transparent;background:transparent;color:var(--muted);padding:13px 14px;border-radius:14px;text-align:left;cursor:pointer;font:inherit}.sidebar-item:hover,.sidebar-item.active{background:rgba(56,189,248,.12);border-color:rgba(56,189,248,.25);color:var(--text)}
+.main-workspace{padding:28px;min-width:0}.workspace-header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:20px}.workspace-header h1{margin:0 0 6px;font-size:28px}.workspace-header p{margin:0;color:var(--muted)}
+.btn{border:0;border-radius:12px;padding:11px 16px;font:inherit;font-weight:700;color:white;cursor:pointer}.btn-primary{background:var(--primary)}.btn-secondary{background:#334155}.btn-danger{background:var(--danger)}.btn:disabled{opacity:.55;cursor:not-allowed}
+.alert{padding:12px 14px;border-radius:14px;margin:0 0 16px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:#fecaca}.page-section{display:none}.page-section.active{display:block}.metrics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:18px}.metric-card{background:linear-gradient(180deg,var(--panel),var(--surface));border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}.metric-card strong{display:block;font-size:28px;margin-top:8px}.metric-card small,.metric-label,.muted{color:var(--muted)}.metric-card.success strong{color:#86efac}.metric-card.warning strong{color:#fcd34d}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.panel-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line)}.panel-head h2{font-size:18px;margin:0}.filter-row,.form-row{display:flex;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line)}input,select{width:100%;border:1px solid var(--line);background:#0b1224;color:var(--text);border-radius:12px;padding:12px 13px;font:inherit}select{max-width:180px}.table-scroll{overflow:auto}table{width:100%;border-collapse:collapse;min-width:860px}th,td{padding:13px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:#b9c7dd;background:rgba(148,163,184,.06);font-size:13px}.tb-empty{text-align:center;color:var(--muted);padding:28px}.status-pill{display:inline-flex;align-items:center;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700}.status-pending{background:rgba(245,158,11,.15);color:#fcd34d}.status-approved{background:rgba(34,197,94,.15);color:#86efac}.status-rejected{background:rgba(239,68,68,.15);color:#fca5a5}.status-default{background:rgba(148,163,184,.15);color:#cbd5e1}
+.master-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.data-list{list-style:none;margin:0;padding:14px 20px}.data-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.data-list button{border:0;background:#334155;color:white;border-radius:10px;padding:7px 10px;cursor:pointer}
+@media (max-width: 980px){.app-shell{grid-template-columns:1fr}.sidebar{position:static;height:auto}.metrics-grid,.master-grid{grid-template-columns:1fr}.workspace-header{flex-direction:column}select{max-width:none}.filter-row,.form-row{flex-direction:column}}
+
+
+.qr-dept-list {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.qr-dept-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.qr-dept-info {
+  display: grid;
+  gap: 4px;
+}
+
+.qr-dept-info strong {
+  font-size: 17px;
+}
+
+.qr-dept-info small {
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.qr-dept-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 700px) {
+  .qr-dept-card,
+  .qr-dept-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

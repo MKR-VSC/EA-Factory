@@ -245,13 +245,13 @@ window.addEventListener("DOMContentLoaded", async () => {
     renderDeptInfo();
     renderUserInfo();
     setupStaffNameBeforeUse();
-    setupManagerOnlySection();
+    
     setupDashboardMenu();
     setupDefaultDateTime();
     setupNetworkStatus();
     setupFormSubmit();
     setupDropdownListeners();
-    renderCurrentDeptLink();
+    renderCurrentDeptLabel();
 
     await loadMasterDataAndRender();
   } catch (err) {
@@ -382,21 +382,15 @@ function renderDeptInfo() {
   }
 }
 
-function renderCurrentDeptLink() {
-  const linkEl = document.getElementById("current-dept-link");
-  if (!linkEl) return;
 
-  const url = new URL(window.location.href);
-  url.searchParams.set("dept", currentDept);
-  linkEl.textContent = url.toString();
+function renderCurrentDeptLabel() {
+  const el = document.getElementById("current-dept-label");
+  if (!el) return;
+
+  const deptName = getDeptDisplayName(currentDept);
+  el.textContent = `${deptName} (${currentDept.toUpperCase()})`;
 }
 
-function setupManagerOnlySection() {
-  const managerSection = document.getElementById("manager-only-section");
-  if (!managerSection) return;
-
-  managerSection.style.display = isStaffRole(activeRoleRaw) ? "none" : "block";
-}
 
 function setupDashboardMenu() {
   const dashboardLink = document.getElementById("nav-dashboard-link");
