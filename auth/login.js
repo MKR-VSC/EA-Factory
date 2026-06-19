@@ -463,7 +463,7 @@ function onQrScanSuccess(decodedText) {
     https://prod-ea-factory.pages.dev/login?dept=blow&token=BLOW001
   */
 
-    https:dev-ea-factory.pages.dev/form-department.html?dept=blow
+    // https:dev-ea-factory.pages.dev/form-department.html?dept=blow
 // https://prod-ea-factory.pages.dev/form-department.html?dept=pipe
 // https://prod-ea-factory.pages.dev/form-department.html?dept=sheet
 // https://prod-ea-factory.pages.dev/form-department.html?dept=tape
