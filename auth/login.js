@@ -355,12 +355,12 @@ function redirectByRole(role) {
     management: "/index.html",
     manager: "/index.html",
     executive: "/index.html",
-    supervisor: "/html/form-department.html",
-    staff: "/html/form-department.html",
-    staff_qr: "/html/form-department.html",
+    supervisor: "/pages/form-department.html",
+    staff: "/pages/form-department.html",
+    staff_qr: "/pages/form-department.html",
   };
 
-  const targetPage = rolePages[currentRole] || "/html/form-department.html";
+  const targetPage = rolePages[currentRole] || "/pages/form-department.html";
 
   window.location.href = targetPage;
 }

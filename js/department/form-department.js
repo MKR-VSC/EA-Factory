@@ -1,10 +1,4 @@
 // =========================================================
-// ไฟล์: js/form-department.js
-// ใช้กับหน้า form-department.html
-// รองรับลิงก์ QR แยกแผนก เช่น form-department.html?dept=blow
-// =========================================================
-
-// =========================================================
 // URL / USER / DEPARTMENT STATE
 // =========================================================
 
@@ -15,6 +9,12 @@ const deptFromUrl = urlParams.get("dept");
 if (deptFromUrl) {
   localStorage.setItem("activeDept", deptFromUrl);
 }
+
+// =========================================================
+// ไฟล์: js/form-department.js
+// ใช้กับหน้า form-department.html
+// รองรับลิงก์ QR แยกแผนก เช่น form-department.html?dept=blow
+// =========================================================
 
 const activeRoleRaw = localStorage.getItem("activeRole") || "staff";
 const activeUserId = localStorage.getItem("activeUserId") || "";

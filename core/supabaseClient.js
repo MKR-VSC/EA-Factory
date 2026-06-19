@@ -1,4 +1,4 @@
-//supabaseClient.js// ===============================
+// ===============================
 // SUPABASE CLIENT SETUP / supabaseClient.js
 // รองรับ Production และ Development Environment
 // ===============================
