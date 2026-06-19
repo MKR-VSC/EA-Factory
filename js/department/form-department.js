@@ -174,6 +174,55 @@ function setActiveUserName(name) {
 }
 
 // =========================================================
+// AUTO LOGOUT
+// =========================================================
+
+const AUTO_LOGOUT_MINUTES = 5;
+let autoLogoutTimer = null;
+
+function startAutoLogoutTimer() {
+  resetAutoLogoutTimer();
+
+  [
+    "click",
+    "keydown",
+    "touchstart",
+    "mousemove",
+    "scroll"
+  ].forEach((eventName) => {
+    window.addEventListener(eventName, resetAutoLogoutTimer, {
+      passive: true
+    });
+  });
+}
+
+function resetAutoLogoutTimer() {
+  clearTimeout(autoLogoutTimer);
+
+  autoLogoutTimer = setTimeout(() => {
+    forceLogoutByIdle();
+  }, AUTO_LOGOUT_MINUTES * 60 * 1000);
+}
+
+async function forceLogoutByIdle() {
+  try {
+    const clientSupabase = window.supabaseClient;
+
+    if (clientSupabase?.auth) {
+      await clientSupabase.auth.signOut();
+    }
+  } catch (err) {
+    console.warn(err);
+  }
+
+  localStorage.clear();
+
+  alert("ไม่มีการใช้งานเกิน 5 นาที ระบบออกจากระบบอัตโนมัติ");
+
+  window.location.href = "/login.html";
+}
+
+// =========================================================
 // INIT
 // =========================================================
 
@@ -186,6 +235,10 @@ window.addEventListener("DOMContentLoaded", async () => {
       const canContinue = window.protectPage();
       if (!canContinue) return;
     }
+
+    // logout auto
+    startAutoLogoutTimer();
+
 
     if (!validateCurrentDept()) return;
 
@@ -745,11 +798,11 @@ function resetFormWithConfirm() {
 // =========================================================
 
 async function handleLogout() {
-  const confirmed = confirm("ต้องการออกจากระบบ/ล้างชื่อผู้บันทึกใช่ไหม?");
+  const confirmed = confirm("ต้องการออกจากระบบใช่ไหม?");
   if (!confirmed) return;
 
   try {
-    const clientSupabase = window.supabaseClient || window.supabase;
+    const clientSupabase = window.supabaseClient;
 
     if (clientSupabase?.auth) {
       await clientSupabase.auth.signOut();
@@ -762,11 +815,12 @@ async function handleLogout() {
   localStorage.removeItem("activeName");
   localStorage.removeItem("activeRole");
   localStorage.removeItem("activeUserId");
+  // localStorage.removeItem("activeDept");
 
-  // ไม่ลบ activeDept เพื่อให้เครื่อง/QR ยังจำแผนกเดิมได้
-  renderUserInfo();
-  openStaffNameModal(false);
+  window.location.href = "/login.html";
 }
+
+
 
 // =========================================================
 // EXPORT TO HTML
