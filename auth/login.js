@@ -463,6 +463,16 @@ function onQrScanSuccess(decodedText) {
     https://prod-ea-factory.pages.dev/login?dept=blow&token=BLOW001
   */
 
+    https:dev-ea-factory.pages.dev/form-department.html?dept=blow
+// https://prod-ea-factory.pages.dev/form-department.html?dept=pipe
+// https://prod-ea-factory.pages.dev/form-department.html?dept=sheet
+// https://prod-ea-factory.pages.dev/form-department.html?dept=tape
+// https://prod-ea-factory.pages.dev/form-department.html?dept=drill
+// https://prod-ea-factory.pages.dev/form-department.html?dept=garbage
+// https://prod-ea-factory.pages.dev/form-department.html?dept=mono
+// https://prod-ea-factory.pages.dev/form-department.html?dept=salan
+
+
   window.location.href = decodedText;
 }
 

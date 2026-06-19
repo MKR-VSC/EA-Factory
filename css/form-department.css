@@ -4,6 +4,7 @@
 
   --success: #16a34a;
   --danger: #ef4444;
+  --warning: #f59e0b;
 
   --text: #172033;
   --text-light: #64748b;
@@ -33,6 +34,12 @@ body {
   background: var(--body-bg);
 }
 
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
 
 /* ======================================================
    LAYOUT
@@ -54,17 +61,6 @@ body {
   padding: 22px;
 }
 
-.sidebar-header h2 {
-  margin: 0;
-  font-size: 22px;
-}
-
-.sidebar-header p {
-  margin: 6px 0 0;
-  color: #cbd5e1;
-  font-size: 14px;
-}
-
 .sidebar-menu {
   margin-top: 28px;
 }
@@ -80,8 +76,10 @@ body {
   color: #94a3b8;
 }
 
-.sidebar-menu a {
-  display: block;
+.menu-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 12px 14px;
   margin-bottom: 8px;
   color: #e2e8f0;
@@ -89,10 +87,14 @@ body {
   border-radius: 10px;
 }
 
-.sidebar-menu a.active,
-.sidebar-menu a:hover {
+.menu-link.active,
+.menu-link:hover {
   background: #1e293b;
   color: #ffffff;
+}
+
+.menu-link .material-symbols-outlined {
+  font-size: 20px;
 }
 
 /* ======================================================
@@ -108,25 +110,21 @@ body {
   border-radius: 14px;
 }
 
-.user-avatar {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  background: #334155;
-  border-radius: 50%;
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-weight: 700;
+  color: #e2e8f0;
 }
 
-.user-info-text strong {
-  display: block;
-  font-size: 15px;
+.user-icon {
+  color: #4caf8a;
 }
 
-.user-info-text span {
-  display: block;
-  margin-top: 2px;
-  color: #cbd5e1;
-  font-size: 13px;
+#display-username {
+  color: #86efac;
 }
 
 /* ======================================================
@@ -134,6 +132,7 @@ body {
 ====================================================== */
 
 .btn-back,
+.btn-change-name,
 .btn-logout {
   width: 100%;
   border: 0;
@@ -144,12 +143,22 @@ body {
   font-weight: 700;
 }
 
-.btn-back {
+.btn-back,
+.btn-change-name,
+.btn-logout {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+.btn-back {
   background: #334155;
+  color: #ffffff;
+}
+
+.btn-change-name {
+  background: #0f766e;
   color: #ffffff;
 }
 
@@ -172,12 +181,20 @@ body {
   justify-content: space-between;
   gap: 18px;
   align-items: flex-start;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
 }
 
 .header-title-area h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   font-size: 28px;
+}
+
+.header-title-area h1 .material-symbols-outlined {
+  font-size: 30px;
+  color: #2c3e50;
 }
 
 .subtitle {
@@ -198,6 +215,7 @@ body {
 .badge {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   border-radius: 999px;
   padding: 9px 13px;
   font-weight: 700;
@@ -212,6 +230,58 @@ body {
 .badge-status-online {
   background: #dcfce7;
   color: #166534;
+}
+
+.badge-status-online .material-symbols-outlined {
+  font-size: 14px;
+  color: #10b981;
+  animation: pulse 2s infinite;
+}
+
+.badge-status-offline {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-status-offline .material-symbols-outlined {
+  font-size: 14px;
+  color: #ef4444;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ======================================================
+   QR LINK INFO
+====================================================== */
+
+.qr-info-card {
+  max-width: 900px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px dashed #93c5fd;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 14px;
+}
+
+#current-dept-link {
+  overflow-wrap: anywhere;
+  color: #2563eb;
+  font-weight: 700;
 }
 
 /* ======================================================
@@ -235,10 +305,32 @@ body {
 }
 
 .form-group label {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 8px;
   font-size: 16px;
   font-weight: 700;
+}
+
+.label-icon {
+  font-size: 18px;
+}
+
+.label-icon.blue {
+  color: #2563eb;
+}
+
+.label-icon.amber {
+  color: #f59e0b;
+}
+
+.label-icon.red {
+  color: #ef4444;
+}
+
+.label-icon.green {
+  color: #16a34a;
 }
 
 .required {
@@ -260,7 +352,6 @@ body {
   padding: 14px 16px;
   border: 1px solid #cbd5e1;
   border-radius: 10px;
-  font-family: inherit;
   outline: none;
   background: #ffffff;
 }
@@ -320,6 +411,12 @@ textarea {
   color: #ffffff;
 }
 
+.btn-submit:disabled,
+.btn-clear:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 /* ======================================================
    HIDE DASHBOARD DEFAULT
 ====================================================== */
@@ -328,101 +425,57 @@ textarea {
   display: none;
 }
 
-/* ======================================================
-   RESPONSIVE
-====================================================== */
-
-@media (max-width: 900px) {
-  .app-layout {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-  }
-
-  .content-header {
-    flex-direction: column;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .btn-clear,
-  .btn-submit {
-    width: 100%;
-  }
-}
-
-
-
 /* ==========================================
    TOP HEADER
 ========================================== */
-.pvt-top-header {
-  /* background: linear-gradient(
-    135deg,
-    #0f766e 0%,
-    #0f9d8a 50%,
-    #14b8a6 100%
-  ); */
 
+.pvt-top-header {
   color: #ffffff;
   padding: 24px 30px;
   border-radius: 20px;
-
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
   text-align: center;
-
   box-shadow:
     0 10px 30px rgba(15, 118, 110, 0.25),
     0 4px 12px rgba(0, 0, 0, 0.08);
-
   position: relative;
   overflow: hidden;
   margin-bottom: 24px;
 }
 
-/* ลายพื้นหลัง */
 .pvt-top-header::before {
   content: "";
   position: absolute;
   inset: 0;
-
   background:
-    radial-gradient(
-      circle at top right,
-      rgba(255,255,255,0.18),
-      transparent 40%
-    ),
-    radial-gradient(
-      circle at bottom left,
-      rgba(255,255,255,0.12),
-      transparent 35%
-    );
-
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 40%),
+    radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.12), transparent 35%);
   pointer-events: none;
 }
 
-/* ==========================================
-   LOGO
-========================================== */
+.pvt-top-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 .pvt-top-header .logo {
   position: relative;
   z-index: 1;
-
   width: 95px;
   height: 95px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   margin-bottom: 14px;
 }
 
@@ -430,19 +483,30 @@ textarea {
   width: 100%;
   height: 100%;
   object-fit: contain;
-
   background: rgba(255, 255, 255, 0.12);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-
   padding: 10px;
   border-radius: 20px;
-
-  border: 1px solid rgba(255,255,255,0.25);
-
-  box-shadow:
-    0 6px 18px rgba(0,0,0,0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
 }
+
+.pvt-top-header h3 {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: 20px;
+}
+
+.pvt-top-header p {
+  position: relative;
+  z-index: 1;
+  margin: 8px 0 0;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
 /* ======================================================
    SPLASH SCREEN
 ====================================================== */
@@ -451,12 +515,10 @@ textarea {
   position: fixed;
   inset: 0;
   z-index: 99999;
-
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
   background: #ffffff;
   transition: 0.4s ease;
 }
@@ -470,13 +532,6 @@ textarea {
   width: 110px;
   height: 110px;
   object-fit: contain;
-}
-
-.splash-title {
-  margin-top: 16px;
-  font-size: 30px;
-  font-weight: 800;
-  color: var(--primary);
 }
 
 .splash-sub {
@@ -528,11 +583,9 @@ textarea {
   position: fixed;
   inset: 0;
   z-index: 9999;
-
   display: flex;
   justify-content: center;
   align-items: center;
-
   background: rgba(15, 23, 42, 0.52);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
@@ -542,7 +595,6 @@ textarea {
   width: min(330px, calc(100% - 32px));
   padding: 32px 24px;
   text-align: center;
-
   background: #ffffff;
   border-radius: 24px;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
@@ -562,11 +614,9 @@ textarea {
   width: 58px;
   height: 58px;
   margin: 0 auto 18px;
-
   border: 4px solid #dbeafe;
   border-top-color: var(--primary);
   border-radius: 50%;
-
   animation: spin 0.8s linear infinite;
 }
 
@@ -581,48 +631,149 @@ textarea {
   visibility: hidden;
   pointer-events: none;
 }
-/* ==========================================
-   TITLE
-========================================== */
-.pvt-top-header h1 {
-  position: relative;
-  z-index: 1;
 
-  margin: 0;
-  padding: 0;
+/* ======================================================
+   STAFF NAME MODAL
+====================================================== */
 
-  font-size: clamp(24px, 4vw, 36px);
+.staff-name-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.65);
+  -webkit-backdrop-filter: blur(7px);
+  backdrop-filter: blur(7px);
+  padding: 20px;
+}
+
+.staff-name-modal.hidden {
+  display: none;
+}
+
+.staff-name-box {
+  width: min(420px, 100%);
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 26px;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+}
+
+.staff-name-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.staff-name-icon .material-symbols-outlined {
+  font-size: 34px;
+}
+
+.staff-name-box h3 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.staff-name-box p {
+  margin: 0 0 18px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.staff-name-box label {
+  display: block;
+  text-align: left;
+  margin-bottom: 8px;
   font-weight: 700;
-  line-height: 1.3;
-
-  letter-spacing: 0.5px;
-
-  text-shadow:
-    0 2px 6px rgba(0,0,0,0.15);
 }
 
-/* ==========================================
-   COMPANY
-========================================== */
-.pvt-top-header p {
-  position: relative;
-  z-index: 1;
-
-  margin-top: 8px;
-  margin-bottom: 0;
-
-  font-size: 15px;
-  font-weight: 400;
-
-  color: rgba(255,255,255,0.9);
-
-  letter-spacing: 0.3px;
+.staff-name-box input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 16px;
+  outline: none;
 }
 
-/* ==========================================
-   MOBILE
-========================================== */
+.staff-name-box input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+}
+
+.btn-start-form {
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px;
+  border: 0;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.staff-name-box small {
+  display: block;
+  margin-top: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+/* ======================================================
+   DEPARTMENT THEME
+====================================================== */
+
+.dept-blow .pvt-top-header { background: linear-gradient(135deg, #2563eb, #14b8a6); }
+.dept-pipe .pvt-top-header { background: linear-gradient(135deg, #0f766e, #22c55e); }
+.dept-sheet .pvt-top-header { background: linear-gradient(135deg, #7c3aed, #2563eb); }
+.dept-tape .pvt-top-header { background: linear-gradient(135deg, #ea580c, #f59e0b); }
+.dept-drill .pvt-top-header { background: linear-gradient(135deg, #334155, #64748b); }
+.dept-garbage .pvt-top-header { background: linear-gradient(135deg, #15803d, #84cc16); }
+.dept-mono .pvt-top-header { background: linear-gradient(135deg, #1e3a8a, #0ea5e9); }
+.dept-salan .pvt-top-header { background: linear-gradient(135deg, #0f766e, #14b8a6); }
+
+/* ======================================================
+   RESPONSIVE
+====================================================== */
+
+@media (max-width: 900px) {
+  .app-layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+
+  .content-header {
+    flex-direction: column;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .btn-clear,
+  .btn-submit {
+    width: 100%;
+  }
+}
+
 @media (max-width: 768px) {
+  .main-content {
+    padding: 18px;
+  }
+
   .pvt-top-header {
     padding: 20px;
     border-radius: 16px;
@@ -633,26 +784,19 @@ textarea {
     height: 72px;
   }
 
-  .pvt-top-header h1 {
-    font-size: 22px;
+  .pvt-top-header h3 {
+    font-size: 20px;
   }
 
   .pvt-top-header p {
     font-size: 13px;
   }
-}
 
+  .header-title-area h1 {
+    font-size: 23px;
+  }
 
-.pvt-top-header::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-
-  background-image:
-    linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px);
-
-  background-size: 24px 24px;
-  opacity: 0.4;
-  pointer-events: none;
+  .form-container-card {
+    padding: 20px;
+  }
 }
