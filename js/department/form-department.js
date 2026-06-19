@@ -1,81 +1,121 @@
 // =========================================================
+// ไฟล์: js/form-department.js
+// ใช้กับหน้า form-department.html
+// รองรับลิงก์ QR แยกแผนก เช่น form-department.html?dept=blow
+// =========================================================
+
+// =========================================================
+// CONFIG: รหัสแผนกที่มีจริงในตาราง departments.code
+// =========================================================
+
+const VALID_DEPARTMENTS = [
+  "print",
+  "pipe",
+  "sheet",
+  "tape",
+  "blow",
+  "drill",
+  "garbage",
+];
+
+const DEPARTMENT_NAMES = {
+  print: "ม้วนพิมพ์",
+  pipe: "แผนกท่อ",
+  sheet: "แผนกแผ่นหล่อ/ตัดผืน",
+  tape: "แผนกเทปพัน/เทปน้ำพุ่ง",
+  blow: "แผนกเป่าถุง",
+  drill: "แผนกตัดเจาะ",
+  garbage: "แผนกถุงขยะ",
+};
+
+// =========================================================
 // URL / USER / DEPARTMENT STATE
 // =========================================================
 
 const urlParams = new URLSearchParams(window.location.search);
 const deptFromUrl = urlParams.get("dept");
 
-// ถ้าสแกน QR แล้วมี ?dept=... ให้จำแผนกไว้ในเครื่องนี้
-if (deptFromUrl) {
-  localStorage.setItem("activeDept", deptFromUrl);
-}
-
-// =========================================================
-// ไฟล์: js/form-department.js
-// ใช้กับหน้า form-department.html
-// รองรับลิงก์ QR แยกแผนก เช่น form-department.html?dept=blow
-// =========================================================
-
 const activeRoleRaw = localStorage.getItem("activeRole") || "staff";
 const activeUserId = localStorage.getItem("activeUserId") || "";
-const currentDeptRaw = deptFromUrl || localStorage.getItem("activeDept") || "blow";
+
+const currentDeptRaw =
+  deptFromUrl || localStorage.getItem("activeDept") || "blow";
 
 let currentDept = normalizeDept(currentDeptRaw);
 let appSelectedMachine = "";
 let appSelectedProblem = "";
 
+// ถ้า dept ที่ได้มาไม่ถูกต้อง ให้กลับไปใช้ blow เพื่อกัน Foreign Key Error
+if (!VALID_DEPARTMENTS.includes(currentDept)) {
+  console.warn(
+    `[DEPT_WARNING] รหัสแผนกไม่ถูกต้อง: ${currentDeptRaw} → ใช้ blow แทน`
+  );
+
+  currentDept = "blow";
+}
+
+// จำแผนกที่ผ่านการตรวจแล้วไว้ในเครื่อง
+localStorage.setItem("activeDept", currentDept);
+
 // =========================================================
-// DEPARTMENT
+// DEPARTMENT HELPERS
 // =========================================================
 
 function normalizeDept(dept) {
   const d = String(dept || "blow").toLowerCase().trim();
 
   const map = {
-    blow: "blow",
-    เป่าถุง: "blow",
+    print: "print",
+    "ม้วนพิมพ์": "print",
 
     pipe: "pipe",
-    ท่อ: "pipe",
+    "ท่อ": "pipe",
+    "แผนกท่อ": "pipe",
 
     sheet: "sheet",
-    ตัดผืน: "sheet",
-    แผ่นหล่อ: "sheet",
+    "sheet": "sheet",
+    "ตัดผืน": "sheet",
+    "แผ่นหล่อ": "sheet",
+    "แผนกแผ่นหล่อ": "sheet",
+    "แผนกแผ่นหล่อ/ตัดผืน": "sheet",
 
     tape: "tape",
-    เทปน้ำพุ่ง: "tape",
-    เทปพัน: "tape",
+    "เทป": "tape",
+    "เทปน้ำพุ่ง": "tape",
+    "เทปพัน": "tape",
+    "แผนกเทปพัน": "tape",
+    "แผนกเทปพัน/เทปน้ำพุ่ง": "tape",
+
+    blow: "blow",
+    "เป่าถุง": "blow",
+    "แผนกเป่าถุง": "blow",
 
     drill: "drill",
-    ตัดเจาะ: "drill",
-    เจาะรู: "drill",
+    "ตัดเจาะ": "drill",
+    "เจาะรู": "drill",
+    "แผนกตัดเจาะ": "drill",
 
     garbage: "garbage",
-    ถุงขยะ: "garbage",
-
-    mono: "mono",
-    โมโน: "mono",
-
-    salan: "salan",
-    สแลน: "salan",
+    "ถุงขยะ": "garbage",
+    "แผนกถุงขยะ": "garbage",
   };
 
   return map[d] || d;
 }
 
 function getDeptDisplayName(dept) {
-  const map = {
-    blow: "เป่าถุง",
-    pipe: "ท่อ",
-    sheet: "ตัดผืน / แผ่นหล่อ",
-    tape: "เทปน้ำพุ่ง",
-    drill: "ตัดเจาะ",
-    garbage: "ถุงขยะ",
-    mono: "โมโน",
-    salan: "สแลน",
-  };
+  return DEPARTMENT_NAMES[dept] || dept || "-";
+}
 
-  return map[dept] || dept || "-";
+function validateCurrentDept() {
+  if (!VALID_DEPARTMENTS.includes(currentDept)) {
+    alert(
+      `รหัสแผนกไม่ถูกต้อง: ${currentDept}\n\nกรุณาตรวจสอบลิงก์ QR หรือค่า dept ใน URL`
+    );
+    return false;
+  }
+
+  return true;
 }
 
 // =========================================================
@@ -127,7 +167,10 @@ function setActiveUserName(name) {
 
   localStorage.setItem("activeUser", cleanName);
   localStorage.setItem("activeName", cleanName);
-  localStorage.setItem("activeRole", localStorage.getItem("activeRole") || "staff");
+  localStorage.setItem(
+    "activeRole",
+    localStorage.getItem("activeRole") || "staff"
+  );
 }
 
 // =========================================================
@@ -136,12 +179,15 @@ function setActiveUserName(name) {
 
 window.addEventListener("DOMContentLoaded", async () => {
   try {
-    // ถ้ามีระบบ protectPage เดิม ให้เรียกใช้เฉพาะกรณีมี session แล้วเท่านั้น
-    // เพื่อไม่ให้ QR สำหรับพนักงานโดนเด้งกลับหน้า Login ก่อนกรอกชื่อ
-    if (typeof window.protectPage === "function" && localStorage.getItem("activeUserId")) {
+    if (
+      typeof window.protectPage === "function" &&
+      localStorage.getItem("activeUserId")
+    ) {
       const canContinue = window.protectPage();
       if (!canContinue) return;
     }
+
+    if (!validateCurrentDept()) return;
 
     renderDeptInfo();
     renderUserInfo();
@@ -266,7 +312,7 @@ function renderDeptInfo() {
   if (titleEl) {
     titleEl.innerHTML = `
       <span class="material-symbols-outlined">assignment</span>
-      ฟอร์มบันทึกข้อมูลปัญหาแผนก${deptName}
+      ฟอร์มบันทึกข้อมูลปัญหา${deptName}
     `;
   }
 
@@ -276,6 +322,9 @@ function renderDeptInfo() {
 
   if (bodyEl) {
     bodyEl.classList.remove("dept-default");
+    VALID_DEPARTMENTS.forEach((dept) => {
+      bodyEl.classList.remove(`dept-${dept}`);
+    });
     bodyEl.classList.add(`dept-${currentDept}`);
   }
 }
@@ -367,10 +416,9 @@ function setupDropdownListeners() {
 
 async function loadMasterDataAndRender() {
   const BACKUP_MACHINES = {
-    mono: ["Mono1", "Mono2", "Mono3"],
+    print: ["Print1", "Print2", "Print3"],
     pipe: ["ท่อ1", "ท่อ2", "ท่อ3", "ท่อ4"],
     blow: ["F1", "F2", "F3", "F4", "F5", "F6", "F7"],
-    salan: ["สแลน ทอ 1", "สแลน ทอ 2"],
     sheet: ["Sheet1", "Sheet2"],
     tape: ["Tape1", "Tape2"],
     drill: ["Drill1", "Drill2"],
@@ -378,10 +426,16 @@ async function loadMasterDataAndRender() {
   };
 
   const BACKUP_PROBLEMS = {
-    blow: ["ทะลุ", "ตกใบมีด", "ลูกโปร่งส่าย", "ซีลไม่ติด", "ความหนาไม่ได้", "อื่นๆ"],
+    print: ["สีเพี้ยน", "พิมพ์ไม่ตรง", "หมึกเลอะ", "ม้วนเสีย", "อื่นๆ"],
+    blow: [
+      "ทะลุ",
+      "ตกใบมีด",
+      "ลูกโปร่งส่าย",
+      "ซีลไม่ติด",
+      "ความหนาไม่ได้",
+      "อื่นๆ",
+    ],
     pipe: ["ขี้ดายหลุด", "เข้าม้วนหัก", "รอยขีด", "สีไม่สม่ำเสมอ", "อื่นๆ"],
-    mono: ["เส้นขาด", "ม้วนเสีย", "เส้นไม่เท่ากัน", "อื่นๆ"],
-    salan: ["ทอขาด", "สีเพี้ยน", "ความกว้างไม่ได้", "อื่นๆ"],
     sheet: ["แผ่นเสีย", "ความหนาไม่ได้", "ขนาดไม่ได้", "อื่นๆ"],
     tape: ["เส้นเทปขาด", "ม้วนไม่เรียบ", "สีไม่สม่ำเสมอ", "อื่นๆ"],
     drill: ["รูไม่ตรง", "เจาะไม่ทะลุ", "ใบมีดสึก", "ขนาดผิด", "อื่นๆ"],
@@ -513,7 +567,7 @@ async function checkDuplicateReport(clientSupabase, reportDate, reporterName) {
     .from("daily_waste_reports")
     .select("id")
     .eq("report_date", reportDate)
-    .eq("department", currentDept)
+    .eq("department_code", currentDept)
     .eq("reported_by", reporterName)
     .limit(1);
 
@@ -535,6 +589,8 @@ async function handleFormSubmit(event) {
     alert("ไม่สามารถเชื่อมต่อฐานข้อมูลได้");
     return;
   }
+
+  if (!validateCurrentDept()) return;
 
   const reporterName = getActiveUserName();
 
@@ -597,7 +653,10 @@ async function handleFormSubmit(event) {
       shift: finalShift,
       work_shift: finalShift,
 
+      // สำคัญ: ต้องตรงกับ departments.code เท่านั้น
       department_code: currentDept,
+
+      // เก็บซ้ำไว้สำหรับหน้าเดิมที่อาจยังใช้ column department
       department: currentDept,
 
       machine_no: finalMachine,
@@ -618,11 +677,17 @@ async function handleFormSubmit(event) {
       status: "pending",
 
       reported_by: reporterName,
+
+      // ถ้ายังไม่ได้ใช้ reason_id ให้ส่ง null เพื่อไม่ชน foreign key
+      reason_id: null,
     };
 
     if (isValidUuid(activeUserId)) {
       reportData.created_by = activeUserId;
     }
+
+    console.log("[SUBMIT_DEPT]", currentDept);
+    console.log("[SUBMIT_DATA]", reportData);
 
     const { error } = await clientSupabase
       .from("daily_waste_reports")
