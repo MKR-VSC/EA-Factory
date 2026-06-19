@@ -20,10 +20,15 @@ const SUPABASE_CONFIG = {
 // ===== 2. DETECT ENVIRONMENT อัตโนมัติ =====
 function detectEnvironment() {
   const hostname = window.location.hostname;
+
   
   // localhost หรือ 127.0.0.1 = Development
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'development';
+  if (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "ea-factory-2sx.pages.dev"
+  ) {
+    return "development";
   }
   
   // อื่นๆ = Production
