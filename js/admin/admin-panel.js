@@ -1,14 +1,23 @@
 /* =========================================================
    ADMIN PANEL - DAILY WASTE REPORTS
-   Dashboard + Master Data + User / Role Management
+   Dashboard + Master Data + User / Role Management + QR
 ========================================================= */
 
 const REPORT_TABLE = "daily_waste_reports";
 const PROFILE_TABLE = "profiles";
 
+/*
+  MASTER_TABLES
+  ---------------------------------------------------------
+  โค้ดจะพยายามหาตารางที่มีอยู่จริงใน Supabase ให้เอง
+  เช่น ถ้ามี master_machines ก็ใช้ master_machines
+  ถ้าไม่มีแต่มี pvt_machines ก็ใช้ pvt_machines
+*/
 const MASTER_TABLES = {
+  departments: ["master_departments", "pvt_departments"],
   machines: ["master_machines", "pvt_machines"],
   problems: ["master_problems", "pvt_problem_types"],
+  shifts: ["master_shifts", "pvt_work_shifts"],
 };
 
 const LOGIN_PAGE = "/login.html";
@@ -17,21 +26,29 @@ const ROLE_OPTIONS = ["staff", "supervisor", "accounting", "management", "admin"
 const STATUS_OPTIONS = ["active", "inactive"];
 
 /* =========================================================
-   DEPARTMENT QR CONFIG
+   FALLBACK MASTER DATA
    ---------------------------------------------------------
-   ส่วนนี้คือ "รายการแผนก" ที่แอดมินจะเอาไปสร้าง QR Code
+   ถ้าฐานข้อมูลยังไม่มีตาราง Master Data
+   ระบบจะแสดงรายการเริ่มต้นจากตรงนี้ก่อน
+   เพื่อให้หน้า Admin ไม่ว่างและเข้าใจโครงสร้างได้ง่าย
+========================================================= */
 
-   วิธีแก้:
-   - name = ชื่อแผนกภาษาไทยที่อยากให้แสดงบนหน้า Admin
-   - code = รหัสแผนกที่จะส่งไปกับ URL
-   - path = path หน้าฟอร์มที่พนักงานจะเปิดจาก QR
+const DEFAULT_DEPARTMENTS = [
+  { code: "BLOW", name: "เป่าถุง" },
+  { code: "PIPE", name: "ท่อ" },
+  { code: "SHEET", name: "ตัดผืน" },
+  { code: "MONO", name: "โมโน" },
+  { code: "TAPE", name: "เทป / สแลน" },
+  { code: "CUTTING", name: "ตัดเจาะ" },
+];
 
-   ตัวอย่าง URL ที่ได้:
-   https://เว็บของเรา/pages/department-form.html?dept=BLOW
+const DEFAULT_SHIFTS = [
+  { name: "กะ A (กลางวัน)", time: "08:00 - 17:00" },
+  { name: "กะ B (กลางคืน/OT)", time: "18:00 - 20:00" },
+];
 
-   หมายเหตุ:
-   ถ้าหน้าฟอร์มของคุณไม่ได้ชื่อ department-form.html
-   ให้แก้ path ตรงนี้ให้ตรงกับไฟล์จริงได้เลยค่ะ
+/* =========================================================
+   DEPARTMENT QR CONFIG
 ========================================================= */
 
 const DEPARTMENT_QR_LIST = [
@@ -52,15 +69,24 @@ const DEPARTMENT_QR_LIST = [
   },
 ];
 
+/* =========================================================
+   STATE
+========================================================= */
 
 const state = {
   supabase: null,
   reports: [],
   users: [],
+
+  departmentTable: null,
   machineTable: null,
   problemTable: null,
+  shiftTable: null,
+
+  departments: [],
   machines: [],
   problems: [],
+  shifts: [],
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -79,7 +105,7 @@ function protectAdminPage() {
   const allowRoles = ["admin", "management", "accounting", "supervisor"];
 
   if (!user || !allowRoles.includes(role)) {
-    window.location.href = "login.html";
+    window.location.href = LOGIN_PAGE;
     return false;
   }
 
@@ -104,7 +130,7 @@ async function logout() {
     localStorage.removeItem("activeDeptName");
 
     sessionStorage.clear();
-    window.location.href = "login.html";
+    window.location.href = LOGIN_PAGE;
   } catch (err) {
     console.error("Logout error:", err);
     alert("ออกจากระบบไม่สำเร็จ");
@@ -121,15 +147,13 @@ async function initAdminPanel() {
   state.supabase = window.supabaseClient || window.supabase || null;
 
   if (!state.supabase) {
-    showAlert("ไม่พบ Supabase Client กรุณาตรวจสอบไฟล์ /js/core/supabaseClient.js");
+    showAlert("ไม่พบ Supabase Client กรุณาตรวจสอบไฟล์ /core/supabaseClient.js");
     setText("status-api", "เชื่อมต่อไม่ได้");
     addLog("ERROR", "ไม่พบ window.supabaseClient");
     renderEmptyTable("tb", 7, "ไม่พบ Supabase Client");
     return;
   }
 
-  // วาดรายการ QR แผนกทันที
-  // เมนูนี้ไม่ต้องรอ Supabase เพราะเป็นลิงก์คงที่สำหรับทำ QR
   renderDepartmentQrList();
 
   await loadAll();
@@ -148,8 +172,14 @@ function bindEvents() {
   document.getElementById("search-input")?.addEventListener("input", renderReports);
   document.getElementById("status-filter")?.addEventListener("change", renderReports);
 
+  document.getElementById("btn-add-dept")?.addEventListener("click", addDepartment);
+  document.getElementById("btn-add-shift")?.addEventListener("click", addShift);
   document.getElementById("btn-add-machine")?.addEventListener("click", addMachine);
   document.getElementById("btn-add-problem")?.addEventListener("click", addProblem);
+  document.getElementById("master-dept-filter")?.addEventListener("change", () => {
+    renderMachines();
+    renderProblems();
+  });
 
   document.getElementById("btn-add-user")?.addEventListener("click", addUser);
   document.getElementById("user-search-input")?.addEventListener("input", renderUsers);
@@ -225,6 +255,12 @@ async function loadReports() {
 }
 
 async function loadMasters() {
+  const department = await selectFirstAvailableTable(MASTER_TABLES.departments, "*", {
+    orderColumn: "id",
+    ascending: true,
+    optional: true,
+  });
+
   const machine = await selectFirstAvailableTable(MASTER_TABLES.machines, "*", {
     orderColumn: "id",
     ascending: true,
@@ -237,13 +273,27 @@ async function loadMasters() {
     optional: true,
   });
 
+  const shift = await selectFirstAvailableTable(MASTER_TABLES.shifts, "*", {
+    orderColumn: "id",
+    ascending: true,
+    optional: true,
+  });
+
+  state.departmentTable = department.table;
   state.machineTable = machine.table;
   state.problemTable = problem.table;
+  state.shiftTable = shift.table;
+
+  state.departments = department.rows.length ? department.rows : DEFAULT_DEPARTMENTS;
   state.machines = machine.rows;
   state.problems = problem.rows;
+  state.shifts = shift.rows.length ? shift.rows : DEFAULT_SHIFTS;
 
-  renderMasterList("machine-list", state.machines, deleteMachine);
-  renderMasterList("problem-list", state.problems, deleteProblem);
+  renderDepartments();
+  renderDepartmentFilter();
+  renderShifts();
+  renderMachines();
+  renderProblems();
 }
 
 async function loadUsers() {
@@ -283,10 +333,6 @@ async function selectFirstAvailableTable(tableNames, columns = "*", options = {}
         query = query.order(options.orderColumn, {
           ascending: options.ascending ?? true,
         });
-      }
-
-      if (options.limit) {
-        query = query.limit(options.limit);
       }
 
       const { data, error } = await query;
@@ -408,34 +454,244 @@ function updateSummary() {
 }
 
 /* =========================================================
-   MASTER DATA
+   MASTER DATA - DEPARTMENT
+========================================================= */
+
+async function addDepartment() {
+  const code = getValue("dept-code-input").toUpperCase();
+  const name = getValue("dept-name-input");
+
+  if (!code || !name) {
+    showAlert("กรุณากรอกรหัสแผนกและชื่อแผนก");
+    return;
+  }
+
+  if (!state.departmentTable) {
+    showAlert("ยังไม่พบตาราง master_departments หรือ pvt_departments ใน Supabase");
+    return;
+  }
+
+  const payload = createDepartmentPayload(state.departmentTable, code, name);
+
+  const { error } = await state.supabase.from(state.departmentTable).insert(payload);
+
+  if (error) {
+    showAlert(`เพิ่มแผนกไม่สำเร็จ: ${error.message}`);
+    addLog("ERROR", error.message);
+    return;
+  }
+
+  setValue("dept-code-input", "");
+  setValue("dept-name-input", "");
+
+  addLog("INFO", `เพิ่มแผนก ${code} - ${name}`);
+  await loadMasters();
+}
+
+function createDepartmentPayload(table, code, name) {
+  if (table === "master_departments") {
+    return {
+      department_code: code,
+      department_name: name,
+      is_active: true,
+    };
+  }
+
+  if (table === "pvt_departments") {
+    return {
+      dept_code: code,
+      dept_name: name,
+    };
+  }
+
+  return { code, name };
+}
+
+function renderDepartments() {
+  const list = document.getElementById("dept-list");
+  if (!list) return;
+
+  if (!state.departments.length) {
+    list.innerHTML = `<li><span class="muted">ยังไม่มีข้อมูลแผนก</span></li>`;
+    return;
+  }
+
+  list.innerHTML = state.departments
+    .map((row) => {
+      const code = getDeptCode(row);
+      const name = getDeptName(row);
+      const id = row.id;
+
+      return `
+        <li>
+          <span>
+            <strong>${escapeHtml(code)}</strong>
+            <small>${escapeHtml(name)}</small>
+          </span>
+          ${
+            id && state.departmentTable
+              ? `<button type="button" onclick="deleteDepartment('${escapeAttr(id)}')">ลบ</button>`
+              : `<small class="muted">ค่าเริ่มต้น</small>`
+          }
+        </li>
+      `;
+    })
+    .join("");
+}
+
+function renderDepartmentFilter() {
+  const select = document.getElementById("master-dept-filter");
+  if (!select) return;
+
+  const current = select.value;
+
+  const options = state.departments
+    .map((dept) => {
+      const code = getDeptCode(dept);
+      const name = getDeptName(dept);
+      return `<option value="${escapeAttr(code)}">${escapeHtml(name)} (${escapeHtml(code)})</option>`;
+    })
+    .join("");
+
+  select.innerHTML = `<option value="">-- เลือกแผนก --</option>${options}`;
+
+  if (current) {
+    select.value = current;
+  }
+}
+
+async function deleteDepartment(id) {
+  await deleteMasterItem(state.departmentTable, id, loadMasters);
+}
+
+/* =========================================================
+   MASTER DATA - SHIFT
+========================================================= */
+
+async function addShift() {
+  const name = getValue("shift-name-input");
+  const time = getValue("shift-time-input");
+
+  if (!name) {
+    showAlert("กรุณากรอกชื่อกะ");
+    return;
+  }
+
+  if (!state.shiftTable) {
+    showAlert("ยังไม่พบตาราง master_shifts หรือ pvt_work_shifts ใน Supabase");
+    return;
+  }
+
+  const payload = createShiftPayload(state.shiftTable, name, time);
+
+  const { error } = await state.supabase.from(state.shiftTable).insert(payload);
+
+  if (error) {
+    showAlert(`เพิ่มกะไม่สำเร็จ: ${error.message}`);
+    addLog("ERROR", error.message);
+    return;
+  }
+
+  setValue("shift-name-input", "");
+  setValue("shift-time-input", "");
+
+  addLog("INFO", `เพิ่มกะ: ${name}`);
+  await loadMasters();
+}
+
+function createShiftPayload(table, name, time) {
+  if (table === "master_shifts") {
+    return {
+      shift_name: name,
+      shift_time: time,
+      is_active: true,
+    };
+  }
+
+  if (table === "pvt_work_shifts") {
+    return {
+      shift_name: name,
+      shift_time: time,
+    };
+  }
+
+  return { name, time };
+}
+
+function renderShifts() {
+  const list = document.getElementById("shift-list");
+  if (!list) return;
+
+  if (!state.shifts.length) {
+    list.innerHTML = `<li><span class="muted">ยังไม่มีข้อมูลกะ</span></li>`;
+    return;
+  }
+
+  list.innerHTML = state.shifts
+    .map((row) => {
+      const name = row.shift_name || row.name || "-";
+      const time = row.shift_time || row.time || "";
+      const id = row.id;
+
+      return `
+        <li>
+          <span>
+            <strong>${escapeHtml(name)}</strong>
+            ${time ? `<small>${escapeHtml(time)}</small>` : ""}
+          </span>
+          ${
+            id && state.shiftTable
+              ? `<button type="button" onclick="deleteShift('${escapeAttr(id)}')">ลบ</button>`
+              : `<small class="muted">ค่าเริ่มต้น</small>`
+          }
+        </li>
+      `;
+    })
+    .join("");
+}
+
+async function deleteShift(id) {
+  await deleteMasterItem(state.shiftTable, id, loadMasters);
+}
+
+/* =========================================================
+   MASTER DATA - MACHINES / PROBLEMS
 ========================================================= */
 
 async function addMachine() {
-  await addMasterItem(
-    "machine-input",
-    "machine",
-    state.machineTable,
-    MASTER_TABLES.machines,
-    loadMasters
-  );
+  await addDepartmentMasterItem({
+    inputId: "machine-input",
+    type: "machine",
+    currentTable: state.machineTable,
+    tableList: MASTER_TABLES.machines,
+    reloadFn: loadMasters,
+  });
 }
 
 async function addProblem() {
-  await addMasterItem(
-    "problem-input",
-    "problem",
-    state.problemTable,
-    MASTER_TABLES.problems,
-    loadMasters
-  );
+  await addDepartmentMasterItem({
+    inputId: "problem-input",
+    type: "problem",
+    currentTable: state.problemTable,
+    tableList: MASTER_TABLES.problems,
+    reloadFn: loadMasters,
+  });
 }
 
-async function addMasterItem(inputId, type, currentTable, tableList, reloadFn) {
+async function addDepartmentMasterItem({ inputId, type, currentTable, tableList, reloadFn }) {
   const input = document.getElementById(inputId);
   const name = input?.value.trim();
+  const department = getValue("master-dept-filter");
 
-  if (!name) return;
+  if (!department) {
+    showAlert("กรุณาเลือกแผนกก่อนเพิ่มข้อมูล");
+    return;
+  }
+
+  if (!name) {
+    showAlert("กรุณากรอกข้อมูลก่อนกดเพิ่ม");
+    return;
+  }
 
   let table = currentTable;
 
@@ -451,38 +707,10 @@ async function addMasterItem(inputId, type, currentTable, tableList, reloadFn) {
     return;
   }
 
-  const department =
-    localStorage.getItem("activeDept") ||
-    localStorage.getItem("activeDeptName") ||
-    "general";
-
-  let payload = {};
-
-  if (table === "master_machines") {
-    payload = {
-      machine_no: name,
-      department,
-      is_active: true,
-    };
-  } else if (table === "master_problems") {
-    payload = {
-      problem_type: name,
-      department,
-      is_active: true,
-    };
-  } else if (table === "pvt_machines") {
-    payload = {
-      machine_name: name,
-      department,
-    };
-  } else if (table === "pvt_problem_types") {
-    payload = {
-      problem_name: name,
-      department,
-    };
-  } else {
-    payload = { name };
-  }
+  const payload =
+    type === "machine"
+      ? createMachinePayload(table, name, department)
+      : createProblemPayload(table, name, department);
 
   const { error } = await state.supabase.from(table).insert(payload);
 
@@ -493,8 +721,112 @@ async function addMasterItem(inputId, type, currentTable, tableList, reloadFn) {
   }
 
   input.value = "";
-  addLog("INFO", `เพิ่ม ${type}: ${name}`);
+  addLog("INFO", `เพิ่ม ${type}: ${name} / ${department}`);
   await reloadFn();
+}
+
+function createMachinePayload(table, name, department) {
+  if (table === "master_machines") {
+    return {
+      machine_no: name,
+      department,
+      department_code: department,
+      is_active: true,
+    };
+  }
+
+  if (table === "pvt_machines") {
+    return {
+      machine_name: name,
+      department,
+      department_code: department,
+    };
+  }
+
+  return { name, department };
+}
+
+function createProblemPayload(table, name, department) {
+  if (table === "master_problems") {
+    return {
+      problem_type: name,
+      department,
+      department_code: department,
+      is_active: true,
+    };
+  }
+
+  if (table === "pvt_problem_types") {
+    return {
+      problem_name: name,
+      department,
+      department_code: department,
+    };
+  }
+
+  return { name, department };
+}
+
+function renderMachines() {
+  renderDepartmentFilteredList("machine-list", state.machines, deleteMachine, "machine");
+}
+
+function renderProblems() {
+  renderDepartmentFilteredList("problem-list", state.problems, deleteProblem, "problem");
+}
+
+function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
+  const list = document.getElementById(elementId);
+  if (!list) return;
+
+  const selectedDept = getValue("master-dept-filter");
+
+  if (!selectedDept) {
+    list.innerHTML = `<li><span class="muted">กรุณาเลือกแผนกก่อน</span></li>`;
+    return;
+  }
+
+  const filtered = rows.filter((row) => {
+    const dept = row.department_code || row.department || row.dept || "";
+    return normalizeDept(dept) === normalizeDept(selectedDept);
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = `<li><span class="muted">ยังไม่มีข้อมูลในแผนกนี้</span></li>`;
+    return;
+  }
+
+  list.innerHTML = "";
+
+  filtered.forEach((row) => {
+    const li = document.createElement("li");
+
+    const name =
+      row.name ||
+      row.machine_no ||
+      row.machine_name ||
+      row.problem_type ||
+      row.problem_name ||
+      row.reason_name ||
+      "-";
+
+    const department = row.department_code || row.department || row.dept || selectedDept;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "ลบ";
+    btn.addEventListener("click", () => onDelete(row.id));
+
+    li.innerHTML = `
+      <span>
+        <strong>${escapeHtml(name)}</strong>
+        <small>${escapeHtml(department)} / ${escapeHtml(type)}</small>
+      </span>
+    `;
+
+    li.appendChild(btn);
+    list.appendChild(li);
+  });
 }
 
 async function deleteMachine(id) {
@@ -521,48 +853,6 @@ async function deleteMasterItem(table, id, reloadFn) {
 
   addLog("INFO", `ลบข้อมูลจาก ${table} สำเร็จ`);
   await reloadFn();
-}
-
-function renderMasterList(elementId, rows, onDelete) {
-  const list = document.getElementById(elementId);
-  if (!list) return;
-
-  if (!rows.length) {
-    list.innerHTML = `<li><span class="muted">ยังไม่มีข้อมูล</span></li>`;
-    return;
-  }
-
-  list.innerHTML = "";
-
-  rows.forEach((row) => {
-    const li = document.createElement("li");
-
-    const name =
-      row.name ||
-      row.machine_no ||
-      row.machine_name ||
-      row.problem_type ||
-      row.problem_name ||
-      row.reason_name ||
-      "-";
-
-    const department = row.department || row.department_code || "";
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = "ลบ";
-    btn.addEventListener("click", () => onDelete(row.id));
-
-    li.innerHTML = `
-      <span>
-        ${escapeHtml(name)}
-        ${department ? `<small class="muted"> / ${escapeHtml(department)}</small>` : ""}
-      </span>
-    `;
-
-    li.appendChild(btn);
-    list.appendChild(li);
-  });
 }
 
 /* =========================================================
@@ -645,7 +935,7 @@ async function addUser() {
   const username = getValue("user-username").toUpperCase();
   const password = getValue("user-password");
   const displayName = getValue("user-display-name");
-  const department = getValue("user-department");
+  const department = getValue("user-department").toUpperCase();
   const role = getValue("user-role") || "staff";
 
   if (!username || !password) {
@@ -693,9 +983,7 @@ async function updateUserRole(userId, role) {
 
   const { error } = await state.supabase
     .from(PROFILE_TABLE)
-    .update({
-      role,
-    })
+    .update({ role })
     .eq("id", userId);
 
   if (error) {
@@ -714,9 +1002,7 @@ async function updateUserStatus(userId, status) {
 
   const { error } = await state.supabase
     .from(PROFILE_TABLE)
-    .update({
-      status,
-    })
+    .update({ status })
     .eq("id", userId);
 
   if (error) {
@@ -766,28 +1052,14 @@ function clearUserForm() {
   setValue("user-role", "staff");
 }
 
-
 /* =========================================================
    DEPARTMENT QR MANAGEMENT
-   ---------------------------------------------------------
-   ใช้สำหรับหน้า "จัดการ QR แผนก"
-
-   สิ่งที่โค้ดส่วนนี้ทำ:
-   1) เอารายการจาก DEPARTMENT_QR_LIST มาแสดงเป็นการ์ด
-   2) สร้างลิงก์เต็มจากโดเมนเว็บปัจจุบัน เช่น https://xxx.pages.dev
-   3) ปุ่ม "คัดลอกลิงก์" จะ copy URL ให้แอดมินเอาไปใช้
-   4) ปุ่ม "สร้าง QR" จะเปิดหน้า QR Code ใหม่
 ========================================================= */
 
 function renderDepartmentQrList() {
   const box = document.getElementById("department-qr-list");
-
-  // ถ้าใน HTML ยังไม่มี id="department-qr-list"
-  // ให้หยุดทำงาน เพื่อไม่ให้หน้าอื่น error
   if (!box) return;
 
-  // origin คือโดเมนเว็บปัจจุบัน เช่น
-  // https://prod-ea-factory.pages.dev
   const origin = window.location.origin;
 
   box.innerHTML = DEPARTMENT_QR_LIST.map((dept) => {
@@ -826,14 +1098,10 @@ async function copyDepartmentLink(url) {
   if (!url) return;
 
   try {
-    // navigator.clipboard ใช้สำหรับ copy ข้อความเข้าคลิปบอร์ด
-    // ใช้งานได้ดีบนเว็บ https
     await navigator.clipboard.writeText(url);
     alert("คัดลอกลิงก์แล้วค่ะ");
     addLog("INFO", `คัดลอกลิงก์ QR: ${url}`);
   } catch (err) {
-    // บางเครื่อง / บางเบราว์เซอร์ อาจไม่อนุญาตให้ copy อัตโนมัติ
-    // จึงเปิด prompt ให้ผู้ใช้กด Ctrl+C เองแทน
     prompt("คัดลอกลิงก์นี้:", url);
   }
 }
@@ -841,13 +1109,6 @@ async function copyDepartmentLink(url) {
 function openDepartmentQr(url) {
   if (!url) return;
 
-  /*
-    ใช้ QuickChart สร้าง QR Code แบบฟรี
-    ไม่ต้องติดตั้ง library เพิ่มในโปรเจกต์
-
-    ถ้าภายหลังอยากทำ QR เองในหน้าเว็บ
-    ค่อยเปลี่ยนเป็น qrcode.js ได้ค่ะ
-  */
   const qrUrl =
     "https://quickchart.io/qr?size=500&text=" + encodeURIComponent(url);
 
@@ -855,10 +1116,21 @@ function openDepartmentQr(url) {
   addLog("INFO", `เปิด QR Code: ${url}`);
 }
 
-
 /* =========================================================
    HELPERS
 ========================================================= */
+
+function getDeptCode(row) {
+  return String(row.department_code || row.dept_code || row.code || "").toUpperCase();
+}
+
+function getDeptName(row) {
+  return row.department_name || row.dept_name || row.name || getDeptCode(row);
+}
+
+function normalizeDept(value) {
+  return String(value || "").trim().toUpperCase();
+}
 
 function normalizeStatus(value) {
   const status = String(value || "").toLowerCase();
@@ -997,14 +1269,12 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-
 function escapeAttr(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
-
 
 function createUuid() {
   if (window.crypto?.randomUUID) {
@@ -1024,10 +1294,15 @@ function createUuid() {
 
 window.loadAdminPanel = loadAll;
 window.logout = logout;
+
 window.updateUserRole = updateUserRole;
 window.updateUserStatus = updateUserStatus;
 window.deleteUser = deleteUser;
 
-// ให้ปุ่มใน HTML เรียกใช้ฟังก์ชัน QR ได้
+window.deleteDepartment = deleteDepartment;
+window.deleteShift = deleteShift;
+window.deleteMachine = deleteMachine;
+window.deleteProblem = deleteProblem;
+
 window.copyDepartmentLink = copyDepartmentLink;
 window.openDepartmentQr = openDepartmentQr;

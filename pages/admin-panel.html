@@ -36,12 +36,15 @@
           >
             📊 Dashboard
           </button>
+
           <button class="sidebar-item" type="button" data-section="masters">
             ⚙️ Master Data
           </button>
+
           <button class="sidebar-item" type="button" data-section="users">
             👥 Users / Roles
           </button>
+
           <button
             class="sidebar-item"
             type="button"
@@ -49,6 +52,7 @@
           >
             🔳 จัดการ QR แผนก
           </button>
+
           <button class="sidebar-item" type="button" data-section="logs">
             🪲 System Logs
           </button>
@@ -63,6 +67,7 @@
             <h1>แผงควบคุมระบบของเสียรายวัน</h1>
             <p>ตรวจสอบรายการ จัดการข้อมูลพื้นฐาน และกำหนดสิทธิ์ผู้ใช้งาน</p>
           </div>
+
           <button class="btn btn-secondary" type="button" id="btn-refresh">
             🔄 โหลดข้อมูลใหม่
           </button>
@@ -70,6 +75,9 @@
 
         <div id="alert-box" class="alert" hidden></div>
 
+        <!-- ======================================================
+          DASHBOARD
+        ======================================================= -->
         <section id="section-dashboard" class="page-section active">
           <div class="metrics-grid">
             <article class="metric-card">
@@ -109,6 +117,7 @@
                 type="search"
                 placeholder="ค้นหาแผนก / เครื่องจักร / อาการเสีย / ผู้แจ้ง..."
               />
+
               <select id="status-filter">
                 <option value="all">ทุกสถานะ</option>
                 <option value="pending">รอตรวจสอบ</option>
@@ -130,6 +139,7 @@
                     <th>สถานะ</th>
                   </tr>
                 </thead>
+
                 <tbody id="tb">
                   <tr>
                     <td colspan="7" class="tb-empty">กำลังโหลดข้อมูล...</td>
@@ -140,55 +150,178 @@
           </div>
         </section>
 
+        <!-- ======================================================
+          MASTER DATA
+          ------------------------------------------------------
+          ใช้สำหรับตั้งค่าข้อมูล Dropdown ให้ฟอร์มพนักงาน
+          เช่น แผนก / เครื่องจักร / อาการเสีย / กะ
+        ======================================================= -->
         <section id="section-masters" class="page-section">
-          <div class="master-grid">
+          <div class="master-helper">
+            <h2>⚙️ Master Data คืออะไร?</h2>
+            <p>
+              Master Data คือข้อมูลตั้งต้นสำหรับให้พนักงานเลือกในฟอร์ม
+              เช่น แผนก เครื่องจักร อาการเสีย และกะการทำงาน
+              เพื่อช่วยลดการพิมพ์ผิดและทำรายงานบัญชีได้ง่ายขึ้น
+            </p>
+          </div>
+
+          <div class="master-grid master-grid-2">
+            <!-- ================= DEPARTMENTS ================= -->
             <article class="panel">
-              <div class="panel-head"><h2>⚙️ จัดการเครื่องจักร</h2></div>
+              <div class="panel-head">
+                <div>
+                  <h2>🏭 จัดการแผนก</h2>
+                  <span class="muted">เพิ่มรหัสแผนกสำหรับใช้กับ QR และฟอร์ม</span>
+                </div>
+              </div>
+
+              <div class="form-row master-form-row">
+                <input
+                  type="text"
+                  id="dept-code-input"
+                  placeholder="รหัส เช่น BLOW"
+                />
+
+                <input
+                  type="text"
+                  id="dept-name-input"
+                  placeholder="ชื่อแผนก เช่น เป่าถุง"
+                />
+
+                <button
+                  class="btn btn-primary"
+                  type="button"
+                  id="btn-add-dept"
+                >
+                  เพิ่มแผนก
+                </button>
+              </div>
+
+              <ul id="dept-list" class="data-list"></ul>
+            </article>
+
+            <!-- ================= SHIFTS ================= -->
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>🕒 จัดการกะการทำงาน</h2>
+                  <span class="muted">ใช้เป็นตัวเลือกกะในฟอร์มพนักงาน</span>
+                </div>
+              </div>
+
+              <div class="form-row master-form-row">
+                <input
+                  type="text"
+                  id="shift-name-input"
+                  placeholder="เช่น กะ A (กลางวัน)"
+                />
+
+                <input
+                  type="text"
+                  id="shift-time-input"
+                  placeholder="เวลา เช่น 08:00 - 17:00"
+                />
+
+                <button
+                  class="btn btn-primary"
+                  type="button"
+                  id="btn-add-shift"
+                >
+                  เพิ่มกะ
+                </button>
+              </div>
+
+              <ul id="shift-list" class="data-list"></ul>
+            </article>
+          </div>
+
+          <div class="panel master-dept-filter-panel">
+            <div class="panel-head">
+              <div>
+                <h2>เลือกแผนกก่อนจัดการเครื่องจักร / อาการเสีย</h2>
+                <span class="muted">
+                  เพราะแต่ละแผนกใช้เครื่องและอาการเสียไม่เหมือนกัน
+                </span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <select id="master-dept-filter">
+                <option value="">-- เลือกแผนก --</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="master-grid master-grid-2">
+            <!-- ================= MACHINES ================= -->
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>⚙️ จัดการเครื่องจักรตามแผนก</h2>
+                  <span class="muted">ตัวอย่าง BLOW: F1, F2 / PIPE: PIPE-01</span>
+                </div>
+              </div>
+
               <div class="form-row">
                 <input
                   type="text"
                   id="machine-input"
-                  placeholder="เช่น F1, F2, เครื่องตัด"
+                  placeholder="เช่น F1, F2, PIPE-01, CUT-01"
                 />
+
                 <button
                   class="btn btn-primary"
                   type="button"
                   id="btn-add-machine"
                 >
-                  เพิ่ม
+                  เพิ่มเครื่อง
                 </button>
               </div>
+
               <ul id="machine-list" class="data-list"></ul>
             </article>
 
+            <!-- ================= PROBLEMS ================= -->
             <article class="panel">
-              <div class="panel-head"><h2>⚠️ จัดการหัวข้ออาการเสีย</h2></div>
+              <div class="panel-head">
+                <div>
+                  <h2>⚠️ จัดการหัวข้ออาการเสียตามแผนก</h2>
+                  <span class="muted">ตัวอย่าง ขอบเบี้ยว, รูรั่ว, ซีลไม่ติด</span>
+                </div>
+              </div>
+
               <div class="form-row">
                 <input
                   type="text"
                   id="problem-input"
                   placeholder="เช่น ขอบเบี้ยว, หนาไม่เท่ากัน"
                 />
+
                 <button
                   class="btn btn-danger"
                   type="button"
                   id="btn-add-problem"
                 >
-                  เพิ่ม
+                  เพิ่มอาการ
                 </button>
               </div>
+
               <ul id="problem-list" class="data-list"></ul>
             </article>
           </div>
         </section>
 
+        <!-- ======================================================
+          USERS / ROLES
+        ======================================================= -->
         <section id="section-users" class="page-section">
           <div class="panel">
             <div class="panel-head">
               <h2>👥 จัดการ User และ Role</h2>
-              <span class="muted"
-                >Admin เพิ่ม / ลบ / เปลี่ยนสิทธิ์ได้จากหน้านี้</span
-              >
+              <span class="muted">
+                Admin เพิ่ม / ลบ / เปลี่ยนสิทธิ์ได้จากหน้านี้
+              </span>
             </div>
 
             <div class="form-row">
@@ -197,16 +330,19 @@
                 id="user-username"
                 placeholder="Username เช่น ADMIN01"
               />
+
               <input type="text" id="user-password" placeholder="Password" />
+
               <input
                 type="text"
                 id="user-display-name"
                 placeholder="ชื่อแสดงผล"
               />
+
               <input
                 type="text"
                 id="user-department"
-                placeholder="แผนก เช่น blow"
+                placeholder="แผนก เช่น BLOW"
               />
 
               <select id="user-role">
@@ -228,6 +364,7 @@
                 type="search"
                 placeholder="ค้นหา username / ชื่อ / แผนก / role..."
               />
+
               <select id="user-status-filter">
                 <option value="all">ทุกสถานะ</option>
                 <option value="active">active</option>
@@ -247,6 +384,7 @@
                     <th>จัดการ</th>
                   </tr>
                 </thead>
+
                 <tbody id="user-table-body">
                   <tr>
                     <td colspan="6" class="tb-empty">กำลังโหลดผู้ใช้งาน...</td>
@@ -257,6 +395,9 @@
           </div>
         </section>
 
+        <!-- ======================================================
+          DEPARTMENT QR
+        ======================================================= -->
         <section id="section-department-qr" class="page-section">
           <div class="panel">
             <div class="panel-head">
@@ -272,9 +413,13 @@
           </div>
         </section>
 
+        <!-- ======================================================
+          LOGS
+        ======================================================= -->
         <section id="section-logs" class="page-section">
           <div class="panel">
             <div class="panel-head"><h2>🪲 System Logs</h2></div>
+
             <div class="table-scroll">
               <table>
                 <thead>
@@ -284,6 +429,7 @@
                     <th>รายละเอียด</th>
                   </tr>
                 </thead>
+
                 <tbody id="log-table-body">
                   <tr>
                     <td colspan="3" class="tb-empty">ยังไม่มี Log</td>
@@ -299,7 +445,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/roleConfig.js"></script>
-    <!-- <script src="/auth/login.js"></script> -->
     <script src="/js/admin/admin-panel.js"></script>
   </body>
 </html>
