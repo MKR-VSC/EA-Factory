@@ -9,6 +9,7 @@
 // =========================================================
 
 const VALID_DEPARTMENTS = [
+  "mono",
   "print",
   "pipe",
   "sheet",
@@ -19,6 +20,7 @@ const VALID_DEPARTMENTS = [
 ];
 
 const DEPARTMENT_NAMES = {
+  mono: "แผนกโมโน",
   print: "ม้วนพิมพ์",
   pipe: "แผนกท่อ",
   sheet: "แผนกแผ่นหล่อ/ตัดผืน",
@@ -39,7 +41,7 @@ const activeRoleRaw = localStorage.getItem("activeRole") || "staff";
 const activeUserId = localStorage.getItem("activeUserId") || "";
 
 const currentDeptRaw =
-  deptFromUrl || localStorage.getItem("activeDept") || "blow";
+  deptFromUrl || localStorage.getItem("activeDept") || "";
 
 let currentDept = normalizeDept(currentDeptRaw);
 let appSelectedMachine = "";
@@ -47,11 +49,17 @@ let appSelectedProblem = "";
 
 // ถ้า dept ที่ได้มาไม่ถูกต้อง ให้กลับไปใช้ blow เพื่อกัน Foreign Key Error
 if (!VALID_DEPARTMENTS.includes(currentDept)) {
-  console.warn(
-    `[DEPT_WARNING] รหัสแผนกไม่ถูกต้อง: ${currentDeptRaw} → ใช้ blow แทน`
+  console.error(
+    `[DEPT_ERROR] ไม่พบแผนก: ${currentDeptRaw}`
   );
 
-  currentDept = "blow";
+  alert(
+    `ไม่พบแผนกของผู้ใช้งาน (${currentDeptRaw})\nกรุณาตรวจสอบ department_code ในตาราง profiles`
+  );
+
+  window.location.href = "/login.html";
+
+  throw new Error("INVALID_DEPARTMENT");
 }
 
 // จำแผนกที่ผ่านการตรวจแล้วไว้ในเครื่อง
@@ -65,6 +73,12 @@ function normalizeDept(dept) {
   const d = String(dept || "blow").toLowerCase().trim();
 
   const map = {
+
+    mono: "mono",
+"โมโน": "mono",
+"แผนกโมโน": "mono",
+
+
     print: "print",
     "ม้วนพิมพ์": "print",
 

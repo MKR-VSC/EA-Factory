@@ -161,7 +161,15 @@ async function handlePasswordLogin(event) {
       role: profile.role || "staff",
     });
 
-    redirectByRole(profile.role);
+    console.log("=== LOGIN SUCCESS ===");
+    console.log("ROLE =", profile.role);
+    console.log("DEPT =", profile.department_code);
+    console.log(
+      "TARGET =",
+      ROLE_CONFIG.getDefaultPage(profile.role || "staff"),
+    );
+
+    redirectByRole(profile.role || "staff");
   } catch (err) {
     console.error("Login Error:", err);
     alert("Username หรือ Password ไม่ถูกต้อง หรือบัญชีถูกปิดใช้งาน");
@@ -319,7 +327,7 @@ function handleQrLogin() {
     role: userRole,
   });
 
-  redirectByRole(userRole);
+  redirectByRole(userRole || "staff");
 }
 
 /* ======================================================
@@ -387,7 +395,6 @@ function openQrScanner() {
   // window.location.href = "/html/qr-scanner.html";
 }
 
-
 let qrScanner = null;
 
 /* ======================================================
@@ -395,9 +402,7 @@ let qrScanner = null;
 ====================================================== */
 
 function showQrScanner() {
-
-  const modal =
-    document.getElementById("qrScannerModal");
+  const modal = document.getElementById("qrScannerModal");
 
   if (!modal) return;
 
@@ -414,7 +419,7 @@ function showQrScanner() {
         fps: 10,
         qrbox: 250,
       },
-      onQrScanSuccess
+      onQrScanSuccess,
     )
     .catch((err) => {
       console.error(err);
@@ -423,9 +428,7 @@ function showQrScanner() {
 }
 
 function closeQrScanner() {
-
-  const modal =
-    document.getElementById("qrScannerModal");
+  const modal = document.getElementById("qrScannerModal");
 
   if (qrScanner) {
     qrScanner
@@ -443,7 +446,6 @@ function closeQrScanner() {
 }
 
 function onQrScanSuccess(decodedText) {
-
   console.log("QR =", decodedText);
 
   if (qrScanner) {
@@ -456,9 +458,5 @@ function onQrScanSuccess(decodedText) {
     https://prod-ea-factory.pages.dev/login?dept=blow&token=BLOW001
   */
 
-    
-
-
   window.location.href = decodedText;
 }
-
