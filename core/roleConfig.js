@@ -29,9 +29,9 @@ export const ROLE_LABELS = {
  * 🎯 หน้าแรกของแต่ละ Role
  */
 export const ROLE_HOME_PAGES = {
-  admin: "/html/admintor.html",
-  management: "/html/dashboard.html",
-  accounting: "/html/accounting-panel.html",
+  admin: "/pages/admin-panel.html",
+  management: "/pages/index.html",
+  accounting: "/pages/accounting-panel.html",
   supervisor: "/pages/form-department.html",
   staff: "/pages/form-department.html",
 };
