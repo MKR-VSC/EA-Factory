@@ -30,7 +30,7 @@ export const ROLE_LABELS = {
  */
 export const ROLE_HOME_PAGES = {
   admin: "/pages/admin-panel.html",
-  management: "/pages/index.html",
+  management: "/index.html",
   accounting: "/pages/accounting-panel.html",
   supervisor: "/pages/form-department.html",
   staff: "/pages/form-department.html",
@@ -147,3 +147,29 @@ export function canCreateWasteReport(role) {
     ROLES.STAFF,
   ].includes(currentRole);
 }
+
+
+// ======================================================
+// ทำให้ไฟล์ login.js เรียก ROLE_CONFIG ได้
+// ======================================================
+
+window.ROLE_CONFIG = {
+  ROLES,
+  ROLE_LABELS,
+  ROLE_HOME_PAGES,
+
+  normalizeRole,
+  isValidRole,
+  getRoleLabel,
+  getHomePage,
+
+  // login.js ใช้ชื่อนี้
+  getDefaultPage: getHomePage,
+
+  isManagement,
+  canApprove,
+  canViewAllReports,
+  canManageUsers,
+  canManageCost,
+  canCreateWasteReport,
+};
