@@ -442,6 +442,79 @@
       </main>
     </div>
 
+    <!-- ================= EDIT USER MODAL ================= -->
+<div id="edit-user-modal" class="modal-overlay" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <h2>✏️ แก้ไข User</h2>
+        <p>แก้ไขข้อมูลผู้ใช้งานและสิทธิ์การเข้าใช้งาน</p>
+      </div>
+
+      <button type="button" class="modal-close" id="btn-close-edit-user">
+        ×
+      </button>
+    </div>
+
+    <input type="hidden" id="edit-user-id" />
+
+    <div class="modal-form-grid">
+      <label>
+        Username
+        <input type="text" id="edit-username" />
+      </label>
+
+      <label>
+        ชื่อแสดงผล
+        <input type="text" id="edit-display-name" />
+      </label>
+
+      <label>
+        แผนก
+        <input type="text" id="edit-department" />
+      </label>
+
+      <label>
+        Role
+        <select id="edit-role">
+          <option value="staff">staff</option>
+          <option value="supervisor">supervisor</option>
+          <option value="accounting">accounting</option>
+          <option value="management">management</option>
+          <option value="admin">admin</option>
+        </select>
+      </label>
+
+      <label>
+        Status
+        <select id="edit-status">
+          <option value="active">active</option>
+          <option value="inactive">inactive</option>
+        </select>
+      </label>
+
+      <label>
+        Password ใหม่
+        <input
+          type="text"
+          id="edit-password"
+          placeholder="เว้นว่างไว้ ถ้าไม่ต้องการเปลี่ยน"
+        />
+      </label>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="btn-cancel-edit-user">
+        ยกเลิก
+      </button>
+
+      <button type="button" class="btn btn-primary" id="btn-save-edit-user">
+        บันทึกการแก้ไข
+      </button>
+    </div>
+  </div>
+</div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/roleConfig.js"></script>

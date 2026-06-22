@@ -22,7 +22,13 @@ const MASTER_TABLES = {
 
 const LOGIN_PAGE = "/login.html";
 
-const ROLE_OPTIONS = ["staff", "supervisor", "accounting", "management", "admin"];
+const ROLE_OPTIONS = [
+  "staff",
+  "supervisor",
+  "accounting",
+  "management",
+  "admin",
+];
 const STATUS_OPTIONS = ["active", "inactive"];
 
 /* =========================================================
@@ -169,24 +175,60 @@ function bindEvents() {
 
   document.getElementById("btn-refresh")?.addEventListener("click", loadAll);
 
-  document.getElementById("search-input")?.addEventListener("input", renderReports);
-  document.getElementById("status-filter")?.addEventListener("change", renderReports);
+  document
+    .getElementById("search-input")
+    ?.addEventListener("input", renderReports);
+  document
+    .getElementById("status-filter")
+    ?.addEventListener("change", renderReports);
 
-  document.getElementById("btn-add-dept")?.addEventListener("click", addDepartment);
+  document
+    .getElementById("btn-add-dept")
+    ?.addEventListener("click", addDepartment);
   document.getElementById("btn-add-shift")?.addEventListener("click", addShift);
-  document.getElementById("btn-add-machine")?.addEventListener("click", addMachine);
-  document.getElementById("btn-add-problem")?.addEventListener("click", addProblem);
-  document.getElementById("master-dept-filter")?.addEventListener("change", () => {
-    renderMachines();
-    renderProblems();
-  });
+  document
+    .getElementById("btn-add-machine")
+    ?.addEventListener("click", addMachine);
+  document
+    .getElementById("btn-add-problem")
+    ?.addEventListener("click", addProblem);
+  document
+    .getElementById("master-dept-filter")
+    ?.addEventListener("change", () => {
+      renderMachines();
+      renderProblems();
+    });
 
   document.getElementById("btn-add-user")?.addEventListener("click", addUser);
-  document.getElementById("user-search-input")?.addEventListener("input", renderUsers);
-  document.getElementById("user-status-filter")?.addEventListener("change", renderUsers);
+  document
+    .getElementById("user-search-input")
+    ?.addEventListener("input", renderUsers);
+  document
+    .getElementById("user-status-filter")
+    ?.addEventListener("change", renderUsers);
 
   document.getElementById("btnLogout")?.addEventListener("click", logout);
   document.getElementById("btn-logout")?.addEventListener("click", logout);
+
+  document
+  .getElementById("btn-close-edit-user")
+  ?.addEventListener("click", closeEditUserModal);
+
+document
+  .getElementById("btn-cancel-edit-user")
+  ?.addEventListener("click", closeEditUserModal);
+
+document
+  .getElementById("btn-save-edit-user")
+  ?.addEventListener("click", saveEditUser);
+
+document
+  .getElementById("edit-user-modal")
+  ?.addEventListener("click", (event) => {
+    if (event.target.id === "edit-user-modal") {
+      closeEditUserModal();
+    }
+  });
 }
 
 function showSection(section, activeBtn) {
@@ -224,7 +266,10 @@ async function loadAll() {
 
     setText("status-api", "เชื่อมต่อได้");
     setText("status-latency", `${latency} ms`);
-    setText("last-update", `อัปเดตล่าสุด: ${new Date().toLocaleString("th-TH")}`);
+    setText(
+      "last-update",
+      `อัปเดตล่าสุด: ${new Date().toLocaleString("th-TH")}`,
+    );
 
     addLog("INFO", "โหลดข้อมูลสำเร็จ");
   } catch (err) {
@@ -255,11 +300,15 @@ async function loadReports() {
 }
 
 async function loadMasters() {
-  const department = await selectFirstAvailableTable(MASTER_TABLES.departments, "*", {
-    orderColumn: "id",
-    ascending: true,
-    optional: true,
-  });
+  const department = await selectFirstAvailableTable(
+    MASTER_TABLES.departments,
+    "*",
+    {
+      orderColumn: "id",
+      ascending: true,
+      optional: true,
+    },
+  );
 
   const machine = await selectFirstAvailableTable(MASTER_TABLES.machines, "*", {
     orderColumn: "id",
@@ -284,7 +333,9 @@ async function loadMasters() {
   state.problemTable = problem.table;
   state.shiftTable = shift.table;
 
-  state.departments = department.rows.length ? department.rows : DEFAULT_DEPARTMENTS;
+  state.departments = department.rows.length
+    ? department.rows
+    : DEFAULT_DEPARTMENTS;
   state.machines = machine.rows;
   state.problems = problem.rows;
   state.shifts = shift.rows.length ? shift.rows : DEFAULT_SHIFTS;
@@ -299,7 +350,8 @@ async function loadMasters() {
 async function loadUsers() {
   const { data, error } = await state.supabase
     .from(PROFILE_TABLE)
-    .select(`
+    .select(
+      `
       id,
       username,
       password,
@@ -311,7 +363,8 @@ async function loadUsers() {
       email,
       status,
       created_at
-    `)
+    `,
+    )
     .order("username", { ascending: true });
 
   if (error) {
@@ -322,7 +375,11 @@ async function loadUsers() {
   renderUsers();
 }
 
-async function selectFirstAvailableTable(tableNames, columns = "*", options = {}) {
+async function selectFirstAvailableTable(
+  tableNames,
+  columns = "*",
+  options = {},
+) {
   let lastError = null;
 
   for (const table of tableNames) {
@@ -358,7 +415,7 @@ async function selectFirstAvailableTable(tableNames, columns = "*", options = {}
   }
 
   throw new Error(
-    `ไม่พบตารางข้อมูลที่ใช้งานได้: ${tableNames.join(" / ")} (${lastError?.message || "unknown error"})`
+    `ไม่พบตารางข้อมูลที่ใช้งานได้: ${tableNames.join(" / ")} (${lastError?.message || "unknown error"})`,
   );
 }
 
@@ -449,7 +506,7 @@ function updateSummary() {
     totalWeight.toLocaleString("th-TH", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    })
+    }),
   );
 }
 
@@ -467,13 +524,17 @@ async function addDepartment() {
   }
 
   if (!state.departmentTable) {
-    showAlert("ยังไม่พบตาราง master_departments หรือ pvt_departments ใน Supabase");
+    showAlert(
+      "ยังไม่พบตาราง master_departments หรือ pvt_departments ใน Supabase",
+    );
     return;
   }
 
   const payload = createDepartmentPayload(state.departmentTable, code, name);
 
-  const { error } = await state.supabase.from(state.departmentTable).insert(payload);
+  const { error } = await state.supabase
+    .from(state.departmentTable)
+    .insert(payload);
 
   if (error) {
     showAlert(`เพิ่มแผนกไม่สำเร็จ: ${error.message}`);
@@ -678,7 +739,13 @@ async function addProblem() {
   });
 }
 
-async function addDepartmentMasterItem({ inputId, type, currentTable, tableList, reloadFn }) {
+async function addDepartmentMasterItem({
+  inputId,
+  type,
+  currentTable,
+  tableList,
+  reloadFn,
+}) {
   const input = document.getElementById(inputId);
   const name = input?.value.trim();
   const department = getValue("master-dept-filter");
@@ -768,11 +835,21 @@ function createProblemPayload(table, name, department) {
 }
 
 function renderMachines() {
-  renderDepartmentFilteredList("machine-list", state.machines, deleteMachine, "machine");
+  renderDepartmentFilteredList(
+    "machine-list",
+    state.machines,
+    deleteMachine,
+    "machine",
+  );
 }
 
 function renderProblems() {
-  renderDepartmentFilteredList("problem-list", state.problems, deleteProblem, "problem");
+  renderDepartmentFilteredList(
+    "problem-list",
+    state.problems,
+    deleteProblem,
+    "problem",
+  );
 }
 
 function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
@@ -810,7 +887,8 @@ function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
       row.reason_name ||
       "-";
 
-    const department = row.department_code || row.department || row.dept || selectedDept;
+    const department =
+      row.department_code || row.department || row.dept || selectedDept;
 
     const btn = document.createElement("button");
     btn.type = "button";
@@ -898,8 +976,12 @@ function renderUsers() {
     .map((user) => {
       const userId = escapeHtml(user.id);
       const username = escapeHtml(user.username || "-");
-      const displayName = escapeHtml(user.display_name || user.full_name || "-");
-      const department = escapeHtml(user.department || user.department_code || "-");
+      const displayName = escapeHtml(
+        user.display_name || user.full_name || "-",
+      );
+      const department = escapeHtml(
+        user.department || user.department_code || "-",
+      );
       const role = String(user.role || "staff").toLowerCase();
       const status = String(user.status || "active").toLowerCase();
 
@@ -910,21 +992,39 @@ function renderUsers() {
           <td>${department}</td>
           <td>
             <select data-user-role="${userId}" onchange="updateUserRole('${userId}', this.value)">
-              ${ROLE_OPTIONS.map((r) => `
+              ${ROLE_OPTIONS.map(
+                (r) => `
                 <option value="${r}" ${r === role ? "selected" : ""}>${r}</option>
-              `).join("")}
+              `,
+              ).join("")}
             </select>
           </td>
           <td>
             <select data-user-status="${userId}" onchange="updateUserStatus('${userId}', this.value)">
-              ${STATUS_OPTIONS.map((s) => `
+              ${STATUS_OPTIONS.map(
+                (s) => `
                 <option value="${s}" ${s === status ? "selected" : ""}>${s}</option>
-              `).join("")}
+              `,
+              ).join("")}
             </select>
           </td>
-          <td>
-            <button type="button" onclick="deleteUser('${userId}')">ลบ</button>
-          </td>
+         <td class="action-buttons">
+        <button
+          type="button"
+          class="btn btn-warning"
+          onclick="editUser('${userId}')"
+        >
+          ✏️ แก้ไข
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-danger"
+          onclick="deleteUser('${userId}')"
+        >
+          🗑 ลบ
+        </button>
+      </td>
         </tr>
       `;
     })
@@ -1044,6 +1144,165 @@ async function deleteUser(userId) {
   await loadUsers();
 }
 
+
+async function editUser(userId) {
+  const user = state.users.find((u) => u.id === userId);
+
+  if (!user) {
+    alert("ไม่พบข้อมูลผู้ใช้งาน");
+    return;
+  }
+
+  const displayName = prompt(
+    "ชื่อแสดงผล",
+    user.display_name || ""
+  );
+
+  if (displayName === null) return;
+
+  const department = prompt(
+    "แผนก",
+    user.department || user.department_code || ""
+  );
+
+  if (department === null) return;
+
+  const role = prompt(
+    "Role (staff/supervisor/accounting/management/admin)",
+    user.role || "staff"
+  );
+
+  if (role === null) return;
+
+  const password = prompt(
+    "Password ใหม่ (เว้นว่างหากไม่เปลี่ยน)",
+    ""
+  );
+
+  const payload = {
+    display_name: displayName,
+    full_name: displayName,
+    department,
+    department_code: department,
+    role,
+  };
+
+  if (password.trim()) {
+    payload.password = password.trim();
+  }
+
+  const { error } = await state.supabase
+    .from(PROFILE_TABLE)
+    .update(payload)
+    .eq("id", userId);
+
+  if (error) {
+    showAlert(`แก้ไข User ไม่สำเร็จ : ${error.message}`);
+    return;
+  }
+
+  addLog(
+    "INFO",
+    `แก้ไข User ${user.username}`
+  );
+
+  await loadUsers();
+}
+
+function openEditUserModal(userId) {
+  const user = state.users.find((item) => String(item.id) === String(userId));
+
+  if (!user) {
+    showAlert("ไม่พบข้อมูลผู้ใช้งาน");
+    return;
+  }
+
+  setValue("edit-user-id", user.id);
+  setValue("edit-username", user.username || "");
+  setValue("edit-display-name", user.display_name || user.full_name || "");
+  setValue("edit-department", user.department || user.department_code || "");
+  setValue("edit-role", String(user.role || "staff").toLowerCase());
+  setValue("edit-status", String(user.status || "active").toLowerCase());
+  setValue("edit-password", "");
+
+  const modal = document.getElementById("edit-user-modal");
+  if (modal) modal.hidden = false;
+}
+
+function closeEditUserModal() {
+  const modal = document.getElementById("edit-user-modal");
+  if (modal) modal.hidden = true;
+}
+
+async function saveEditUser() {
+  const userId = getValue("edit-user-id");
+  const username = getValue("edit-username").toUpperCase();
+  const displayName = getValue("edit-display-name");
+  const department = getValue("edit-department").toUpperCase();
+  const role = getValue("edit-role") || "staff";
+  const status = getValue("edit-status") || "active";
+  const password = getValue("edit-password");
+
+  if (!userId) {
+    showAlert("ไม่พบรหัส User");
+    return;
+  }
+
+  if (!username) {
+    showAlert("กรุณากรอก Username");
+    return;
+  }
+
+  const duplicate = state.users.some((user) => {
+    return (
+      String(user.id) !== String(userId) &&
+      String(user.username || "").toUpperCase() === username
+    );
+  });
+
+  if (duplicate) {
+    showAlert(`Username ${username} มีอยู่แล้ว`);
+    return;
+  }
+
+  const payload = {
+    username,
+    display_name: displayName || username,
+    full_name: displayName || username,
+    department: department || "",
+    department_code: department || "",
+    role,
+    status,
+    email: `${username.toLowerCase()}@pvt.local`,
+  };
+
+  if (password) {
+    payload.password = password;
+  }
+
+  const btn = document.getElementById("btn-save-edit-user");
+  if (btn) btn.disabled = true;
+
+  const { error } = await state.supabase
+    .from(PROFILE_TABLE)
+    .update(payload)
+    .eq("id", userId);
+
+  if (btn) btn.disabled = false;
+
+  if (error) {
+    showAlert(`แก้ไข User ไม่สำเร็จ: ${error.message}`);
+    addLog("ERROR", error.message);
+    return;
+  }
+
+  closeEditUserModal();
+  addLog("INFO", `แก้ไข User สำเร็จ: ${username}`);
+  await loadUsers();
+}
+
+
+
 function clearUserForm() {
   setValue("user-username", "");
   setValue("user-password", "");
@@ -1121,7 +1380,9 @@ function openDepartmentQr(url) {
 ========================================================= */
 
 function getDeptCode(row) {
-  return String(row.department_code || row.dept_code || row.code || "").toUpperCase();
+  return String(
+    row.department_code || row.dept_code || row.code || "",
+  ).toUpperCase();
 }
 
 function getDeptName(row) {
@@ -1129,7 +1390,9 @@ function getDeptName(row) {
 }
 
 function normalizeDept(value) {
-  return String(value || "").trim().toUpperCase();
+  return String(value || "")
+    .trim()
+    .toUpperCase();
 }
 
 function normalizeStatus(value) {
@@ -1297,7 +1560,9 @@ window.logout = logout;
 
 window.updateUserRole = updateUserRole;
 window.updateUserStatus = updateUserStatus;
+window.editUser = editUser;
 window.deleteUser = deleteUser;
+
 
 window.deleteDepartment = deleteDepartment;
 window.deleteShift = deleteShift;
@@ -1306,3 +1571,7 @@ window.deleteProblem = deleteProblem;
 
 window.copyDepartmentLink = copyDepartmentLink;
 window.openDepartmentQr = openDepartmentQr;
+
+window.openEditUserModal = openEditUserModal;
+window.closeEditUserModal = closeEditUserModal;
+window.saveEditUser = saveEditUser;
