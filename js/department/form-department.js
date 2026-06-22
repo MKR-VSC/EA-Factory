@@ -40,8 +40,7 @@ const deptFromUrl = urlParams.get("dept");
 const activeRoleRaw = localStorage.getItem("activeRole") || "staff";
 const activeUserId = localStorage.getItem("activeUserId") || "";
 
-const currentDeptRaw =
-  deptFromUrl || localStorage.getItem("activeDept") || "";
+const currentDeptRaw = deptFromUrl || localStorage.getItem("activeDept") || "";
 
 let currentDept = normalizeDept(currentDeptRaw);
 let appSelectedMachine = "";
@@ -49,12 +48,10 @@ let appSelectedProblem = "";
 
 // ถ้า dept ที่ได้มาไม่ถูกต้อง ให้กลับไปใช้ blow เพื่อกัน Foreign Key Error
 if (!VALID_DEPARTMENTS.includes(currentDept)) {
-  console.error(
-    `[DEPT_ERROR] ไม่พบแผนก: ${currentDeptRaw}`
-  );
+  console.error(`[DEPT_ERROR] ไม่พบแผนก: ${currentDeptRaw}`);
 
   alert(
-    `ไม่พบแผนกของผู้ใช้งาน (${currentDeptRaw})\nกรุณาตรวจสอบ department_code ในตาราง profiles`
+    `ไม่พบแผนกของผู้ใช้งาน (${currentDeptRaw})\nกรุณาตรวจสอบ department_code ในตาราง profiles`,
   );
 
   window.location.href = "/login.html";
@@ -70,48 +67,48 @@ localStorage.setItem("activeDept", currentDept);
 // =========================================================
 
 function normalizeDept(dept) {
-  const d = String(dept || "blow").toLowerCase().trim();
+  const d = String(dept || "blow")
+    .toLowerCase()
+    .trim();
 
   const map = {
-
     mono: "mono",
-"โมโน": "mono",
-"แผนกโมโน": "mono",
-
+    โมโน: "mono",
+    แผนกโมโน: "mono",
 
     print: "print",
-    "ม้วนพิมพ์": "print",
+    ม้วนพิมพ์: "print",
 
     pipe: "pipe",
-    "ท่อ": "pipe",
-    "แผนกท่อ": "pipe",
+    ท่อ: "pipe",
+    แผนกท่อ: "pipe",
 
     sheet: "sheet",
-    "sheet": "sheet",
-    "ตัดผืน": "sheet",
-    "แผ่นหล่อ": "sheet",
-    "แผนกแผ่นหล่อ": "sheet",
+    sheet: "sheet",
+    ตัดผืน: "sheet",
+    แผ่นหล่อ: "sheet",
+    แผนกแผ่นหล่อ: "sheet",
     "แผนกแผ่นหล่อ/ตัดผืน": "sheet",
 
     tape: "tape",
-    "เทป": "tape",
-    "เทปน้ำพุ่ง": "tape",
-    "เทปพัน": "tape",
-    "แผนกเทปพัน": "tape",
+    เทป: "tape",
+    เทปน้ำพุ่ง: "tape",
+    เทปพัน: "tape",
+    แผนกเทปพัน: "tape",
     "แผนกเทปพัน/เทปน้ำพุ่ง": "tape",
 
     blow: "blow",
-    "เป่าถุง": "blow",
-    "แผนกเป่าถุง": "blow",
+    เป่าถุง: "blow",
+    แผนกเป่าถุง: "blow",
 
     drill: "drill",
-    "ตัดเจาะ": "drill",
-    "เจาะรู": "drill",
-    "แผนกตัดเจาะ": "drill",
+    ตัดเจาะ: "drill",
+    เจาะรู: "drill",
+    แผนกตัดเจาะ: "drill",
 
     garbage: "garbage",
-    "ถุงขยะ": "garbage",
-    "แผนกถุงขยะ": "garbage",
+    ถุงขยะ: "garbage",
+    แผนกถุงขยะ: "garbage",
   };
 
   return map[d] || d;
@@ -124,7 +121,7 @@ function getDeptDisplayName(dept) {
 function validateCurrentDept() {
   if (!VALID_DEPARTMENTS.includes(currentDept)) {
     alert(
-      `รหัสแผนกไม่ถูกต้อง: ${currentDept}\n\nกรุณาตรวจสอบลิงก์ QR หรือค่า dept ใน URL`
+      `รหัสแผนกไม่ถูกต้อง: ${currentDept}\n\nกรุณาตรวจสอบลิงก์ QR หรือค่า dept ใน URL`,
     );
     return false;
   }
@@ -137,7 +134,9 @@ function validateCurrentDept() {
 // =========================================================
 
 function normalizeRole(role) {
-  return String(role || "").toLowerCase().trim();
+  return String(role || "")
+    .toLowerCase()
+    .trim();
 }
 
 function isStaffRole(role) {
@@ -164,7 +163,7 @@ function canSeeDashboard(role) {
 
 function isValidUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(
-    String(value || "")
+    String(value || ""),
   );
 }
 
@@ -183,7 +182,7 @@ function setActiveUserName(name) {
   localStorage.setItem("activeName", cleanName);
   localStorage.setItem(
     "activeRole",
-    localStorage.getItem("activeRole") || "staff"
+    localStorage.getItem("activeRole") || "staff",
   );
 }
 
@@ -197,25 +196,24 @@ let autoLogoutTimer = null;
 function startAutoLogoutTimer() {
   resetAutoLogoutTimer();
 
-  [
-    "click",
-    "keydown",
-    "touchstart",
-    "mousemove",
-    "scroll"
-  ].forEach((eventName) => {
-    window.addEventListener(eventName, resetAutoLogoutTimer, {
-      passive: true
-    });
-  });
+  ["click", "keydown", "touchstart", "mousemove", "scroll"].forEach(
+    (eventName) => {
+      window.addEventListener(eventName, resetAutoLogoutTimer, {
+        passive: true,
+      });
+    },
+  );
 }
 
 function resetAutoLogoutTimer() {
   clearTimeout(autoLogoutTimer);
 
-  autoLogoutTimer = setTimeout(() => {
-    forceLogoutByIdle();
-  }, AUTO_LOGOUT_MINUTES * 60 * 1000);
+  autoLogoutTimer = setTimeout(
+    () => {
+      forceLogoutByIdle();
+    },
+    AUTO_LOGOUT_MINUTES * 60 * 1000,
+  );
 }
 
 async function forceLogoutByIdle() {
@@ -253,19 +251,20 @@ window.addEventListener("DOMContentLoaded", async () => {
     // logout auto
     startAutoLogoutTimer();
 
-
     if (!validateCurrentDept()) return;
 
     renderDeptInfo();
     renderUserInfo();
     setupStaffNameBeforeUse();
-    
+
     setupDashboardMenu();
     setupDefaultDateTime();
     setupNetworkStatus();
     setupFormSubmit();
     setupDropdownListeners();
     renderCurrentDeptLabel();
+
+    await loadShiftOptions();
 
     await loadMasterDataAndRender();
   } catch (err) {
@@ -396,7 +395,6 @@ function renderDeptInfo() {
   }
 }
 
-
 function renderCurrentDeptLabel() {
   const el = document.getElementById("current-dept-label");
   if (!el) return;
@@ -405,12 +403,13 @@ function renderCurrentDeptLabel() {
   el.textContent = `${deptName} (${currentDept.toUpperCase()})`;
 }
 
-
 function setupDashboardMenu() {
   const dashboardLink = document.getElementById("nav-dashboard-link");
   if (!dashboardLink) return;
 
-  dashboardLink.style.display = canSeeDashboard(activeRoleRaw) ? "flex" : "none";
+  dashboardLink.style.display = canSeeDashboard(activeRoleRaw)
+    ? "flex"
+    : "none";
 }
 
 // =========================================================
@@ -671,6 +670,8 @@ async function handleFormSubmit(event) {
   const noteInput = document.getElementById("problem-description");
 
   const finalShift = shiftSelect?.value || "";
+  const selectedShift =
+    typeof getShiftByCode === "function" ? getShiftByCode(finalShift) : null;
   const finalMachine = machineSelect?.value || appSelectedMachine || "";
   const finalProblem = problemSelect?.value || appSelectedProblem || "";
   const detailNote = noteInput?.value.trim() || "";
@@ -692,12 +693,12 @@ async function handleFormSubmit(event) {
     const isDuplicate = await checkDuplicateReport(
       clientSupabase,
       reportDate,
-      reporterName
+      reporterName,
     );
 
     if (isDuplicate) {
       alert(
-        "วันนี้ชื่อนี้เคยบันทึกข้อมูลในแผนกนี้แล้วค่ะ\n\nหากเป็นการกรอกซ้ำ ให้หัวหน้าหรือแอดมินตรวจสอบในแดชบอร์ดก่อนนะคะ"
+        "วันนี้ชื่อนี้เคยบันทึกข้อมูลในแผนกนี้แล้วค่ะ\n\nหากเป็นการกรอกซ้ำ ให้หัวหน้าหรือแอดมินตรวจสอบในแดชบอร์ดก่อนนะคะ",
       );
       return;
     }
@@ -711,8 +712,12 @@ async function handleFormSubmit(event) {
       report_date: reportDate,
       incident_datetime: finalDateTime,
 
-      shift: finalShift,
+      shift: selectedShift?.name || finalShift,
       work_shift: finalShift,
+      // work_shift_name: selectedShift?.name || "",
+      // shift_start: selectedShift?.start || "",
+      // shift_end: selectedShift?.end || "",
+      // shift_type: selectedShift?.type || "",
 
       // สำคัญ: ต้องตรงกับ departments.code เท่านั้น
       department_code: currentDept,
@@ -778,6 +783,60 @@ function setSubmitLoading(button, isLoading) {
     : button.dataset.originalText;
 }
 
+async function loadShiftOptions() {
+  const select = document.getElementById("work-shift");
+  if (!select) return;
+
+  select.innerHTML =
+    '<option value="">-- โปรดเลือกกะการทำงาน --</option>';
+
+  const fallbackShifts = [
+    "กะเช้า",
+    "กะบ่าย",
+    "กะดึก",
+    "OT",
+    "วันอาทิตย์",
+  ];
+
+  const clientSupabase = window.supabaseClient || window.supabase;
+
+  if (!clientSupabase) {
+    renderShiftOptions(select, fallbackShifts);
+    return;
+  }
+
+  try {
+    const { data, error } = await clientSupabase
+      .from("master_shifts")
+      .select("shift_name")
+      .eq("is_active", true)
+      .order("id", { ascending: true });
+
+    if (error) throw error;
+
+    const shifts = data
+      .map((item) => item.shift_name)
+      .filter(Boolean);
+
+    renderShiftOptions(
+      select,
+      shifts.length ? shifts : fallbackShifts
+    );
+  } catch (err) {
+    console.warn("โหลดกะจาก master_shifts ไม่สำเร็จ:", err);
+    renderShiftOptions(select, fallbackShifts);
+  }
+}
+
+function renderShiftOptions(select, shiftList) {
+  shiftList.forEach((shiftName) => {
+    const option = document.createElement("option");
+    option.value = shiftName;
+    option.textContent = shiftName;
+    select.appendChild(option);
+  });
+}
+
 // =========================================================
 // RESET
 // =========================================================
@@ -827,8 +886,6 @@ async function handleLogout() {
 
   window.location.href = "/login.html";
 }
-
-
 
 // =========================================================
 // EXPORT TO HTML

@@ -57,50 +57,6 @@ const DEFAULT_SHIFTS = [
    DEPARTMENT QR CONFIG
 ========================================================= */
 
-const DEPARTMENT_QR_LIST = [
-  {
-    name: "เป่าถุง",
-    code: "BLOW",
-    path: "/pages/form-department.html?dept=BLOW",
-  },
-  {
-    name: "ท่อ",
-    code: "PIPE",
-    path: "/pages/form-department.html?dept=PIPE",
-  },
-  {
-    name: "ตัดผืน",
-    code: "SHEET",
-    path: "/pages/form-department.html?dept=SHEET",
-  },
-  {
-    name: "โมโน",
-    code: "MONO",
-    path: "/pages/form-department.html?dept=MONO",
-  },
-  {
-    name: "เทปน้ำพุ่ง",
-    code: "TAPE",
-    path: "/pages/form-department.html?dept=TAPE",
-  },
-  {
-    name: "เป่าพิล์ม",
-    code: "PRINT",
-    path: "/pages/form-department.html?dept=PRINT",
-  },
-  {
-    name: "ตัดเจาะ",
-    code: "DRILL",
-    path: "/pages/form-department.html?dept=DRILL",
-  },
-  {
-    name: "ถุงขยะ",
-    code: "GARBAGE",
-    path: "/pages/form-department.html?dept=GARBAGE",
-  },
-  
-];
-
 /* =========================================================
    STATE
 ========================================================= */
@@ -237,24 +193,24 @@ function bindEvents() {
   document.getElementById("btn-logout")?.addEventListener("click", logout);
 
   document
-  .getElementById("btn-close-edit-user")
-  ?.addEventListener("click", closeEditUserModal);
+    .getElementById("btn-close-edit-user")
+    ?.addEventListener("click", closeEditUserModal);
 
-document
-  .getElementById("btn-cancel-edit-user")
-  ?.addEventListener("click", closeEditUserModal);
+  document
+    .getElementById("btn-cancel-edit-user")
+    ?.addEventListener("click", closeEditUserModal);
 
-document
-  .getElementById("btn-save-edit-user")
-  ?.addEventListener("click", saveEditUser);
+  document
+    .getElementById("btn-save-edit-user")
+    ?.addEventListener("click", saveEditUser);
 
-document
-  .getElementById("edit-user-modal")
-  ?.addEventListener("click", (event) => {
-    if (event.target.id === "edit-user-modal") {
-      closeEditUserModal();
-    }
-  });
+  document
+    .getElementById("edit-user-modal")
+    ?.addEventListener("click", (event) => {
+      if (event.target.id === "edit-user-modal") {
+        closeEditUserModal();
+      }
+    });
 }
 
 function showSection(section, activeBtn) {
@@ -330,26 +286,26 @@ async function loadMasters() {
     MASTER_TABLES.departments,
     "*",
     {
-      orderColumn: "id",
+      orderColumn: "sort_order",
       ascending: true,
       optional: true,
     },
   );
 
   const machine = await selectFirstAvailableTable(MASTER_TABLES.machines, "*", {
-    orderColumn: "id",
+    orderColumn: "sort_order",
     ascending: true,
     optional: true,
   });
 
   const problem = await selectFirstAvailableTable(MASTER_TABLES.problems, "*", {
-    orderColumn: "id",
+    orderColumn: "sort_order",
     ascending: true,
     optional: true,
   });
 
   const shift = await selectFirstAvailableTable(MASTER_TABLES.shifts, "*", {
-    orderColumn: "id",
+    orderColumn: "sort_order",
     ascending: true,
     optional: true,
   });
@@ -368,6 +324,7 @@ async function loadMasters() {
 
   renderDepartments();
   renderDepartmentFilter();
+  renderUserDepartmentOptions();
   renderShifts();
   renderMachines();
   renderProblems();
@@ -425,6 +382,17 @@ async function selectFirstAvailableTable(
           table,
           rows: Array.isArray(data) ? data : [],
         };
+      }
+
+      // ถ้าตารางสำรองยังไม่มี sort_order ให้ลองโหลดแบบไม่เรียงลำดับอีกครั้ง
+      if (options.orderColumn === "sort_order") {
+        const retry = await state.supabase.from(table).select(columns);
+        if (!retry.error) {
+          return {
+            table,
+            rows: sortRowsByOrder(Array.isArray(retry.data) ? retry.data : []),
+          };
+        }
       }
 
       lastError = error;
@@ -498,7 +466,11 @@ function renderReports() {
       return `
         <tr>
           <td>${escapeHtml(formatDate(row.incident_datetime || row.report_date || row.date_time || row.created_at))}</td>
-          <td>${escapeHtml(row.department || row.department_code || row.dept || "-")}</td>
+          <td>
+  ${escapeHtml(
+    getDepartmentName(row.department || row.department_code || row.dept),
+  )}
+</td>
           <td>${escapeHtml(row.machine_no || row.machine || "-")}</td>
           <td>${escapeHtml(row.problem_type || row.problem_detail || row.reason_detail || row.detail || "-")}</td>
           <td>${escapeHtml(formatWasteWeight(row))}</td>
@@ -581,6 +553,7 @@ function createDepartmentPayload(table, code, name) {
       department_code: code,
       department_name: name,
       is_active: true,
+      sort_order: getNextSortOrder(state.departments),
     };
   }
 
@@ -599,7 +572,8 @@ function renderDepartments() {
   if (!list) return;
 
   if (!state.departments.length) {
-    list.innerHTML = `<li><span class="muted">ยังไม่มีข้อมูลแผนก</span></li>`;
+    list.innerHTML =
+      `<li><span class="muted">ยังไม่มีข้อมูลแผนก</span></li>`;
     return;
   }
 
@@ -608,16 +582,49 @@ function renderDepartments() {
       const code = getDeptCode(row);
       const name = getDeptName(row);
       const id = row.id;
+      const sortOrder = row.sort_order || 0;
 
       return `
-        <li>
+        <li class="master-item">
           <span>
             <strong>${escapeHtml(code)}</strong>
             <small>${escapeHtml(name)}</small>
+            <small class="muted">
+              ลำดับ : ${sortOrder}
+            </small>
           </span>
+
           ${
             id && state.departmentTable
-              ? `<button type="button" onclick="deleteDepartment('${escapeAttr(id)}')">ลบ</button>`
+              ? `
+                <div class="master-actions">
+
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="editDepartment('${escapeAttr(id)}')"
+                  >
+                    ✏️
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn btn-warning"
+                    onclick="editDepartmentOrder('${escapeAttr(id)}', ${sortOrder})"
+                  >
+                    🔢
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn btn-danger"
+                    onclick="deleteDepartment('${escapeAttr(id)}')"
+                  >
+                    🗑️
+                  </button>
+
+                </div>
+              `
               : `<small class="muted">ค่าเริ่มต้น</small>`
           }
         </li>
@@ -647,10 +654,109 @@ function renderDepartmentFilter() {
   }
 }
 
+function renderUserDepartmentOptions() {
+  const selectIds = ["user-department", "edit-department"];
+
+  selectIds.forEach((id) => {
+    const select = document.getElementById(id);
+    if (!select || select.tagName !== "SELECT") return;
+
+    const currentValue = normalizeDept(select.value);
+
+    const options = state.departments
+      .map((dept) => {
+        const code = getDeptCode(dept);
+        const name = getDeptName(dept);
+        return `<option value="${escapeAttr(code)}">${escapeHtml(name)} (${escapeHtml(code)})</option>`;
+      })
+      .join("");
+
+    select.innerHTML = `<option value="">-- เลือกแผนก --</option>${options}`;
+
+    if (currentValue) {
+      select.value = currentValue;
+    }
+  });
+}
+
 async function deleteDepartment(id) {
   await deleteMasterItem(state.departmentTable, id, loadMasters);
 }
 
+
+
+async function editDepartment(id) {
+  const row = state.departments.find(
+    (item) => String(item.id) === String(id)
+  );
+
+  if (!row) return;
+
+  const currentCode = getDeptCode(row);
+  const currentName = getDeptName(row);
+
+  const newCode = prompt(
+    "รหัสแผนก",
+    currentCode
+  );
+
+  if (newCode === null) return;
+
+  const newName = prompt(
+    "ชื่อแผนก",
+    currentName
+  );
+
+  if (newName === null) return;
+
+  const { error } = await state.supabase
+    .from(state.departmentTable)
+    .update({
+      department_code: newCode.trim().toUpperCase(),
+      department_name: newName.trim(),
+    })
+    .eq("id", id);
+
+  if (error) {
+    showAlert(error.message);
+    return;
+  }
+
+  await loadMasters();
+}
+
+async function editDepartmentOrder(
+  id,
+  currentOrder
+) {
+  const value = prompt(
+    "ลำดับการแสดงผล",
+    currentOrder || 0
+  );
+
+  if (value === null) return;
+
+  const order = Number(value);
+
+  if (!Number.isFinite(order)) {
+    alert("กรุณาใส่ตัวเลข");
+    return;
+  }
+
+  const { error } = await state.supabase
+    .from(state.departmentTable)
+    .update({
+      sort_order: order,
+    })
+    .eq("id", id);
+
+  if (error) {
+    showAlert(error.message);
+    return;
+  }
+
+  await loadMasters();
+}
 /* =========================================================
    MASTER DATA - SHIFT
 ========================================================= */
@@ -692,6 +798,7 @@ function createShiftPayload(table, name, time) {
       shift_name: name,
       shift_time: time,
       is_active: true,
+      sort_order: getNextSortOrder(state.shifts),
     };
   }
 
@@ -714,21 +821,30 @@ function renderShifts() {
     return;
   }
 
-  list.innerHTML = state.shifts
+  list.innerHTML = sortRowsByOrder(state.shifts)
     .map((row) => {
       const name = row.shift_name || row.name || "-";
       const time = row.shift_time || row.time || "";
       const id = row.id;
+      const sortOrder = row.sort_order || 0;
 
       return `
-        <li>
+        <li class="master-item">
           <span>
             <strong>${escapeHtml(name)}</strong>
             ${time ? `<small>${escapeHtml(time)}</small>` : ""}
+            <small class="muted">ลำดับ : ${sortOrder}</small>
           </span>
+
           ${
             id && state.shiftTable
-              ? `<button type="button" onclick="deleteShift('${escapeAttr(id)}')">ลบ</button>`
+              ? `
+                <div class="master-actions">
+                  <button type="button" class="btn btn-secondary" onclick="editShift('${escapeAttr(id)}')">✏️</button>
+                  <button type="button" class="btn btn-warning" onclick="editShiftOrder('${escapeAttr(id)}', ${sortOrder})">🔢</button>
+                  <button type="button" class="btn btn-danger" onclick="deleteShift('${escapeAttr(id)}')">🗑️</button>
+                </div>
+              `
               : `<small class="muted">ค่าเริ่มต้น</small>`
           }
         </li>
@@ -739,6 +855,36 @@ function renderShifts() {
 
 async function deleteShift(id) {
   await deleteMasterItem(state.shiftTable, id, loadMasters);
+}
+
+async function editShift(id) {
+  const row = state.shifts.find((item) => String(item.id) === String(id));
+  if (!row || !state.shiftTable) return;
+
+  const currentName = row.shift_name || row.name || "";
+  const currentTime = row.shift_time || row.time || "";
+
+  const newName = prompt("ชื่อกะ", currentName);
+  if (newName === null) return;
+  if (!newName.trim()) {
+    showAlert("กรุณากรอกชื่อกะ");
+    return;
+  }
+
+  const newTime = prompt("เวลา / หมายเหตุ (ไม่บังคับ)", currentTime);
+  if (newTime === null) return;
+
+  const payload =
+    state.shiftTable === "master_shifts"
+      ? { shift_name: newName.trim(), shift_time: newTime.trim() }
+      : { shift_name: newName.trim(), shift_time: newTime.trim() };
+
+  await updateMasterItem(state.shiftTable, id, payload, loadMasters);
+}
+
+async function editShiftOrder(id, currentOrder) {
+  if (!state.shiftTable) return;
+  await editSortOrder(state.shiftTable, id, currentOrder, loadMasters);
 }
 
 /* =========================================================
@@ -805,6 +951,16 @@ async function addDepartmentMasterItem({
       ? createMachinePayload(table, name, department)
       : createProblemPayload(table, name, department);
 
+  if (table?.startsWith("master_")) {
+    const sourceRows = type === "machine" ? state.machines : state.problems;
+    payload.sort_order = getNextSortOrder(
+      sourceRows.filter((row) => {
+        const dept = row.department_code || row.department || row.dept || "";
+        return normalizeDept(dept) === normalizeDept(department);
+      }),
+    );
+  }
+
   const { error } = await state.supabase.from(table).insert(payload);
 
   if (error) {
@@ -823,7 +979,6 @@ function createMachinePayload(table, name, department) {
     return {
       machine_no: name,
       department,
-      department_code: department,
       is_active: true,
     };
   }
@@ -844,7 +999,6 @@ function createProblemPayload(table, name, department) {
     return {
       problem_type: name,
       department,
-      department_code: department,
       is_active: true,
     };
   }
@@ -889,10 +1043,12 @@ function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
     return;
   }
 
-  const filtered = rows.filter((row) => {
-    const dept = row.department_code || row.department || row.dept || "";
-    return normalizeDept(dept) === normalizeDept(selectedDept);
-  });
+  const filtered = sortRowsByOrder(
+    rows.filter((row) => {
+      const dept = row.department_code || row.department || row.dept || "";
+      return normalizeDept(dept) === normalizeDept(selectedDept);
+    }),
+  );
 
   if (!filtered.length) {
     list.innerHTML = `<li><span class="muted">ยังไม่มีข้อมูลในแผนกนี้</span></li>`;
@@ -903,34 +1059,110 @@ function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
 
   filtered.forEach((row) => {
     const li = document.createElement("li");
+    li.className = "master-item";
 
-    const name =
-      row.name ||
-      row.machine_no ||
-      row.machine_name ||
-      row.problem_type ||
-      row.problem_name ||
-      row.reason_name ||
-      "-";
+    const name = getMasterItemName(row, type);
+    const department = row.department_code || row.department || row.dept || selectedDept;
+    const sortOrder = row.sort_order || 0;
 
-    const department =
-      row.department_code || row.department || row.dept || selectedDept;
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = "ลบ";
-    btn.addEventListener("click", () => onDelete(row.id));
-
-    li.innerHTML = `
-      <span>
-        <strong>${escapeHtml(name)}</strong>
-        <small>${escapeHtml(department)} / ${escapeHtml(type)}</small>
-      </span>
+    const info = document.createElement("span");
+    info.innerHTML = `
+      <strong>${escapeHtml(name)}</strong>
+      <small>${escapeHtml(getDepartmentName(department))} (${escapeHtml(normalizeDept(department))})</small>
+      <small class="muted">ลำดับ : ${escapeHtml(sortOrder)}</small>
     `;
 
-    li.appendChild(btn);
+    const actions = document.createElement("div");
+    actions.className = "master-actions";
+
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.className = "btn btn-secondary";
+    editBtn.textContent = "✏️";
+    editBtn.title = "แก้ไขชื่อ";
+    editBtn.addEventListener("click", () => editMasterName(row, type));
+
+    const orderBtn = document.createElement("button");
+    orderBtn.type = "button";
+    orderBtn.className = "btn btn-warning";
+    orderBtn.textContent = "🔢";
+    orderBtn.title = "แก้ไขลำดับ";
+    orderBtn.addEventListener("click", () => editMasterOrder(row, type));
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "btn btn-danger";
+    deleteBtn.textContent = "🗑️";
+    deleteBtn.title = "ลบ";
+    deleteBtn.addEventListener("click", () => onDelete(row.id));
+
+    actions.appendChild(editBtn);
+    actions.appendChild(orderBtn);
+    actions.appendChild(deleteBtn);
+
+    li.appendChild(info);
+    li.appendChild(actions);
     list.appendChild(li);
   });
+}
+
+function getMasterItemName(row, type) {
+  if (type === "machine") {
+    return row.machine_no || row.machine_name || row.name || "-";
+  }
+
+  if (type === "problem") {
+    return row.problem_type || row.problem_name || row.reason_name || row.name || "-";
+  }
+
+  return row.name || "-";
+}
+
+function getMasterNameColumn(table, type) {
+  if (type === "machine") {
+    if (table === "master_machines") return "machine_no";
+    if (table === "pvt_machines") return "machine_name";
+  }
+
+  if (type === "problem") {
+    if (table === "master_problems") return "problem_type";
+    if (table === "pvt_problem_types") return "problem_name";
+  }
+
+  return "name";
+}
+
+function getMasterTableByType(type) {
+  return type === "machine" ? state.machineTable : state.problemTable;
+}
+
+async function editMasterName(row, type) {
+  const table = getMasterTableByType(type);
+  const column = getMasterNameColumn(table, type);
+
+  if (!table || !row?.id) return;
+
+  const currentName = getMasterItemName(row, type);
+  const label = type === "machine" ? "ชื่อเครื่องจักร" : "ชื่ออาการเสีย";
+
+  const newName = prompt(label, currentName);
+
+  if (newName === null) return;
+
+  if (!newName.trim()) {
+    showAlert(`กรุณากรอก${label}`);
+    return;
+  }
+
+  await updateMasterItem(table, row.id, { [column]: newName.trim() }, loadMasters);
+}
+
+async function editMasterOrder(row, type) {
+  const table = getMasterTableByType(type);
+
+  if (!table || !row?.id) return;
+
+  await editSortOrder(table, row.id, row.sort_order || 0, loadMasters);
 }
 
 async function deleteMachine(id) {
@@ -1006,7 +1238,7 @@ function renderUsers() {
         user.display_name || user.full_name || "-",
       );
       const department = escapeHtml(
-        user.department || user.department_code || "-",
+        getDepartmentName(user.department || user.department_code),
       );
       const role = String(user.role || "staff").toLowerCase();
       const status = String(user.status || "active").toLowerCase();
@@ -1036,12 +1268,12 @@ function renderUsers() {
           </td>
          <td class="action-buttons">
         <button
-          type="button"
-          class="btn btn-warning"
-          onclick="editUser('${userId}')"
-        >
-          ✏️ แก้ไข
-        </button>
+  type="button"
+  class="btn btn-warning"
+  onclick="openEditUserModal('${userId}')"
+>
+  ✏️ แก้ไข
+</button>
 
         <button
           type="button"
@@ -1069,11 +1301,19 @@ async function addUser() {
     return;
   }
 
-  const exists = state.users.some((u) => {
-    return String(u.username || "").toUpperCase() === username;
-  });
+  const { data: duplicateUsers, error: duplicateError } = await state.supabase
+    .from(PROFILE_TABLE)
+    .select("id")
+    .ilike("username", username)
+    .limit(1);
 
-  if (exists) {
+  if (duplicateError) {
+    showAlert(`ตรวจสอบ Username ไม่สำเร็จ: ${duplicateError.message}`);
+    addLog("ERROR", duplicateError.message);
+    return;
+  }
+
+  if (duplicateUsers?.length) {
     showAlert(`Username ${username} มีอยู่แล้ว`);
     return;
   }
@@ -1170,7 +1410,6 @@ async function deleteUser(userId) {
   await loadUsers();
 }
 
-
 async function editUser(userId) {
   const user = state.users.find((u) => u.id === userId);
 
@@ -1179,31 +1418,25 @@ async function editUser(userId) {
     return;
   }
 
-  const displayName = prompt(
-    "ชื่อแสดงผล",
-    user.display_name || ""
-  );
+  const displayName = prompt("ชื่อแสดงผล", user.display_name || "");
 
   if (displayName === null) return;
 
   const department = prompt(
     "แผนก",
-    user.department || user.department_code || ""
+    user.department || user.department_code || "",
   );
 
   if (department === null) return;
 
   const role = prompt(
     "Role (staff/supervisor/accounting/management/admin)",
-    user.role || "staff"
+    user.role || "staff",
   );
 
   if (role === null) return;
 
-  const password = prompt(
-    "Password ใหม่ (เว้นว่างหากไม่เปลี่ยน)",
-    ""
-  );
+  const password = prompt("Password ใหม่ (เว้นว่างหากไม่เปลี่ยน)", "");
 
   const payload = {
     display_name: displayName,
@@ -1227,10 +1460,7 @@ async function editUser(userId) {
     return;
   }
 
-  addLog(
-    "INFO",
-    `แก้ไข User ${user.username}`
-  );
+  addLog("INFO", `แก้ไข User ${user.username}`);
 
   await loadUsers();
 }
@@ -1327,8 +1557,6 @@ async function saveEditUser() {
   await loadUsers();
 }
 
-
-
 function clearUserForm() {
   setValue("user-username", "");
   setValue("user-password", "");
@@ -1347,10 +1575,11 @@ function renderDepartmentQrList() {
 
   const origin = window.location.origin;
 
-  box.innerHTML = DEPARTMENT_QR_LIST.map((dept) => {
-    const fullUrl = `${origin}${dept.path}`;
+  box.innerHTML = getDepartmentList()
+    .map((dept) => {
+      const fullUrl = `${origin}${dept.path}`;
 
-    return `
+      return `
       <article class="qr-dept-card">
         <div class="qr-dept-info">
           <strong>${escapeHtml(dept.name)} (${escapeHtml(dept.code)})</strong>
@@ -1376,7 +1605,8 @@ function renderDepartmentQrList() {
         </div>
       </article>
     `;
-  }).join("");
+    })
+    .join("");
 }
 
 async function copyDepartmentLink(url) {
@@ -1419,6 +1649,41 @@ function normalizeDept(value) {
   return String(value || "")
     .trim()
     .toUpperCase();
+}
+
+function sortRowsByOrder(rows) {
+  return [...rows].sort((a, b) => {
+    const orderA = Number(a.sort_order ?? 999999);
+    const orderB = Number(b.sort_order ?? 999999);
+
+    if (orderA !== orderB) return orderA - orderB;
+
+    const nameA = String(
+      a.department_code ||
+        a.dept_code ||
+        a.machine_no ||
+        a.machine_name ||
+        a.problem_type ||
+        a.problem_name ||
+        a.shift_name ||
+        a.name ||
+        "",
+    );
+
+    const nameB = String(
+      b.department_code ||
+        b.dept_code ||
+        b.machine_no ||
+        b.machine_name ||
+        b.problem_type ||
+        b.problem_name ||
+        b.shift_name ||
+        b.name ||
+        "",
+    );
+
+    return nameA.localeCompare(nameB, "th");
+  });
 }
 
 function normalizeStatus(value) {
@@ -1577,6 +1842,56 @@ function createUuid() {
   });
 }
 
+
+
+
+function getNextSortOrder(rows) {
+  const maxOrder = rows.reduce((max, row) => {
+    const value = Number(row.sort_order || 0);
+    return Number.isFinite(value) && value > max ? value : max;
+  }, 0);
+
+  return maxOrder + 10;
+}
+
+async function updateMasterItem(table, id, payload, reloadFn) {
+  if (!table || !id) return;
+
+  const { error } = await state.supabase
+    .from(table)
+    .update(payload)
+    .eq("id", id);
+
+  if (error) {
+    showAlert(`แก้ไขข้อมูลไม่สำเร็จ: ${error.message}`);
+    addLog("ERROR", error.message);
+    return;
+  }
+
+  addLog("INFO", `แก้ไขข้อมูลจาก ${table} สำเร็จ`);
+  await reloadFn();
+}
+
+
+async function editSortOrder(table, id, currentSort, reloadFn) {
+  const value = prompt("ใส่ลำดับใหม่ เช่น 1, 2, 3", currentSort || 0);
+  if (value === null) return;
+
+  const sortOrder = Number(value);
+
+  if (!Number.isFinite(sortOrder)) {
+    showAlert("กรุณาใส่ตัวเลขลำดับให้ถูกต้อง");
+    return;
+  }
+
+  await updateMasterItem(table, id, { sort_order: sortOrder }, reloadFn);
+}
+
+
+
+
+
+
 /* =========================================================
    GLOBAL
 ========================================================= */
@@ -1589,7 +1904,6 @@ window.updateUserStatus = updateUserStatus;
 window.editUser = editUser;
 window.deleteUser = deleteUser;
 
-
 window.deleteDepartment = deleteDepartment;
 window.deleteShift = deleteShift;
 window.deleteMachine = deleteMachine;
@@ -1601,3 +1915,9 @@ window.openDepartmentQr = openDepartmentQr;
 window.openEditUserModal = openEditUserModal;
 window.closeEditUserModal = closeEditUserModal;
 window.saveEditUser = saveEditUser;
+window.editDepartment = editDepartment;
+window.editDepartmentOrder = editDepartmentOrder;
+window.editMasterName = editMasterName;
+window.editMasterOrder = editMasterOrder;
+window.editShift = editShift;
+window.editShiftOrder = editShiftOrder;

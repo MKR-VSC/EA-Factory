@@ -339,11 +339,9 @@
                 placeholder="ชื่อแสดงผล"
               />
 
-              <input
-                type="text"
-                id="user-department"
-                placeholder="แผนก เช่น BLOW"
-              />
+              <select id="user-department">
+                <option value="">-- เลือกแผนก --</option>
+              </select>
 
               <select id="user-role">
                 <option value="staff">staff</option>
@@ -471,7 +469,9 @@
 
       <label>
         แผนก
-        <input type="text" id="edit-department" />
+        <select id="edit-department">
+          <option value="">-- เลือกแผนก --</option>
+        </select>
       </label>
 
       <label>
@@ -518,6 +518,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/roleConfig.js"></script>
+    <script src="/core/departmentConfig.js"></script>
+    <script src="/core/shiftConfig.js"></script>
+
     <script src="/js/admin/admin-panel.js"></script>
   </body>
 </html>
