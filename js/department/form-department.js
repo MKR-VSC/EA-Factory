@@ -21,10 +21,10 @@ const VALID_DEPARTMENTS = [
 
 const DEPARTMENT_NAMES = {
   mono: "แผนกโมโน",
-  print: "ม้วนพิมพ์",
+  print: "แผนกเป่าพิล์ม",
   pipe: "แผนกท่อ",
-  sheet: "แผนกแผ่นหล่อ/ตัดผืน",
-  tape: "แผนกเทปพัน/เทปน้ำพุ่ง",
+  sheet: "แผนกตัดผืน",
+  tape: "แผนกเทปน้ำพุ่ง",
   blow: "แผนกเป่าถุง",
   drill: "แผนกตัดเจาะ",
   garbage: "แผนกถุงขยะ",

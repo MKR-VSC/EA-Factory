@@ -393,6 +393,7 @@ function openQrScanner() {
 
   // ถ้าต้องการให้ไปหน้าสแกน QR แยก
   // window.location.href = "/html/qr-scanner.html";
+  window.location.href = "https://ea-factory-2sx.pages.dev/pages/form-department.html?dept=SHEET";
 }
 
 let qrScanner = null;
@@ -451,6 +452,7 @@ function onQrScanSuccess(decodedText) {
   if (qrScanner) {
     qrScanner.stop();
   }
+  
 
   /*
     ตัวอย่าง QR

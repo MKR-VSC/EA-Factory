@@ -61,18 +61,44 @@ const DEPARTMENT_QR_LIST = [
   {
     name: "เป่าถุง",
     code: "BLOW",
-    path: "/pages/department-form.html?dept=BLOW",
+    path: "/pages/form-department.html?dept=BLOW",
   },
   {
     name: "ท่อ",
     code: "PIPE",
-    path: "/pages/department-form.html?dept=PIPE",
+    path: "/pages/form-department.html?dept=PIPE",
   },
   {
     name: "ตัดผืน",
     code: "SHEET",
-    path: "/pages/department-form.html?dept=SHEET",
+    path: "/pages/form-department.html?dept=SHEET",
   },
+  {
+    name: "โมโน",
+    code: "MONO",
+    path: "/pages/form-department.html?dept=MONO",
+  },
+  {
+    name: "เทปน้ำพุ่ง",
+    code: "TAPE",
+    path: "/pages/form-department.html?dept=TAPE",
+  },
+  {
+    name: "เป่าพิล์ม",
+    code: "PRINT",
+    path: "/pages/form-department.html?dept=PRINT",
+  },
+  {
+    name: "ตัดเจาะ",
+    code: "DRILL",
+    path: "/pages/form-department.html?dept=DRILL",
+  },
+  {
+    name: "ถุงขยะ",
+    code: "GARBAGE",
+    path: "/pages/form-department.html?dept=GARBAGE",
+  },
+  
 ];
 
 /* =========================================================
