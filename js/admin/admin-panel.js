@@ -211,6 +211,25 @@ function bindEvents() {
         closeEditUserModal();
       }
     });
+
+  /*
+    QR รายเครื่อง
+    -------------------------------------------------------
+    ใช้สำหรับหน้า Admin เท่านั้น
+    - เมื่อเลือกแผนก ระบบจะแสดงเครื่องจักรของแผนกนั้น
+    - Admin สามารถคัดลอกลิงก์ / เปิด QR / พิมพ์ QR ทั้งแผนกได้
+  */
+  document
+    .getElementById("machine-qr-dept-filter")
+    ?.addEventListener("change", renderMachineQrList);
+
+  document
+    .getElementById("btn-print-machine-qr")
+    ?.addEventListener("click", printMachineQrByDepartment);
+
+  document
+    .getElementById("btn-refresh-machine-qr")
+    ?.addEventListener("click", renderMachineQrList);
 }
 
 function showSection(section, activeBtn) {
@@ -328,6 +347,15 @@ async function loadMasters() {
   renderShifts();
   renderMachines();
   renderProblems();
+
+  /*
+    หลังจากโหลด Master Data เสร็จ
+    ให้รีเฟรชตัวเลือกและรายการ QR รายเครื่องด้วย
+    เพื่อให้หน้า QR ใช้ข้อมูลเครื่องจักรชุดเดียวกับหน้า Master Data
+  */
+  renderMachineQrDepartmentOptions();
+  renderDepartmentQrList();
+  renderMachineQrList();
 }
 
 async function loadUsers() {
@@ -1098,6 +1126,23 @@ function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
 
     actions.appendChild(editBtn);
     actions.appendChild(orderBtn);
+
+    /*
+      ปุ่ม QR แสดงเฉพาะรายการเครื่องจักร
+      เพื่อให้ Admin เปิด QR ของเครื่องนั้นได้ทันทีจากหน้า Master Data
+    */
+    if (type === "machine") {
+      const qrBtn = document.createElement("button");
+      qrBtn.type = "button";
+      qrBtn.className = "btn btn-primary";
+      qrBtn.textContent = "🔳 QR";
+      qrBtn.title = "สร้าง QR เครื่องนี้";
+      qrBtn.addEventListener("click", () => {
+        openMachineQrByRow(row);
+      });
+      actions.appendChild(qrBtn);
+    }
+
     actions.appendChild(deleteBtn);
 
     li.appendChild(info);
@@ -1566,18 +1611,99 @@ function clearUserForm() {
 }
 
 /* =========================================================
-   DEPARTMENT QR MANAGEMENT
+   QR MANAGEMENT - DEPARTMENT / MACHINE
+   ---------------------------------------------------------
+   ส่วนนี้ใช้สร้างลิงก์ QR ให้ Admin
+   มี 2 แบบ:
+   1) QR แผนก      -> /pages/form-department.html?dept=blow
+   2) QR รายเครื่อง -> /pages/form-department.html?dept=blow&machine=F1
+
+   หมายเหตุ:
+   - หน้า form-department.js ที่แก้ก่อนหน้านี้จะอ่านค่า dept/machine จาก URL
+   - ถ้ามี machine ระบบจะเลือกเครื่องให้อัตโนมัติ
 ========================================================= */
 
+const FORM_DEPARTMENT_PATH = "/pages/form-department.html";
+
+/*
+  getQrDepartments()
+  ---------------------------------------------------------
+  คืนค่ารายชื่อแผนกจาก Master Data ที่โหลดจาก Supabase
+  ถ้าฐานข้อมูลยังว่าง จะใช้ DEFAULT_DEPARTMENTS แทน
+*/
+function getQrDepartments() {
+  const rows = state.departments?.length ? state.departments : DEFAULT_DEPARTMENTS;
+
+  return rows
+    .map((row) => {
+      const code = normalizeDept(getDeptCode(row) || row.code);
+      const name = getDeptName(row) || code;
+
+      if (!code) return null;
+
+      return {
+        code,
+        name,
+      };
+    })
+    .filter(Boolean);
+}
+
+/*
+  buildDepartmentFormUrl()
+  ---------------------------------------------------------
+  สร้าง URL สำหรับฟอร์มพนักงาน
+  รับ deptCode เป็นรหัสแผนก เช่น BLOW / PIPE
+  รับ machineName เฉพาะกรณี QR รายเครื่อง เช่น F1 / PIPE-01
+*/
+function buildDepartmentFormUrl(deptCode, machineName = "") {
+  const origin = window.location.origin;
+  const dept = String(deptCode || "").trim().toLowerCase();
+  const machine = String(machineName || "").trim();
+
+  const url = new URL(`${origin}${FORM_DEPARTMENT_PATH}`);
+
+  if (dept) {
+    url.searchParams.set("dept", dept);
+  }
+
+  if (machine) {
+    url.searchParams.set("machine", machine);
+  }
+
+  return url.toString();
+}
+
+/*
+  buildQuickChartQrUrl()
+  ---------------------------------------------------------
+  ใช้บริการ quickchart.io สร้าง QR จาก URL
+  เหมาะกับการเปิดรูป QR เพื่อดาวน์โหลด/พิมพ์
+*/
+function buildQuickChartQrUrl(url, size = 500) {
+  return `https://quickchart.io/qr?size=${size}&text=${encodeURIComponent(url)}`;
+}
+
+/*
+  renderDepartmentQrList()
+  ---------------------------------------------------------
+  แสดง QR แผนกทั้งหมด
+  ใช้สำหรับติดที่บั๊กเกตของเสีย หรือจุดรวมของแผนก
+*/
 function renderDepartmentQrList() {
   const box = document.getElementById("department-qr-list");
   if (!box) return;
 
-  const origin = window.location.origin;
+  const departments = getQrDepartments();
 
-  box.innerHTML = getDepartmentList()
+  if (!departments.length) {
+    box.innerHTML = `<div class="qr-empty">ยังไม่มีข้อมูลแผนก</div>`;
+    return;
+  }
+
+  box.innerHTML = departments
     .map((dept) => {
-      const fullUrl = `${origin}${dept.path}`;
+      const fullUrl = buildDepartmentFormUrl(dept.code);
 
       return `
       <article class="qr-dept-card">
@@ -1590,7 +1716,7 @@ function renderDepartmentQrList() {
           <button
             class="btn btn-secondary"
             type="button"
-            onclick="copyDepartmentLink('${escapeAttr(fullUrl)}')"
+            onclick="copyQrLink('${escapeAttr(fullUrl)}')"
           >
             คัดลอกลิงก์
           </button>
@@ -1598,7 +1724,7 @@ function renderDepartmentQrList() {
           <button
             class="btn btn-primary"
             type="button"
-            onclick="openDepartmentQr('${escapeAttr(fullUrl)}')"
+            onclick="openQrImage('${escapeAttr(fullUrl)}')"
           >
             สร้าง QR
           </button>
@@ -1609,7 +1735,157 @@ function renderDepartmentQrList() {
     .join("");
 }
 
-async function copyDepartmentLink(url) {
+/*
+  renderMachineQrDepartmentOptions()
+  ---------------------------------------------------------
+  เติม dropdown เลือกแผนกในหน้า QR รายเครื่อง
+*/
+function renderMachineQrDepartmentOptions() {
+  const select = document.getElementById("machine-qr-dept-filter");
+  if (!select) return;
+
+  const currentValue = normalizeDept(select.value);
+  const departments = getQrDepartments();
+
+  select.innerHTML =
+    `<option value="">-- เลือกแผนกเพื่อสร้าง QR รายเครื่อง --</option>` +
+    departments
+      .map((dept) => {
+        return `<option value="${escapeAttr(dept.code)}">${escapeHtml(dept.name)} (${escapeHtml(dept.code)})</option>`;
+      })
+      .join("");
+
+  if (currentValue) {
+    select.value = currentValue;
+  }
+}
+
+/*
+  getMachinesByDepartment()
+  ---------------------------------------------------------
+  ดึงรายการเครื่องจักรของแผนกที่เลือกจาก state.machines
+  รองรับทั้ง master_machines และ pvt_machines
+*/
+function getMachinesByDepartment(deptCode) {
+  const dept = normalizeDept(deptCode);
+
+  return sortRowsByOrder(
+    (state.machines || []).filter((row) => {
+      const rowDept = normalizeDept(row.department_code || row.department || row.dept || "");
+      return rowDept === dept;
+    }),
+  );
+}
+
+/*
+  renderMachineQrList()
+  ---------------------------------------------------------
+  แสดง QR รายเครื่องตามแผนกที่เลือก
+*/
+function renderMachineQrList() {
+  const list = document.getElementById("machine-qr-list");
+  const countEl = document.getElementById("machine-qr-count");
+  const deptSelect = document.getElementById("machine-qr-dept-filter");
+
+  if (!list) return;
+
+  const selectedDept = normalizeDept(deptSelect?.value || "");
+
+  if (!selectedDept) {
+    list.innerHTML = `
+      <div class="qr-empty">
+        กรุณาเลือกแผนกก่อน ระบบจะแสดง QR รายเครื่องให้ค่ะ
+      </div>
+    `;
+    if (countEl) countEl.textContent = "0 เครื่อง";
+    return;
+  }
+
+  const machines = getMachinesByDepartment(selectedDept);
+
+  if (countEl) {
+    countEl.textContent = `${machines.length.toLocaleString("th-TH")} เครื่อง`;
+  }
+
+  if (!machines.length) {
+    list.innerHTML = `
+      <div class="qr-empty">
+        ยังไม่มีเครื่องจักรในแผนกนี้ กรุณาเพิ่มเครื่องในเมนู Master Data ก่อน
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = machines
+    .map((row) => {
+      const machineName = getMasterItemName(row, "machine");
+      const fullUrl = buildDepartmentFormUrl(selectedDept, machineName);
+
+      return `
+        <article class="qr-machine-card">
+          <div class="qr-preview">
+            <img
+              src="${escapeAttr(buildQuickChartQrUrl(fullUrl, 220))}"
+              alt="QR ${escapeAttr(machineName)}"
+              loading="lazy"
+            />
+          </div>
+
+          <div class="qr-machine-info">
+            <strong>${escapeHtml(machineName)}</strong>
+            <span>${escapeHtml(getDepartmentName(selectedDept))} (${escapeHtml(selectedDept)})</span>
+            <small>${escapeHtml(fullUrl)}</small>
+          </div>
+
+          <div class="qr-machine-actions">
+            <button
+              class="btn btn-secondary"
+              type="button"
+              onclick="copyQrLink('${escapeAttr(fullUrl)}')"
+            >
+              คัดลอกลิงก์
+            </button>
+
+            <button
+              class="btn btn-primary"
+              type="button"
+              onclick="openQrImage('${escapeAttr(fullUrl)}')"
+            >
+              เปิด QR
+            </button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+/*
+  openMachineQrByRow()
+  ---------------------------------------------------------
+  ใช้กับปุ่ม QR ในรายการเครื่องจักรหน้า Master Data
+*/
+function openMachineQrByRow(row) {
+  if (!row) return;
+
+  const dept = normalizeDept(row.department_code || row.department || row.dept || getValue("master-dept-filter"));
+  const machineName = getMasterItemName(row, "machine");
+
+  if (!dept || !machineName) {
+    showAlert("ไม่พบแผนกหรือชื่อเครื่องจักรสำหรับสร้าง QR");
+    return;
+  }
+
+  const fullUrl = buildDepartmentFormUrl(dept, machineName);
+  openQrImage(fullUrl);
+}
+
+/*
+  copyQrLink()
+  ---------------------------------------------------------
+  คัดลอกลิงก์ QR ไปยัง clipboard
+*/
+async function copyQrLink(url) {
   if (!url) return;
 
   try {
@@ -1621,14 +1897,179 @@ async function copyDepartmentLink(url) {
   }
 }
 
-function openDepartmentQr(url) {
+/*
+  openQrImage()
+  ---------------------------------------------------------
+  เปิดรูป QR ขนาดใหญ่ในแท็บใหม่
+*/
+function openQrImage(url) {
   if (!url) return;
 
-  const qrUrl =
-    "https://quickchart.io/qr?size=500&text=" + encodeURIComponent(url);
-
-  window.open(qrUrl, "_blank", "noopener,noreferrer");
+  window.open(buildQuickChartQrUrl(url, 500), "_blank", "noopener,noreferrer");
   addLog("INFO", `เปิด QR Code: ${url}`);
+}
+
+/*
+  printMachineQrByDepartment()
+  ---------------------------------------------------------
+  เปิดหน้าพิมพ์ QR รายเครื่องของแผนกที่เลือก
+  เหมาะสำหรับพิมพ์ A4 แล้วตัดแปะหน้าเครื่อง
+*/
+function printMachineQrByDepartment() {
+  const selectedDept = normalizeDept(getValue("machine-qr-dept-filter"));
+
+  if (!selectedDept) {
+    showAlert("กรุณาเลือกแผนกก่อนพิมพ์ QR รายเครื่อง");
+    return;
+  }
+
+  const machines = getMachinesByDepartment(selectedDept);
+
+  if (!machines.length) {
+    showAlert("ยังไม่มีเครื่องจักรในแผนกนี้");
+    return;
+  }
+
+  const deptName = getDepartmentName(selectedDept);
+  const cardsHtml = machines
+    .map((row) => {
+      const machineName = getMasterItemName(row, "machine");
+      const fullUrl = buildDepartmentFormUrl(selectedDept, machineName);
+      const qrUrl = buildQuickChartQrUrl(fullUrl, 260);
+
+      return `
+        <article class="print-qr-card">
+          <h2>${escapeHtml(machineName)}</h2>
+          <p>${escapeHtml(deptName)} (${escapeHtml(selectedDept)})</p>
+          <img src="${escapeAttr(qrUrl)}" alt="QR ${escapeAttr(machineName)}" />
+          <small>${escapeHtml(fullUrl)}</small>
+        </article>
+      `;
+    })
+    .join("");
+
+  const printWindow = window.open("", "_blank", "noopener,noreferrer");
+
+  if (!printWindow) {
+    showAlert("เบราว์เซอร์บล็อกหน้าต่างพิมพ์ กรุณาอนุญาต Popup ก่อนค่ะ");
+    return;
+  }
+
+  printWindow.document.write(`
+    <!doctype html>
+    <html lang="th">
+      <head>
+        <meta charset="UTF-8" />
+        <title>พิมพ์ QR รายเครื่อง - ${escapeHtml(deptName)}</title>
+        <style>
+          body {
+            margin: 0;
+            padding: 18px;
+            font-family: "Kanit", "Noto Sans Thai", Arial, sans-serif;
+            color: #0f172a;
+          }
+
+          .print-head {
+            margin-bottom: 16px;
+            text-align: center;
+          }
+
+          .print-head h1 {
+            margin: 0;
+            font-size: 24px;
+          }
+
+          .print-head p {
+            margin: 6px 0 0;
+            color: #475569;
+          }
+
+          .print-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+          }
+
+          .print-qr-card {
+            border: 2px solid #0f172a;
+            border-radius: 14px;
+            padding: 14px;
+            text-align: center;
+            break-inside: avoid;
+          }
+
+          .print-qr-card h2 {
+            margin: 0;
+            font-size: 30px;
+            letter-spacing: 0.04em;
+          }
+
+          .print-qr-card p {
+            margin: 4px 0 10px;
+            font-size: 17px;
+            font-weight: 700;
+          }
+
+          .print-qr-card img {
+            width: 180px;
+            height: 180px;
+            object-fit: contain;
+          }
+
+          .print-qr-card small {
+            display: block;
+            margin-top: 8px;
+            word-break: break-all;
+            font-size: 10px;
+            color: #64748b;
+          }
+
+          @media print {
+            body {
+              padding: 8mm;
+            }
+
+            .print-qr-card {
+              page-break-inside: avoid;
+            }
+          }
+        </style>
+      </head>
+
+      <body>
+        <div class="print-head">
+          <h1>QR รายเครื่อง</h1>
+          <p>${escapeHtml(deptName)} (${escapeHtml(selectedDept)})</p>
+        </div>
+
+        <div class="print-grid">
+          ${cardsHtml}
+        </div>
+
+        <script>
+          window.addEventListener("load", () => {
+            setTimeout(() => window.print(), 500);
+          });
+        <\/script>
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+}
+
+/*
+  ฟังก์ชันชื่อเดิม
+  ---------------------------------------------------------
+  เก็บไว้เพื่อไม่ให้ปุ่ม/โค้ดเก่าที่เคยเรียก copyDepartmentLink()
+  หรือ openDepartmentQr() พัง
+*/
+async function copyDepartmentLink(url) {
+  return copyQrLink(url);
+}
+
+function openDepartmentQr(url) {
+  return openQrImage(url);
 }
 
 /* =========================================================
@@ -1643,6 +2084,25 @@ function getDeptCode(row) {
 
 function getDeptName(row) {
   return row.department_name || row.dept_name || row.name || getDeptCode(row);
+}
+
+
+function getDepartmentName(value) {
+  const code = normalizeDept(value);
+
+  const dept = (state.departments || []).find((row) => {
+    return normalizeDept(getDeptCode(row) || row.code) === code;
+  });
+
+  if (dept) {
+    return getDeptName(dept);
+  }
+
+  const fallback = DEFAULT_DEPARTMENTS.find((row) => {
+    return normalizeDept(row.code) === code;
+  });
+
+  return fallback?.name || value || "-";
 }
 
 function normalizeDept(value) {
@@ -1911,6 +2371,11 @@ window.deleteProblem = deleteProblem;
 
 window.copyDepartmentLink = copyDepartmentLink;
 window.openDepartmentQr = openDepartmentQr;
+window.copyQrLink = copyQrLink;
+window.openQrImage = openQrImage;
+window.renderMachineQrList = renderMachineQrList;
+window.printMachineQrByDepartment = printMachineQrByDepartment;
+window.openMachineQrByRow = openMachineQrByRow;
 
 window.openEditUserModal = openEditUserModal;
 window.closeEditUserModal = closeEditUserModal;

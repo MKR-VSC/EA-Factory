@@ -156,7 +156,8 @@ async function handlePasswordLogin(event) {
       userId: profile.id,
       username: profile.username || usernameInput,
       fullName: activeName,
-      department: profile.department_code || profile.department || "",
+      department:
+  (profile.department_code || profile.department || "").toLowerCase(),
       departmentName: profile.department || profile.department_code || "",
       role: profile.role || "staff",
     });

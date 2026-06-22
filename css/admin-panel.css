@@ -846,3 +846,138 @@ td select {
     width: 100%;
   }
 }
+
+/* =========================================================
+   QR MACHINE SECTION
+   ---------------------------------------------------------
+   ใช้กับเมนู "QR รายเครื่อง"
+   แสดงการ์ด QR ของแต่ละเครื่องจักรตามแผนก
+========================================================= */
+
+.qr-machine-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border);
+}
+
+.qr-machine-toolbar select {
+  max-width: 360px;
+}
+
+.qr-machine-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 8px 12px;
+  color: #1e3a8a;
+  background: #dbeafe;
+  border-radius: 999px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.qr-machine-list {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+  background: #ffffff;
+}
+
+.qr-machine-card {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+}
+
+.qr-preview {
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.qr-preview img {
+  width: 86px;
+  height: 86px;
+  object-fit: contain;
+}
+
+.qr-machine-info {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.qr-machine-info strong {
+  color: var(--text-main);
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.qr-machine-info span {
+  color: #334155;
+  font-weight: 700;
+}
+
+.qr-machine-info small {
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+.qr-machine-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.qr-empty {
+  padding: 28px 16px;
+  color: var(--text-muted);
+  text-align: center;
+  background: #f8fafc;
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+}
+
+.master-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .qr-machine-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .qr-machine-toolbar select {
+    max-width: none;
+  }
+
+  .qr-machine-card {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .qr-preview {
+    margin: 0 auto;
+  }
+
+  .qr-machine-actions {
+    flex-direction: column;
+  }
+}

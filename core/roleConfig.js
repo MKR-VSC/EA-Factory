@@ -49,7 +49,7 @@ const ROLE_HOME_PAGES = {
   admin: "/pages/admin-panel.html",
   management: "/index.html",
   accounting: "/pages/accounting-panel.html",
-  supervisor: "/pages/form-department.html",
+  supervisor: "/pages/supervisor-daily-review.html",
   staff: "/pages/form-department.html",
 };
 

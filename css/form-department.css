@@ -1,3 +1,9 @@
+/* ======================================================
+   ไฟล์: css/form-department.css
+   ใช้กับหน้า form-department.html
+   รองรับ UI สำหรับ QR แผนก และ QR รายเครื่อง
+====================================================== */
+
 :root {
   --primary: #2563eb;
   --primary-dark: #1d4ed8;
@@ -729,6 +735,35 @@ textarea {
   line-height: 1.5;
 }
 
+
+/* ======================================================
+   QR CONTEXT CARD
+   ใช้แสดงข้อมูลที่มาจาก QR เช่น แผนก/เครื่องจักร
+   ช่วยให้พนักงานต่างด้าวหรือพนักงานใหม่เห็นทันทีว่ากำลังกรอกเครื่องไหน
+====================================================== */
+
+.qr-context-card {
+  margin: 16px 0 20px;
+  padding: 16px;
+  border-radius: 18px;
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  display: grid;
+  gap: 10px;
+  color: #064e3b;
+  font-size: 18px;
+}
+
+.qr-context-card div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.qr-context-card span {
+  font-weight: 700;
+  font-size: 20px;
+}
 /* ======================================================
    DEPARTMENT THEME
 ====================================================== */
@@ -799,4 +834,48 @@ textarea {
   .form-container-card {
     padding: 20px;
   }
+}
+
+
+/* ======================================================
+   CURRENT DEPARTMENT BOX
+   แสดงแผนกปัจจุบันใต้หัวหน้า เพื่อให้พนักงานเห็นชัดว่าอยู่หน้าแผนกไหน
+====================================================== */
+
+.current-dept-box {
+  max-width: 900px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  color: var(--text);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+.current-dept-box .material-symbols-outlined {
+  color: var(--primary);
+}
+
+#current-dept-label {
+  font-weight: 800;
+  color: var(--primary-dark);
+}
+
+
+/* ======================================================
+   QR LOCKED FIELD
+   ช่องที่ถูกเลือกจาก QR จะถูกล็อกไว้ เพื่อลดการเลือกผิดเครื่อง
+====================================================== */
+
+.qr-locked-field,
+.form-group select:disabled {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #166534;
+  font-weight: 800;
+  cursor: not-allowed;
 }

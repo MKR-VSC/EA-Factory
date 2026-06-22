@@ -2,6 +2,7 @@
 // ไฟล์: js/form-department.js
 // ใช้กับหน้า form-department.html
 // รองรับลิงก์ QR แยกแผนก เช่น form-department.html?dept=blow
+// รองรับลิงก์ QR รายเครื่อง เช่น form-department.html?dept=blow&machine=BLOW-01
 // =========================================================
 
 // =========================================================
@@ -34,16 +35,30 @@ const DEPARTMENT_NAMES = {
 // URL / USER / DEPARTMENT STATE
 // =========================================================
 
+// อ่านค่าจาก URL เพื่อรองรับ QR Code
+// ตัวอย่าง QR แผนก:       form-department.html?dept=blow
+// ตัวอย่าง QR รายเครื่อง: form-department.html?dept=blow&machine=BLOW-01
+//
+// หมายเหตุ:
+// - dept ใช้สำหรับล็อกแผนก
+// - machine ใช้สำหรับเลือก/ล็อกเครื่องจักรให้อัตโนมัติ
+// - ถ้าไม่มี machine ระบบยังให้พนักงานเลือกเครื่องเองได้เหมือนเดิม
 const urlParams = new URLSearchParams(window.location.search);
 const deptFromUrl = urlParams.get("dept");
+const machineFromUrl = urlParams.get("machine");
+
+// ใช้ตัวแปร QR_... เพื่อให้อ่านง่ายทั้งไฟล์
+// ถ้าวันหลังกลับมาแก้ จะรู้ทันทีว่าค่านี้มาจาก QR/URL
+const QR_DEPT = deptFromUrl;
+const QR_MACHINE = normalizeMachineNo(machineFromUrl);
 
 const activeRoleRaw = localStorage.getItem("activeRole") || "staff";
 const activeUserId = localStorage.getItem("activeUserId") || "";
 
-const currentDeptRaw = deptFromUrl || localStorage.getItem("activeDept") || "";
+const currentDeptRaw = QR_DEPT || localStorage.getItem("activeDept") || "";
 
 let currentDept = normalizeDept(currentDeptRaw);
-let appSelectedMachine = "";
+let appSelectedMachine = QR_MACHINE || "";
 let appSelectedProblem = "";
 
 // ถ้า dept ที่ได้มาไม่ถูกต้อง ให้กลับไปใช้ blow เพื่อกัน Foreign Key Error
@@ -112,6 +127,13 @@ function normalizeDept(dept) {
   };
 
   return map[d] || d;
+}
+
+// แปลงค่าเครื่องจักรจาก URL ให้สะอาดก่อนใช้งาน
+// เช่น URL อาจส่งมาเป็น " BLOW-01 " หรือมี encoding จาก QR
+// เรา trim ก่อน เพื่อไม่ให้ value ผิดตอนเทียบกับ dropdown
+function normalizeMachineNo(machineNo) {
+  return String(machineNo || "").trim();
 }
 
 function getDeptDisplayName(dept) {
@@ -257,6 +279,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     renderUserInfo();
     setupStaffNameBeforeUse();
 
+    // แสดงกล่องบริบทจาก QR ด้านบนฟอร์ม
+    // ช่วยให้พนักงานเห็นชัดว่า ตอนนี้กำลังบันทึกแผนก/เครื่องไหน
+    setupQrContextCard();
+
     setupDashboardMenu();
     setupDefaultDateTime();
     setupNetworkStatus();
@@ -267,6 +293,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     await loadShiftOptions();
 
     await loadMasterDataAndRender();
+
+    // ต้องเรียกหลังโหลด master data เพราะ dropdown เครื่องจักรถูกสร้างหลังจาก query เสร็จ
+    // ถ้าเรียกก่อน dropdown ยังไม่มี option เครื่อง ระบบจะเลือก QR_MACHINE ไม่ติด
+    applyQrMachineLock();
   } catch (err) {
     console.error("[Init_Error]", err);
     alert("เกิดข้อผิดพลาดตอนเปิดหน้าฟอร์ม: " + (err.message || err));
@@ -401,6 +431,144 @@ function renderCurrentDeptLabel() {
 
   const deptName = getDeptDisplayName(currentDept);
   el.textContent = `${deptName} (${currentDept.toUpperCase()})`;
+}
+
+// =========================================================
+// QR CONTEXT UI
+// =========================================================
+
+function setupQrContextCard() {
+  // ถ้าไม่ได้เปิดผ่าน QR ก็ไม่ต้องแสดงกล่องพิเศษ
+  if (!QR_DEPT && !QR_MACHINE) return;
+
+  ensureQrContextCardExists();
+  ensureQrContextStyleExists();
+  renderQrContext();
+}
+
+// สร้างกล่อง QR อัตโนมัติด้วย JS
+// ทำแบบนี้เพื่อให้ไม่ต้องรีบแก้ HTML หลายจุด ถ้าหน้าเดิมยังไม่มี div นี้
+function ensureQrContextCardExists() {
+  if (document.getElementById("qr-context-card")) return;
+
+  const form = document.getElementById("department-waste-form");
+  if (!form) return;
+
+  const card = document.createElement("div");
+  card.id = "qr-context-card";
+  card.className = "qr-context-card";
+  card.innerHTML = `
+    <div class="qr-context-row">
+      <strong>📍 แผนก</strong>
+      <span id="qr-dept-label">-</span>
+    </div>
+    <div class="qr-context-row">
+      <strong>⚙️ เครื่องจักร</strong>
+      <span id="qr-machine-label">-</span>
+    </div>
+    <small class="qr-context-help">
+      ระบบเลือกข้อมูลจาก QR ให้แล้ว เพื่อลดการเลือกผิด
+    </small>
+  `;
+
+  form.prepend(card);
+}
+
+// ใส่ CSS เฉพาะกล่อง QR ด้วย JS
+// ถ้าวันหลังย้ายไปไฟล์ CSS หลักได้ ก็สามารถลบฟังก์ชันนี้ออกได้
+function ensureQrContextStyleExists() {
+  if (document.getElementById("qr-context-style")) return;
+
+  const style = document.createElement("style");
+  style.id = "qr-context-style";
+  style.textContent = `
+    .qr-context-card {
+      margin: 0 0 20px;
+      padding: 16px;
+      border-radius: 18px;
+      background: #ecfdf5;
+      border: 1px solid #bbf7d0;
+      color: #064e3b;
+      display: grid;
+      gap: 10px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    .qr-context-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 18px;
+    }
+
+    .qr-context-row span {
+      font-size: 20px;
+      font-weight: 800;
+      text-align: right;
+    }
+
+    .qr-context-help {
+      color: #047857;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .qr-locked-field {
+      background: #f1f5f9 !important;
+      color: #334155 !important;
+      cursor: not-allowed;
+      border-color: #cbd5e1 !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function renderQrContext() {
+  const card = document.getElementById("qr-context-card");
+  const deptLabel = document.getElementById("qr-dept-label");
+  const machineLabel = document.getElementById("qr-machine-label");
+
+  if (!card) return;
+
+  card.style.display = "grid";
+
+  if (deptLabel) {
+    deptLabel.textContent = `${getDeptDisplayName(currentDept)} (${currentDept.toUpperCase()})`;
+  }
+
+  if (machineLabel) {
+    machineLabel.textContent = QR_MACHINE || "เลือกเครื่องเอง";
+  }
+}
+
+// ล็อกช่องเครื่องจักรเมื่อ QR ส่งค่า machine มา
+// จุดสำคัญ: ฟังก์ชันนี้ต้องถูกเรียกหลัง renderMachineDropdown()
+function applyQrMachineLock() {
+  const machineSelect = document.getElementById("machine-no");
+  if (!machineSelect || !QR_MACHINE) return;
+
+  const hasMachineOption = Array.from(machineSelect.options).some(
+    (option) => option.value === QR_MACHINE,
+  );
+
+  // ถ้าเครื่องจาก QR ไม่มีใน master data ให้เพิ่ม option ชั่วคราวไว้ก่อน
+  // กันกรณี master data ยังไม่ครบ แต่หน้างานต้องบันทึกได้
+  if (!hasMachineOption) {
+    const option = document.createElement("option");
+    option.value = QR_MACHINE;
+    option.textContent = `${QR_MACHINE} (จาก QR)`;
+    machineSelect.appendChild(option);
+  }
+
+  machineSelect.value = QR_MACHINE;
+  appSelectedMachine = QR_MACHINE;
+
+  // disabled ทำให้ผู้ใช้แก้ไม่ได้ และเวลาอ่านค่าด้วย JS ยังอ่านได้ปกติ
+  // ใน handleFormSubmit เราก็มี fallback จาก QR_MACHINE อีกชั้น เพื่อกันค่าหาย
+  machineSelect.disabled = true;
+  machineSelect.classList.add("qr-locked-field");
 }
 
 function setupDashboardMenu() {
@@ -602,6 +770,9 @@ function renderMachineDropdown(machineList) {
     option.textContent = machine;
     select.appendChild(option);
   });
+
+  // ถ้าเปิดจาก QR รายเครื่อง ให้เลือกเครื่องและล็อกทันที
+  applyQrMachineLock();
 }
 
 function renderProblemDropdown(problemList) {
@@ -672,7 +843,9 @@ async function handleFormSubmit(event) {
   const finalShift = shiftSelect?.value || "";
   const selectedShift =
     typeof getShiftByCode === "function" ? getShiftByCode(finalShift) : null;
-  const finalMachine = machineSelect?.value || appSelectedMachine || "";
+  // ถ้าเปิดจาก QR รายเครื่อง ให้ใช้ QR_MACHINE ก่อนเสมอ
+  // เพราะบาง browser หรือบาง form อาจไม่ส่งค่าจาก select ที่ disabled
+  const finalMachine = QR_MACHINE || machineSelect?.value || appSelectedMachine || "";
   const finalProblem = problemSelect?.value || appSelectedProblem || "";
   const detailNote = noteInput?.value.trim() || "";
   const wasteWeight = parseFloat(weightInput?.value || "0") || 0;
@@ -720,6 +893,7 @@ async function handleFormSubmit(event) {
       // shift_type: selectedShift?.type || "",
 
       // สำคัญ: ต้องตรงกับ departments.code เท่านั้น
+      // currentDept มาจาก QR_DEPT หรือ activeDept ที่ผ่าน normalizeDept() แล้ว
       department_code: currentDept,
 
       // เก็บซ้ำไว้สำหรับหน้าเดิมที่อาจยังใช้ column department
@@ -846,10 +1020,14 @@ function resetFormAfterSubmit() {
 
   if (form) form.reset();
 
-  appSelectedMachine = "";
+  // ถ้ามาจาก QR รายเครื่อง ต้องคงค่าเครื่องเดิมไว้
+  // ไม่อย่างนั้นกดบันทึกเสร็จแล้ว dropdown จะว่าง ทั้งที่ QR ระบุเครื่องไว้แล้ว
+  appSelectedMachine = QR_MACHINE || "";
   appSelectedProblem = "";
 
   setupDefaultDateTime();
+  applyQrMachineLock();
+  renderQrContext();
 }
 
 function resetFormWithConfirm() {
@@ -897,3 +1075,4 @@ window.normalizeDept = normalizeDept;
 window.isStaffRole = isStaffRole;
 window.openStaffNameModal = openStaffNameModal;
 window.confirmStaffName = confirmStaffName;
+window.applyQrMachineLock = applyQrMachineLock;

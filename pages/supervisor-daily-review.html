@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>หัวหน้าตรวจสอบข้อมูลรายวัน</title>
+
+    <link rel="stylesheet" href="/css/supervisor-daily-review.css" />
+  </head>
+
+  <body>
+    <main class="page">
+      <header class="page-header">
+        <div>
+          <h1>หัวหน้าตรวจสอบข้อมูลรายวัน</h1>
+          <p>ตรวจสอบข้อมูลของเสียก่อนส่งต่อให้บัญชี</p>
+        </div>
+        <div class="header-right">
+        <div class="user-info-card">
+          <div class="user-avatar">👨‍🏭</div>
+
+          <div>
+            <strong id="userName">-</strong>
+            <div id="userDept">-</div>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <a href="/pages/supervisor-dashboard.html" class="btn primary">
+            ดู Dashboard
+          </a>
+          <button class="btn secondary" onclick="loadRecords()">รีเฟรช</button>
+
+          <button class="btn danger" onclick="logout()">ออกจากระบบ</button>
+        </div>
+        </div>
+      </header>
+
+      <section class="filter-card">
+        <div class="form-group">
+          <label>วันที่</label>
+          <input type="date" id="filterDate" />
+        </div>
+
+        <div class="form-group">
+          <label>สถานะ</label>
+          <select id="filterStatus">
+            <option value="pending">รอตรวจสอบ</option>
+            <option value="progress">กำลังตรวจสอบ</option>
+            <option value="resolved">ส่งบัญชีแล้ว</option>
+          </select>
+        </div>
+
+        <button class="btn primary" onclick="loadRecords()">ค้นหา</button>
+      </section>
+
+      <section class="summary-grid">
+        <div class="summary-card">
+          <span>รอตรวจสอบ</span>
+          <strong id="countPending">0</strong>
+        </div>
+
+        <div class="summary-card">
+          <span>ส่งบัญชีแล้ว</span>
+          <strong id="countApproved">0</strong>
+        </div>
+
+        <div class="summary-card">
+          <span>ส่งกลับแก้ไข</span>
+          <strong id="countReturned">0</strong>
+        </div>
+      </section>
+
+      <section class="table-card">
+        <div class="table-header">
+          <h2>รายการของเสีย</h2>
+        </div>
+
+        <div id="recordList" class="record-list">
+          <p class="empty">กำลังโหลดข้อมูล...</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/core/supabaseClient.js"></script>
+    <script src="/core/roleConfig.js"></script>
+    <script src="/core/departmentConfig.js"></script>
+    
+    <script src="/js/dashboard/supervisor-daily-review.js"></script>
+  </body>
+</html>

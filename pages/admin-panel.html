@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="th">
   <head>
+    <!-- ======================================================
+      ADMIN PANEL HTML
+      Daily Defect System
+      ------------------------------------------------------
+      ไฟล์นี้เพิ่มเมนู QR รายเครื่องให้ Admin แล้ว
+      ใช้ร่วมกับ:
+      - /css/admin-panel.css
+      - /js/admin/admin-panel.js
+    ======================================================= -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Panel - Daily Defect</title>
@@ -19,6 +28,12 @@
 
   <body>
     <div class="app-shell">
+      <!-- ======================================================
+        SIDEBAR MENU
+        ------------------------------------------------------
+        เพิ่มเมนู "QR รายเครื่อง" แล้ว
+        data-section="machine-qr" จะไปเปิด section-machine-qr
+      ======================================================= -->
       <aside class="sidebar">
         <div class="sidebar-logo">
           <span class="logo-icon">⚡</span>
@@ -29,11 +44,7 @@
         </div>
 
         <nav class="sidebar-menu" aria-label="เมนูหลัก">
-          <button
-            class="sidebar-item active"
-            type="button"
-            data-section="dashboard"
-          >
+          <button class="sidebar-item active" type="button" data-section="dashboard">
             📊 Dashboard
           </button>
 
@@ -45,12 +56,12 @@
             👥 Users / Roles
           </button>
 
-          <button
-            class="sidebar-item"
-            type="button"
-            data-section="department-qr"
-          >
-            🔳 จัดการ QR แผนก
+          <button class="sidebar-item" type="button" data-section="department-qr">
+            🔳 QR แผนก
+          </button>
+
+          <button class="sidebar-item" type="button" data-section="machine-qr">
+            ⚙️ QR รายเครื่อง
           </button>
 
           <button class="sidebar-item" type="button" data-section="logs">
@@ -152,9 +163,6 @@
 
         <!-- ======================================================
           MASTER DATA
-          ------------------------------------------------------
-          ใช้สำหรับตั้งค่าข้อมูล Dropdown ให้ฟอร์มพนักงาน
-          เช่น แผนก / เครื่องจักร / อาการเสีย / กะ
         ======================================================= -->
         <section id="section-masters" class="page-section">
           <div class="master-helper">
@@ -167,7 +175,6 @@
           </div>
 
           <div class="master-grid master-grid-2">
-            <!-- ================= DEPARTMENTS ================= -->
             <article class="panel">
               <div class="panel-head">
                 <div>
@@ -177,23 +184,9 @@
               </div>
 
               <div class="form-row master-form-row">
-                <input
-                  type="text"
-                  id="dept-code-input"
-                  placeholder="รหัส เช่น BLOW"
-                />
-
-                <input
-                  type="text"
-                  id="dept-name-input"
-                  placeholder="ชื่อแผนก เช่น เป่าถุง"
-                />
-
-                <button
-                  class="btn btn-primary"
-                  type="button"
-                  id="btn-add-dept"
-                >
+                <input type="text" id="dept-code-input" placeholder="รหัส เช่น BLOW" />
+                <input type="text" id="dept-name-input" placeholder="ชื่อแผนก เช่น เป่าถุง" />
+                <button class="btn btn-primary" type="button" id="btn-add-dept">
                   เพิ่มแผนก
                 </button>
               </div>
@@ -201,7 +194,6 @@
               <ul id="dept-list" class="data-list"></ul>
             </article>
 
-            <!-- ================= SHIFTS ================= -->
             <article class="panel">
               <div class="panel-head">
                 <div>
@@ -211,23 +203,9 @@
               </div>
 
               <div class="form-row master-form-row">
-                <input
-                  type="text"
-                  id="shift-name-input"
-                  placeholder="เช่น กะ A (กลางวัน)"
-                />
-
-                <input
-                  type="text"
-                  id="shift-time-input"
-                  placeholder="เวลา เช่น 08:00 - 17:00"
-                />
-
-                <button
-                  class="btn btn-primary"
-                  type="button"
-                  id="btn-add-shift"
-                >
+                <input type="text" id="shift-name-input" placeholder="เช่น กะ A (กลางวัน)" />
+                <input type="text" id="shift-time-input" placeholder="เวลา เช่น 08:00 - 17:00" />
+                <button class="btn btn-primary" type="button" id="btn-add-shift">
                   เพิ่มกะ
                 </button>
               </div>
@@ -254,27 +232,19 @@
           </div>
 
           <div class="master-grid master-grid-2">
-            <!-- ================= MACHINES ================= -->
             <article class="panel">
               <div class="panel-head">
                 <div>
                   <h2>⚙️ จัดการเครื่องจักรตามแผนก</h2>
-                  <span class="muted">ตัวอย่าง BLOW: F1, F2 / PIPE: PIPE-01</span>
+                  <span class="muted">
+                    ตัวอย่าง BLOW: F1, F2 / PIPE: PIPE-01 — เพิ่มปุ่ม QR ให้แต่ละเครื่องแล้ว
+                  </span>
                 </div>
               </div>
 
               <div class="form-row">
-                <input
-                  type="text"
-                  id="machine-input"
-                  placeholder="เช่น F1, F2, PIPE-01, CUT-01"
-                />
-
-                <button
-                  class="btn btn-primary"
-                  type="button"
-                  id="btn-add-machine"
-                >
+                <input type="text" id="machine-input" placeholder="เช่น F1, F2, PIPE-01, CUT-01" />
+                <button class="btn btn-primary" type="button" id="btn-add-machine">
                   เพิ่มเครื่อง
                 </button>
               </div>
@@ -282,7 +252,6 @@
               <ul id="machine-list" class="data-list"></ul>
             </article>
 
-            <!-- ================= PROBLEMS ================= -->
             <article class="panel">
               <div class="panel-head">
                 <div>
@@ -292,17 +261,8 @@
               </div>
 
               <div class="form-row">
-                <input
-                  type="text"
-                  id="problem-input"
-                  placeholder="เช่น ขอบเบี้ยว, หนาไม่เท่ากัน"
-                />
-
-                <button
-                  class="btn btn-danger"
-                  type="button"
-                  id="btn-add-problem"
-                >
+                <input type="text" id="problem-input" placeholder="เช่น ขอบเบี้ยว, หนาไม่เท่ากัน" />
+                <button class="btn btn-danger" type="button" id="btn-add-problem">
                   เพิ่มอาการ
                 </button>
               </div>
@@ -319,25 +279,13 @@
           <div class="panel">
             <div class="panel-head">
               <h2>👥 จัดการ User และ Role</h2>
-              <span class="muted">
-                Admin เพิ่ม / ลบ / เปลี่ยนสิทธิ์ได้จากหน้านี้
-              </span>
+              <span class="muted">Admin เพิ่ม / ลบ / เปลี่ยนสิทธิ์ได้จากหน้านี้</span>
             </div>
 
             <div class="form-row">
-              <input
-                type="text"
-                id="user-username"
-                placeholder="Username เช่น ADMIN01"
-              />
-
+              <input type="text" id="user-username" placeholder="Username เช่น ADMIN01" />
               <input type="text" id="user-password" placeholder="Password" />
-
-              <input
-                type="text"
-                id="user-display-name"
-                placeholder="ชื่อแสดงผล"
-              />
+              <input type="text" id="user-display-name" placeholder="ชื่อแสดงผล" />
 
               <select id="user-department">
                 <option value="">-- เลือกแผนก --</option>
@@ -395,6 +343,10 @@
 
         <!-- ======================================================
           DEPARTMENT QR
+          ------------------------------------------------------
+          ใช้สร้าง QR แบบเข้าฟอร์มตามแผนก
+          URL ตัวอย่าง:
+          /pages/form-department.html?dept=blow
         ======================================================= -->
         <section id="section-department-qr" class="page-section">
           <div class="panel">
@@ -408,6 +360,48 @@
             </div>
 
             <div class="qr-dept-list" id="department-qr-list"></div>
+          </div>
+        </section>
+
+        <!-- ======================================================
+          MACHINE QR
+          ------------------------------------------------------
+          ส่วนใหม่: ใช้สร้าง QR รายเครื่อง
+          URL ตัวอย่าง:
+          /pages/form-department.html?dept=blow&machine=F1
+        ======================================================= -->
+        <section id="section-machine-qr" class="page-section">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>⚙️ จัดการ QR รายเครื่อง</h2>
+                <span class="muted">
+                  เลือกแผนก แล้วระบบจะดึงเครื่องจักรจาก Master Data มาสร้าง QR ให้ทีละเครื่อง
+                </span>
+              </div>
+
+              <span id="machine-qr-count" class="qr-machine-count">0 เครื่อง</span>
+            </div>
+
+            <div class="qr-machine-toolbar">
+              <select id="machine-qr-dept-filter">
+                <option value="">-- เลือกแผนกเพื่อสร้าง QR รายเครื่อง --</option>
+              </select>
+
+              <button class="btn btn-secondary" type="button" id="btn-refresh-machine-qr">
+                🔄 รีเฟรชรายการ
+              </button>
+
+              <button class="btn btn-primary" type="button" id="btn-print-machine-qr">
+                🖨️ พิมพ์ QR ทั้งแผนก
+              </button>
+            </div>
+
+            <div class="qr-machine-list" id="machine-qr-list">
+              <div class="qr-empty">
+                กรุณาเลือกแผนกก่อน ระบบจะแสดง QR รายเครื่องให้ค่ะ
+              </div>
+            </div>
           </div>
         </section>
 
@@ -441,85 +435,85 @@
     </div>
 
     <!-- ================= EDIT USER MODAL ================= -->
-<div id="edit-user-modal" class="modal-overlay" hidden>
-  <div class="modal-card">
-    <div class="modal-head">
-      <div>
-        <h2>✏️ แก้ไข User</h2>
-        <p>แก้ไขข้อมูลผู้ใช้งานและสิทธิ์การเข้าใช้งาน</p>
+    <div id="edit-user-modal" class="modal-overlay" hidden>
+      <div class="modal-card">
+        <div class="modal-head">
+          <div>
+            <h2>✏️ แก้ไข User</h2>
+            <p>แก้ไขข้อมูลผู้ใช้งานและสิทธิ์การเข้าใช้งาน</p>
+          </div>
+
+          <button type="button" class="modal-close" id="btn-close-edit-user">
+            ×
+          </button>
+        </div>
+
+        <input type="hidden" id="edit-user-id" />
+
+        <div class="modal-form-grid">
+          <label>
+            Username
+            <input type="text" id="edit-username" />
+          </label>
+
+          <label>
+            ชื่อแสดงผล
+            <input type="text" id="edit-display-name" />
+          </label>
+
+          <label>
+            แผนก
+            <select id="edit-department">
+              <option value="">-- เลือกแผนก --</option>
+            </select>
+          </label>
+
+          <label>
+            Role
+            <select id="edit-role">
+              <option value="staff">staff</option>
+              <option value="supervisor">supervisor</option>
+              <option value="accounting">accounting</option>
+              <option value="management">management</option>
+              <option value="admin">admin</option>
+            </select>
+          </label>
+
+          <label>
+            Status
+            <select id="edit-status">
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+            </select>
+          </label>
+
+          <label>
+            Password ใหม่
+            <input
+              type="text"
+              id="edit-password"
+              placeholder="เว้นว่างไว้ ถ้าไม่ต้องการเปลี่ยน"
+            />
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-edit-user">
+            ยกเลิก
+          </button>
+
+          <button type="button" class="btn btn-primary" id="btn-save-edit-user">
+            บันทึกการแก้ไข
+          </button>
+        </div>
       </div>
-
-      <button type="button" class="modal-close" id="btn-close-edit-user">
-        ×
-      </button>
     </div>
-
-    <input type="hidden" id="edit-user-id" />
-
-    <div class="modal-form-grid">
-      <label>
-        Username
-        <input type="text" id="edit-username" />
-      </label>
-
-      <label>
-        ชื่อแสดงผล
-        <input type="text" id="edit-display-name" />
-      </label>
-
-      <label>
-        แผนก
-        <select id="edit-department">
-          <option value="">-- เลือกแผนก --</option>
-        </select>
-      </label>
-
-      <label>
-        Role
-        <select id="edit-role">
-          <option value="staff">staff</option>
-          <option value="supervisor">supervisor</option>
-          <option value="accounting">accounting</option>
-          <option value="management">management</option>
-          <option value="admin">admin</option>
-        </select>
-      </label>
-
-      <label>
-        Status
-        <select id="edit-status">
-          <option value="active">active</option>
-          <option value="inactive">inactive</option>
-        </select>
-      </label>
-
-      <label>
-        Password ใหม่
-        <input
-          type="text"
-          id="edit-password"
-          placeholder="เว้นว่างไว้ ถ้าไม่ต้องการเปลี่ยน"
-        />
-      </label>
-    </div>
-
-    <div class="modal-actions">
-      <button type="button" class="btn btn-secondary" id="btn-cancel-edit-user">
-        ยกเลิก
-      </button>
-
-      <button type="button" class="btn btn-primary" id="btn-save-edit-user">
-        บันทึกการแก้ไข
-      </button>
-    </div>
-  </div>
-</div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/roleConfig.js"></script>
     <script src="/core/departmentConfig.js"></script>
-    <script src="/core/shiftConfig.js"></script>
+    <!-- <script src="/core/shiftConfig.js"></script> -->
 
     <script src="/js/admin/admin-panel.js"></script>
   </body>

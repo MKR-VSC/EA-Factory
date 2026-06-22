@@ -20,6 +20,10 @@
   </head>
 
   <body>
+    <!-- ======================================================
+      SPLASH SCREEN
+      หน้ารอโหลดตอนเปิดฟอร์ม เพื่อให้ผู้ใช้เห็นว่าระบบกำลังเตรียมข้อมูล
+    ======================================================= -->
     <div id="splash-screen">
       <div class="splash-logo">
         <img src="/icons/logo_192.png" alt="EA Factory Logo" />
@@ -32,6 +36,10 @@
       </div>
     </div>
 
+    <!-- ======================================================
+      LOADING OVERLAY
+      ใช้ตอนระบบกำลังบันทึก/ตรวจสอบข้อมูล ไม่ให้ผู้ใช้กดซ้ำ
+    ======================================================= -->
     <div id="login-overlay" class="hidden">
       <div class="overlay-box">
         <div class="overlay-ring"></div>
@@ -40,6 +48,10 @@
       </div>
     </div>
 
+    <!-- ======================================================
+      STAFF NAME MODAL
+      บังคับกรอกชื่อก่อนใช้งาน โดยเฉพาะกรณีสแกน QR ที่ไม่ได้ login รายคน
+    ======================================================= -->
     <div id="staff-name-modal" class="staff-name-modal hidden">
       <div class="staff-name-box">
         <div class="staff-name-icon">
@@ -74,8 +86,16 @@
       </div>
     </div>
 
+    <!-- ======================================================
+      MAIN APP
+      JS จะเติม class dept-blow / dept-pipe / dept-sheet ตาม QR หรือผู้ใช้ login
+    ======================================================= -->
     <div class="dept-default" id="dept-body">
       <div class="app-layout">
+        <!-- ======================================================
+          SIDEBAR
+          แสดงข้อมูลผู้บันทึก ปุ่มกลับ ปุ่มเปลี่ยนชื่อ และ logout
+        ======================================================= -->
         <aside class="sidebar">
           <div class="pvt-top-header">
             <div class="logo">
@@ -144,6 +164,10 @@
           </nav>
         </aside>
 
+        <!-- ======================================================
+          MAIN CONTENT
+          พื้นที่ฟอร์มหลักของพนักงาน
+        ======================================================= -->
         <main class="main-content">
           <header class="content-header">
             <div class="header-title-area">
@@ -172,12 +196,39 @@
             </div>
           </header>
 
+          <!-- ======================================================
+            QR CONTEXT CARD
+            กล่องนี้จะแสดงเฉพาะตอนเปิดจาก QR เช่น
+            /pages/form-department.html?dept=blow
+            /pages/form-department.html?dept=blow&machine=BLOW-01
+
+            หมายเหตุ:
+            - ถ้ามี dept ระบบจะแสดงแผนกให้ชัดเจน
+            - ถ้ามี machine ระบบจะเลือกเครื่องให้อัตโนมัติและล็อกช่องเครื่อง
+          ======================================================= -->
+          <div id="qr-context-card" class="qr-context-card" style="display: none">
+            <div>
+              <strong>📍 แผนก</strong>
+              <span id="qr-dept-label">-</span>
+            </div>
+            <div>
+              <strong>⚙️ เครื่องจักร</strong>
+              <span id="qr-machine-label">-</span>
+            </div>
+          </div>
+
+          <!-- แสดงแผนกปัจจุบันเสมอ เพื่อกันพนักงานกรอกผิดแผนก -->
           <div class="current-dept-box">
             <span class="material-symbols-outlined">location_on</span>
             <strong>แผนกปัจจุบัน :</strong>
             <span id="current-dept-label">-</span>
           </div>
 
+          <!-- ======================================================
+            FORM CARD
+            ฟอร์มกรอกข้อมูลของเสีย/ปัญหาการผลิต
+            ข้อมูลนี้จะถูกส่งเข้า daily_waste_reports
+          ======================================================= -->
           <section class="form-container-card">
             <form id="department-waste-form">
               <div class="form-group">
@@ -296,9 +347,16 @@
       </div>
     </div>
 
+    <!-- ======================================================
+      SCRIPTS
+      ลำดับสำคัญ:
+      1) Supabase CDN
+      2) supabaseClient.js
+      3) form-department.js
+    ======================================================= -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/core/supabaseClient.js"></script>
-    <script src="/core/shiftConfig.js"></script>
+    <!-- <script src="/core/shiftConfig.js"></script> -->
     <script src="/js/department/form-department.js"></script>
   </body>
 </html>
