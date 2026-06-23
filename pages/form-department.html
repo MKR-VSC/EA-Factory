@@ -16,6 +16,7 @@
     />
 
     <link rel="icon" href="data:;base64,=" />
+    
     <link rel="stylesheet" href="/css/form-department.css" />
   </head>
 
@@ -121,10 +122,10 @@
             </div>
 
             <div class="menu-group">
-              <a href="#" class="menu-link active">
+              <!-- <a href="#" class="menu-link active">
                 <span class="material-symbols-outlined">edit_document</span>
                 ฟอร์มบันทึกปัญหา
-              </a>
+              </a> -->
 
               <a href="/index.html" class="menu-link" id="nav-dashboard-link">
                 <span class="material-symbols-outlined">bar_chart</span>
@@ -148,14 +149,14 @@
               ย้อนกลับ
             </button>
 
-            <button
+            <!-- <button
               type="button"
               class="btn-change-name"
               onclick="openStaffNameModal(true)"
             >
               <span class="material-symbols-outlined">manage_accounts</span>
               เปลี่ยนชื่อผู้บันทึก
-            </button>
+            </button> -->
 
             <button type="button" class="btn-logout" onclick="handleLogout()">
               <span class="material-symbols-outlined">logout</span>
@@ -347,6 +348,57 @@
       </div>
     </div>
 
+
+    <!-- ======================================================
+      OTHER PROBLEM MODAL
+      แสดงเมื่อเลือก "อื่นๆ" ในช่องประเภทปัญหา
+      เพื่อเก็บรายละเอียดสาเหตุจริงไว้ใช้วิเคราะห์ภายหลัง
+    ======================================================= -->
+    <div id="other-problem-modal" class="other-problem-modal hidden">
+      <div class="other-problem-box">
+        <div class="other-problem-icon">
+          <span class="material-symbols-outlined">help</span>
+        </div>
+
+        <h3>ระบุรายละเอียดปัญหาอื่นๆ</h3>
+        <p>
+          กรุณาอธิบายว่า "อื่นๆ" คือปัญหาอะไร
+          เพื่อให้หัวหน้าและผู้บริหารนำข้อมูลไปวิเคราะห์สาเหตุของเสียได้แม่นยำขึ้น
+        </p>
+
+        <label for="other-problem-input">รายละเอียดปัญหาอื่นๆ</label>
+        <textarea
+          id="other-problem-input"
+          rows="4"
+          placeholder="เช่น ฟิล์มย่นช่วงเริ่มเดินเครื่อง / เส้นเทปมีรอยจากลูกกลิ้ง / เครื่องสะดุดเป็นช่วง..."
+        ></textarea>
+
+        <div class="other-problem-actions">
+          <button
+            type="button"
+            class="btn-other-cancel"
+            onclick="cancelOtherProblem()"
+          >
+            ยกเลิก
+          </button>
+
+          <button
+            type="button"
+            class="btn-other-save"
+            onclick="confirmOtherProblem()"
+          >
+            บันทึกรายละเอียด
+          </button>
+        </div>
+
+        <small>
+          หมายเหตุ: ระบบจะเก็บรายละเอียดนี้ไว้ในรายงาน เพื่อใช้สรุปว่า “อื่นๆ”
+          เกิดจากสาเหตุใดบ่อยที่สุด
+        </small>
+      </div>
+    </div>
+
+
     <!-- ======================================================
       SCRIPTS
       ลำดับสำคัญ:
@@ -356,7 +408,9 @@
     ======================================================= -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/core/supabaseClient.js"></script>
+    <script src="/core/activityLogger.js"></script>
     <!-- <script src="/core/shiftConfig.js"></script> -->
+      
     <script src="/js/department/form-department.js"></script>
   </body>
 </html>

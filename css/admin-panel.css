@@ -139,31 +139,47 @@ select {
 
 .sidebar-logo {
   display: flex;
-  gap: 12px;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 26px;
+  justify-content: center;
+
+  text-align: center;
+  padding: 18px 10px 20px;
+  margin-bottom: 18px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .logo-icon {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border-radius: 15px;
-  color: #ffffff;
-  font-size: 22px;
-  background: linear-gradient(135deg, #2563eb, #16a34a);
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 88px;
+  height: 88px;
+  margin-bottom: 10px;
 }
 
-.sidebar-logo strong {
+.logo-icon img {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  /* box-shadow: 0 12px 22px rgba(37, 99, 235, 0.28); */
+}
+
+.logo-text strong {
   display: block;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
   color: #ffffff;
-  font-size: 17px;
 }
 
-.sidebar-logo small {
-  color: #94a3b8;
+.logo-text small {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .sidebar-menu {
@@ -979,5 +995,82 @@ td select {
 
   .qr-machine-actions {
     flex-direction: column;
+  }
+}
+
+
+
+/* =========================================================
+   CONFIRM POPUP
+   ใช้แทน confirm() ของ Browser
+========================================================= */
+
+.app-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(5px);
+}
+
+.app-confirm.hidden {
+  display: none;
+}
+
+/* กล่อง Popup */
+.app-confirm-box {
+  width: min(420px, 92vw);
+
+  padding: 24px;
+
+  background: #ffffff;
+  border-radius: 20px;
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.2);
+
+  animation: popupShow 0.2s ease;
+}
+
+/* หัวข้อ */
+.app-confirm-title,
+.app-confirm-box h3 {
+  margin: 0 0 10px;
+  color: var(--text-main);
+  text-align: center;
+}
+
+/* ข้อความ */
+.app-confirm-box p {
+  margin: 0;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ปุ่ม */
+.app-confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+
+  margin-top: 24px;
+}
+
+/* Animation */
+@keyframes popupShow {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }

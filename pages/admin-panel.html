@@ -22,6 +22,7 @@
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="/css/loadingService.css" />
     <link rel="stylesheet" href="/css/admin-panel.css" />
     <link rel="icon" href="data:," />
   </head>
@@ -36,15 +37,22 @@
       ======================================================= -->
       <aside class="sidebar">
         <div class="sidebar-logo">
-          <span class="logo-icon">⚡</span>
-          <div>
+          <div class="logo-icon">
+            <img src="/icons/Icon_Logo_512.png" alt="EA Factory Logo" />
+          </div>
+
+          <div class="logo-text">
             <strong>Admin Panel</strong>
             <small>Daily Defect System</small>
           </div>
         </div>
 
         <nav class="sidebar-menu" aria-label="เมนูหลัก">
-          <button class="sidebar-item active" type="button" data-section="dashboard">
+          <button
+            class="sidebar-item active"
+            type="button"
+            data-section="dashboard"
+          >
             📊 Dashboard
           </button>
 
@@ -56,7 +64,11 @@
             👥 Users / Roles
           </button>
 
-          <button class="sidebar-item" type="button" data-section="department-qr">
+          <button
+            class="sidebar-item"
+            type="button"
+            data-section="department-qr"
+          >
             🔳 QR แผนก
           </button>
 
@@ -66,6 +78,14 @@
 
           <button class="sidebar-item" type="button" data-section="logs">
             🪲 System Logs
+          </button>
+
+          <button
+            class="sidebar-item"
+            type="button"
+            data-section="activity-logs"
+          >
+            👀 การใช้งานระบบ
           </button>
         </nav>
 
@@ -168,8 +188,8 @@
           <div class="master-helper">
             <h2>⚙️ Master Data คืออะไร?</h2>
             <p>
-              Master Data คือข้อมูลตั้งต้นสำหรับให้พนักงานเลือกในฟอร์ม
-              เช่น แผนก เครื่องจักร อาการเสีย และกะการทำงาน
+              Master Data คือข้อมูลตั้งต้นสำหรับให้พนักงานเลือกในฟอร์ม เช่น แผนก
+              เครื่องจักร อาการเสีย และกะการทำงาน
               เพื่อช่วยลดการพิมพ์ผิดและทำรายงานบัญชีได้ง่ายขึ้น
             </p>
           </div>
@@ -179,13 +199,23 @@
               <div class="panel-head">
                 <div>
                   <h2>🏭 จัดการแผนก</h2>
-                  <span class="muted">เพิ่มรหัสแผนกสำหรับใช้กับ QR และฟอร์ม</span>
+                  <span class="muted"
+                    >เพิ่มรหัสแผนกสำหรับใช้กับ QR และฟอร์ม</span
+                  >
                 </div>
               </div>
 
               <div class="form-row master-form-row">
-                <input type="text" id="dept-code-input" placeholder="รหัส เช่น BLOW" />
-                <input type="text" id="dept-name-input" placeholder="ชื่อแผนก เช่น เป่าถุง" />
+                <input
+                  type="text"
+                  id="dept-code-input"
+                  placeholder="รหัส เช่น BLOW"
+                />
+                <input
+                  type="text"
+                  id="dept-name-input"
+                  placeholder="ชื่อแผนก เช่น เป่าถุง"
+                />
                 <button class="btn btn-primary" type="button" id="btn-add-dept">
                   เพิ่มแผนก
                 </button>
@@ -203,9 +233,21 @@
               </div>
 
               <div class="form-row master-form-row">
-                <input type="text" id="shift-name-input" placeholder="เช่น กะ A (กลางวัน)" />
-                <input type="text" id="shift-time-input" placeholder="เวลา เช่น 08:00 - 17:00" />
-                <button class="btn btn-primary" type="button" id="btn-add-shift">
+                <input
+                  type="text"
+                  id="shift-name-input"
+                  placeholder="เช่น กะ A (กลางวัน)"
+                />
+                <input
+                  type="text"
+                  id="shift-time-input"
+                  placeholder="เวลา เช่น 08:00 - 17:00"
+                />
+                <button
+                  class="btn btn-primary"
+                  type="button"
+                  id="btn-add-shift"
+                >
                   เพิ่มกะ
                 </button>
               </div>
@@ -237,14 +279,23 @@
                 <div>
                   <h2>⚙️ จัดการเครื่องจักรตามแผนก</h2>
                   <span class="muted">
-                    ตัวอย่าง BLOW: F1, F2 / PIPE: PIPE-01 — เพิ่มปุ่ม QR ให้แต่ละเครื่องแล้ว
+                    ตัวอย่าง BLOW: F1, F2 / PIPE: PIPE-01 — เพิ่มปุ่ม QR
+                    ให้แต่ละเครื่องแล้ว
                   </span>
                 </div>
               </div>
 
               <div class="form-row">
-                <input type="text" id="machine-input" placeholder="เช่น F1, F2, PIPE-01, CUT-01" />
-                <button class="btn btn-primary" type="button" id="btn-add-machine">
+                <input
+                  type="text"
+                  id="machine-input"
+                  placeholder="เช่น F1, F2, PIPE-01, CUT-01"
+                />
+                <button
+                  class="btn btn-primary"
+                  type="button"
+                  id="btn-add-machine"
+                >
                   เพิ่มเครื่อง
                 </button>
               </div>
@@ -256,13 +307,23 @@
               <div class="panel-head">
                 <div>
                   <h2>⚠️ จัดการหัวข้ออาการเสียตามแผนก</h2>
-                  <span class="muted">ตัวอย่าง ขอบเบี้ยว, รูรั่ว, ซีลไม่ติด</span>
+                  <span class="muted"
+                    >ตัวอย่าง ขอบเบี้ยว, รูรั่ว, ซีลไม่ติด</span
+                  >
                 </div>
               </div>
 
               <div class="form-row">
-                <input type="text" id="problem-input" placeholder="เช่น ขอบเบี้ยว, หนาไม่เท่ากัน" />
-                <button class="btn btn-danger" type="button" id="btn-add-problem">
+                <input
+                  type="text"
+                  id="problem-input"
+                  placeholder="เช่น ขอบเบี้ยว, หนาไม่เท่ากัน"
+                />
+                <button
+                  class="btn btn-danger"
+                  type="button"
+                  id="btn-add-problem"
+                >
                   เพิ่มอาการ
                 </button>
               </div>
@@ -279,13 +340,23 @@
           <div class="panel">
             <div class="panel-head">
               <h2>👥 จัดการ User และ Role</h2>
-              <span class="muted">Admin เพิ่ม / ลบ / เปลี่ยนสิทธิ์ได้จากหน้านี้</span>
+              <span class="muted"
+                >Admin เพิ่ม / ลบ / เปลี่ยนสิทธิ์ได้จากหน้านี้</span
+              >
             </div>
 
             <div class="form-row">
-              <input type="text" id="user-username" placeholder="Username เช่น ADMIN01" />
+              <input
+                type="text"
+                id="user-username"
+                placeholder="Username เช่น ADMIN01"
+              />
               <input type="text" id="user-password" placeholder="Password" />
-              <input type="text" id="user-display-name" placeholder="ชื่อแสดงผล" />
+              <input
+                type="text"
+                id="user-display-name"
+                placeholder="ชื่อแสดงผล"
+              />
 
               <select id="user-department">
                 <option value="">-- เลือกแผนก --</option>
@@ -376,23 +447,36 @@
               <div>
                 <h2>⚙️ จัดการ QR รายเครื่อง</h2>
                 <span class="muted">
-                  เลือกแผนก แล้วระบบจะดึงเครื่องจักรจาก Master Data มาสร้าง QR ให้ทีละเครื่อง
+                  เลือกแผนก แล้วระบบจะดึงเครื่องจักรจาก Master Data มาสร้าง QR
+                  ให้ทีละเครื่อง
                 </span>
               </div>
 
-              <span id="machine-qr-count" class="qr-machine-count">0 เครื่อง</span>
+              <span id="machine-qr-count" class="qr-machine-count"
+                >0 เครื่อง</span
+              >
             </div>
 
             <div class="qr-machine-toolbar">
               <select id="machine-qr-dept-filter">
-                <option value="">-- เลือกแผนกเพื่อสร้าง QR รายเครื่อง --</option>
+                <option value="">
+                  -- เลือกแผนกเพื่อสร้าง QR รายเครื่อง --
+                </option>
               </select>
 
-              <button class="btn btn-secondary" type="button" id="btn-refresh-machine-qr">
+              <button
+                class="btn btn-secondary"
+                type="button"
+                id="btn-refresh-machine-qr"
+              >
                 🔄 รีเฟรชรายการ
               </button>
 
-              <button class="btn btn-primary" type="button" id="btn-print-machine-qr">
+              <button
+                class="btn btn-primary"
+                type="button"
+                id="btn-print-machine-qr"
+              >
                 🖨️ พิมพ์ QR ทั้งแผนก
               </button>
             </div>
@@ -425,6 +509,54 @@
                 <tbody id="log-table-body">
                   <tr>
                     <td colspan="3" class="tb-empty">ยังไม่มี Log</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================
+          SECTION ACTIVITY LOGS
+        ======================================================= -->
+        <section id="section-activity-logs" class="page-section">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>👀 ประวัติการใช้งานระบบ</h2>
+                <span class="muted">
+                  ดูว่าใครเข้าใช้งาน ทำอะไร เวลาไหน ใช้อุปกรณ์อะไร
+                </span>
+              </div>
+
+              <button
+                class="btn btn-secondary"
+                type="button"
+                onclick="loadActivityLogs()"
+              >
+                รีเฟรช
+              </button>
+            </div>
+
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>เวลา</th>
+                    <th>ชื่อ</th>
+                    <th>Role</th>
+                    <th>แผนก</th>
+                    <th>Action</th>
+                    <th>หน้า</th>
+                    <th>อุปกรณ์</th>
+                    <th>Browser</th>
+                    <th>หมายเหตุ</th>
+                  </tr>
+                </thead>
+
+                <tbody id="activity-log-body">
+                  <tr>
+                    <td colspan="9" class="tb-empty">กำลังโหลดข้อมูล...</td>
                   </tr>
                 </tbody>
               </table>
@@ -498,7 +630,11 @@
         </div>
 
         <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" id="btn-cancel-edit-user">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            id="btn-cancel-edit-user"
+          >
             ยกเลิก
           </button>
 
@@ -509,12 +645,53 @@
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/roleConfig.js"></script>
     <script src="/core/departmentConfig.js"></script>
     <!-- <script src="/core/shiftConfig.js"></script> -->
-
+     <script src="/services/popupService.js"></script>
+    <script src="/services/loadingService.js"></script>
     <script src="/js/admin/admin-panel.js"></script>
+
+    <!-- =====================================================
+     CONFIRM POPUP
+===================================================== -->
+
+<div id="app-confirm" class="app-confirm hidden">
+  <div class="app-confirm-box">
+
+    <h3 id="app-confirm-title">
+      ยืนยันการทำรายการ
+    </h3>
+
+    <p id="app-confirm-message">
+      ต้องการดำเนินการใช่ไหม?
+    </p>
+
+    <div class="app-confirm-actions">
+
+      <button
+        type="button"
+        id="app-confirm-cancel"
+        class="btn btn-secondary"
+      >
+        ยกเลิก
+      </button>
+
+      <button
+        type="button"
+        id="app-confirm-ok"
+        class="btn btn-danger"
+      >
+        ตกลง
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
+   
   </body>
 </html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EA Factory Loading Prototype</title>
+  <link rel="stylesheet" href="/js/pr/ea-loading-prototype.css" />
+</head>
+<body>
+  <div id="splash-screen" class="splash-screen">
+    <div class="splash-card">
+      <div class="splash-logo">EA</div>
+      <div class="splash-title">EA Factory</div>
+      <div class="splash-sub">ศูนย์รวมข้อมูลและระบบงาน</div>
+      <div class="splash-steps">
+        <span id="step-text">กำลังเชื่อมต่อฐานข้อมูล...</span>
+      </div>
+      <div class="splash-dots"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="side-logo">EA<br><small>FACTORY</small></div>
+      <strong>Admin Panel</strong>
+      <small>Daily Defect System</small>
+      <button class="active">📊 Dashboard</button>
+      <button>⚙️ Master Data</button>
+      <button>👥 Users / Roles</button>
+      <button>🔳 QR แผนก</button>
+    </aside>
+
+    <main class="main">
+      <header>
+        <div>
+          <h1>แผงควบคุมระบบของเสียรายวัน</h1>
+          <p>ตรวจสอบรายการ จัดการข้อมูลพื้นฐาน และกำหนดสิทธิ์ผู้ใช้งาน</p>
+        </div>
+        <button id="replay">▶ ดูอนิเมชันอีกครั้ง</button>
+      </header>
+
+      <section class="metrics">
+        <article><span>การเชื่อมต่อ Supabase</span><strong>เชื่อมต่อได้</strong><small>506 ms</small></article>
+        <article><span>รายการทั้งหมด</span><strong data-count="27">0</strong><small>รายการในระบบ</small></article>
+        <article><span>รอตรวจสอบ</span><strong data-count="27" class="warning">0</strong><small>เคส</small></article>
+        <article><span>น้ำหนักของเสียรวม</span><strong data-count="3037" class="success">0</strong><small>กิโลกรัม</small></article>
+      </section>
+
+      <section class="panel">
+        <h2>📋 รายการของเสียล่าสุด</h2>
+        <table>
+          <thead><tr><th>วันที่</th><th>แผนก</th><th>เครื่องจักร</th><th>น้ำหนัก</th><th>สถานะ</th></tr></thead>
+          <tbody>
+            <tr><td>23/6/2569</td><td>โมโน</td><td>Mono1</td><td>250.00 กก.</td><td><span>รอตรวจสอบ</span></td></tr>
+            <tr><td>23/6/2569</td><td>โมโน</td><td>Mono2</td><td>350.00 กก.</td><td><span>รอตรวจสอบ</span></td></tr>
+            <tr><td>23/6/2569</td><td>โมโน</td><td>Mono3</td><td>560.00 กก.</td><td><span>รอตรวจสอบ</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script src="/js/pr/ea-loading-prototype.js"></script>
+</body>
+</html>

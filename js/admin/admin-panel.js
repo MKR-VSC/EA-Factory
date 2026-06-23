@@ -100,15 +100,29 @@ function protectAdminPage() {
   return true;
 }
 
+// =========================================================
+// LOGOUT
+// =========================================================
+
 async function logout() {
-  const ok = confirm("ต้องการออกจากระบบใช่ไหม?");
+
+  // แสดง Popup ยืนยัน
+  const ok = await showConfirm(
+    "ต้องการออกจากระบบใช่ไหม?",
+    "ออกจากระบบ"
+  );
+
+  // ถ้ากดยกเลิก
   if (!ok) return;
 
   try {
+
+    // Logout Supabase
     if (window.supabaseClient?.auth) {
       await window.supabaseClient.auth.signOut();
     }
 
+    // ล้างข้อมูล Login
     localStorage.removeItem("loginType");
     localStorage.removeItem("activeUserId");
     localStorage.removeItem("activeUser");
@@ -118,13 +132,19 @@ async function logout() {
     localStorage.removeItem("activeDeptName");
 
     sessionStorage.clear();
+
+    // กลับหน้า Login
     window.location.href = LOGIN_PAGE;
+
   } catch (err) {
-    console.error("Logout error:", err);
-    alert("ออกจากระบบไม่สำเร็จ");
+
+    console.error(err);
+
+    showAlert(
+      "ออกจากระบบไม่สำเร็จ"
+    );
   }
 }
-
 /* =========================================================
    INIT
 ========================================================= */
@@ -244,6 +264,9 @@ function showSection(section, activeBtn) {
   });
 
   document.getElementById(`section-${section}`)?.classList.add("active");
+  if (section === "activity-logs") {
+  loadActivityLogs();
+}
 }
 
 /* =========================================================
@@ -252,6 +275,11 @@ function showSection(section, activeBtn) {
 
 async function loadAll() {
   hideAlert();
+
+  LoadingService?.show(
+    "กำลังโหลดข้อมูล",
+    "ระบบกำลังดึงข้อมูลล่าสุด"
+  );
 
   const btn = document.getElementById("btn-refresh");
   if (btn) btn.disabled = true;
@@ -280,6 +308,8 @@ async function loadAll() {
     showAlert(err.message || String(err));
     addLog("ERROR", err.message || String(err));
   } finally {
+    LoadingService?.hide();
+
     if (btn) btn.disabled = false;
   }
 }
@@ -1221,8 +1251,14 @@ async function deleteProblem(id) {
 async function deleteMasterItem(table, id, reloadFn) {
   if (!table || !id) return;
 
-  const ok = confirm("ต้องการลบรายการนี้ใช่ไหม?");
-  if (!ok) return;
+ 
+
+  const ok = await showConfirm(
+  "ต้องการลบรายการนี้ใช่ไหม?",
+  "ลบข้อมูล"
+);
+
+if (!ok) return;
 
   const { error } = await state.supabase.from(table).delete().eq("id", id);
 
@@ -1437,8 +1473,12 @@ async function deleteUser(userId) {
     return;
   }
 
-  const ok = confirm("ต้องการลบ User นี้ใช่ไหม?");
-  if (!ok) return;
+  const ok = await showConfirm(
+  "ต้องการลบ User นี้ใช่ไหม?",
+  "ลบผู้ใช้งาน"
+);
+
+if (!ok) return;
 
   const { error } = await state.supabase
     .from(PROFILE_TABLE)
@@ -2351,6 +2391,65 @@ async function editSortOrder(table, id, currentSort, reloadFn) {
 
 
 
+async function loadActivityLogs() {
+  const tbody = document.getElementById("activity-log-body");
+  if (!tbody) return;
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="9" class="tb-empty">กำลังโหลดข้อมูล...</td>
+    </tr>
+  `;
+
+  try {
+    const { data, error } = await state.supabase
+      .from("user_activity_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" class="tb-empty">ยังไม่มีประวัติการใช้งาน</td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = data
+      .map((row) => {
+        return `
+          <tr>
+            <td>${escapeHtml(formatDate(row.created_at))}</td>
+            <td>${escapeHtml(row.display_name || row.username || "-")}</td>
+            <td>${escapeHtml(row.role || "-")}</td>
+            <td>${escapeHtml(row.department_code || "-")}</td>
+            <td>${escapeHtml(row.action || "-")}</td>
+            <td>${escapeHtml(row.page_path || "-")}</td>
+            <td>${escapeHtml(row.device_type || "-")}</td>
+            <td>${escapeHtml(row.browser || "-")}</td>
+            <td>${escapeHtml(row.note || "-")}</td>
+          </tr>
+        `;
+      })
+      .join("");
+  } catch (err) {
+    console.error("โหลด Activity Logs ไม่สำเร็จ:", err);
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" class="tb-empty">
+          โหลดข้อมูลไม่สำเร็จ: ${escapeHtml(err.message || err)}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+
 
 /* =========================================================
    GLOBAL
@@ -2386,3 +2485,4 @@ window.editMasterName = editMasterName;
 window.editMasterOrder = editMasterOrder;
 window.editShift = editShift;
 window.editShiftOrder = editShiftOrder;
+window.loadActivityLogs = loadActivityLogs;

@@ -1,0 +1,341 @@
+/* =========================================================
+   GLOBAL SPLASH / LOADING
+   ใช้ร่วมกันทุกหน้า
+========================================================= */
+
+.app-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at top, rgba(37, 99, 235, 0.18), transparent 35%),
+    linear-gradient(135deg, #f8fafc, #e0f2fe);
+  transition: opacity 0.45s ease, visibility 0.45s ease;
+}
+
+.app-splash.hide {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.app-splash-card {
+  text-align: center;
+  animation: splashFloat 1.2s ease both;
+}
+
+.app-splash-logo {
+  width: 92px;
+  height: 92px;
+  border-radius: 24px;
+  object-fit: cover;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+  animation: logoPulse 1.6s ease-in-out infinite;
+}
+
+.app-splash-sub {
+  margin-top: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.app-splash-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.app-splash-dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #2563eb;
+  animation: dotBounce 1s infinite ease-in-out;
+}
+
+.app-splash-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.app-splash-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* Overlay Loading */
+.app-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+}
+
+.app-loading-overlay.hidden {
+  display: none;
+}
+
+.app-loading-box {
+  width: min(320px, 90vw);
+  padding: 30px 24px;
+  border-radius: 24px;
+  text-align: center;
+  background: #ffffff;
+  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.28);
+  animation: overlayPop 0.28s ease both;
+}
+
+.app-loading-ring {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  border: 5px solid #dbeafe;
+  border-top-color: #2563eb;
+  animation: spin 0.85s linear infinite;
+}
+
+.app-loading-box h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.app-loading-box p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* Animations */
+@keyframes splashFloat {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes logoPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes dotBounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  40% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+
+@keyframes overlayPop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ซ่อน Splash เมื่อโหลดเสร็จ */
+#splash-screen.hide {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ให้ Splash ลอยทับหน้าจอ ไม่ดันหน้าเว็บลงมา */
+#splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+
+/* =========================================================
+   FIX: ซ่อน Loading Overlay / Splash ให้แน่นอน
+========================================================= */
+
+.hidden {
+  display: none !important;
+}
+
+#login-overlay.hidden {
+  display: none !important;
+}
+
+#splash-screen.hide {
+  display: none !important;
+}
+
+
+/* =========================================================
+   SPLASH ANIMATION
+========================================================= */
+
+.hidden {
+  display: none !important;
+}
+
+#splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #eff6ff, #f8fafc);
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+#splash-screen.hide {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.splash-card {
+  text-align: center;
+  animation: splashPop 0.8s ease both;
+}
+
+.splash-logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 24px;
+  animation: logoPulse 1.4s ease-in-out infinite;
+}
+
+.splash-card h2 {
+  margin: 16px 0 4px;
+  color: #0f172a;
+}
+
+.splash-card p {
+  margin: 0;
+  color: #64748b;
+}
+
+.splash-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.splash-dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #2563eb;
+  animation: dotBounce 1s infinite ease-in-out;
+}
+
+.splash-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.splash-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* หน้าเว็บค่อย ๆ ลอยขึ้นหลัง Splash */
+.app-shell {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.app-shell.app-ready {
+  animation: appShow 0.45s ease forwards;
+}
+
+/* Loading Overlay */
+#login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+}
+
+.overlay-box {
+  width: min(320px, 90vw);
+  padding: 28px 24px;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.28);
+  animation: splashPop 0.25s ease both;
+}
+
+.overlay-ring {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 16px;
+  border: 5px solid #dbeafe;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.85s linear infinite;
+}
+
+@keyframes splashPop {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes logoPulse {
+  50% {
+    transform: scale(1.07);
+  }
+}
+
+@keyframes dotBounce {
+  40% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+
+@keyframes appShow {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -61,6 +61,13 @@ let currentDept = normalizeDept(currentDeptRaw);
 let appSelectedMachine = QR_MACHINE || "";
 let appSelectedProblem = "";
 
+// เก็บรายละเอียดเมื่อเลือกประเภทปัญหาเป็น "อื่นๆ"
+// เหตุผลที่ต้องเก็บแยก:
+// - problem_type ยังเก็บเป็น "อื่นๆ" เพื่อคงหมวดหลัก
+// - other_problem_detail เก็บคำอธิบายจริง เพื่อเอาไปวิเคราะห์ภายหลัง
+// - reason_detail จะเก็บข้อความวิเคราะห์ง่าย เช่น "อื่นๆ: ลูกกลิ้งมีรอย"
+let appOtherProblemDetail = "";
+
 // ถ้า dept ที่ได้มาไม่ถูกต้อง ให้กลับไปใช้ blow เพื่อกัน Foreign Key Error
 if (!VALID_DEPARTMENTS.includes(currentDept)) {
   console.error(`[DEPT_ERROR] ไม่พบแผนก: ${currentDeptRaw}`);
@@ -279,8 +286,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     renderUserInfo();
     setupStaffNameBeforeUse();
 
-    // แสดงกล่องบริบทจาก QR ด้านบนฟอร์ม
-    // ช่วยให้พนักงานเห็นชัดว่า ตอนนี้กำลังบันทึกแผนก/เครื่องไหน
     setupQrContextCard();
 
     setupDashboardMenu();
@@ -288,15 +293,22 @@ window.addEventListener("DOMContentLoaded", async () => {
     setupNetworkStatus();
     setupFormSubmit();
     setupDropdownListeners();
+    setupOtherProblemModal();
     renderCurrentDeptLabel();
 
     await loadShiftOptions();
-
     await loadMasterDataAndRender();
 
-    // ต้องเรียกหลังโหลด master data เพราะ dropdown เครื่องจักรถูกสร้างหลังจาก query เสร็จ
-    // ถ้าเรียกก่อน dropdown ยังไม่มี option เครื่อง ระบบจะเลือก QR_MACHINE ไม่ติด
     applyQrMachineLock();
+
+    // ✅ บันทึก Log ว่ามีการเปิดฟอร์ม
+    if (typeof logActivity === "function") {
+      logActivity("OPEN_FORM", {
+        note: `เปิดฟอร์มแผนก ${currentDept}${
+          QR_MACHINE ? ` เครื่อง ${QR_MACHINE}` : ""
+        }`,
+      });
+    }
   } catch (err) {
     console.error("[Init_Error]", err);
     alert("เกิดข้อผิดพลาดตอนเปิดหน้าฟอร์ม: " + (err.message || err));
@@ -304,12 +316,23 @@ window.addEventListener("DOMContentLoaded", async () => {
     hideSplash();
   }
 });
-
 // =========================================================
 // STAFF NAME MODAL
 // =========================================================
 
 function setupStaffNameBeforeUse() {
+  const role = normalizeRole(activeRoleRaw);
+
+  // staff ต้องกรอกชื่อทุกครั้ง
+  if (isStaffRole(role)) {
+    localStorage.removeItem("activeUser");
+    localStorage.removeItem("activeName");
+    renderUserInfo();
+    openStaffNameModal(false);
+    return;
+  }
+
+  // role อื่นใช้ชื่อจาก login ได้เลย
   const savedName = getActiveUserName();
 
   if (!savedName) {
@@ -352,6 +375,13 @@ function confirmStaffName() {
   setActiveUserName(name);
   renderUserInfo();
   closeStaffNameModal();
+
+  // ✅ บันทึก log หลังจากมีชื่อแล้ว
+  if (typeof logActivity === "function") {
+    logActivity("STAFF_NAME_CONFIRMED", {
+      note: `พนักงานระบุชื่อ: ${name} / แผนก ${currentDept}`,
+    });
+  }
 }
 
 // =========================================================
@@ -634,9 +664,250 @@ function setupDropdownListeners() {
   if (problemSelect) {
     problemSelect.addEventListener("change", (event) => {
       appSelectedProblem = event.target.value;
+
+      // ถ้าเลือก "อื่นๆ" ให้เด้งกล่องกรอกสาเหตุจริงทันที
+      // เพราะถ้าไม่เก็บรายละเอียดเพิ่ม ข้อมูล "อื่นๆ" จะนำไปวิเคราะห์ต่อได้ยาก
+      if (isOtherProblem(appSelectedProblem)) {
+        openOtherProblemModal();
+      } else {
+        appOtherProblemDetail = "";
+      }
     });
   }
 }
+
+
+// =========================================================
+// OTHER PROBLEM MODAL
+// ใช้เมื่อเลือกประเภทปัญหาเป็น "อื่นๆ"
+// =========================================================
+
+function setupOtherProblemModal() {
+  ensureOtherProblemStyleExists();
+
+  const input = document.getElementById("other-problem-input");
+
+  // กด Ctrl+Enter เพื่อบันทึกรายละเอียดได้เร็วขึ้น
+  if (input) {
+    input.addEventListener("keydown", (event) => {
+      if (event.ctrlKey && event.key === "Enter") {
+        confirmOtherProblem();
+      }
+    });
+  }
+}
+
+function isOtherProblem(value) {
+  const text = String(value || "").trim().toLowerCase();
+
+  return [
+    "อื่นๆ",
+    "อื่น ๆ",
+    "other",
+    "others",
+    "other problem",
+  ].includes(text);
+}
+
+function openOtherProblemModal() {
+  const modal = document.getElementById("other-problem-modal");
+  const input = document.getElementById("other-problem-input");
+
+  if (!modal) {
+    // fallback ถ้า HTML ยังไม่มี modal
+    const text = prompt("กรุณาระบุว่า อื่นๆ คือปัญหาอะไร", appOtherProblemDetail || "");
+
+    if (text === null) {
+      clearOtherProblemSelection();
+      return;
+    }
+
+    const cleanText = text.trim();
+
+    if (!cleanText) {
+      alert("กรุณาระบุรายละเอียดปัญหาอื่นๆ");
+      clearOtherProblemSelection();
+      return;
+    }
+
+    appOtherProblemDetail = cleanText;
+    return;
+  }
+
+  if (input) {
+    input.value = appOtherProblemDetail || "";
+    setTimeout(() => input.focus(), 80);
+  }
+
+  modal.classList.remove("hidden");
+}
+
+function closeOtherProblemModal() {
+  const modal = document.getElementById("other-problem-modal");
+  if (modal) modal.classList.add("hidden");
+}
+
+function confirmOtherProblem() {
+  const input = document.getElementById("other-problem-input");
+  const value = input?.value.trim() || "";
+
+  if (!value) {
+    alert("กรุณาระบุว่า อื่นๆ คือปัญหาอะไร");
+    input?.focus();
+    return;
+  }
+
+  appOtherProblemDetail = value;
+  closeOtherProblemModal();
+
+  // ช่วยให้พนักงานเห็นในช่องรายละเอียดด้วย
+  // ถ้ายังไม่ได้พิมพ์รายละเอียดเหตุการณ์ ระบบเติมข้อความตั้งต้นให้
+  const noteInput = document.getElementById("problem-description");
+  if (noteInput && !noteInput.value.trim()) {
+    noteInput.value = `ปัญหาอื่นๆ: ${value}`;
+  }
+}
+
+function cancelOtherProblem() {
+  clearOtherProblemSelection();
+  closeOtherProblemModal();
+}
+
+function clearOtherProblemSelection() {
+  appOtherProblemDetail = "";
+
+  const problemSelect = document.getElementById("problem-type");
+  if (problemSelect) {
+    problemSelect.value = "";
+  }
+
+  appSelectedProblem = "";
+  appOtherProblemDetail = "";
+}
+
+function ensureOtherProblemStyleExists() {
+  if (document.getElementById("other-problem-style")) return;
+
+  const style = document.createElement("style");
+  style.id = "other-problem-style";
+  style.textContent = `
+    .other-problem-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(15, 23, 42, 0.65);
+      -webkit-backdrop-filter: blur(7px);
+      backdrop-filter: blur(7px);
+    }
+
+    .other-problem-modal.hidden {
+      display: none;
+    }
+
+    .other-problem-box {
+      width: min(480px, 100%);
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 26px;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+    }
+
+    .other-problem-icon {
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: #fef3c7;
+      color: #b45309;
+      margin-bottom: 14px;
+    }
+
+    .other-problem-icon .material-symbols-outlined {
+      font-size: 34px;
+    }
+
+    .other-problem-box h3 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      color: #0f172a;
+    }
+
+    .other-problem-box p,
+    .other-problem-box small {
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    .other-problem-box label {
+      display: block;
+      margin: 16px 0 8px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .other-problem-box textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 16px;
+      outline: none;
+      resize: vertical;
+    }
+
+    .other-problem-box textarea:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+    }
+
+    .other-problem-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .btn-other-cancel,
+    .btn-other-save {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-other-cancel {
+      background: #e2e8f0;
+      color: #334155;
+    }
+
+    .btn-other-save {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    @media (max-width: 640px) {
+      .other-problem-actions {
+        flex-direction: column-reverse;
+      }
+
+      .btn-other-cancel,
+      .btn-other-save {
+        width: 100%;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
 
 // =========================================================
 // MASTER DATA
@@ -854,6 +1125,13 @@ async function handleFormSubmit(event) {
   if (!finalShift) return alert("กรุณาเลือกกะการทำงาน");
   if (!finalMachine) return alert("กรุณาเลือกหมายเลขเครื่องจักร");
   if (!finalProblem) return alert("กรุณาเลือกอาการเสีย/ปัญหาที่พบ");
+
+  if (isOtherProblem(finalProblem) && !appOtherProblemDetail.trim()) {
+    alert("กรุณาระบุรายละเอียดว่า อื่นๆ คือปัญหาอะไร");
+    openOtherProblemModal();
+    return;
+  }
+
   if (!detailNote) return alert("กรุณากรอกรายละเอียดเหตุการณ์");
 
   const finalDateTime = new Date(dateInput.value).toISOString();
@@ -881,6 +1159,21 @@ async function handleFormSubmit(event) {
 
     showLoginOverlay("กำลังบันทึกข้อมูล...");
 
+    // เตรียมข้อมูลปัญหาสำหรับบันทึก
+    // ถ้าเลือก "อื่นๆ" จะยังเก็บ problem_type = "อื่นๆ"
+    // แต่เพิ่ม other_problem_detail และ reason_detail เพื่อให้ Dashboard วิเคราะห์สาเหตุจริงได้
+    const finalOtherProblemDetail = isOtherProblem(finalProblem)
+      ? appOtherProblemDetail.trim()
+      : "";
+
+    const finalReasonDetail = finalOtherProblemDetail
+      ? `${finalProblem}: ${finalOtherProblemDetail}`
+      : finalProblem;
+
+    const finalDetailNote = finalOtherProblemDetail
+      ? `${detailNote}\n\n[รายละเอียดอื่นๆ] ${finalOtherProblemDetail}`
+      : detailNote;
+
     const reportData = {
       report_date: reportDate,
       incident_datetime: finalDateTime,
@@ -903,10 +1196,15 @@ async function handleFormSubmit(event) {
       product_name: "ปัญหาการผลิต",
 
       problem_type: finalProblem,
-      reason_detail: finalProblem,
+      reason_detail: finalReasonDetail,
 
-      note: detailNote,
-      detail: detailNote,
+      // คอลัมน์นี้แนะนำให้เพิ่มใน Supabase:
+      // ALTER TABLE daily_waste_reports ADD COLUMN IF NOT EXISTS other_problem_detail TEXT;
+      // ถ้ายังไม่ได้เพิ่มคอลัมน์ ให้ดู SQL ใน README แล้วรันก่อน deploy
+      other_problem_detail: finalOtherProblemDetail || null,
+
+      note: finalDetailNote,
+      detail: finalDetailNote,
 
       waste_qty: wasteWeight,
       waste_weight_kg: wasteWeight,
@@ -1024,6 +1322,7 @@ function resetFormAfterSubmit() {
   // ไม่อย่างนั้นกดบันทึกเสร็จแล้ว dropdown จะว่าง ทั้งที่ QR ระบุเครื่องไว้แล้ว
   appSelectedMachine = QR_MACHINE || "";
   appSelectedProblem = "";
+  appOtherProblemDetail = "";
 
   setupDefaultDateTime();
   applyQrMachineLock();
@@ -1076,3 +1375,6 @@ window.isStaffRole = isStaffRole;
 window.openStaffNameModal = openStaffNameModal;
 window.confirmStaffName = confirmStaffName;
 window.applyQrMachineLock = applyQrMachineLock;
+window.confirmOtherProblem = confirmOtherProblem;
+window.cancelOtherProblem = cancelOtherProblem;
+window.openOtherProblemModal = openOtherProblemModal;

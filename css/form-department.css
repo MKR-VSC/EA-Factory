@@ -879,3 +879,441 @@ textarea {
   font-weight: 800;
   cursor: not-allowed;
 }
+
+
+/* ======================================================
+   MOBILE FIRST UI OVERRIDE 2026
+   วางไว้ท้ายไฟล์ form-department.css
+   เป้าหมาย: มือถือเป็นหลัก / กดง่าย / หน้าไม่แน่น / ใช้กับ QR หน้างาน
+====================================================== */
+
+:root {
+  --mobile-radius-xl: 24px;
+  --mobile-radius-lg: 18px;
+  --mobile-shadow-card: 0 12px 30px rgba(15, 23, 42, 0.08);
+  --mobile-shadow-soft: 0 8px 20px rgba(15, 23, 42, 0.06);
+  --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 34%),
+    linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%);
+}
+
+/* กันปุ่ม / input บนมือถือเล็กเกินไป */
+button,
+input,
+select,
+textarea {
+  min-height: 48px;
+}
+
+/* ======================================================
+   DESKTOP BASE POLISH
+====================================================== */
+
+.main-content,
+.form-container-card,
+.current-dept-box,
+.qr-context-card {
+  width: 100%;
+}
+
+.form-container-card,
+.current-dept-box,
+.qr-context-card {
+  max-width: 920px;
+}
+
+.form-container-card {
+  border: 1px solid rgba(203, 213, 225, 0.75);
+}
+
+/* ======================================================
+   MOBILE LAYOUT
+====================================================== */
+
+@media (max-width: 768px) {
+  body {
+    background: #f5f7fb;
+  }
+
+  .app-layout {
+    display: block;
+    min-height: 100dvh;
+  }
+
+  /* จาก sidebar เดิม เปลี่ยนเป็นหัวหน้าแบบมือถือ */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    width: 100%;
+    padding: 10px 12px 12px;
+    background: rgba(15, 23, 42, 0.96);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.2);
+  }
+
+  .pvt-top-header {
+    min-height: auto;
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 18px;
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    column-gap: 12px;
+    text-align: left;
+    align-items: center;
+  }
+
+  .pvt-top-header .logo {
+    width: 52px;
+    height: 52px;
+    margin: 0;
+    grid-row: 1 / 3;
+  }
+
+  .pvt-top-header .logo img {
+    border-radius: 15px;
+    padding: 6px;
+  }
+
+  .pvt-top-header h3 {
+    font-size: 16px;
+    line-height: 1.2;
+  }
+
+  .pvt-top-header p {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .sidebar-menu {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .menu-group {
+    margin: 0;
+  }
+
+  .menu-label {
+    display: none;
+  }
+
+  .user-profile-box {
+    padding: 10px 12px;
+    border-radius: 16px;
+    background: rgba(30, 41, 59, 0.88);
+  }
+
+  .user-info {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 22px auto 1fr;
+    gap: 6px;
+    font-size: 13px;
+  }
+
+  #display-username {
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .menu-link,
+  .btn-back,
+  .btn-change-name,
+  .btn-logout {
+    min-height: 44px;
+    margin-top: 0;
+    border-radius: 14px;
+    font-size: 14px;
+  }
+
+  .btn-back,
+  .btn-logout,
+  .menu-link {
+    padding: 10px 12px;
+  }
+
+  .btn-back,
+  .btn-logout {
+    width: 100%;
+  }
+
+  /* ให้ปุ่มย้อนกลับ / logout อยู่สองช่อง กดง่าย */
+  .sidebar-menu > .btn-back,
+  .sidebar-menu > .btn-logout {
+    display: inline-flex;
+  }
+
+  .sidebar-menu {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sidebar-menu .menu-group:first-child,
+  .sidebar-menu .menu-group:nth-child(2) {
+    grid-column: 1 / -1;
+  }
+
+  .main-content {
+    padding: 14px 12px calc(22px + var(--mobile-safe-bottom));
+  }
+
+  .content-header {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .header-title-area h1 {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    align-items: start;
+    gap: 8px;
+    font-size: 20px;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+  }
+
+  .header-title-area h1 .material-symbols-outlined {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: #dbeafe;
+    color: var(--primary);
+    font-size: 22px;
+  }
+
+  .subtitle {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .header-status-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .badge {
+    width: 100%;
+    justify-content: center;
+    padding: 9px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .current-dept-box,
+  .qr-context-card,
+  .form-container-card {
+    border-radius: var(--mobile-radius-lg);
+    box-shadow: var(--mobile-shadow-soft);
+  }
+
+  .current-dept-box {
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    align-items: flex-start;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .qr-context-card {
+    margin: 0 0 12px;
+    padding: 13px 14px;
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  .qr-context-card div,
+  .qr-context-row {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .qr-context-card span,
+  .qr-context-row span {
+    font-size: 15px;
+  }
+
+  .form-container-card {
+    padding: 14px;
+    border: 1px solid rgba(203, 213, 225, 0.8);
+  }
+
+  .form-group {
+    position: relative;
+    margin-bottom: 14px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 5px 16px rgba(15, 23, 42, 0.035);
+  }
+
+  .form-group label {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    align-items: start;
+    width: 100%;
+    margin-bottom: 10px;
+    gap: 7px;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .label-icon {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    background: #f1f5f9;
+    font-size: 20px;
+  }
+
+  .required {
+    padding-top: 1px;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea,
+  .staff-name-box input,
+  .other-problem-box textarea {
+    width: 100%;
+    min-height: 52px;
+    padding: 13px 14px;
+    border-radius: 15px;
+    border-color: #cbd5e1;
+    background: #f8fafc;
+    font-size: 16px;
+  }
+
+  .form-group textarea {
+    min-height: 118px;
+    line-height: 1.6;
+  }
+
+  .helper-text {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: 8px;
+    margin: 12px -14px -14px;
+    padding: 10px 12px calc(10px + var(--mobile-safe-bottom));
+    background: rgba(255, 255, 255, 0.94);
+    border-top: 1px solid #e2e8f0;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .btn-clear,
+  .btn-submit {
+    width: 100%;
+    min-height: 52px;
+    padding: 12px 10px;
+    border-radius: 16px;
+    font-size: 15px;
+    line-height: 1.3;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  }
+
+  .btn-submit {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  }
+
+  /* Modal บนมือถือให้เหมือน bottom sheet ใช้ง่ายกว่า */
+  .staff-name-modal,
+  .other-problem-modal {
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .staff-name-box,
+  .other-problem-box,
+  .overlay-box {
+    width: 100%;
+    max-width: 520px;
+    border-radius: 24px;
+    padding: 22px 18px;
+  }
+
+  .staff-name-box h3,
+  .other-problem-box h3 {
+    font-size: 20px;
+  }
+
+  .staff-name-box p,
+  .other-problem-box p,
+  .staff-name-box small,
+  .other-problem-box small {
+    font-size: 13px;
+  }
+}
+
+/* ======================================================
+   VERY SMALL PHONES
+====================================================== */
+
+@media (max-width: 420px) {
+  .main-content {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .header-status-area,
+  .form-actions,
+  .sidebar-menu {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    position: static;
+    margin: 14px 0 0;
+    padding: 0;
+    border-top: 0;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .btn-clear,
+  .btn-submit {
+    min-height: 54px;
+  }
+
+  .form-group label {
+    grid-template-columns: 28px 1fr;
+  }
+
+  .required {
+    grid-column: 2;
+  }
+}
