@@ -1,11 +1,11 @@
-```html
+
 <!doctype html>
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>ระบบแดชบอร์ดผู้บริหารระดับสูง - บจก.พี.วี.ที.แอนด์ ที.พลาส</title>
+    <title>Executive ERP Dashboard - บจก.พี.วี.ที.แอนด์ ที.พลาส</title>
     <link rel="icon" href="data:;base64,=" />
 
     <link
@@ -23,89 +23,35 @@
     <div class="dashboard-container">
       <header class="exec-header">
         <div class="exec-brand">
-          <h1 style="display: flex; align-items: center; gap: 8px">
-            <span class="material-symbols-outlined" style="font-size: 32px"
-              >analytics</span
-            >
+          <h1 class="page-title">
+            <span class="material-symbols-outlined page-title-icon">analytics</span>
             สถิติปัญหาโรงงาน
           </h1>
           <p>
-            บจก.พี.วี.ที.แอนด์ ที.พลาส •
-            ระบบอนุมัติและประมวลผลสำหรับผู้บริหารระดับสูง
+            บจก.พี.วี.ที.แอนด์ ที.พลาส
+            
           </p>
         </div>
 
         <div class="exec-profile">
-          <span
-            class="exec-user-tag"
-            style="display: flex; align-items: center; gap: 6px"
-          >
-            <span
-              class="material-symbols-outlined"
-              style="font-size: 18px; color: #3b82f6"
-              >account_circle</span
-            >
+          <span class="exec-user-tag profile-chip">
+            <span class="material-symbols-outlined user-icon">account_circle</span>
             ผู้ใช้งานระบบ:
             <strong id="lbl-active-user">-</strong>
           </span>
 
-          <button
-            type="button"
-            onclick="handleDashboardLogout()"
-            class="btn-logout"
-          >
-            <span class="material-symbols-outlined" style="font-size: 18px"
-              >logout</span
-            >
-            ออกจากระบบ
-          </button>
+          
         </div>
       </header>
 
-      <aside
-        class="sidebar"
-        style="
-          width: 260px;
-          background: #111827;
-          color: white;
-          height: 100vh;
-          position: fixed;
-          top: 0;
-          left: 0;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          padding: 20px 15px;
-          box-sizing: border-box;
-          z-index: 9999;
-          box-shadow: 4px 0 10px rgba(0, 0, 0, 0.15);
-        "
-      >
+      <aside class="sidebar">
         <div class="sidebar-menu-wrapper">
-          <div
-            class="sidebar-brand"
-            style="
-              padding: 15px 10px;
-              font-weight: bold;
-              border-bottom: 1px solid #1f2937;
-              margin-bottom: 25px;
-              display: flex;
-              align-items: center;
-              gap: 10px;
-              font-size: 18px;
-              color: #f9fafb;
-            "
-          >
-            <span class="material-symbols-outlined" style="color: #3b82f6"
-              >factory</span
-            >
+          <div class="sidebar-brand">
+            <span class="material-symbols-outlined icon-primary">factory</span>
             <span>ระบบจัดการโรงงาน</span>
           </div>
 
-          <nav
-            class="sidebar-nav"
-            style="display: flex; flex-direction: column; gap: 8px"
-          >
+          <nav class="sidebar-nav">
             <a href="/index.html" class="nav-item active">
               <span class="material-symbols-outlined">monitoring</span>
               <span>ตรวจสอบความเคลื่อนไหว</span>
@@ -123,174 +69,90 @@
           </nav>
         </div>
 
-        <div
-          class="sidebar-footer"
-          style="padding-top: 20px; border-top: 1px solid #1f2937"
-        >
+        <div class="sidebar-footer">
           <button
             onclick="handleDashboardLogout()"
-            class="btn-logout"
-            style="width: 100%"
+            class="btn-logout sidebar-logout"
           >
-            <span class="material-symbols-outlined" style="font-size: 20px"
-              >logout</span
-            >
+            <span class="material-symbols-outlined icon-inline">logout</span>
             <span>ออกจากระบบ</span>
           </button>
         </div>
       </aside>
 
-      <section class="nav-section">
-        <div
-          class="nav-title"
-          style="display: flex; align-items: center; gap: 8px"
-        >
-          <span class="material-symbols-outlined" style="color: #3b82f6"
-            >domain</span
-          >
-          เมนูสลับหน้าต่างตรวจสอบความเคลื่อนไหว
+      <!-- <section class="nav-section">
+        <div class="nav-title section-heading">
+          <span class="material-symbols-outlined section-icon icon-primary">domain</span>
+          Executive Modules
         </div>
 
         <div class="nav-grid">
-          <button
-            type="button"
-            class="btn-dept d-pipe"
-            onclick="switchDepartment('pipe')"
-          >
-            <span class="material-symbols-outlined">valve</span> ท่อ (PIPE)
-          </button>
-
-          <button
-            type="button"
-            class="btn-dept d-sheet"
-            onclick="switchDepartment('sheet')"
-          >
-            <span class="material-symbols-outlined">layers</span> ตัดผืน (SHEET)
-          </button>
-
-          <button
-            type="button"
-            class="btn-dept d-tape"
-            onclick="switchDepartment('tape')"
-          >
-            <span class="material-symbols-outlined">line_weight</span>
-            ตัดเทปน้ำพุ่ง (TAPE)
-          </button>
-
-          <button
-            type="button"
-            class="btn-dept d-blow"
-            onclick="switchDepartment('blow')"
-          >
-            <span class="material-symbols-outlined">shopping_bag</span> เป่าถุง
-            (BLOW)
-          </button>
-
-          <button
-            type="button"
-            class="btn-dept d-drill"
-            onclick="switchDepartment('drill')"
-          >
-            <span class="material-symbols-outlined">architecture</span> ตัดเจาะ
-            (DRILL)
-          </button>
-
-          <button
-            type="button"
-            class="btn-dept d-garbage"
-            onclick="switchDepartment('garbage')"
-          >
-            <span class="material-symbols-outlined">delete</span>
-            ตัดถุงขยะ-ถุงอเนก (GARBAGE)
-          </button>
-
-          <button
-            type="button"
-            class="btn-dept d-print"
-            onclick="switchDepartment('print')"
-          >
-            <span class="material-symbols-outlined">print</span> ม้วนพิมพ์
-            (PRINT)
-          </button>
+          <button type="button" class="btn-dept d-print">Finance</button>
+          <button type="button" class="btn-dept d-pipe">Sales</button>
+          <button type="button" class="btn-dept d-sheet">Inventory</button>
+          <button type="button" class="btn-dept d-tape">HR</button>
+          <button type="button" class="btn-dept d-blow">Procurement</button>
+          <button type="button" class="btn-dept d-drill">Manufacturing</button>
+          <button type="button" class="btn-dept d-garbage">Reports</button>
         </div>
-      </section>
+      </section> -->
 
       <section class="metrics-grid">
         <div class="metric-card card-primary">
           <div class="metric-info">
-            <span class="metric-label">จำนวนปัญหาทั้งหมด</span>
+            <span class="metric-label">Total Transactions</span>
             <div class="metric-value text-primary" id="cnt-total">0</div>
           </div>
           <div class="metric-icon">
-            <span
-              class="material-symbols-outlined"
-              style="font-size: 36px; color: #2563eb"
-              >folder_open</span
-            >
+            <span class="material-symbols-outlined icon-primary">folder_open</span>
           </div>
         </div>
 
         <div class="metric-card card-warning">
           <div class="metric-info">
-            <span class="metric-label">รอดำเนินการ / รออนุมัติ</span>
+            <span class="metric-label">Open Orders</span>
             <div class="metric-value text-warning" id="cnt-pending">0</div>
           </div>
           <div class="metric-icon">
-            <span
-              class="material-symbols-outlined"
-              style="font-size: 36px; color: #f59e0b"
-              >pending_actions</span
-            >
+            <span class="material-symbols-outlined icon-warning">pending_actions</span>
           </div>
         </div>
 
         <div class="metric-card card-progress">
           <div class="metric-info">
-            <span class="metric-label">ช่างกำลังดำเนินการซ่อม</span>
+            <span class="metric-label">Inventory Items</span>
             <div class="metric-value text-progress" id="cnt-progress">0</div>
           </div>
           <div class="metric-icon">
-            <span
-              class="material-symbols-outlined"
-              style="font-size: 36px; color: #6b21a8"
-              >build</span
-            >
+            <span class="material-symbols-outlined icon-progress">inventory_2</span>
           </div>
         </div>
 
         <div class="metric-card card-success">
           <div class="metric-info">
-            <span class="metric-label">แก้ไขสำเร็จ / ปิดเคสงาน</span>
+            <span class="metric-label">Total Value (kg)</span>
             <div class="metric-value text-success" id="cnt-resolved">0</div>
           </div>
           <div class="metric-icon">
-            <span
-              class="material-symbols-outlined"
-              style="font-size: 36px; color: #16a34a"
-              >check_circle</span
-            >
+            <span class="material-symbols-outlined icon-success">check_circle</span>
           </div>
         </div>
       </section>
 
       <section class="panel-card">
         <div class="panel-title">
-          <span class="material-symbols-outlined" style="color: #2563eb"
-            >smart_toy</span
-          >
-          สรุปปัญหาอัตโนมัติ
+          <span class="material-symbols-outlined panel-title-icon icon-primary">smart_toy</span>
+          Business Summary
         </div>
         <div id="ai-summary-box" class="summary-box">
-          กำลังวิเคราะห์ข้อมูล...
+          Gathering business summary...
         </div>
       </section>
 
       <section class="panel-card">
         <div class="panel-title">
-          <span class="material-symbols-outlined" style="color: #6b21a8"
-            >psychology</span
-          >
-          Executive Insight (สรุประดับผู้บริหาร)
+          <span class="material-symbols-outlined panel-title-icon icon-progress">psychology</span>
+          Strategic Insights
         </div>
         <div id="exec-insight-box" class="exec-insight-box">
           กำลังวิเคราะห์ภาพรวมโรงงาน...
@@ -301,15 +163,13 @@
         <div class="col-xl-6 col-lg-6">
           <div class="card shadow mb-4">
             <div class="card-header py-3">
-              <span class="material-symbols-outlined" style="color: #4e73df"
-                >bar_chart</span
-              >
+              <span class="material-symbols-outlined panel-title-icon icon-primary">bar_chart</span>
               <h6 class="m-0 font-weight-bold text-primary">
                 สถิติการเกิดปัญหาประจำปี (จำนวนครั้ง)
               </h6>
             </div>
             <div class="card-body">
-              <div style="position: relative; height: 300px; width: 100%">
+              <div class="chart-wrapper">
                 <canvas id="chart-problem-count-bar"></canvas>
               </div>
             </div>
@@ -319,15 +179,13 @@
         <div class="col-xl-6 col-lg-6">
           <div class="card shadow mb-4">
             <div class="card-header py-3">
-              <span class="material-symbols-outlined" style="color: #1cc88a"
-                >analytics</span
-              >
+              <span class="material-symbols-outlined panel-title-icon icon-success">analytics</span>
               <h6 class="m-0 font-weight-bold text-success">
                 ปริมาณของเสียสะสมประจำปี (น้ำหนัก kg)
               </h6>
             </div>
             <div class="card-body">
-              <div style="position: relative; height: 300px; width: 100%">
+              <div class="chart-wrapper">
                 <canvas id="chart-waste-weight-bar"></canvas>
               </div>
             </div>
@@ -337,15 +195,15 @@
 
       <div class="card shadow mb-4">
         <div class="card-header py-3">
-          <span class="material-symbols-outlined" style="color: #e74a3b"
-            >stacked_line_chart</span
-          >
+          <span class="material-symbols-outlined panel-title-icon icon-danger">
+            stacked_line_chart
+          </span>
           <h6 class="m-0 font-weight-bold text-danger">
             ปริมาณของเสียสะสมแยกรายสัปดาห์ (น้ำหนัก kg)
           </h6>
         </div>
         <div class="card-body">
-          <div style="position: relative; height: 320px; width: 100%">
+          <div class="chart-wrapper wide">
             <canvas id="chart-waste-weekly-line"></canvas>
           </div>
         </div>
@@ -353,15 +211,15 @@
 
       <div class="card shadow mb-4">
         <div class="card-header py-3">
-          <span class="material-symbols-outlined" style="color: #4e73df"
-            >pie_chart</span
-          >
+          <span class="material-symbols-outlined panel-title-icon icon-primary">
+            pie_chart
+          </span>
           <h6 class="m-0 font-weight-bold text-primary">
             สัดส่วนปัญหาแยกตามแผนก
           </h6>
         </div>
         <div class="card-body">
-          <div style="position: relative; height: 300px; width: 100%">
+          <div class="chart-wrapper">
             <canvas id="chart-dept-donut"></canvas>
           </div>
         </div>
@@ -370,11 +228,7 @@
       <section class="panel-card control-box">
         <div>
           <div class="panel-title panel-title-compact">
-            <span
-              class="material-symbols-outlined"
-              style="font-size: 20px; color: #64748b"
-              >filter_alt</span
-            >
+            <span class="material-symbols-outlined icon-small">filter_alt</span>
             ตัวกรองคัดแยกข้อมูลรายงาน
           </div>
           <p class="panel-desc">
@@ -409,9 +263,9 @@
 
       <section class="panel-card">
         <div class="panel-title">
-          <span class="material-symbols-outlined" style="color: #2563eb"
-            >table_chart</span
-          >
+          <span class="material-symbols-outlined panel-title-icon icon-primary">
+            table_chart
+          </span>
           ตารางสรุปข้อมูลรายงานปัญหา และแผงบันทึกข้อสั่งการ
         </div>
 
@@ -419,14 +273,13 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>วัน-เวลาเกิดเหตุ</th>
-                <th>แผนกงาน</th>
-                <th>เบอร์เครื่องจักร</th>
-                <th>หมวดหมู่ปัญหา</th>
-                <th>รายละเอียดอาการขัดข้อง</th>
-                <th>ผู้คีย์แจ้งเรื่อง</th>
-                <th>สถานะปิดงาน</th>
-                <th>บันทึกคำสั่งการซ่อมแซม / แนวทางแก้ไข</th>
+                <th>Date / Time</th>
+                <th>Module</th>
+                <th>Reference</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Owner</th>
               </tr>
             </thead>
 

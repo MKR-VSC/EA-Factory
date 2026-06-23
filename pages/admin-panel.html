@@ -53,15 +53,15 @@
             type="button"
             data-section="dashboard"
           >
-            📊 Dashboard
+            <span class="material-symbols-outlined">bar_chart</span> Dashboard
           </button>
 
           <button class="sidebar-item" type="button" data-section="masters">
-            ⚙️ Master Data
+            <span class="material-symbols-outlined">settings</span> Master Data
           </button>
 
           <button class="sidebar-item" type="button" data-section="users">
-            👥 Users / Roles
+            <span class="material-symbols-outlined">groups</span> Users / Roles
           </button>
 
           <button
@@ -69,15 +69,15 @@
             type="button"
             data-section="department-qr"
           >
-            🔳 QR แผนก
+            <span class="material-symbols-outlined">qr_code</span> QR แผนก
           </button>
 
           <button class="sidebar-item" type="button" data-section="machine-qr">
-            ⚙️ QR รายเครื่อง
+            <span class="material-symbols-outlined">qr_code</span> QR รายเครื่อง
           </button>
 
           <button class="sidebar-item" type="button" data-section="logs">
-            🪲 System Logs
+            <span class="material-symbols-outlined">bug_report</span> System Logs
           </button>
 
           <button
@@ -85,7 +85,7 @@
             type="button"
             data-section="activity-logs"
           >
-            👀 การใช้งานระบบ
+            <span class="material-symbols-outlined">history</span> การใช้งานระบบ
           </button>
         </nav>
 
@@ -100,7 +100,7 @@
           </div>
 
           <button class="btn btn-secondary" type="button" id="btn-refresh">
-            🔄 โหลดข้อมูลใหม่
+            <span class="material-symbols-outlined">refresh</span> โหลดข้อมูลใหม่
           </button>
         </header>
 
@@ -138,7 +138,7 @@
 
           <div class="panel">
             <div class="panel-head">
-              <h2>📋 รายการของเสียล่าสุด</h2>
+              <h2><span class="material-symbols-outlined">list_alt</span> รายการของเสียล่าสุด</h2>
               <span id="last-update" class="muted">ยังไม่ได้โหลดข้อมูล</span>
             </div>
 
@@ -186,7 +186,7 @@
         ======================================================= -->
         <section id="section-masters" class="page-section">
           <div class="master-helper">
-            <h2>⚙️ Master Data คืออะไร?</h2>
+            <h2><span class="material-symbols-outlined">settings</span> Master Data คืออะไร?</h2>
             <p>
               Master Data คือข้อมูลตั้งต้นสำหรับให้พนักงานเลือกในฟอร์ม เช่น แผนก
               เครื่องจักร อาการเสีย และกะการทำงาน
@@ -198,7 +198,7 @@
             <article class="panel">
               <div class="panel-head">
                 <div>
-                  <h2>🏭 จัดการแผนก</h2>
+                  <h2><span class="material-symbols-outlined">apartment</span> จัดการแผนก</h2>
                   <span class="muted"
                     >เพิ่มรหัสแผนกสำหรับใช้กับ QR และฟอร์ม</span
                   >
@@ -227,7 +227,7 @@
             <article class="panel">
               <div class="panel-head">
                 <div>
-                  <h2>🕒 จัดการกะการทำงาน</h2>
+                  <h2><span class="material-symbols-outlined">schedule</span> จัดการกะการทำงาน</h2>
                   <span class="muted">ใช้เป็นตัวเลือกกะในฟอร์มพนักงาน</span>
                 </div>
               </div>
@@ -277,7 +277,7 @@
             <article class="panel">
               <div class="panel-head">
                 <div>
-                  <h2>⚙️ จัดการเครื่องจักรตามแผนก</h2>
+                  <h2><span class="material-symbols-outlined">settings</span> จัดการเครื่องจักรตามแผนก</h2>
                   <span class="muted">
                     ตัวอย่าง BLOW: F1, F2 / PIPE: PIPE-01 — เพิ่มปุ่ม QR
                     ให้แต่ละเครื่องแล้ว
@@ -306,7 +306,7 @@
             <article class="panel">
               <div class="panel-head">
                 <div>
-                  <h2>⚠️ จัดการหัวข้ออาการเสียตามแผนก</h2>
+                  <h2><span class="material-symbols-outlined">warning</span> จัดการหัวข้ออาการเสียตามแผนก</h2>
                   <span class="muted"
                     >ตัวอย่าง ขอบเบี้ยว, รูรั่ว, ซีลไม่ติด</span
                   >
@@ -339,7 +339,7 @@
         <section id="section-users" class="page-section">
           <div class="panel">
             <div class="panel-head">
-              <h2>👥 จัดการ User และ Role</h2>
+              <h2><span class="material-symbols-outlined">people</span> จัดการ User และ Role</h2>
               <span class="muted"
                 >Admin เพิ่ม / ลบ / เปลี่ยนสิทธิ์ได้จากหน้านี้</span
               >
@@ -423,7 +423,7 @@
           <div class="panel">
             <div class="panel-head">
               <div>
-                <h2>🔳 จัดการ QR แผนก</h2>
+                <h2><span class="material-symbols-outlined">qr_code</span> จัดการ QR แผนก</h2>
                 <span class="muted">
                   สำหรับสร้างลิงก์ / QR Code ไปติดที่บั๊กเกตของเสียแต่ละแผนก
                 </span>
@@ -445,7 +445,7 @@
           <div class="panel">
             <div class="panel-head">
               <div>
-                <h2>⚙️ จัดการ QR รายเครื่อง</h2>
+                <h2><span class="material-symbols-outlined">qr_code</span> จัดการ QR รายเครื่อง</h2>
                 <span class="muted">
                   เลือกแผนก แล้วระบบจะดึงเครื่องจักรจาก Master Data มาสร้าง QR
                   ให้ทีละเครื่อง
@@ -469,7 +469,7 @@
                 type="button"
                 id="btn-refresh-machine-qr"
               >
-                🔄 รีเฟรชรายการ
+                <span class="material-symbols-outlined">refresh</span> รีเฟรชรายการ
               </button>
 
               <button
@@ -477,7 +477,7 @@
                 type="button"
                 id="btn-print-machine-qr"
               >
-                🖨️ พิมพ์ QR ทั้งแผนก
+                <span class="material-symbols-outlined">print</span> พิมพ์ QR ทั้งแผนก
               </button>
             </div>
 
@@ -494,7 +494,7 @@
         ======================================================= -->
         <section id="section-logs" class="page-section">
           <div class="panel">
-            <div class="panel-head"><h2>🪲 System Logs</h2></div>
+            <div class="panel-head"><h2><span class="material-symbols-outlined">bug_report</span> System Logs</h2></div>
 
             <div class="table-scroll">
               <table>
@@ -523,7 +523,7 @@
           <div class="panel">
             <div class="panel-head">
               <div>
-                <h2>👀 ประวัติการใช้งานระบบ</h2>
+                <h2><span class="material-symbols-outlined">history</span> ประวัติการใช้งานระบบ</h2>
                 <span class="muted">
                   ดูว่าใครเข้าใช้งาน ทำอะไร เวลาไหน ใช้อุปกรณ์อะไร
                 </span>
@@ -571,7 +571,7 @@
       <div class="modal-card">
         <div class="modal-head">
           <div>
-            <h2>✏️ แก้ไข User</h2>
+            <h2><span class="material-symbols-outlined">edit</span> แก้ไข User</h2>
             <p>แก้ไขข้อมูลผู้ใช้งานและสิทธิ์การเข้าใช้งาน</p>
           </div>
 

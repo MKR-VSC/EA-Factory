@@ -87,12 +87,11 @@ document.addEventListener("DOMContentLoaded", () => {
 ========================================================= */
 
 function protectAdminPage() {
-  const user = localStorage.getItem("activeUser");
-  const role = String(localStorage.getItem("activeRole") || "").toLowerCase();
 
-  const allowRoles = ["admin", "management", "accounting", "supervisor"];
+  const activeUserId =
+    localStorage.getItem("activeUserId");
 
-  if (!user || !allowRoles.includes(role)) {
+  if (!activeUserId) {
     window.location.href = LOGIN_PAGE;
     return false;
   }
@@ -159,6 +158,20 @@ async function initAdminPanel() {
     setText("status-api", "เชื่อมต่อไม่ได้");
     addLog("ERROR", "ไม่พบ window.supabaseClient");
     renderEmptyTable("tb", 7, "ไม่พบ Supabase Client");
+    return;
+  }
+
+  await loadUsers();
+
+  const currentUserId = localStorage.getItem("activeUserId");
+
+  const currentUser = state.users.find((user) => {
+    return String(user.id) === String(currentUserId);
+  });
+
+  if (!currentUser?.is_system_owner) {
+    alert("คุณไม่มีสิทธิ์เข้าใช้งานหน้า Admin Panel");
+    window.location.href = "/index.html";
     return;
   }
 
@@ -391,21 +404,20 @@ async function loadMasters() {
 async function loadUsers() {
   const { data, error } = await state.supabase
     .from(PROFILE_TABLE)
-    .select(
-      `
-      id,
-      username,
-      password,
-      role,
-      department,
-      department_code,
-      display_name,
-      full_name,
-      email,
-      status,
-      created_at
-    `,
-    )
+    .select(`
+  id,
+  username,
+  password,
+  role,
+  department,
+  department_code,
+  display_name,
+  full_name,
+  email,
+  status,
+  is_system_owner,
+  created_at
+`)
     .order("username", { ascending: true });
 
   if (error) {
@@ -662,7 +674,7 @@ function renderDepartments() {
                     class="btn btn-secondary"
                     onclick="editDepartment('${escapeAttr(id)}')"
                   >
-                    ✏️
+                    <span class="material-symbols-outlined">edit</span>
                   </button>
 
                   <button
@@ -670,7 +682,7 @@ function renderDepartments() {
                     class="btn btn-warning"
                     onclick="editDepartmentOrder('${escapeAttr(id)}', ${sortOrder})"
                   >
-                    🔢
+                    <span class="material-symbols-outlined">sort</span>
                   </button>
 
                   <button
@@ -678,7 +690,7 @@ function renderDepartments() {
                     class="btn btn-danger"
                     onclick="deleteDepartment('${escapeAttr(id)}')"
                   >
-                    🗑️
+                    <span class="material-symbols-outlined">delete</span>
                   </button>
 
                 </div>
@@ -898,9 +910,15 @@ function renderShifts() {
             id && state.shiftTable
               ? `
                 <div class="master-actions">
-                  <button type="button" class="btn btn-secondary" onclick="editShift('${escapeAttr(id)}')">✏️</button>
-                  <button type="button" class="btn btn-warning" onclick="editShiftOrder('${escapeAttr(id)}', ${sortOrder})">🔢</button>
-                  <button type="button" class="btn btn-danger" onclick="deleteShift('${escapeAttr(id)}')">🗑️</button>
+                  <button type="button" class="btn btn-secondary" onclick="editShift('${escapeAttr(id)}')">
+                    <span class="material-symbols-outlined">edit</span>
+                  </button>
+                  <button type="button" class="btn btn-warning" onclick="editShiftOrder('${escapeAttr(id)}', ${sortOrder})">
+                    <span class="material-symbols-outlined">sort</span>
+                  </button>
+                  <button type="button" class="btn btn-danger" onclick="deleteShift('${escapeAttr(id)}')">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
                 </div>
               `
               : `<small class="muted">ค่าเริ่มต้น</small>`
@@ -1136,21 +1154,21 @@ function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
     const editBtn = document.createElement("button");
     editBtn.type = "button";
     editBtn.className = "btn btn-secondary";
-    editBtn.textContent = "✏️";
+    editBtn.innerHTML = '<span class="material-symbols-outlined">edit</span>';
     editBtn.title = "แก้ไขชื่อ";
     editBtn.addEventListener("click", () => editMasterName(row, type));
 
     const orderBtn = document.createElement("button");
     orderBtn.type = "button";
     orderBtn.className = "btn btn-warning";
-    orderBtn.textContent = "🔢";
+    orderBtn.innerHTML = '<span class="material-symbols-outlined">sort</span>';
     orderBtn.title = "แก้ไขลำดับ";
     orderBtn.addEventListener("click", () => editMasterOrder(row, type));
 
     const deleteBtn = document.createElement("button");
     deleteBtn.type = "button";
     deleteBtn.className = "btn btn-danger";
-    deleteBtn.textContent = "🗑️";
+    deleteBtn.innerHTML = '<span class="material-symbols-outlined">delete</span>';
     deleteBtn.title = "ลบ";
     deleteBtn.addEventListener("click", () => onDelete(row.id));
 
@@ -1165,7 +1183,7 @@ function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
       const qrBtn = document.createElement("button");
       qrBtn.type = "button";
       qrBtn.className = "btn btn-primary";
-      qrBtn.textContent = "🔳 QR";
+      qrBtn.innerHTML = '<span class="material-symbols-outlined">qr_code</span> QR';
       qrBtn.title = "สร้าง QR เครื่องนี้";
       qrBtn.addEventListener("click", () => {
         openMachineQrByRow(row);
@@ -1353,7 +1371,7 @@ function renderUsers() {
   class="btn btn-warning"
   onclick="openEditUserModal('${userId}')"
 >
-  ✏️ แก้ไข
+  <span class="material-symbols-outlined">edit</span> แก้ไข
 </button>
 
         <button
@@ -1361,7 +1379,7 @@ function renderUsers() {
           class="btn btn-danger"
           onclick="deleteUser('${userId}')"
         >
-          🗑 ลบ
+          <span class="material-symbols-outlined">delete</span> ลบ
         </button>
       </td>
         </tr>

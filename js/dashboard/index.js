@@ -253,22 +253,22 @@ function renderAllDashboard(records) {
 function updateMetricCards(records) {
   if (!Array.isArray(records)) return;
 
+  // Total transactions
   setText("cnt-total", records.length);
 
+  // Open orders (pending)
   setText(
     "cnt-pending",
     records.filter((r) => !r.status || r.status === "pending").length
   );
 
-  setText(
-    "cnt-progress",
-    records.filter((r) => r.status === "progress").length
-  );
+  // Inventory items (unique machine/item codes)
+  const uniqueItems = new Set(records.map((r) => r.machine_no || r.item_code).filter(Boolean));
+  setText("cnt-progress", uniqueItems.size);
 
-  setText(
-    "cnt-resolved",
-    records.filter((r) => r.status === "resolved").length
-  );
+  // Total value (reuse waste weight field as numeric value if present)
+  const totalValue = records.reduce((s, r) => s + getWasteWeight(r), 0);
+  setText("cnt-resolved", totalValue.toLocaleString());
 }
 
 // =========================================================
@@ -314,62 +314,25 @@ function renderReportTable(records) {
       : "-";
 
     tr.innerHTML = `
-      <td class="nowrap strong">${escapeHTML(renderedDate)}</td>
+        <td class="nowrap strong">${escapeHTML(renderedDate)}</td>
 
-      <td>
-        <span class="btn-dept d-${escapeHTML(deptCode)} dept-pill">
-          ${escapeHTML(deptLabel)}
-        </span>
-      </td>
+        <td>${escapeHTML(deptLabel)}</td>
 
-      <td class="machine-cell">${escapeHTML(row.machine_no || "-")}</td>
+        <td>${escapeHTML(row.id || row.reference || '-')}</td>
 
-      <td class="strong">
-        ${escapeHTML(row.problem_type || row.reason_detail || "-")}
-      </td>
+        <td>
+          <div class="cell-detail">${escapeHTML(row.detail || row.note || '-')}</div>
+        </td>
 
-      <td>
-        <div class="cell-detail">
-          ${escapeHTML(row.detail || row.note || "-")}
-        </div>
-      </td>
+        <td class="strong">${escapeHTML(String(getWasteWeight(row)))} kg</td>
 
-      <td>
-        <span class="reporter-code">
-          ${escapeHTML(row.reported_by || "พนักงาน")}
-        </span>
-      </td>
+        <td>
+          <div class="status-space">${getStatusBadge(row.status)}</div>
+        </td>
 
-      <td>
-        <div class="status-space">${getStatusBadge(row.status)}</div>
-
-        <select
-          class="select-inline-status"
-          onchange="window.executeModifyCaseStatus('${escapeHTML(row.id)}', this.value)"
-        >
-          <option value="pending" ${
-            row.status === "pending" || !row.status ? "selected" : ""
-          }>ตั้งรับเรื่อง</option>
-
-          <option value="progress" ${
-            row.status === "progress" ? "selected" : ""
-          }>กำลังซ่อม</option>
-
-          <option value="resolved" ${
-            row.status === "resolved" ? "selected" : ""
-          }>ปิดงาน</option>
-        </select>
-      </td>
-
-      <td>
-        <input
-          type="text"
-          class="input-inline-note"
-          placeholder="พิมพ์ข้อสั่งการ/วิธีแก้ไข..."
-          value="${escapeHTML(row.resolution || "")}"
-          onchange="window.executeModifyCaseResolution('${escapeHTML(row.id)}', this.value)"
-        />
-      </td>
+        <td>
+          <span class="reporter-code">${escapeHTML(row.reported_by || 'System')}</span>
+        </td>
     `;
 
     tbody.appendChild(tr);
@@ -818,28 +781,29 @@ function exportTableToExcel() {
   }
 
   let csvContent = "\uFEFF";
-  csvContent +=
-    "วัน-เวลาที่เกิดเหตุ,แผนก,หมายเลขเครื่องจักร,ปัญหาที่พบ,รายละเอียด,น้ำหนักของเสีย,สถานะ,แนวทางแก้ไข\n";
+  csvContent += "Date/Time,Module,Reference,Description,Amount,Status,Owner\n";
 
   records.forEach((row) => {
     const dateValue = getRowDate(row);
-    const dateText = dateValue ? new Date(dateValue).toLocaleString("th-TH") : "-";
-    const deptText = getDeptLabel(row.department_code || row.department);
-    const statusText = getStatusText(row.status);
+    const renderedDate = dateValue ? new Date(dateValue).toLocaleString("th-TH") : "-";
+    const moduleLabel = getDeptLabel(normalizeDept(row.department_code || row.department));
+    const reference = row.id || row.reference || "-";
+    const description = row.detail || row.note || row.problem_type || "-";
+    const amount = String(getWasteWeight(row));
+    const status = getStatusText(row.status);
+    const owner = row.reported_by || "-";
 
-    csvContent +=
-      [
-        dateText,
-        deptText,
-        row.machine_no || "-",
-        row.problem_type || row.reason_detail || "-",
-        row.detail || row.note || "-",
-        getWasteWeight(row),
-        statusText,
-        row.resolution || row.corrective_action || "-",
-      ]
-        .map(csvCell)
-        .join(",") + "\n";
+    csvContent += [
+      renderedDate,
+      moduleLabel,
+      reference,
+      description,
+      amount,
+      status,
+      owner,
+    ]
+      .map(csvCell)
+      .join(",") + "\n";
   });
 
   const blob = new Blob([csvContent], {
