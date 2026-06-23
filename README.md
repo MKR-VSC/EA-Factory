@@ -214,3 +214,181 @@ EA-Factory/
 │
 ├─ supabase/
 └─ .vscode/
+
+
+
+Date : 23 / 06 / 69
+
+1. ย้ายศูนย์กลางแผนกทั้งหมดไปที่ master_departments
+
+เดิมระบบมี 2 ตาราง
+
+departments
+master_departments
+
+ทำให้ข้อมูลแผนกซ้ำกัน
+
+วันนี้ตัดสินใจว่า
+
+master_departments
+
+จะเป็น Master Table หลักของทั้งระบบ
+
+2. ตรวจสอบ FK ของ profiles
+
+ตรวจพบว่า
+
+profiles
+
+ยังไม่ได้ผูก FK เลย
+
+มีเพียง
+
+profiles_pkey
+profiles_username_key
+3. แก้ข้อมูล department_code ใน profiles
+
+พบข้อมูลเก่า
+
+บัญชี
+IT SUPPORT
+โมโน
+ตัดเจาะ
+แผนก A
+แผนก B
+
+แก้ให้เป็นมาตรฐานใหม่
+
+MONO
+CUT_PUNCH
+
+และล้างค่าที่ไม่มีใน master
+
+บัญชี
+IT SUPPORT
+แผนก A
+แผนก B
+4. ผูก FK profiles → master_departments
+
+สร้างความสัมพันธ์
+
+profiles.department_code
+        ↓
+master_departments.department_code
+
+ทำให้ User จะอยู่ได้เฉพาะแผนกที่มีจริง
+
+5. ย้าย daily_waste_reports ไปใช้ master_departments
+
+ลบ FK เก่า
+
+daily_waste_reports
+    ↓
+departments
+
+แล้วเปลี่ยนเป็น
+
+daily_waste_reports
+    ↓
+master_departments
+
+ตรวจสอบแล้วสำเร็จ
+
+daily_waste_reports_department_code_fkey
+6. พบสาเหตุ Error ตอนบันทึกข้อมูล
+
+ฐานข้อมูลใช้
+
+MONO
+BLOW
+PIPE
+CUT_PUNCH
+
+แต่ JS ยังส่ง
+
+mono
+blow
+pipe
+drill
+
+ทำให้
+
+violates foreign key constraint
+
+ทุกครั้ง
+
+7. วิเคราะห์ไฟล์ form-department.js
+
+พบว่ามี Hardcode แผนกไว้
+
+VALID_DEPARTMENTS
+DEPARTMENT_NAMES
+normalizeDept()
+
+ซึ่งจะมีปัญหาทุกครั้งเมื่อเพิ่มแผนกใหม่
+
+8. ปรับแนวคิดใหม่
+
+จากเดิม
+
+JS เป็นคนกำหนดแผนก
+
+เปลี่ยนเป็น
+
+master_departments เป็นคนกำหนดแผนก
+
+ทั้งหมด
+
+9. สร้างไฟล์ใหม่
+
+สร้างเวอร์ชัน
+
+form-department-master-departments.js
+
+และ
+
+form-department-dynamic-master-departments.js
+
+เพื่อให้รองรับ
+
+MONO
+BLOW
+PIPE
+CUT_PUNCH
+RAIN_TAPE
+SHADE_NET
+...
+
+จากฐานข้อมูล
+
+10. แก้ปัญหา Auto Logout
+
+ปัญหาเดิม
+
+หมดเวลาใช้งาน
+↓
+ออกจากระบบ
+↓
+ยังค้างที่ form-department.html
+↓
+เด้ง popup กรอกชื่อ
+
+ผู้ใช้เข้าใจผิดว่ายังใช้งานได้
+
+11. ปรับระบบ Logout ใหม่
+
+แก้ให้
+
+หมดเวลา
+↓
+SignOut
+↓
+ล้าง Session
+↓
+Redirect Login
+
+และ
+
+window.location.replace("/login.html")
+
+เพื่อกันกด Back กลับมา

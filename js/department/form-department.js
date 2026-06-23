@@ -1,34 +1,45 @@
 // =========================================================
 // ไฟล์: js/form-department.js
 // ใช้กับหน้า form-department.html
-// รองรับลิงก์ QR แยกแผนก เช่น form-department.html?dept=blow
-// รองรับลิงก์ QR รายเครื่อง เช่น form-department.html?dept=blow&machine=BLOW-01
+// รองรับลิงก์ QR แยกแผนก เช่น form-department.html?dept=BLOW
+// รองรับลิงก์ QR รายเครื่อง เช่น form-department.html?dept=BLOW&machine=BLOW-01
 // =========================================================
 
 // =========================================================
-// CONFIG: รหัสแผนกที่มีจริงในตาราง departments.code
+// CONFIG: รหัสแผนกมาตรฐานจากตาราง master_departments.department_code
+// ---------------------------------------------------------
+// สำคัญมาก:
+// - ระบบใหม่ยึด master_departments เป็นตารางหลักของแผนก
+// - ทุกตารางที่มี department_code ต้องใช้รหัสชุดนี้เท่านั้น
+// - ห้ามบันทึกเป็นชื่อไทย เช่น "โมโน", "เป่าถุง", "ตัดเจาะ"
 // =========================================================
 
 const VALID_DEPARTMENTS = [
-  "mono",
-  "print",
-  "pipe",
-  "sheet",
-  "tape",
-  "blow",
-  "drill",
-  "garbage",
+  "PIPE",
+  "MONO",
+  "RAIN_TAPE",
+  "BLOW",
+  "BLOWN_FILM",
+  "SHEET_CUTTING",
+  "CUT_PUNCH",
+  "GARBAGE_BAG_CUT",
+  "RAIN_TAPE_CUT_PUNCH",
+  "SHADE_NET",
 ];
 
+// ชื่อที่ใช้แสดงบนหน้าเว็บเท่านั้น
+// แต่ค่าที่บันทึกลงฐานข้อมูลยังเป็น department_code ภาษาอังกฤษตัวใหญ่
 const DEPARTMENT_NAMES = {
-  mono: "แผนกโมโน",
-  print: "แผนกเป่าพิล์ม",
-  pipe: "แผนกท่อ",
-  sheet: "แผนกตัดผืน",
-  tape: "แผนกเทปน้ำพุ่ง",
-  blow: "แผนกเป่าถุง",
-  drill: "แผนกตัดเจาะ",
-  garbage: "แผนกถุงขยะ",
+  PIPE: "ท่อ",
+  MONO: "โมโน",
+  RAIN_TAPE: "เป่าเทปน้ำพุ่ง",
+  BLOW: "เป่าถุง",
+  BLOWN_FILM: "เป่าฟิล์ม",
+  SHEET_CUTTING: "ตัดผืน",
+  CUT_PUNCH: "ตัดเจาะ",
+  GARBAGE_BAG_CUT: "ตัดถุงขยะ",
+  RAIN_TAPE_CUT_PUNCH: "ตัดเทปน้ำพุ่ง",
+  SHADE_NET: "สแลน",
 };
 
 // =========================================================
@@ -36,8 +47,8 @@ const DEPARTMENT_NAMES = {
 // =========================================================
 
 // อ่านค่าจาก URL เพื่อรองรับ QR Code
-// ตัวอย่าง QR แผนก:       form-department.html?dept=blow
-// ตัวอย่าง QR รายเครื่อง: form-department.html?dept=blow&machine=BLOW-01
+// ตัวอย่าง QR แผนก:       form-department.html?dept=BLOW
+// ตัวอย่าง QR รายเครื่อง: form-department.html?dept=BLOW&machine=BLOW-01
 //
 // หมายเหตุ:
 // - dept ใช้สำหรับล็อกแผนก
@@ -68,7 +79,7 @@ let appSelectedProblem = "";
 // - reason_detail จะเก็บข้อความวิเคราะห์ง่าย เช่น "อื่นๆ: ลูกกลิ้งมีรอย"
 let appOtherProblemDetail = "";
 
-// ถ้า dept ที่ได้มาไม่ถูกต้อง ให้กลับไปใช้ blow เพื่อกัน Foreign Key Error
+// ถ้า dept ที่ได้มาไม่ถูกต้อง ให้หยุดก่อน เพื่อกัน Foreign Key Error
 if (!VALID_DEPARTMENTS.includes(currentDept)) {
   console.error(`[DEPT_ERROR] ไม่พบแผนก: ${currentDeptRaw}`);
 
@@ -89,51 +100,85 @@ localStorage.setItem("activeDept", currentDept);
 // =========================================================
 
 function normalizeDept(dept) {
-  const d = String(dept || "blow")
-    .toLowerCase()
-    .trim();
+  // รับได้ทั้งรหัสเก่า / รหัสใหม่ / ชื่อไทย
+  // แล้วแปลงให้เป็นรหัสมาตรฐานจาก master_departments.department_code เสมอ
+  const raw = String(dept || "BLOW").trim();
+  const key = raw.toLowerCase();
 
   const map = {
-    mono: "mono",
-    โมโน: "mono",
-    แผนกโมโน: "mono",
+    // ===== รหัสมาตรฐานใหม่ =====
+    pipe: "PIPE",
+    mono: "MONO",
+    rain_tape: "RAIN_TAPE",
+    blow: "BLOW",
+    blown_film: "BLOWN_FILM",
+    sheet_cutting: "SHEET_CUTTING",
+    cut_punch: "CUT_PUNCH",
+    garbage_bag_cut: "GARBAGE_BAG_CUT",
+    rain_tape_cut_punch: "RAIN_TAPE_CUT_PUNCH",
+    shade_net: "SHADE_NET",
 
-    print: "print",
-    ม้วนพิมพ์: "print",
+    // ===== รหัสเก่าจากระบบเดิม / QR เดิม =====
+    print: "BLOWN_FILM",
+    sheet: "SHEET_CUTTING",
+    tape: "RAIN_TAPE",
+    drill: "CUT_PUNCH",
+    garbage: "GARBAGE_BAG_CUT",
 
-    pipe: "pipe",
-    ท่อ: "pipe",
-    แผนกท่อ: "pipe",
+    // ===== ชื่อไทย / คำที่พนักงานหรือข้อมูลเก่าอาจใช้อยู่ =====
+    โมโน: "MONO",
+    แผนกโมโน: "MONO",
 
-    sheet: "sheet",
-    sheet: "sheet",
-    ตัดผืน: "sheet",
-    แผ่นหล่อ: "sheet",
-    แผนกแผ่นหล่อ: "sheet",
-    "แผนกแผ่นหล่อ/ตัดผืน": "sheet",
+    ท่อ: "PIPE",
+    แผนกท่อ: "PIPE",
 
-    tape: "tape",
-    เทป: "tape",
-    เทปน้ำพุ่ง: "tape",
-    เทปพัน: "tape",
-    แผนกเทปพัน: "tape",
-    "แผนกเทปพัน/เทปน้ำพุ่ง": "tape",
+    เป่าถุง: "BLOW",
+    แผนกเป่าถุง: "BLOW",
 
-    blow: "blow",
-    เป่าถุง: "blow",
-    แผนกเป่าถุง: "blow",
+    เป่าฟิล์ม: "BLOWN_FILM",
+    เป่าพิล์ม: "BLOWN_FILM",
+    ม้วนพิมพ์: "BLOWN_FILM",
+    แผนกเป่าฟิล์ม: "BLOWN_FILM",
 
-    drill: "drill",
-    ตัดเจาะ: "drill",
-    เจาะรู: "drill",
-    แผนกตัดเจาะ: "drill",
+    ตัดผืน: "SHEET_CUTTING",
+    แผ่นหล่อ: "SHEET_CUTTING",
+    แผนกแผ่นหล่อ: "SHEET_CUTTING",
+    "แผนกแผ่นหล่อ/ตัดผืน": "SHEET_CUTTING",
 
-    garbage: "garbage",
-    ถุงขยะ: "garbage",
-    แผนกถุงขยะ: "garbage",
+    ตัดเจาะ: "CUT_PUNCH",
+    เจาะรู: "CUT_PUNCH",
+    แผนกตัดเจาะ: "CUT_PUNCH",
+
+    ถุงขยะ: "GARBAGE_BAG_CUT",
+    ตัดถุงขยะ: "GARBAGE_BAG_CUT",
+    แผนกถุงขยะ: "GARBAGE_BAG_CUT",
+
+    เทป: "RAIN_TAPE",
+    เทปน้ำพุ่ง: "RAIN_TAPE",
+    เป่าเทปน้ำพุ่ง: "RAIN_TAPE",
+    เทปสายฝน: "RAIN_TAPE",
+    เทปพัน: "RAIN_TAPE",
+    แผนกเทปพัน: "RAIN_TAPE",
+    "แผนกเทปพัน/เทปน้ำพุ่ง": "RAIN_TAPE",
+
+    ตัดเทปน้ำพุ่ง: "RAIN_TAPE_CUT_PUNCH",
+    ตัดเทปน้ำพุง: "RAIN_TAPE_CUT_PUNCH",
+    ตัดและเจาะเทปน้ำพุ่ง: "RAIN_TAPE_CUT_PUNCH",
+
+    สแลน: "SHADE_NET",
+    ตาข่ายกรองแสง: "SHADE_NET",
+    แผนกสแลน: "SHADE_NET",
   };
 
-  return map[d] || d;
+  return map[key] || raw.toUpperCase();
+}
+
+// แปลง department_code เป็นชื่อ class สำหรับ CSS
+// เช่น BLOWN_FILM -> dept-blown-film
+function getDeptCssClass(dept) {
+  return String(dept || "")
+    .toLowerCase()
+    .replaceAll("_", "-");
 }
 
 // แปลงค่าเครื่องจักรจาก URL ให้สะอาดก่อนใช้งาน
@@ -449,9 +494,9 @@ function renderDeptInfo() {
   if (bodyEl) {
     bodyEl.classList.remove("dept-default");
     VALID_DEPARTMENTS.forEach((dept) => {
-      bodyEl.classList.remove(`dept-${dept}`);
+      bodyEl.classList.remove(`dept-${getDeptCssClass(dept)}`);
     });
-    bodyEl.classList.add(`dept-${currentDept}`);
+    bodyEl.classList.add(`dept-${getDeptCssClass(currentDept)}`);
   }
 }
 
@@ -460,7 +505,7 @@ function renderCurrentDeptLabel() {
   if (!el) return;
 
   const deptName = getDeptDisplayName(currentDept);
-  el.textContent = `${deptName} (${currentDept.toUpperCase()})`;
+  el.textContent = `${deptName} (${currentDept})`;
 }
 
 // =========================================================
@@ -915,18 +960,23 @@ function ensureOtherProblemStyleExists() {
 
 async function loadMasterDataAndRender() {
   const BACKUP_MACHINES = {
-    print: ["Print1", "Print2", "Print3"],
-    pipe: ["ท่อ1", "ท่อ2", "ท่อ3", "ท่อ4"],
-    blow: ["F1", "F2", "F3", "F4", "F5", "F6", "F7"],
-    sheet: ["Sheet1", "Sheet2"],
-    tape: ["Tape1", "Tape2"],
-    drill: ["Drill1", "Drill2"],
-    garbage: ["Garbage1", "Garbage2"],
+    PIPE: ["ท่อ1", "ท่อ2", "ท่อ3", "ท่อ4"],
+    MONO: ["MONO-01", "MONO-02"],
+    RAIN_TAPE: ["Tape1", "Tape2"],
+    BLOW: ["F1", "F2", "F3", "F4", "F5", "F6", "F7"],
+    BLOWN_FILM: ["Film1", "Film2", "Film3"],
+    SHEET_CUTTING: ["Sheet1", "Sheet2"],
+    CUT_PUNCH: ["Drill1", "Drill2"],
+    GARBAGE_BAG_CUT: ["Garbage1", "Garbage2"],
+    RAIN_TAPE_CUT_PUNCH: ["RT-Drill1", "RT-Drill2"],
+    SHADE_NET: ["ShadeNet1", "ShadeNet2"],
   };
 
   const BACKUP_PROBLEMS = {
-    print: ["สีเพี้ยน", "พิมพ์ไม่ตรง", "หมึกเลอะ", "ม้วนเสีย", "อื่นๆ"],
-    blow: [
+    PIPE: ["ขี้ดายหลุด", "เข้าม้วนหัก", "รอยขีด", "สีไม่สม่ำเสมอ", "อื่นๆ"],
+    MONO: ["ความหนาไม่ได้", "ขนาดไม่ได้", "สีไม่สม่ำเสมอ", "อื่นๆ"],
+    RAIN_TAPE: ["เส้นเทปขาด", "ม้วนไม่เรียบ", "สีไม่สม่ำเสมอ", "อื่นๆ"],
+    BLOW: [
       "ทะลุ",
       "ตกใบมีด",
       "ลูกโปร่งส่าย",
@@ -934,11 +984,12 @@ async function loadMasterDataAndRender() {
       "ความหนาไม่ได้",
       "อื่นๆ",
     ],
-    pipe: ["ขี้ดายหลุด", "เข้าม้วนหัก", "รอยขีด", "สีไม่สม่ำเสมอ", "อื่นๆ"],
-    sheet: ["แผ่นเสีย", "ความหนาไม่ได้", "ขนาดไม่ได้", "อื่นๆ"],
-    tape: ["เส้นเทปขาด", "ม้วนไม่เรียบ", "สีไม่สม่ำเสมอ", "อื่นๆ"],
-    drill: ["รูไม่ตรง", "เจาะไม่ทะลุ", "ใบมีดสึก", "ขนาดผิด", "อื่นๆ"],
-    garbage: ["ซีลไม่ติด", "ถุงขาด", "ม้วนไม่เรียบ", "ความยาวผิด", "อื่นๆ"],
+    BLOWN_FILM: ["ฟิล์มทะลุ", "ความหนาไม่ได้", "ม้วนเสีย", "อื่นๆ"],
+    SHEET_CUTTING: ["แผ่นเสีย", "ความหนาไม่ได้", "ขนาดไม่ได้", "อื่นๆ"],
+    CUT_PUNCH: ["รูไม่ตรง", "เจาะไม่ทะลุ", "ใบมีดสึก", "ขนาดผิด", "อื่นๆ"],
+    GARBAGE_BAG_CUT: ["ซีลไม่ติด", "ถุงขาด", "ม้วนไม่เรียบ", "ความยาวผิด", "อื่นๆ"],
+    RAIN_TAPE_CUT_PUNCH: ["รูไม่ตรงระยะ", "เจาะไม่ทะลุ", "เทปขาด", "อื่นๆ"],
+    SHADE_NET: ["เส้นขาด", "ตาข่ายไม่สม่ำเสมอ", "ขนาดผิด", "อื่นๆ"],
   };
 
   let finalMachinesList = [];
@@ -964,6 +1015,23 @@ async function loadMasterDataAndRender() {
 }
 
 async function loadMachinesFromDatabase(clientSupabase) {
+  // ตารางใหม่ควรใช้ master_machines.department_code ให้ตรงกับ master_departments.department_code
+  try {
+    const { data, error } = await clientSupabase
+      .from("master_machines")
+      .select("machine_no")
+      .eq("department_code", currentDept)
+      .eq("is_active", true)
+      .order("machine_no", { ascending: true });
+
+    if (!error && data?.length > 0) {
+      return data.map((item) => item.machine_no).filter(Boolean);
+    }
+  } catch (err) {
+    console.warn("โหลด master_machines ด้วย department_code ไม่สำเร็จ:", err);
+  }
+
+  // fallback เผื่อฐานข้อมูล DEV บางชุดยังใช้ column department อยู่
   try {
     const { data, error } = await clientSupabase
       .from("master_machines")
@@ -976,14 +1044,14 @@ async function loadMachinesFromDatabase(clientSupabase) {
       return data.map((item) => item.machine_no).filter(Boolean);
     }
   } catch (err) {
-    console.warn("master_machines ใช้งานไม่ได้:", err);
+    console.warn("โหลด master_machines ด้วย department ไม่สำเร็จ:", err);
   }
 
   try {
     const { data, error } = await clientSupabase
       .from("pvt_machines")
       .select("machine_name")
-      .eq("department", currentDept)
+      .eq("department_code", currentDept)
       .order("machine_name", { ascending: true });
 
     if (!error && data?.length > 0) {
@@ -997,6 +1065,23 @@ async function loadMachinesFromDatabase(clientSupabase) {
 }
 
 async function loadProblemsFromDatabase(clientSupabase) {
+  // ตารางใหม่ควรใช้ master_problems.department_code ให้ตรงกับ master_departments.department_code
+  try {
+    const { data, error } = await clientSupabase
+      .from("master_problems")
+      .select("problem_type")
+      .eq("department_code", currentDept)
+      .eq("is_active", true)
+      .order("problem_type", { ascending: true });
+
+    if (!error && data?.length > 0) {
+      return data.map((item) => item.problem_type).filter(Boolean);
+    }
+  } catch (err) {
+    console.warn("โหลด master_problems ด้วย department_code ไม่สำเร็จ:", err);
+  }
+
+  // fallback เผื่อฐานข้อมูล DEV บางชุดยังใช้ column department อยู่
   try {
     const { data, error } = await clientSupabase
       .from("master_problems")
@@ -1009,14 +1094,14 @@ async function loadProblemsFromDatabase(clientSupabase) {
       return data.map((item) => item.problem_type).filter(Boolean);
     }
   } catch (err) {
-    console.warn("master_problems ใช้งานไม่ได้:", err);
+    console.warn("โหลด master_problems ด้วย department ไม่สำเร็จ:", err);
   }
 
   try {
     const { data, error } = await clientSupabase
       .from("pvt_problem_types")
       .select("problem_name")
-      .eq("department", currentDept)
+      .eq("department_code", currentDept)
       .order("problem_name", { ascending: true });
 
     if (!error && data?.length > 0) {
@@ -1185,12 +1270,13 @@ async function handleFormSubmit(event) {
       // shift_end: selectedShift?.end || "",
       // shift_type: selectedShift?.type || "",
 
-      // สำคัญ: ต้องตรงกับ departments.code เท่านั้น
+      // สำคัญ: ต้องตรงกับ master_departments.department_code เท่านั้น
       // currentDept มาจาก QR_DEPT หรือ activeDept ที่ผ่าน normalizeDept() แล้ว
       department_code: currentDept,
 
       // เก็บซ้ำไว้สำหรับหน้าเดิมที่อาจยังใช้ column department
-      department: currentDept,
+      // แนะนำให้เก็บชื่อไทยเพื่อแสดงผลอ่านง่าย แต่ตัวกรองหลักให้ใช้ department_code
+      department: getDeptDisplayName(currentDept),
 
       machine_no: finalMachine,
       product_name: "ปัญหาการผลิต",
@@ -1371,6 +1457,7 @@ async function handleLogout() {
 window.resetFormWithConfirm = resetFormWithConfirm;
 window.handleLogout = handleLogout;
 window.normalizeDept = normalizeDept;
+window.getDeptCssClass = getDeptCssClass;
 window.isStaffRole = isStaffRole;
 window.openStaffNameModal = openStaffNameModal;
 window.confirmStaffName = confirmStaffName;
