@@ -2,12 +2,14 @@
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>ระบบบันทึกข้อมูลปัญหาการผลิตส่วนกลาง - PVT</title>
 
     <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <link
@@ -15,60 +17,55 @@
       rel="stylesheet"
     />
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/BG1.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/BG1.png" />
+    <link rel="apple-touch-icon" href="/icons/Ea_Factory_512.png" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#4caf8a" />
+
+
     <link rel="icon" href="data:;base64,=" />
-    
     <link rel="stylesheet" href="/css/form-department.css" />
   </head>
 
   <body>
-    <!-- ======================================================
-      SPLASH SCREEN
-      หน้ารอโหลดตอนเปิดฟอร์ม เพื่อให้ผู้ใช้เห็นว่าระบบกำลังเตรียมข้อมูล
-    ======================================================= -->
+    <!-- หน้ารอโหลดตอนเปิดฟอร์ม -->
     <div id="splash-screen">
       <div class="splash-logo">
         <img src="/icons/logo_192.png" alt="EA Factory Logo" />
       </div>
-      <div class="splash-sub">ศูนย์รวมข้อมูลและระบบงาน</div>
-      <div class="splash-dots">
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
+      <div class="splash-sub">กำลังเตรียมฟอร์มบันทึกข้อมูล</div>
+      <div class="splash-dots"><span></span><span></span><span></span></div>
     </div>
 
-    <!-- ======================================================
-      LOADING OVERLAY
-      ใช้ตอนระบบกำลังบันทึก/ตรวจสอบข้อมูล ไม่ให้ผู้ใช้กดซ้ำ
-    ======================================================= -->
+    <!-- Overlay ตอนบันทึกข้อมูล -->
     <div id="login-overlay" class="hidden">
       <div class="overlay-box">
         <div class="overlay-ring"></div>
-        <h3>กำลังเข้าสู่ระบบ...</h3>
+        <h3>กำลังบันทึกข้อมูล...</h3>
         <p>กรุณารอสักครู่</p>
       </div>
     </div>
 
-    <!-- ======================================================
-      STAFF NAME MODAL
-      บังคับกรอกชื่อก่อนใช้งาน โดยเฉพาะกรณีสแกน QR ที่ไม่ได้ login รายคน
-    ======================================================= -->
+    <!-- Modal กรอกชื่อก่อนใช้งาน -->
     <div id="staff-name-modal" class="staff-name-modal hidden">
       <div class="staff-name-box">
         <div class="staff-name-icon">
           <span class="material-symbols-outlined">badge</span>
         </div>
-
         <h3>ระบุชื่อผู้บันทึกข้อมูล</h3>
         <p>
-          กรุณากรอกชื่อก่อนเข้าใช้งานฟอร์มแผนกนี้
-          เพื่อให้ตรวจสอบได้ว่าใครเป็นผู้บันทึกข้อมูล
+          กรุณากรอกชื่อก่อนเข้าใช้งาน
+          เพื่อให้ตรวจสอบย้อนหลังได้ว่าใครเป็นผู้บันทึกข้อมูล
         </p>
 
         <label for="staff-name-input">ชื่อผู้บันทึกข้อมูล</label>
         <input
-          type="text"
           id="staff-name-input"
+          type="text"
           placeholder="เช่น สมชาย / พนักงานเครื่อง F1"
           autocomplete="name"
         />
@@ -80,196 +77,156 @@
         >
           เริ่มกรอกข้อมูล
         </button>
-
-        <small>
-          หมายเหตุ: ระบบจะใช้ชื่อนี้เช็กการบันทึกซ้ำในแผนกเดิมของวันเดียวกัน
-        </small>
+        <small>ระบบจะใช้ชื่อนี้เช็กการบันทึกซ้ำในแผนกเดิมของวันเดียวกัน</small>
       </div>
     </div>
 
-    <!-- ======================================================
-      MAIN APP
-      JS จะเติม class dept-blow / dept-pipe / dept-sheet ตาม QR หรือผู้ใช้ login
-    ======================================================= -->
+    <!-- MAIN APP: JS จะเติม class แผนกลงที่ div นี้ -->
     <div class="dept-default" id="dept-body">
-      <div class="app-layout">
-        <!-- ======================================================
-          SIDEBAR
-          แสดงข้อมูลผู้บันทึก ปุ่มกลับ ปุ่มเปลี่ยนชื่อ และ logout
-        ======================================================= -->
-        <aside class="sidebar">
+      <div class="app-shell">
+        <!-- ส่วนหัวมือถือ -->
+        <aside class="sidebar app-hero">
           <div class="pvt-top-header">
             <div class="logo">
-              <img src="/icons/logo_512.png" alt="EA Factory Logo" />
+              <img src="/icons/Icon_Logo_192.png" alt="EA Factory Logo" />
             </div>
-            <h3>PVT &amp; T.PLAS</h3>
-            <p>ระบบบันทึกปัญหาการผลิต</p>
+
+            <div class="brand-text">
+              <h3>PVT &amp; T.PLAS</h3>
+              <p>ระบบบันทึกของเสียจากการผลิต</p>
+            </div>
           </div>
 
-          <nav class="sidebar-menu">
-            <div class="menu-group">
+          <nav class="sidebar-menu hero-panel">
+            <div class="menu-group user-group">
               <span class="menu-label">ข้อมูลผู้ใช้งาน</span>
-
               <div class="user-profile-box">
                 <div class="user-info">
-                  <span class="material-symbols-outlined user-icon">
-                    account_circle
-                  </span>
-                  <span>ผู้บันทึกข้อมูล:</span>
-                  <span id="display-username">ยังไม่ได้ระบุชื่อ</span>
+                  <span class="material-symbols-outlined user-icon"
+                    >account_circle</span
+                  >
+                  <span>ผู้บันทึกข้อมูล</span>
+                  <strong id="display-username">ยังไม่ได้ระบุชื่อ</strong>
                 </div>
               </div>
             </div>
 
-            <div class="menu-group">
-              <!-- <a href="#" class="menu-link active">
-                <span class="material-symbols-outlined">edit_document</span>
-                ฟอร์มบันทึกปัญหา
-              </a> -->
-
+            <div class="menu-group dashboard-group">
               <a href="/index.html" class="menu-link" id="nav-dashboard-link">
                 <span class="material-symbols-outlined">bar_chart</span>
                 แดชบอร์ดผู้บริหาร
               </a>
             </div>
 
-            <button type="button" class="btn-back" onclick="history.back()">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-              </svg>
-              ย้อนกลับ
-            </button>
+            <div class="hero-actions">
+              <button type="button" class="btn-back" onclick="history.back()">
+                <span class="material-symbols-outlined">arrow_back</span>
+                ย้อนกลับ
+              </button>
 
-            <!-- <button
-              type="button"
-              class="btn-change-name"
-              onclick="openStaffNameModal(true)"
-            >
-              <span class="material-symbols-outlined">manage_accounts</span>
-              เปลี่ยนชื่อผู้บันทึก
-            </button> -->
-
-            <button type="button" class="btn-logout" onclick="handleLogout()">
-              <span class="material-symbols-outlined">logout</span>
-              ออกจากระบบ
-            </button>
+              <button type="button" class="btn-logout" onclick="handleLogout()">
+                <span class="material-symbols-outlined">logout</span>
+                ออกจากระบบ
+              </button>
+            </div>
           </nav>
         </aside>
 
-        <!-- ======================================================
-          MAIN CONTENT
-          พื้นที่ฟอร์มหลักของพนักงาน
-        ======================================================= -->
+        <!-- ฟอร์มหลัก -->
         <main class="main-content">
-          <header class="content-header">
-            <div class="header-title-area">
-              <h1 id="dept-title-main">
-                <span class="material-symbols-outlined">assignment</span>
-                ฟอร์มบันทึกข้อมูลปัญหาประจำแผนก
-              </h1>
+          <section class="form-page-card">
+            <header class="content-header">
+              <div class="header-title-area">
+                <div class="title-icon">
+                  <span class="material-symbols-outlined">assignment</span>
+                </div>
+                <div>
+                  <h1 id="dept-title-main">ฟอร์มบันทึกข้อมูลปัญหาประจำแผนก</h1>
+                  <p class="subtitle">
+                    กรุณากรอกข้อมูลปัญหาที่พบให้ครบถ้วน
+                    เพื่อความถูกต้องในการส่ง
+                  </p>
+                </div>
+              </div>
 
-              <p class="subtitle">
-                กรุณากรอกข้อมูลปัญหาค้างคาให้ครบถ้วน
-                เพื่อความถูกต้องในการส่งออกรายงาน Excel
-              </p>
-            </div>
+              <div class="status-buttons">
+                <button class="status-btn dept-btn">
+                  <span class="material-symbols-outlined">my_location</span>
+                  <span id="dept-badge-text">: MONO</span>
+                </button>
 
-            <div class="header-status-area">
-              <span class="badge badge-dept" id="dept-badge-name">
-                DEPT: LOADING
-              </span>
+                <button class="status-btn online-btn">
+                  <span class="material-symbols-outlined">wifi</span>
+                  <span id="network-status-text">: ONLINE</span>
+                </button>
+              </div>
+            </header>
 
-              <span class="badge badge-status-online" id="network-status">
-                <span class="material-symbols-outlined"
-                  >fiber_manual_record</span
+            <!-- แสดงเฉพาะตอนเปิดจาก QR -->
+            <div
+              id="qr-context-card"
+              class="qr-context-card"
+              style="display: none"
+            >
+              <div>
+                <strong
+                  ><span class="material-symbols-outlined">place</span>
+                  แผนก</strong
                 >
-                ระบบออนไลน์
-              </span>
+                <span id="qr-dept-label">-</span>
+              </div>
+              <div>
+                <strong
+                  ><span class="material-symbols-outlined">settings</span>
+                  เครื่องจักร</strong
+                >
+                <span id="qr-machine-label">-</span>
+              </div>
             </div>
-          </header>
 
-          <!-- ======================================================
-            QR CONTEXT CARD
-            กล่องนี้จะแสดงเฉพาะตอนเปิดจาก QR เช่น
-            /pages/form-department.html?dept=blow
-            /pages/form-department.html?dept=blow&machine=BLOW-01
-
-            หมายเหตุ:
-            - ถ้ามี dept ระบบจะแสดงแผนกให้ชัดเจน
-            - ถ้ามี machine ระบบจะเลือกเครื่องให้อัตโนมัติและล็อกช่องเครื่อง
-          ======================================================= -->
-          <div id="qr-context-card" class="qr-context-card" style="display: none">
-            <div>
-              <strong><span class="material-symbols-outlined">place</span> แผนก</strong>
-              <span id="qr-dept-label">-</span>
+            <!-- แผนกปัจจุบัน แสดงชัดเพื่อกันกรอกผิดแผนก -->
+            <div class="current-dept-box">
+              <span class="material-symbols-outlined">location_on</span>
+              <strong>แผนกปัจจุบัน :</strong>
+              <span id="current-dept-label">-</span>
             </div>
-            <div>
-              <strong><span class="material-symbols-outlined">settings</span> เครื่องจักร</strong>
-              <span id="qr-machine-label">-</span>
-            </div>
-          </div>
 
-          <!-- แสดงแผนกปัจจุบันเสมอ เพื่อกันพนักงานกรอกผิดแผนก -->
-          <div class="current-dept-box">
-            <span class="material-symbols-outlined">location_on</span>
-            <strong>แผนกปัจจุบัน :</strong>
-            <span id="current-dept-label">-</span>
-          </div>
-
-          <!-- ======================================================
-            FORM CARD
-            ฟอร์มกรอกข้อมูลของเสีย/ปัญหาการผลิต
-            ข้อมูลนี้จะถูกส่งเข้า daily_waste_reports
-          ======================================================= -->
-          <section class="form-container-card">
-            <form id="department-waste-form">
+            <form id="department-waste-form" class="mobile-form">
               <div class="form-group">
                 <label for="incident-datetime">
-                  <span class="material-symbols-outlined label-icon blue">
-                    calendar_month
-                  </span>
-                  วัน-เวลา ที่เกิดเหตุปัญหาการผลิต
+                  <span class="material-symbols-outlined label-icon blue"
+                    >calendar_month</span
+                  >
+                  วัน-เวลาที่เกิดเหตุปัญหาการผลิต
                   <span class="required">*</span>
                 </label>
-
                 <input type="datetime-local" id="incident-datetime" required />
-
-                <small class="helper-text">
-                  กรุณาระบุวันและเวลาจริงที่พบปัญหาในกะการทำงานของท่าน
-                </small>
+                <small class="helper-text"
+                  >กรุณาระบุวันและเวลาจริงที่พบปัญหาในการทำงานของท่าน</small
+                >
               </div>
 
               <div class="form-group">
                 <label for="work-shift">
-                  <span class="material-symbols-outlined label-icon amber">
-                    schedule
-                  </span>
+                  <span class="material-symbols-outlined label-icon amber"
+                    >schedule</span
+                  >
                   กะการทำงาน (Shift)
                   <span class="required">*</span>
                 </label>
-
                 <select id="work-shift" required>
                   <option value="">-- โปรดเลือกกะการทำงาน --</option>
                 </select>
               </div>
+
               <div class="form-group">
                 <label for="machine-no">
-                  <span class="material-symbols-outlined label-icon blue">
-                    precision_manufacturing
-                  </span>
-                  หมายเลขเครื่องจักร / เบอร์เครื่อง
+                  <span class="material-symbols-outlined label-icon blue"
+                    >precision_manufacturing</span
+                  >
+                  เครื่องจักร / ไลน์การผลิต
                   <span class="required">*</span>
                 </label>
-
                 <select id="machine-no" required>
                   <option value="">-- กำลังโหลดรายการเครื่อง --</option>
                 </select>
@@ -277,13 +234,12 @@
 
               <div class="form-group">
                 <label for="problem-type">
-                  <span class="material-symbols-outlined label-icon red">
-                    error
-                  </span>
-                  เลือกหมวดหมู่ประเภทปัญหาที่พบ
+                  <span class="material-symbols-outlined label-icon red"
+                    >error</span
+                  >
+                  ประเภทปัญหาที่พบ
                   <span class="required">*</span>
                 </label>
-
                 <select id="problem-type" required>
                   <option value="">-- กำลังโหลดรายการปัญหา --</option>
                 </select>
@@ -291,13 +247,12 @@
 
               <div class="form-group">
                 <label for="waste-weight">
-                  <span class="material-symbols-outlined label-icon green">
-                    scale
-                  </span>
+                  <span class="material-symbols-outlined label-icon green"
+                    >scale</span
+                  >
                   น้ำหนักของเสียที่เกิดขึ้น (กิโลกรัม)
                   <span class="required">*</span>
                 </label>
-
                 <input
                   type="number"
                   id="waste-weight"
@@ -305,26 +260,23 @@
                   placeholder="0.00"
                   class="form-input"
                 />
-
-                <small class="helper-text">
-                  กรอกน้ำหนักเนื้อฟิล์มหรือเศษเสียชั่งจริง (กก.)
-                  เพื่อคำนวณต้นทุน
-                </small>
+                <small class="helper-text"
+                  >กรอกน้ำหนักจริงจากการชั่ง เพื่อใช้คำนวณต้นทุน</small
+                >
               </div>
 
-              <div class="form-group">
+              <div class="form-group full-textarea">
                 <label for="problem-description">
-                  <span class="material-symbols-outlined label-icon blue">
-                    edit_note
-                  </span>
-                  รายละเอียดเหตุการณ์ / อาการที่เกิดขึ้น / หมายเหตุวิศวกร
+                  <span class="material-symbols-outlined label-icon blue"
+                    >edit_note</span
+                  >
+                  รายละเอียดปัญหา / หมายเหตุ
                   <span class="required">*</span>
                 </label>
-
                 <textarea
                   id="problem-description"
                   rows="4"
-                  placeholder="กรุณาพิมพ์อธิบายอาการขัดข้อง เช่น มอเตอร์ความร้อนสูงเกิน, ใบมีดเจาะไม่ทะลุ, ถุงซีลไม่ติด..."
+                  placeholder="กรุณาระบุรายละเอียดของปัญหาที่เกิดขึ้น"
                   required
                 ></textarea>
               </div>
@@ -335,11 +287,14 @@
                   class="btn-clear"
                   onclick="resetFormWithConfirm()"
                 >
-                  <span class="material-symbols-outlined">cleaning_services</span> ล้างข้อมูลใหม่
+                  <span class="material-symbols-outlined"
+                    >cleaning_services</span
+                  >
+                  ล้างข้อมูล
                 </button>
-
                 <button type="submit" class="btn-submit">
-                  <span class="material-symbols-outlined">save</span> บันทึกส่งข้อมูลเข้าแดชบอร์ด
+                  <span class="material-symbols-outlined">save</span>
+                  บันทึกข้อมูล
                 </button>
               </div>
             </form>
@@ -348,29 +303,23 @@
       </div>
     </div>
 
-
-    <!-- ======================================================
-      OTHER PROBLEM MODAL
-      แสดงเมื่อเลือก "อื่นๆ" ในช่องประเภทปัญหา
-      เพื่อเก็บรายละเอียดสาเหตุจริงไว้ใช้วิเคราะห์ภายหลัง
-    ======================================================= -->
+    <!-- Modal ระบุรายละเอียดเมื่อเลือกปัญหาอื่นๆ -->
     <div id="other-problem-modal" class="other-problem-modal hidden">
       <div class="other-problem-box">
         <div class="other-problem-icon">
           <span class="material-symbols-outlined">help</span>
         </div>
-
         <h3>ระบุรายละเอียดปัญหาอื่นๆ</h3>
         <p>
-          กรุณาอธิบายว่า "อื่นๆ" คือปัญหาอะไร
-          เพื่อให้หัวหน้าและผู้บริหารนำข้อมูลไปวิเคราะห์สาเหตุของเสียได้แม่นยำขึ้น
+          กรุณาอธิบายว่า “อื่นๆ” คือปัญหาอะไร
+          เพื่อให้นำข้อมูลไปวิเคราะห์ต่อได้แม่นยำขึ้น
         </p>
 
         <label for="other-problem-input">รายละเอียดปัญหาอื่นๆ</label>
         <textarea
           id="other-problem-input"
           rows="4"
-          placeholder="เช่น ฟิล์มย่นช่วงเริ่มเดินเครื่อง / เส้นเทปมีรอยจากลูกกลิ้ง / เครื่องสะดุดเป็นช่วง..."
+          placeholder="เช่น ฟิล์มย่นช่วงเริ่มเดินเครื่อง / เครื่องสะดุดเป็นช่วง..."
         ></textarea>
 
         <div class="other-problem-actions">
@@ -381,7 +330,6 @@
           >
             ยกเลิก
           </button>
-
           <button
             type="button"
             class="btn-other-save"
@@ -391,26 +339,16 @@
           </button>
         </div>
 
-        <small>
-          หมายเหตุ: ระบบจะเก็บรายละเอียดนี้ไว้ในรายงาน เพื่อใช้สรุปว่า “อื่นๆ”
-          เกิดจากสาเหตุใดบ่อยที่สุด
-        </small>
+        <small
+          >ระบบจะเก็บรายละเอียดนี้ไว้ในรายงาน
+          เพื่อสรุปสาเหตุของปัญหาอื่นๆ</small
+        >
       </div>
     </div>
 
-
-    <!-- ======================================================
-      SCRIPTS
-      ลำดับสำคัญ:
-      1) Supabase CDN
-      2) supabaseClient.js
-      3) form-department.js
-    ======================================================= -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/activityLogger.js"></script>
-    <!-- <script src="/core/shiftConfig.js"></script> -->
-      
     <script src="/js/department/form-department.js"></script>
   </body>
 </html>

@@ -34,7 +34,26 @@ EA-FACTORY/
 └─ login.html
 
 
-
+// {
+//   "name": "EA Factory",
+//   "short_name": "EA Factory",
+//   "start_url": "login.html",
+//   "display": "standalone",
+//   "background_color": "#ffffff",
+//   "theme_color": "#222A38",
+//   "icons": [
+//     {
+//       "src": "/icons/Ea_Factory_192.png",
+//       "sizes": "192x192",
+//       "type": "image/png"
+//     },
+//     {
+//       "src": "/icons/Ea_Factory_512.png",
+//       "sizes": "512x512",
+//       "type": "image/png"
+//     }
+//   ]
+// }
 
 
 ตอนเปิดหน้า

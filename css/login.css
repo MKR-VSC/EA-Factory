@@ -799,8 +799,8 @@ label {
 
 @media (max-width: 480px) {
   .splash-logo img {
-    width: 88px;
-    height: 88px;
+    width: 120px;
+    height: 120px;
   }
 
   .splash-title {
@@ -812,12 +812,12 @@ label {
   }
 
   .pvt-top-header {
-    padding-top: 18px;
+    padding-top: 32px;
   }
 
   .logo img {
-    width: 80px;
-    height: 80px;
+    width: 96px;
+    height: 96px;
   }
 
   .pvt-top-header h1 {
