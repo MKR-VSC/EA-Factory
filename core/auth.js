@@ -105,7 +105,7 @@ async function protectPage(allowedRoles = []) {
     } = await supabaseClient.auth.getSession();
 
     if (sessionError || !session) {
-      window.location.href = "/pages/auth/login.html";
+      window.location.href = "/login.html";
       return;
     }
 
@@ -118,14 +118,14 @@ async function protectPage(allowedRoles = []) {
 
     if (profileError || !profile) {
       await supabaseClient.auth.signOut();
-      window.location.href = "/pages/auth/login.html";
+      window.location.href = "/login.html";
       return;
     }
 
     if (String(profile.status || "").toLowerCase() !== "active") {
       await supabaseClient.auth.signOut();
       alert("บัญชีของคุณถูกระงับการใช้งาน กรุณาติดต่อ Admin");
-      window.location.href = "/pages/auth/login.html";
+      window.location.href = "/login.html";
       return;
     }
 
@@ -145,7 +145,7 @@ async function protectPage(allowedRoles = []) {
     }
   } catch (error) {
     console.error("❌ protectPage error:", error);
-    window.location.href = "/pages/auth/login.html";
+    window.location.href = "/login.html";
   }
 }
 
@@ -173,7 +173,7 @@ async function checkAuthStatus() {
 async function logout() {
   await supabaseClient.auth.signOut();
   localStorage.removeItem("ea_profile");
-  window.location.href = "/pages/auth/login.html";
+  window.location.href = "/login.html";
 }
 
 // ======================================================

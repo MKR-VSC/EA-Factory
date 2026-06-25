@@ -9,8 +9,8 @@
 // GLOBAL CONFIG
 // =========================================================
 
-const LOGIN_PAGE = "login.html";
-const FORM_PAGE = "pages/form-department.html";
+const LOGIN_PAGE = "/login.html";
+const FORM_PAGE = "/pages/form-department.html";
 
 const ALLOWED_ROLES = [
   "admin",
@@ -122,6 +122,18 @@ function csvCell(value) {
   return `"${String(value ?? "").replaceAll('"', '""')}"`;
 }
 
+// เช็กก่อนว่าไฟล์ index.js กำลังทำงานอยู่บนหน้า Dashboard จริงไหม
+// เหตุผล: ถ้าเผลอโหลด index.js ใน login.html จะไม่ให้ protectExecutivePage() เด้ง alert
+function isDashboardPage() {
+  return Boolean(
+    document.getElementById("dom-table-body") ||
+      document.getElementById("accounting-table-body") ||
+      document.getElementById("cnt-total") ||
+      document.getElementById("chart-dept-donut") ||
+      document.body?.dataset?.page === "dashboard"
+  );
+}
+
 // =========================================================
 // ERROR LOGGER
 // =========================================================
@@ -144,10 +156,14 @@ window.addEventListener("unhandledrejection", (event) => {
 // =========================================================
 
 function protectExecutivePage() {
-  const user = localStorage.getItem("activeUser");
-  const role = localStorage.getItem("activeRole");
+  // ถ้าไฟล์นี้ถูกโหลดผิดหน้า เช่น login.html ให้หยุดเงียบ ๆ ไม่ต้อง alert
+  if (!isDashboardPage()) return false;
 
-  if (!user || !ALLOWED_ROLES.includes(role)) {
+  const user = localStorage.getItem("activeUser");
+  const role = normalizeText(localStorage.getItem("activeRole"));
+  const allowedRoles = ALLOWED_ROLES.map((item) => normalizeText(item));
+
+  if (!user || !allowedRoles.includes(role)) {
     alert("🔒 คุณไม่มีสิทธิ์เข้าใช้งานหน้าแดชบอร์ดสรุปผลนี้");
     window.location.href = LOGIN_PAGE;
     return false;
@@ -928,6 +944,10 @@ function listenToWasteReportsRealtime() {
 // =========================================================
 
 window.addEventListener("DOMContentLoaded", async () => {
+  // สำคัญ: กันกรณี login.html เผลอโหลด index.js
+  // ถ้าไม่ใช่หน้า Dashboard ให้ไม่ต้องเช็กสิทธิ์ และไม่ต้องเด้ง alert
+  if (!isDashboardPage()) return;
+
   const allowed = protectExecutivePage();
   if (!allowed) return;
 
@@ -946,6 +966,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 window.getSupabaseClient = getSupabaseClient;
 
 window.protectExecutivePage = protectExecutivePage;
+window.isDashboardPage = isDashboardPage;
 window.setActiveUserLabel = setActiveUserLabel;
 window.handleDashboardLogout = handleDashboardLogout;
 
