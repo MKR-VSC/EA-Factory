@@ -171,7 +171,7 @@ async function initAdminPanel() {
 
   if (!currentUser?.is_system_owner) {
     alert("คุณไม่มีสิทธิ์เข้าใช้งานหน้า Admin Panel");
-    window.location.href = "/index.html";
+    window.location.href = "/login";
     return;
   }
 

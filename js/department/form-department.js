@@ -325,6 +325,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     // logout auto
     startAutoLogoutTimer();
 
+    // ถ้าเปิดจาก QR ให้จับเวลาไม่ใช้งานอีกชั้น
+    // กันเครื่องค้างอยู่หน้าฟอร์มหลังสแกน QR
+    startQrIdleLogout();
+
     if (!validateCurrentDept()) return;
 
     renderDeptInfo();
@@ -1320,6 +1324,16 @@ async function handleFormSubmit(event) {
     if (error) throw error;
 
     alert("บันทึกข้อมูลเรียบร้อยแล้ว");
+
+    // ถ้าเข้าหน้าฟอร์มด้วย QR:
+    // หลังส่งสำเร็จให้ไปหน้าส่งสำเร็จ เพื่อให้เลือก "สแกน QR ใหม่" หรือ "กลับหน้า Login"
+    // เหตุผล: พนักงานที่ต้องกรอกหลายเครื่อง จะได้เริ่มสแกนเครื่องถัดไปใหม่ ไม่ค้างอยู่ฟอร์มเดิม
+    if (isQrMode()) {
+      goToQrSuccessPage();
+      return;
+    }
+
+    // ถ้าไม่ได้มาจาก QR ให้ล้างฟอร์มตามปกติ
     resetFormAfterSubmit();
   } catch (err) {
     console.error("SQL Insert Error:", err);
@@ -1423,6 +1437,67 @@ function resetFormWithConfirm() {
   alert("ล้างข้อมูลเรียบร้อยแล้ว");
 }
 
+
+// ======================================================
+// QR MODE: ส่งข้อมูลเสร็จแล้วเด้งกลับ Login
+// + Auto logout เมื่อไม่มีการใช้งาน 5 นาที
+// ======================================================
+
+const QR_IDLE_LIMIT = 5 * 60 * 1000; // 5 นาที
+let qrIdleTimer = null;
+
+// เช็กว่าเข้ามาจาก QR หรือไม่
+function isQrMode() {
+  const params = new URLSearchParams(window.location.search);
+  return params.has("dept") || params.has("department") || params.has("department_code") || params.has("machine");
+}
+
+// กลับหน้า Login และล้างข้อมูลคนกรอก
+function goBackToLogin() {
+  localStorage.removeItem("activeUser");
+  localStorage.removeItem("activeName");
+  localStorage.removeItem("activeRole");
+  localStorage.removeItem("activeUserId");
+  localStorage.removeItem("activeDept");
+
+  window.location.href = "/login.html";
+}
+
+// ไปหน้าบันทึกสำเร็จของ QR
+// หน้านี้จะมีปุ่มให้เลือก:
+// 1) สแกน QR ใหม่
+// 2) กลับหน้า Login
+function goToQrSuccessPage() {
+  localStorage.removeItem("activeUser");
+  localStorage.removeItem("activeName");
+  localStorage.removeItem("activeRole");
+  localStorage.removeItem("activeUserId");
+  localStorage.removeItem("activeDept");
+
+  window.location.href = "/pages/qr-success.html";
+}
+
+// เริ่มจับเวลาไม่ใช้งาน
+function startQrIdleLogout() {
+  if (!isQrMode()) return;
+
+  resetQrIdleTimer();
+
+  ["click", "input", "change", "keydown", "touchstart", "mousemove"].forEach((eventName) => {
+    document.addEventListener(eventName, resetQrIdleTimer, true);
+  });
+}
+
+// รีเซ็ตเวลาเมื่อมีการใช้งาน
+function resetQrIdleTimer() {
+  clearTimeout(qrIdleTimer);
+
+  qrIdleTimer = setTimeout(() => {
+    alert("ไม่มีการใช้งานเกิน 5 นาที ระบบจะกลับไปหน้า Login");
+    goBackToLogin();
+  }, QR_IDLE_LIMIT);
+}
+
 // =========================================================
 // LOGOUT
 // =========================================================
@@ -1456,6 +1531,8 @@ async function handleLogout() {
 
 window.resetFormWithConfirm = resetFormWithConfirm;
 window.handleLogout = handleLogout;
+window.goBackToLogin = goBackToLogin;
+window.goToQrSuccessPage = goToQrSuccessPage;
 window.normalizeDept = normalizeDept;
 window.getDeptCssClass = getDeptCssClass;
 window.isStaffRole = isStaffRole;
