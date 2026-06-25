@@ -1,7 +1,7 @@
 {
   "name": "EA Factory",
   "short_name": "EA Factory",
-  "start_url": "/",
+  "start_url": "/login.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4caf8a",
