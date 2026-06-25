@@ -5,9 +5,10 @@
       SUPERVISOR DASHBOARD
       ไฟล์: pages/supervisor-dashboard.html
       หน้าที่: Dashboard ให้หัวหน้างานดูสถิติของเสีย
-      จุดสำคัญ:
-      - Admin / Management เห็นทุกแผนก
-      - Supervisor / Manager เห็นเฉพาะแผนกตัวเอง
+
+      ปรับรอบนี้:
+      - Admin / Management / Executive เห็นทุกแผนก
+      - Supervisor / Manager เห็นตาม user_departments
       - ใช้ข้อมูลจาก daily_waste_reports
     ======================================================= -->
 
@@ -67,10 +68,12 @@
           <label for="startDate">วันที่เริ่มต้น</label>
           <input type="date" id="startDate" />
         </div>
+
         <div class="form-group">
           <label for="endDate">วันที่สิ้นสุด</label>
           <input type="date" id="endDate" />
         </div>
+
         <button class="btn primary" type="button" onclick="loadDashboard()">
           ค้นหา
         </button>
@@ -82,16 +85,19 @@
           <strong id="totalRecords">0</strong>
           <small>รายการในช่วงวันที่เลือก</small>
         </article>
+
         <article class="summary-card success">
           <span>น้ำหนักของเสียรวม</span>
           <strong id="totalWaste">0 kg</strong>
           <small>รวมทุกเครื่องในแผนก</small>
         </article>
+
         <article class="summary-card warning">
           <span>ปัญหาที่พบบ่อยสุด</span>
           <strong id="topProblem">-</strong>
           <small id="topProblemSub">-</small>
         </article>
+
         <article class="summary-card danger">
           <span>เครื่องที่ของเสียสูงสุด</span>
           <strong id="topMachine">-</strong>
@@ -109,14 +115,17 @@
           <h2>แนวโน้มของเสียรายวัน</h2>
           <canvas id="dailyTrendChart"></canvas>
         </article>
+
         <article class="chart-card">
           <h2>Top 10 เครื่องที่มีของเสียสูงสุด</h2>
           <canvas id="machineChart"></canvas>
         </article>
+
         <article class="chart-card">
           <h2>Top 10 ประเภทปัญหาที่เกิดบ่อย</h2>
           <canvas id="problemChart"></canvas>
         </article>
+
         <article class="chart-card">
           <h2>สถานะรายการ</h2>
           <canvas id="statusChart"></canvas>
