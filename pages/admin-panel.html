@@ -25,6 +25,75 @@
     <link rel="stylesheet" href="/css/loadingService.css" />
     <link rel="stylesheet" href="/css/admin-panel.css" />
     <link rel="icon" href="data:," />
+    <style>
+      .user-dept-permission-panel {
+        margin: 14px 0 18px;
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        background: #f8fafc;
+      }
+
+      .user-dept-permission-panel strong {
+        display: block;
+        margin-bottom: 4px;
+        color: #0f172a;
+      }
+
+      .user-dept-permission-panel .muted {
+        display: block;
+        margin-bottom: 12px;
+        color: #64748b;
+        font-size: 13px;
+      }
+
+      .dept-checkbox-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+      }
+
+      .dept-check-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 14px;
+        background: #ffffff;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .dept-check-item input {
+        width: 18px;
+        height: 18px;
+        accent-color: #2563eb;
+      }
+
+      .user-dept-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .user-dept-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #e0f2fe;
+        color: #075985;
+        font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .modal-form-full {
+        grid-column: 1 / -1;
+      }
+    </style>
+
   </head>
 
   <body>
@@ -334,53 +403,144 @@
         </section>
 
         <!-- ======================================================
-          USERS / ROLES
+          USERS / ROLES - ERP UX
         ======================================================= -->
         <section id="section-users" class="page-section">
-          <div class="panel">
-            <div class="panel-head">
-              <h2><span class="material-symbols-outlined">people</span> จัดการ User และ Role</h2>
-              <span class="muted"
-                >Admin เพิ่ม / ลบ / เปลี่ยนสิทธิ์ได้จากหน้านี้</span
-              >
+          <div class="users-hero-panel">
+            <div>
+              <span class="eyebrow">User Administration</span>
+              <h2><span class="material-symbols-outlined">admin_panel_settings</span> จัดการ User และ Role</h2>
+              <p>กำหนดสิทธิ์ผู้ใช้งาน แผนกหลัก และแผนกที่รับผิดชอบหลายแผนก สำหรับรองรับระบบจริง</p>
             </div>
 
-            <div class="form-row">
-              <input
-                type="text"
-                id="user-username"
-                placeholder="Username เช่น ADMIN01"
-              />
-              <input type="text" id="user-password" placeholder="Password" />
-              <input
-                type="text"
-                id="user-display-name"
-                placeholder="ชื่อแสดงผล"
-              />
+            <button class="btn btn-primary btn-add-user-toggle" type="button" id="btn-toggle-user-form">
+              <span class="material-symbols-outlined">person_add</span>
+              เพิ่ม User ใหม่
+            </button>
+          </div>
 
-              <select id="user-department">
-                <option value="">-- เลือกแผนก --</option>
-              </select>
+          <div class="user-stat-grid">
+            <article class="user-stat-card">
+              <span class="material-symbols-outlined">groups</span>
+              <small>Users ทั้งหมด</small>
+              <strong id="user-stat-total">0</strong>
+            </article>
 
-              <select id="user-role">
-                <option value="staff">staff</option>
-                <option value="supervisor">supervisor</option>
-                <option value="accounting">accounting</option>
-                <option value="management">management</option>
-                <option value="admin">admin</option>
-              </select>
+            <article class="user-stat-card supervisor">
+              <span class="material-symbols-outlined">supervisor_account</span>
+              <small>Supervisor</small>
+              <strong id="user-stat-supervisor">0</strong>
+            </article>
 
-              <button class="btn btn-primary" type="button" id="btn-add-user">
-                เพิ่ม User
+            <article class="user-stat-card active">
+              <span class="material-symbols-outlined">verified_user</span>
+              <small>Active</small>
+              <strong id="user-stat-active">0</strong>
+            </article>
+
+            <article class="user-stat-card dept">
+              <span class="material-symbols-outlined">apartment</span>
+              <small>Departments</small>
+              <strong id="user-stat-dept">0</strong>
+            </article>
+          </div>
+
+          <div class="panel user-create-panel is-collapsed" id="user-create-panel">
+            <div class="panel-head user-create-head">
+              <div>
+                <h2><span class="material-symbols-outlined">person_add</span> เพิ่มผู้ใช้งานใหม่</h2>
+                <span class="muted">กรอกข้อมูลพื้นฐาน แล้วเลือกแผนกที่รับผิดชอบได้หลายแผนก</span>
+              </div>
+              <button class="btn btn-secondary btn-sm" type="button" id="btn-close-user-form">
+                ปิดฟอร์ม
               </button>
             </div>
 
-            <div class="filter-row">
+            <div class="user-create-body">
+              <div class="user-form-grid">
+                <label>
+                  Username
+                  <input type="text" id="user-username" placeholder="เช่น ADMIN01" />
+                </label>
+
+                <label>
+                  Password
+                  <input type="text" id="user-password" placeholder="รหัสผ่าน" />
+                </label>
+
+                <label>
+                  ชื่อแสดงผล
+                  <input type="text" id="user-display-name" placeholder="ชื่อที่ต้องการให้แสดงในระบบ" />
+                </label>
+
+                <label>
+                  Role
+                  <select id="user-role">
+                    <option value="staff">staff</option>
+                    <option value="supervisor">supervisor</option>
+                    <option value="accounting">accounting</option>
+                    <option value="management">management</option>
+                    <option value="admin">admin</option>
+                  </select>
+                </label>
+
+                <label class="user-form-full">
+                  แผนกหลัก
+                  <select id="user-department">
+                    <option value="">-- เลือกแผนกหลัก --</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="user-dept-permission-panel compact">
+                <div class="permission-head">
+                  <div>
+                    <strong>แผนกที่รับผิดชอบ</strong>
+                    <span class="muted">ใช้สำหรับ Supervisor ที่ดูแลหลายแผนก เลือกได้มากกว่า 1 แผนก</span>
+                  </div>
+                  <span class="permission-count" id="user-create-dept-count">0 แผนก</span>
+                </div>
+
+                <div id="user-department-permissions" class="dept-checkbox-grid dept-card-grid">
+                  <span class="muted">กำลังโหลดรายชื่อแผนก...</span>
+                </div>
+              </div>
+
+              <div class="user-create-actions">
+                <button class="btn btn-secondary" type="button" id="btn-clear-user-form">
+                  ล้างข้อมูล
+                </button>
+                <button class="btn btn-primary" type="button" id="btn-add-user">
+                  <span class="material-symbols-outlined">save</span>
+                  บันทึก User
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel user-list-panel">
+            <div class="panel-head user-list-head">
+              <div>
+                <h2><span class="material-symbols-outlined">manage_accounts</span> รายการผู้ใช้งาน</h2>
+                <span class="muted">ค้นหา เปลี่ยน Role/Status หรือแก้ไขข้อมูลผู้ใช้งาน</span>
+              </div>
+            </div>
+
+            <div class="filter-row user-filter-row">
               <input
                 id="user-search-input"
                 type="search"
                 placeholder="ค้นหา username / ชื่อ / แผนก / role..."
               />
+
+              <select id="user-role-filter">
+                <option value="all">ทุก Role</option>
+                <option value="admin">admin</option>
+                <option value="management">management</option>
+                <option value="accounting">accounting</option>
+                <option value="supervisor">supervisor</option>
+                <option value="staff">staff</option>
+              </select>
 
               <select id="user-status-filter">
                 <option value="all">ทุกสถานะ</option>
@@ -389,25 +549,8 @@
               </select>
             </div>
 
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Username</th>
-                    <th>ชื่อ</th>
-                    <th>แผนก</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>จัดการ</th>
-                  </tr>
-                </thead>
-
-                <tbody id="user-table-body">
-                  <tr>
-                    <td colspan="6" class="tb-empty">กำลังโหลดผู้ใช้งาน...</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="user-card-list" id="user-card-list">
+              <div class="tb-empty">กำลังโหลดผู้ใช้งาน...</div>
             </div>
           </div>
         </section>
@@ -627,6 +770,19 @@
               placeholder="เว้นว่างไว้ ถ้าไม่ต้องการเปลี่ยน"
             />
           </label>
+
+          <div class="user-dept-permission-panel modal-form-full compact">
+            <div class="permission-head">
+              <div>
+                <strong>แผนกที่รับผิดชอบ</strong>
+                <span class="muted">เลือกได้หลายแผนก เหมาะสำหรับ Supervisor ที่ดูแลมากกว่า 1 แผนก</span>
+              </div>
+              <span class="permission-count" id="edit-user-dept-count">0 แผนก</span>
+            </div>
+            <div id="edit-user-department-permissions" class="dept-checkbox-grid dept-card-grid">
+              <span class="muted">กำลังโหลดรายชื่อแผนก...</span>
+            </div>
+          </div>
         </div>
 
         <div class="modal-actions">

@@ -5,6 +5,7 @@
 
 const REPORT_TABLE = "daily_waste_reports";
 const PROFILE_TABLE = "profiles";
+const USER_DEPARTMENT_TABLE = "user_departments";
 
 /*
   MASTER_TABLES
@@ -65,6 +66,7 @@ const state = {
   supabase: null,
   reports: [],
   users: [],
+  userDepartments: [],
 
   departmentTable: null,
   machineTable: null,
@@ -87,9 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
 ========================================================= */
 
 function protectAdminPage() {
-
-  const activeUserId =
-    localStorage.getItem("activeUserId");
+  const activeUserId = localStorage.getItem("activeUserId");
 
   if (!activeUserId) {
     window.location.href = LOGIN_PAGE;
@@ -97,6 +97,22 @@ function protectAdminPage() {
   }
 
   return true;
+}
+
+function setButtonBusy(button, busy, loadingText = "กำลังบันทึก...") {
+  if (!button) return;
+
+  button.disabled = busy;
+
+  if (busy) {
+    const originalHtml = button.dataset.originalHtml || button.innerHTML;
+    button.dataset.originalHtml = originalHtml;
+    button.innerHTML = `<span class="material-symbols-outlined">hourglass_top</span> ${loadingText}`;
+    return;
+  }
+
+  const originalHtml = button.dataset.originalHtml || button.innerHTML;
+  button.innerHTML = originalHtml;
 }
 
 // =========================================================
@@ -170,8 +186,8 @@ async function initAdminPanel() {
   });
 
   if (!currentUser?.is_system_owner) {
-    alert("คุณไม่มีสิทธิ์เข้าใช้งานหน้า Admin Panel");
-    window.location.href = "/login";
+    showAlert("คุณไม่มีสิทธิ์เข้าใช้งานหน้า Admin Panel");
+    window.location.href = LOGIN_PAGE;
     return;
   }
 
@@ -214,13 +230,38 @@ function bindEvents() {
       renderProblems();
     });
 
-  document.getElementById("btn-add-user")?.addEventListener("click", addUser);
+  const addUserBtn = document.getElementById("btn-add-user");
+  if (addUserBtn) {
+    addUserBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      addUser();
+    });
+    addUserBtn.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      addUser();
+    };
+  }
   document
     .getElementById("user-search-input")
     ?.addEventListener("input", renderUsers);
   document
     .getElementById("user-status-filter")
     ?.addEventListener("change", renderUsers);
+  document
+    .getElementById("user-role-filter")
+    ?.addEventListener("change", renderUsers);
+
+  document
+    .getElementById("btn-toggle-user-form")
+    ?.addEventListener("click", openUserCreatePanel);
+  document
+    .getElementById("btn-close-user-form")
+    ?.addEventListener("click", closeUserCreatePanel);
+  document
+    .getElementById("btn-clear-user-form")
+    ?.addEventListener("click", clearUserForm);
 
   document.getElementById("btnLogout")?.addEventListener("click", logout);
   document.getElementById("btn-logout")?.addEventListener("click", logout);
@@ -233,9 +274,19 @@ function bindEvents() {
     .getElementById("btn-cancel-edit-user")
     ?.addEventListener("click", closeEditUserModal);
 
-  document
-    .getElementById("btn-save-edit-user")
-    ?.addEventListener("click", saveEditUser);
+  const saveEditUserBtn = document.getElementById("btn-save-edit-user");
+  if (saveEditUserBtn) {
+    saveEditUserBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      saveEditUser();
+    });
+    saveEditUserBtn.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      saveEditUser();
+    };
+  }
 
   document
     .getElementById("edit-user-modal")
@@ -387,6 +438,7 @@ async function loadMasters() {
   renderDepartments();
   renderDepartmentFilter();
   renderUserDepartmentOptions();
+  renderUserDepartmentPermissionBoxes();
   renderShifts();
   renderMachines();
   renderProblems();
@@ -425,7 +477,37 @@ async function loadUsers() {
   }
 
   state.users = Array.isArray(data) ? data : [];
+
+  // โหลดตารางกลางว่า User แต่ละคนรับผิดชอบแผนกอะไรบ้าง
+  // ถ้าตาราง user_departments ยังไม่มีหรือ RLS ยังไม่เปิดสิทธิ์ ระบบจะไม่พัง
+  await loadUserDepartments();
+
   renderUsers();
+  renderUserStats();
+  renderUserDepartmentPermissionBoxes();
+  bindDepartmentPermissionCounters();
+}
+
+async function loadUserDepartments() {
+  if (!state.supabase) return;
+
+  try {
+    const { data, error } = await state.supabase
+      .from(USER_DEPARTMENT_TABLE)
+      .select("user_id, department_code")
+      .order("department_code", { ascending: true });
+
+    if (error) throw error;
+
+    state.userDepartments = Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.warn(
+      `โหลด ${USER_DEPARTMENT_TABLE} ไม่สำเร็จ อาจยังไม่ได้สร้างตารางหรือยังไม่ได้ตั้ง RLS:`,
+      err,
+    );
+
+    state.userDepartments = [];
+  }
 }
 
 async function selectFirstAvailableTable(
@@ -747,6 +829,197 @@ function renderUserDepartmentOptions() {
       select.value = currentValue;
     }
   });
+}
+
+function renderUserDepartmentPermissionBoxes() {
+  renderDepartmentCheckboxGroup("user-department-permissions", "user_dept_permissions");
+  renderDepartmentCheckboxGroup("edit-user-department-permissions", "edit_user_dept_permissions");
+}
+
+function renderDepartmentCheckboxGroup(containerId, inputName, selectedCodes = []) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const departments = getQrDepartments();
+  const selectedSet = new Set(
+    (selectedCodes || [])
+      .map((code) => normalizeDept(code))
+      .filter(Boolean),
+  );
+
+  if (!departments.length) {
+    container.innerHTML = `<span class="muted">ยังไม่มีข้อมูลแผนก</span>`;
+    return;
+  }
+
+  container.innerHTML = departments
+    .map((dept) => {
+      const code = normalizeDept(dept.code);
+      const checked = selectedSet.has(code) ? "checked" : "";
+
+      return `
+        <label class="dept-check-item dept-card-option">
+          <input
+            type="checkbox"
+            name="${escapeAttr(inputName)}"
+            value="${escapeAttr(code)}"
+            ${checked}
+          />
+          <span class="dept-card-tick"></span>
+          <span class="dept-card-text">
+            <strong>${escapeHtml(dept.name)}</strong>
+            <small>${escapeHtml(code)}</small>
+          </span>
+        </label>
+      `;
+    })
+    .join("");
+
+  updatePermissionCounterByInput(inputName);
+}
+
+function getCheckedDepartmentCodes(inputName) {
+  return Array.from(
+    document.querySelectorAll(`input[name="${inputName}"]:checked`),
+  )
+    .map((input) => normalizeDept(input.value))
+    .filter(Boolean);
+}
+
+function openUserCreatePanel() {
+  const panel = document.getElementById("user-create-panel");
+  panel?.classList.remove("is-collapsed");
+  document.getElementById("user-username")?.focus();
+}
+
+function closeUserCreatePanel() {
+  const panel = document.getElementById("user-create-panel");
+  panel?.classList.add("is-collapsed");
+}
+
+function updatePermissionCounterByInput(inputName) {
+  const count = getCheckedDepartmentCodes(inputName).length;
+  const targetId = inputName === "edit_user_dept_permissions"
+    ? "edit-user-dept-count"
+    : "user-create-dept-count";
+  setText(targetId, `${count} แผนก`);
+}
+
+function bindDepartmentPermissionCounters() {
+  ["user_dept_permissions", "edit_user_dept_permissions"].forEach((inputName) => {
+    document
+      .querySelectorAll(`input[name="${inputName}"]`)
+      .forEach((input) => {
+        input.addEventListener("change", () => updatePermissionCounterByInput(inputName));
+      });
+
+    updatePermissionCounterByInput(inputName);
+  });
+}
+
+function getRoleLabel(role) {
+  const r = String(role || "staff").toLowerCase();
+  const map = {
+    admin: "Admin",
+    management: "Management",
+    accounting: "Accounting",
+    supervisor: "Supervisor",
+    staff: "Staff",
+  };
+  return map[r] || r;
+}
+
+function getUserInitials(user) {
+  const name = user.display_name || user.full_name || user.username || "U";
+  return String(name).trim().slice(0, 2).toUpperCase();
+}
+
+function renderUserStats() {
+  const rows = state.users || [];
+  const active = rows.filter((user) => String(user.status || "active").toLowerCase() === "active").length;
+  const supervisor = rows.filter((user) => String(user.role || "").toLowerCase() === "supervisor").length;
+  const departments = getQrDepartments().length;
+
+  setText("user-stat-total", rows.length.toLocaleString("th-TH"));
+  setText("user-stat-supervisor", supervisor.toLocaleString("th-TH"));
+  setText("user-stat-active", active.toLocaleString("th-TH"));
+  setText("user-stat-dept", departments.toLocaleString("th-TH"));
+}
+
+
+function getUserDepartmentCodes(userId) {
+  return (state.userDepartments || [])
+    .filter((row) => String(row.user_id) === String(userId))
+    .map((row) => normalizeDept(row.department_code))
+    .filter(Boolean);
+}
+
+function getUserDepartmentTagsHtml(userId, fallbackDepartment = "") {
+  const codes = getUserDepartmentCodes(userId);
+  const finalCodes = codes.length
+    ? codes
+    : normalizeDept(fallbackDepartment)
+      ? [normalizeDept(fallbackDepartment)]
+      : [];
+
+  if (!finalCodes.length) {
+    return `<span class="user-dept-empty">ยังไม่กำหนด</span>`;
+  }
+
+  const visibleCodes = finalCodes.slice(0, 3);
+  const extraCount = finalCodes.length - visibleCodes.length;
+
+  return `
+    <div class="user-dept-tags">
+      ${visibleCodes
+        .map((code) => {
+          return `<span class="user-dept-tag" title="${escapeAttr(getDepartmentName(code))}">${escapeHtml(code)}</span>`;
+        })
+        .join("")}
+      ${extraCount > 0 ? `<span class="user-dept-tag more">+${extraCount}</span>` : ""}
+    </div>
+  `;
+}
+
+async function saveUserDepartments(userId, departmentCodes = []) {
+  if (!userId) return;
+
+  const cleanCodes = [...new Set(
+    (departmentCodes || [])
+      .map((code) => normalizeDept(code))
+      .filter(Boolean),
+  )];
+
+  try {
+    const { error: deleteError } = await state.supabase
+      .from(USER_DEPARTMENT_TABLE)
+      .delete()
+      .eq("user_id", userId);
+
+    if (deleteError) throw deleteError;
+
+    if (!cleanCodes.length) {
+      state.userDepartments = state.userDepartments.filter((row) => {
+        return String(row.user_id) !== String(userId);
+      });
+      return;
+    }
+
+    const rows = cleanCodes.map((departmentCode) => ({
+      user_id: userId,
+      department_code: departmentCode,
+    }));
+
+    const { error: insertError } = await state.supabase
+      .from(USER_DEPARTMENT_TABLE)
+      .insert(rows);
+
+    if (insertError) throw insertError;
+  } catch (err) {
+    throw new Error(
+      `บันทึกแผนกที่รับผิดชอบไม่สำเร็จ: ${err.message || err}`,
+    );
+  }
 }
 
 async function deleteDepartment(id) {
@@ -1295,14 +1568,22 @@ if (!ok) return;
 ========================================================= */
 
 function renderUsers() {
-  const tbody = document.getElementById("user-table-body");
-  if (!tbody) return;
+  const list = document.getElementById("user-card-list");
+  const oldTbody = document.getElementById("user-table-body");
+  const target = list || oldTbody;
+  if (!target) return;
 
   const keyword = getValue("user-search-input").toLowerCase();
   const statusFilter = getValue("user-status-filter") || "all";
+  const roleFilter = getValue("user-role-filter") || "all";
 
   const rows = state.users.filter((user) => {
     const status = String(user.status || "active").toLowerCase();
+    const role = String(user.role || "staff").toLowerCase();
+    const responsibleCodes = getUserDepartmentCodes(user.id);
+    const responsibleText = responsibleCodes
+      .map((code) => `${code} ${getDepartmentName(code)}`)
+      .join(" ");
 
     const text = [
       user.username,
@@ -1310,6 +1591,7 @@ function renderUsers() {
       user.full_name,
       user.department,
       user.department_code,
+      responsibleText,
       user.email,
       user.role,
       user.status,
@@ -1320,82 +1602,146 @@ function renderUsers() {
 
     const matchKeyword = !keyword || text.includes(keyword);
     const matchStatus = statusFilter === "all" || status === statusFilter;
+    const matchRole = roleFilter === "all" || role === roleFilter;
 
-    return matchKeyword && matchStatus;
+    return matchKeyword && matchStatus && matchRole;
   });
 
   if (!rows.length) {
-    renderEmptyTable("user-table-body", 6, "ไม่พบข้อมูลผู้ใช้งาน");
+    if (list) {
+      list.innerHTML = `<div class="tb-empty">ไม่พบข้อมูลผู้ใช้งาน</div>`;
+    } else {
+      renderEmptyTable("user-table-body", 7, "ไม่พบข้อมูลผู้ใช้งาน");
+    }
     return;
   }
 
-  tbody.innerHTML = rows
+  if (!list) {
+    // fallback ถ้ายังใช้ HTML ตารางเดิม
+    oldTbody.innerHTML = rows
+      .map((user) => {
+        const userId = escapeHtml(user.id);
+        const username = escapeHtml(user.username || "-");
+        const displayName = escapeHtml(user.display_name || user.full_name || "-");
+        const department = escapeHtml(getDepartmentName(user.department || user.department_code));
+        const responsibleDepartments = getUserDepartmentTagsHtml(user.id, user.department || user.department_code);
+        const role = String(user.role || "staff").toLowerCase();
+        const status = String(user.status || "active").toLowerCase();
+        return `
+          <tr>
+            <td><strong>${username}</strong></td>
+            <td>${displayName}</td>
+            <td>${department}</td>
+            <td>${responsibleDepartments}</td>
+            <td>${getRoleSelectHtml(userId, role)}</td>
+            <td>${getStatusSelectHtml(userId, status)}</td>
+            <td class="action-buttons">
+              <button type="button" class="btn btn-warning" onclick="openEditUserModal('${userId}')"><span class="material-symbols-outlined">edit</span> แก้ไข</button>
+              <button type="button" class="btn btn-danger" onclick="deleteUser('${userId}')"><span class="material-symbols-outlined">delete</span> ลบ</button>
+            </td>
+          </tr>`;
+      })
+      .join("");
+    return;
+  }
+
+  list.innerHTML = rows
     .map((user) => {
       const userId = escapeHtml(user.id);
       const username = escapeHtml(user.username || "-");
-      const displayName = escapeHtml(
-        user.display_name || user.full_name || "-",
-      );
-      const department = escapeHtml(
-        getDepartmentName(user.department || user.department_code),
-      );
+      const displayName = escapeHtml(user.display_name || user.full_name || "-");
+      const email = escapeHtml(user.email || `${String(user.username || "user").toLowerCase()}@pvt.local`);
+      const department = escapeHtml(getDepartmentName(user.department || user.department_code) || "-");
+      const responsibleDepartments = getUserDepartmentTagsHtml(user.id, user.department || user.department_code);
       const role = String(user.role || "staff").toLowerCase();
       const status = String(user.status || "active").toLowerCase();
+      const deptCount = getUserDepartmentCodes(user.id).length || (user.department || user.department_code ? 1 : 0);
 
       return `
-        <tr>
-          <td><strong>${username}</strong></td>
-          <td>${displayName}</td>
-          <td>${department}</td>
-          <td>
-            <select data-user-role="${userId}" onchange="updateUserRole('${userId}', this.value)">
-              ${ROLE_OPTIONS.map(
-                (r) => `
-                <option value="${r}" ${r === role ? "selected" : ""}>${r}</option>
-              `,
-              ).join("")}
-            </select>
-          </td>
-          <td>
-            <select data-user-status="${userId}" onchange="updateUserStatus('${userId}', this.value)">
-              ${STATUS_OPTIONS.map(
-                (s) => `
-                <option value="${s}" ${s === status ? "selected" : ""}>${s}</option>
-              `,
-              ).join("")}
-            </select>
-          </td>
-         <td class="action-buttons">
-        <button
-  type="button"
-  class="btn btn-warning"
-  onclick="openEditUserModal('${userId}')"
->
-  <span class="material-symbols-outlined">edit</span> แก้ไข
-</button>
+        <article class="user-card role-${escapeAttr(role)} status-${escapeAttr(status)}">
+          <div class="user-card-main">
+            <div class="user-avatar">${escapeHtml(getUserInitials(user))}</div>
 
-        <button
-          type="button"
-          class="btn btn-danger"
-          onclick="deleteUser('${userId}')"
-        >
-          <span class="material-symbols-outlined">delete</span> ลบ
-        </button>
-      </td>
-        </tr>
+            <div class="user-identity">
+              <div class="user-name-row">
+                <strong>${displayName}</strong>
+                <span class="role-chip role-${escapeAttr(role)}">${escapeHtml(getRoleLabel(role))}</span>
+                <span class="status-chip status-${escapeAttr(status)}">${escapeHtml(status)}</span>
+              </div>
+              <small>${username} · ${email}</small>
+            </div>
+          </div>
+
+          <div class="user-card-meta">
+            <div class="meta-box">
+              <span>แผนกหลัก</span>
+              <strong>${department}</strong>
+            </div>
+            <div class="meta-box">
+              <span>รับผิดชอบ</span>
+              <strong>${deptCount.toLocaleString("th-TH")} แผนก</strong>
+              ${responsibleDepartments}
+            </div>
+          </div>
+
+          <div class="user-card-controls">
+            ${getRoleSelectHtml(userId, role)}
+            ${getStatusSelectHtml(userId, status)}
+          </div>
+
+          <div class="user-card-actions">
+            <button type="button" class="icon-action edit" onclick="openEditUserModal('${userId}')" title="แก้ไข User">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button type="button" class="icon-action danger" onclick="deleteUser('${userId}')" title="ลบ User">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+        </article>
       `;
     })
     .join("");
 }
 
+function getRoleSelectHtml(userId, role) {
+  return `
+    <select class="mini-select" data-user-role="${escapeAttr(userId)}" onchange="updateUserRole('${escapeAttr(userId)}', this.value)">
+      ${ROLE_OPTIONS.map((r) => `
+        <option value="${escapeAttr(r)}" ${r === role ? "selected" : ""}>${escapeHtml(r)}</option>
+      `).join("")}
+    </select>
+  `;
+}
+
+function getStatusSelectHtml(userId, status) {
+  return `
+    <select class="mini-select" data-user-status="${escapeAttr(userId)}" onchange="updateUserStatus('${escapeAttr(userId)}', this.value)">
+      ${STATUS_OPTIONS.map((s) => `
+        <option value="${escapeAttr(s)}" ${s === status ? "selected" : ""}>${escapeHtml(s)}</option>
+      `).join("")}
+    </select>
+  `;
+}
+
 async function addUser() {
+  const btn = document.getElementById("btn-add-user");
+  setButtonBusy(btn, true);
+  hideAlert();
+
   const username = getValue("user-username").toUpperCase();
   const password = getValue("user-password");
   const displayName = getValue("user-display-name");
   const department = getValue("user-department").toUpperCase();
   const role = getValue("user-role") || "staff";
+  const selectedDepartments = getCheckedDepartmentCodes("user_dept_permissions");
+  const finalDepartments = selectedDepartments.length
+    ? selectedDepartments
+    : department
+      ? [department]
+      : [];
 
   if (!username || !password) {
+    setButtonBusy(btn, false);
     showAlert("กรุณากรอก Username และ Password");
     return;
   }
@@ -1407,40 +1753,57 @@ async function addUser() {
     .limit(1);
 
   if (duplicateError) {
+    setButtonBusy(btn, false);
     showAlert(`ตรวจสอบ Username ไม่สำเร็จ: ${duplicateError.message}`);
     addLog("ERROR", duplicateError.message);
     return;
   }
 
   if (duplicateUsers?.length) {
+    setButtonBusy(btn, false);
     showAlert(`Username ${username} มีอยู่แล้ว`);
     return;
   }
 
+  const primaryDepartment = department || finalDepartments[0] || "";
+  const userId = createUuid();
+
   const payload = {
-    id: createUuid(),
+    id: userId,
     username,
     password,
     role,
     status: "active",
     display_name: displayName || username,
     full_name: displayName || username,
-    department: department || "",
-    department_code: department || "",
+    department: primaryDepartment,
+    department_code: primaryDepartment,
     email: `${username.toLowerCase()}@pvt.local`,
   };
 
   const { error } = await state.supabase.from(PROFILE_TABLE).insert(payload);
 
   if (error) {
+    setButtonBusy(btn, false);
     showAlert(`เพิ่ม User ไม่สำเร็จ: ${error.message}`);
     addLog("ERROR", error.message);
+    return;
+  }
+
+  try {
+    await saveUserDepartments(userId, finalDepartments);
+  } catch (err) {
+    setButtonBusy(btn, false);
+    showAlert(err.message || String(err));
+    addLog("ERROR", err.message || String(err));
     return;
   }
 
   clearUserForm();
   addLog("INFO", `เพิ่ม User: ${username}`);
   await loadUsers();
+  showAlert(`เพิ่ม User ${username} สำเร็จ`);
+  setButtonBusy(btn, false);
 }
 
 async function updateUserRole(userId, role) {
@@ -1497,6 +1860,11 @@ async function deleteUser(userId) {
 );
 
 if (!ok) return;
+
+  await state.supabase
+    .from(USER_DEPARTMENT_TABLE)
+    .delete()
+    .eq("user_id", userId);
 
   const { error } = await state.supabase
     .from(PROFILE_TABLE)
@@ -1584,6 +1952,15 @@ function openEditUserModal(userId) {
   setValue("edit-status", String(user.status || "active").toLowerCase());
   setValue("edit-password", "");
 
+  renderDepartmentCheckboxGroup(
+    "edit-user-department-permissions",
+    "edit_user_dept_permissions",
+    getUserDepartmentCodes(user.id).length
+      ? getUserDepartmentCodes(user.id)
+      : [user.department || user.department_code].filter(Boolean),
+  );
+  bindDepartmentPermissionCounters();
+
   const modal = document.getElementById("edit-user-modal");
   if (modal) modal.hidden = false;
 }
@@ -1594,6 +1971,7 @@ function closeEditUserModal() {
 }
 
 async function saveEditUser() {
+  hideAlert();
   const userId = getValue("edit-user-id");
   const username = getValue("edit-username").toUpperCase();
   const displayName = getValue("edit-display-name");
@@ -1601,6 +1979,12 @@ async function saveEditUser() {
   const role = getValue("edit-role") || "staff";
   const status = getValue("edit-status") || "active";
   const password = getValue("edit-password");
+  const selectedDepartments = getCheckedDepartmentCodes("edit_user_dept_permissions");
+  const finalDepartments = selectedDepartments.length
+    ? selectedDepartments
+    : department
+      ? [department]
+      : [];
 
   if (!userId) {
     showAlert("ไม่พบรหัส User");
@@ -1624,12 +2008,14 @@ async function saveEditUser() {
     return;
   }
 
+  const primaryDepartment = department || finalDepartments[0] || "";
+
   const payload = {
     username,
     display_name: displayName || username,
     full_name: displayName || username,
-    department: department || "",
-    department_code: department || "",
+    department: primaryDepartment,
+    department_code: primaryDepartment,
     role,
     status,
     email: `${username.toLowerCase()}@pvt.local`,
@@ -1640,24 +2026,35 @@ async function saveEditUser() {
   }
 
   const btn = document.getElementById("btn-save-edit-user");
-  if (btn) btn.disabled = true;
+  setButtonBusy(btn, true);
 
   const { error } = await state.supabase
     .from(PROFILE_TABLE)
     .update(payload)
     .eq("id", userId);
 
-  if (btn) btn.disabled = false;
-
   if (error) {
+    setButtonBusy(btn, false);
     showAlert(`แก้ไข User ไม่สำเร็จ: ${error.message}`);
     addLog("ERROR", error.message);
     return;
   }
 
+  try {
+    await saveUserDepartments(userId, finalDepartments);
+  } catch (err) {
+    setButtonBusy(btn, false);
+    showAlert(err.message || String(err));
+    addLog("ERROR", err.message || String(err));
+    return;
+  }
+
+  setButtonBusy(btn, false);
+
   closeEditUserModal();
   addLog("INFO", `แก้ไข User สำเร็จ: ${username}`);
   await loadUsers();
+  showAlert(`บันทึกข้อมูล User ${username} สำเร็จ`);
 }
 
 function clearUserForm() {
@@ -1666,6 +2063,11 @@ function clearUserForm() {
   setValue("user-display-name", "");
   setValue("user-department", "");
   setValue("user-role", "staff");
+  document
+    .querySelectorAll('input[name="user_dept_permissions"]')
+    .forEach((input) => {
+      input.checked = false;
+    });
 }
 
 /* =========================================================
@@ -2497,6 +2899,7 @@ window.openMachineQrByRow = openMachineQrByRow;
 window.openEditUserModal = openEditUserModal;
 window.closeEditUserModal = closeEditUserModal;
 window.saveEditUser = saveEditUser;
+window.saveUserDepartments = saveUserDepartments;
 window.editDepartment = editDepartment;
 window.editDepartmentOrder = editDepartmentOrder;
 window.editMasterName = editMasterName;

@@ -809,17 +809,26 @@ td select {
   gap: 8px;
   font-weight: 600;
   color: var(--text-main);
+  width: 100%;
 }
 
 .modal-form-grid input,
-.modal-form-grid select {
+.modal-form-grid select,
+.modal-form-grid textarea {
   width: 100%;
+  min-width: 0;
   height: 46px;
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 0 14px;
   font-family: inherit;
   font-size: 15px;
+}
+
+.modal-form-grid textarea {
+  min-height: 96px;
+  padding: 12px 14px;
+  resize: vertical;
 }
 
 .modal-actions {
@@ -1073,4 +1082,776 @@ td select {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* =========================================================
+   USER DEPARTMENT PERMISSIONS
+   ---------------------------------------------------------
+   ใช้กับ Admin Panel: เลือกแผนกที่ User รับผิดชอบได้หลายแผนก
+   เช่น Supervisor ดูแล BLOW + MONO + PIPE
+========================================================= */
+
+.user-dept-permission-panel {
+  margin: 0 20px 16px;
+  padding: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.user-dept-permission-panel strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  color: var(--text-main);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+
+.user-dept-permission-panel > .muted {
+  display: block;
+  margin-bottom: 14px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dept-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.dept-check-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 11px 12px;
+  color: var(--text-main);
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 800;
+  transition: 0.16s ease;
+  user-select: none;
+}
+
+.dept-check-item:hover {
+  border-color: var(--primary);
+  background: #eff6ff;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.1);
+}
+
+.dept-check-item input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  min-height: 19px;
+  padding: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.dept-check-item span {
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.dept-check-item:has(input:checked) {
+  color: #1e3a8a;
+  background: #dbeafe;
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.18);
+}
+
+.dept-check-item:has(input:checked)::after {
+  content: "เลือกแล้ว";
+  margin-left: auto;
+  padding: 3px 7px;
+  color: #ffffff;
+  background: var(--primary);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.modal-form-full {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+/* แสดงแผนกที่รับผิดชอบในตาราง User ให้อ่านง่าย */
+.user-dept-badges,
+.dept-badge-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.user-dept-badge,
+.dept-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  color: #1e3a8a;
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.user-dept-empty {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+@media (max-width: 980px) {
+  .user-dept-permission-panel {
+    margin: 0 14px 14px;
+  }
+
+  .dept-checkbox-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .user-dept-permission-panel {
+    padding: 14px;
+  }
+
+  .dept-checkbox-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dept-check-item {
+    min-height: 52px;
+  }
+
+  .dept-check-item:has(input:checked)::after {
+    content: "✓";
+    padding: 3px 8px;
+  }
+}
+
+
+/* =========================================================
+   ERP USER / ROLE PAGE UPGRADE
+   เพิ่มความเป็นระบบ ERP และทำให้ช่องแผนกที่รับผิดชอบไม่กินพื้นที่เกินไป
+========================================================= */
+
+.users-hero-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+  padding: 22px 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #eef6ff 100%);
+  border: 1px solid #dbeafe;
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+}
+
+.users-hero-panel .eyebrow {
+  display: inline-flex;
+  margin-bottom: 6px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.users-hero-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  color: #0f172a;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.users-hero-panel p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.65;
+}
+
+.btn-add-user-toggle {
+  min-width: 180px;
+  box-shadow: 0 16px 32px rgba(37, 99, 235, 0.22);
+}
+
+.user-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.user-stat-card {
+  position: relative;
+  overflow: hidden;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+
+.user-stat-card .material-symbols-outlined {
+  position: absolute;
+  right: 16px;
+  top: 14px;
+  color: rgba(37, 99, 235, 0.16);
+  font-size: 44px;
+}
+
+.user-stat-card small {
+  display: block;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.user-stat-card strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-main);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.user-stat-card.supervisor strong { color: #d97706; }
+.user-stat-card.active strong { color: #16a34a; }
+.user-stat-card.dept strong { color: #2563eb; }
+
+.user-create-panel {
+  margin-bottom: 16px;
+  transition: 0.2s ease;
+}
+
+.user-create-panel.is-collapsed {
+  display: none;
+}
+
+.user-create-body {
+  display: grid;
+  gap: 16px;
+  padding: 18px 20px 20px;
+  background: #ffffff;
+}
+
+.user-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.user-form-grid label {
+  display: grid;
+  gap: 7px;
+  color: var(--text-main);
+  font-weight: 800;
+}
+
+.user-form-full {
+  grid-column: 1 / -1;
+}
+
+.user-create-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.user-list-panel {
+  overflow: hidden;
+}
+
+.user-filter-row {
+  display: grid;
+  grid-template-columns: 1fr 180px 180px;
+}
+
+.user-filter-row select {
+  max-width: none;
+}
+
+.user-card-list {
+  display: grid;
+  gap: 12px;
+  padding: 16px 20px 20px;
+  background: #ffffff;
+}
+
+.user-card {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.4fr) minmax(280px, 1fr) auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 5px solid #94a3b8;
+  border-radius: 18px;
+  transition: 0.16s ease;
+}
+
+.user-card:hover {
+  transform: translateY(-1px);
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.user-card.role-admin { border-left-color: #dc2626; }
+.user-card.role-management { border-left-color: #7c3aed; }
+.user-card.role-accounting { border-left-color: #0891b2; }
+.user-card.role-supervisor { border-left-color: #f59e0b; }
+.user-card.role-staff { border-left-color: #16a34a; }
+
+.user-card-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #ffffff;
+  font-weight: 900;
+  background: linear-gradient(135deg, #2563eb, #16a34a);
+  border-radius: 16px;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
+}
+
+.user-identity {
+  min-width: 0;
+}
+
+.user-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.user-name-row strong {
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.user-identity small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role-chip,
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.role-chip.role-admin { color: #991b1b; background: #fee2e2; }
+.role-chip.role-management { color: #5b21b6; background: #ede9fe; }
+.role-chip.role-accounting { color: #155e75; background: #cffafe; }
+.role-chip.role-supervisor { color: #92400e; background: #fef3c7; }
+.role-chip.role-staff { color: #166534; background: #dcfce7; }
+
+.status-chip.status-active { color: #166534; background: #dcfce7; }
+.status-chip.status-inactive { color: #991b1b; background: #fee2e2; }
+
+.user-card-meta {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(150px, 1.2fr);
+  gap: 10px;
+}
+
+.meta-box {
+  min-width: 0;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.meta-box span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.meta-box strong {
+  display: block;
+  margin-top: 2px;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.user-dept-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.user-dept-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  color: #1e3a8a;
+  background: #dbeafe;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.user-dept-tag.more {
+  color: #334155;
+  background: #e2e8f0;
+}
+
+.user-dept-empty {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.user-card-controls {
+  display: grid;
+  gap: 8px;
+  min-width: 160px;
+}
+
+.mini-select {
+  max-width: none;
+  min-height: 40px;
+  padding: 7px 10px;
+  background: #ffffff;
+  border-color: #dbe3ef;
+  border-radius: 12px;
+}
+
+.user-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-action {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  border-radius: 14px;
+  transition: 0.16s ease;
+}
+
+.icon-action .material-symbols-outlined {
+  font-size: 21px;
+}
+
+.icon-action.edit { background: #f59e0b; }
+.icon-action.danger { background: #dc2626; }
+.icon-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.14);
+}
+
+.user-dept-permission-panel.compact {
+  margin: 0;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #dbe3ef;
+  border-radius: 18px;
+}
+
+.permission-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.permission-head strong {
+  display: block;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.permission-head .muted {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+}
+
+.permission-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  color: #1e3a8a;
+  background: #dbeafe;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.dept-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 10px;
+}
+
+.dept-card-option {
+  position: relative;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: 0.16s ease;
+}
+
+.dept-card-option:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+}
+
+.dept-card-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dept-card-tick {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 2px solid #cbd5e1;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.dept-card-option input:checked + .dept-card-tick {
+  border-color: #2563eb;
+  background: #2563eb;
+}
+
+.dept-card-option input:checked + .dept-card-tick::after {
+  content: "✓";
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.dept-card-option:has(input:checked) {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.dept-card-text {
+  min-width: 0;
+}
+
+.dept-card-text strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.dept-card-text small {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+  word-break: break-word;
+}
+
+.modal-form-full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1280px) {
+  .user-card {
+    grid-template-columns: 1fr;
+  }
+
+  .user-card-actions,
+  .user-card-controls {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 900px) {
+  .users-hero-panel,
+  .permission-head,
+  .user-create-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .user-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .user-form-grid,
+  .user-filter-row,
+  .user-card-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-add-user-toggle {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .user-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .users-hero-panel,
+  .user-card-list,
+  .user-create-body {
+    padding: 14px;
+  }
+
+  .dept-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .user-card-main {
+    align-items: flex-start;
+  }
+}
+
+
+/* =========================================================
+   FIX: Edit User Modal ไม่ให้ล้นจอ
+========================================================= */
+
+.user-modal-card,
+.modal-card {
+  max-height: 92vh;
+  overflow-y: auto;
+  padding-bottom: 0;
+}
+
+.user-modal-card .modal-close,
+.modal-card .modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-modal-card {
+  width: min(760px, 94vw);
+  padding: 22px;
+}
+
+.user-dept-grid,
+.dept-permission-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.user-dept-card,
+.dept-permission-card {
+  min-height: 88px;
+  padding: 10px;
+}
+
+.user-dept-card strong,
+.dept-permission-card strong {
+  font-size: 13px;
+}
+
+.user-dept-card small,
+.dept-permission-card small {
+  font-size: 11px;
+}
+
+.user-dept-card .material-symbols-outlined,
+.dept-permission-card .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.modal-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.modal-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.modal-form-grid input,
+.modal-form-grid select,
+.modal-form-grid textarea {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  min-height: 42px;
+}
+
+.modal-form-grid textarea {
+  min-height: 94px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.modal-actions {
+  position: sticky;
+  bottom: 0;
+  background: #ffffff;
+  padding: 16px 0 4px;
+  margin-top: 18px;
+  border-top: 1px solid #f1f5f9;
 }

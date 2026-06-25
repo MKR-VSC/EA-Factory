@@ -18,7 +18,10 @@
       rel="stylesheet"
     />
     <!-- Material Symbols Outlined -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+      rel="stylesheet"
+    />
 
     <style>
       :root {
@@ -44,8 +47,16 @@
         padding: 20px;
         font-family: "Noto Sans Thai", "Kanit", sans-serif;
         background:
-          radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 34%),
-          radial-gradient(circle at bottom right, rgba(22, 163, 74, 0.14), transparent 34%),
+          radial-gradient(
+            circle at top left,
+            rgba(37, 99, 235, 0.14),
+            transparent 34%
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(22, 163, 74, 0.14),
+            transparent 34%
+          ),
           var(--body-bg);
         color: var(--text-main);
       }
@@ -73,8 +84,12 @@
       }
 
       .material-symbols-outlined {
-        font-family: 'Material Symbols Outlined';
-        font-variation-settings: 'FILL' 0, 'wght' 700, 'GRAD' 0, 'opsz' 48;
+        font-family: "Material Symbols Outlined";
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 700,
+          "GRAD" 0,
+          "opsz" 48;
         font-size: 64px;
       }
 
@@ -112,7 +127,10 @@
         justify-content: center;
         gap: 8px;
         letter-spacing: 0.02em;
-        transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease,
+          filter 0.15s ease;
       }
 
       .btn:hover {
@@ -131,7 +149,7 @@
         color: #ffffff;
         box-shadow: 0 18px 40px rgba(37, 99, 235, 0.35);
         flex-direction: column;
-        border-color: rgba(255,255,255,0.22);
+        border-color: rgba(255, 255, 255, 0.22);
       }
 
       .btn-primary:active {
@@ -153,6 +171,13 @@
         font-size: 13px;
         line-height: 1.6;
       }
+
+      #qr-reader {
+        overflow: hidden;
+        border-radius: 20px;
+        border: 2px solid #cbd5e1;
+        background: #0f172a;
+      }
     </style>
   </head>
 
@@ -163,8 +188,8 @@
       <h1>บันทึกข้อมูลสำเร็จ</h1>
 
       <p>
-        หากต้องกรอกข้อมูลเครื่องถัดไป ให้กดปุ่มสแกน QR ใหม่
-        หรือกลับหน้า Login เพื่อเข้าใช้งานตามปกติ
+        หากต้องกรอกข้อมูลเครื่องถัดไป ให้กดปุ่มสแกน QR ใหม่ หรือกลับหน้า Login
+        เพื่อเข้าใช้งานตามปกติ
       </p>
 
       <div class="actions">
@@ -183,7 +208,7 @@
       </small>
     </main>
 
-    <script>
+    <!-- <script>
       const IDLE_LIMIT = 5 * 60 * 1000;
 
       function clearQrSession() {
@@ -209,6 +234,118 @@
       setTimeout(() => {
         goLogin();
       }, IDLE_LIMIT);
+    </script> -->
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <script>
+      const IDLE_LIMIT = 5 * 60 * 1000;
+      let qrScanner = null;
+      let idleTimer = null;
+
+      function clearQrSession() {
+        localStorage.removeItem("activeUser");
+        localStorage.removeItem("activeName");
+        localStorage.removeItem("activeRole");
+        localStorage.removeItem("activeUserId");
+        localStorage.removeItem("activeDept");
+      }
+
+      function scanAgain() {
+        clearQrSession();
+        resetIdleTimer();
+
+        const card = document.querySelector(".success-card");
+
+        card.innerHTML = `
+          <h1>สแกน QR เครื่องถัดไป</h1>
+          <p>กรุณาอนุญาตให้ระบบเปิดกล้อง แล้วสแกน QR ที่เครื่องจักร</p>
+
+          <div id="qr-reader" style="width:100%; margin-top:18px;"></div>
+
+          <button class="btn btn-secondary" type="button" onclick="goLogin()" style="margin-top:16px;">
+            กลับหน้า Login
+          </button>
+        `;
+
+        qrScanner = new Html5Qrcode("qr-reader");
+
+        qrScanner
+          .start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: {
+                width: 250,
+                height: 250,
+              },
+            },
+            async (decodedText) => {
+              try {
+                if (qrScanner) {
+                  await qrScanner.stop();
+                }
+              } catch (err) {
+                console.warn(err);
+              }
+
+              handleQrResult(decodedText);
+            },
+            () => {},
+          )
+          .catch((err) => {
+            console.error(err);
+            alert("เปิดกล้องไม่ได้ กรุณาอนุญาตใช้กล้องก่อนค่ะ");
+          });
+      }
+
+      function handleQrResult(decodedText) {
+        const text = String(decodedText || "").trim();
+
+        if (!text) {
+          alert("อ่าน QR ไม่สำเร็จ กรุณาสแกนใหม่");
+          return;
+        }
+
+        // ถ้า QR เป็นลิงก์เต็ม
+        if (text.includes("form-department.html")) {
+          window.location.href = text;
+          return;
+        }
+
+        // ถ้า QR เป็น path เช่น /pages/form-department.html?dept=BLOW
+        if (text.startsWith("/pages/")) {
+          window.location.href = text;
+          return;
+        }
+
+        // ถ้า QR เป็นแค่รหัสแผนก เช่น BLOW
+        window.location.href =
+          "/pages/form-department.html?dept=" + encodeURIComponent(text);
+      }
+
+      function goLogin() {
+        clearQrSession();
+
+        if (qrScanner) {
+          qrScanner.stop().catch(() => {});
+        }
+
+        window.location.href = "/login.html";
+      }
+
+      function resetIdleTimer() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          goLogin();
+        }, IDLE_LIMIT);
+      }
+
+      ["click", "touchstart", "keydown"].forEach((eventName) => {
+        document.addEventListener(eventName, resetIdleTimer, true);
+      });
+
+      resetIdleTimer();
     </script>
   </body>
 </html>

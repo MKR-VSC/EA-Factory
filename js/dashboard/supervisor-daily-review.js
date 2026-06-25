@@ -141,9 +141,30 @@ function canSeeAllDepartments() {
 }
 
 function applyDepartmentFilter(query) {
-  if (canSeeAllDepartments()) return query;
+  return query;
+}
 
-  return query.eq("department_code", currentProfile.department_code);
+function normalizeDepartmentCode(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+
+  return text.toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+function filterRecordsForCurrentDepartment(rows) {
+  if (!Array.isArray(rows)) return [];
+  if (canSeeAllDepartments()) return rows;
+
+  const targetDept = normalizeDepartmentCode(currentProfile?.department_code);
+  if (!targetDept) return [];
+
+  return rows.filter((row) => {
+    const rowDept = normalizeDepartmentCode(
+      row.department_code || row.department || row.dept || row.dept_code || ""
+    );
+
+    return rowDept === targetDept;
+  });
 }
 
 function renderLoginUserInfo() {
@@ -200,7 +221,8 @@ async function loadRecords() {
 
     if (error) throw error;
 
-    currentRecords = Array.isArray(data) ? data : [];
+    const rows = Array.isArray(data) ? data : [];
+    currentRecords = filterRecordsForCurrentDepartment(rows);
 
     if (currentRecords.length === 0) {
       list.innerHTML = `<p class="empty">ไม่พบข้อมูลรายการของเสีย</p>`;
@@ -233,7 +255,7 @@ async function loadSummary(reportDate) {
 
     if (error) throw error;
 
-    const rows = Array.isArray(data) ? data : [];
+    const rows = filterRecordsForCurrentDepartment(Array.isArray(data) ? data : []);
 
     const pending = rows.filter((x) => x.status === STATUS.PENDING).length;
     const totalWaste = rows.reduce((sum, row) => sum + getWasteValue(row), 0);
@@ -323,7 +345,7 @@ async function loadHistory() {
 
     if (error) throw error;
 
-    const rows = Array.isArray(data) ? data : [];
+    const rows = filterRecordsForCurrentDepartment(Array.isArray(data) ? data : []);
 
     renderHistorySummary(rows, startDate, endDate);
     renderHistoryTable(rows);
