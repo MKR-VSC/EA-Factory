@@ -33,7 +33,12 @@
     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#4caf8a" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/logo_192.png" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/icons/logo_192.png"
+    />
     <link rel="apple-touch-icon" href="/icons/logo_512.png" />
 
     <link rel="stylesheet" href="/css/supervisor-daily-review.css" />
@@ -42,19 +47,13 @@
   <body>
     <main class="page">
       <header class="page-header">
-        <div>
-          <h1>หัวหน้าตรวจสอบข้อมูลรายวัน</h1>
-          <p>ตรวจสอบข้อมูลของเสียก่อนส่งต่อให้บัญชี</p>
-        </div>
-
-        <div class="header-right">
-          <div class="user-info-card">
-            <div class="user-avatar"><span class="material-symbols-outlined">person</span></div>
-
-            <div>
-              <strong id="userName">-</strong>
-              <div id="userDept">-</div>
-            </div>
+        <div class="header-top">
+          <div class="title-area">
+            <h1>
+              <span class="material-symbols-outlined">fact_check</span>
+              หัวหน้าตรวจสอบข้อมูลรายวัน
+            </h1>
+            <p>ตรวจสอบข้อมูลของเสียก่อนส่งต่อให้บัญชี</p>
           </div>
 
           <div class="header-actions">
@@ -69,6 +68,19 @@
             <button class="btn danger" type="button" onclick="logout()">
               ออกจากระบบ
             </button>
+          </div>
+        </div>
+
+        <div class="header-user-row">
+          <div class="user-info-card">
+            <div class="user-avatar">
+              <span class="material-symbols-outlined">person</span>
+            </div>
+
+            <div>
+              <strong id="userName">-</strong>
+              <div id="userDept">-</div>
+            </div>
           </div>
         </div>
       </header>
@@ -220,7 +232,10 @@
       <div class="modal-card">
         <div class="modal-head">
           <div>
-            <h2><span class="material-symbols-outlined">edit</span> แก้ไขรายการของเสีย</h2>
+            <h2>
+              <span class="material-symbols-outlined">edit</span>
+              แก้ไขรายการของเสีย
+            </h2>
             <p>ตรวจและแก้ข้อมูลให้ถูกต้องก่อนส่งบัญชี</p>
           </div>
 
@@ -264,7 +279,11 @@
         </div>
 
         <div class="modal-actions">
-          <button type="button" class="btn secondary" onclick="closeEditModal()">
+          <button
+            type="button"
+            class="btn secondary"
+            onclick="closeEditModal()"
+          >
             ยกเลิก
           </button>
 

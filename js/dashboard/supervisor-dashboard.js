@@ -34,6 +34,30 @@ const DEPARTMENT_ALIASES = {
   management: ["management", "ผู้บริหาร"],
 };
 
+const DEPARTMENT_LABELS_TH = {
+  blow: "เป่าถุง",
+  blown_film: "เป่าฟิล์ม",
+  bag_blow: "เป่าถุง",
+  pipe: "ท่อ",
+  sheet: "ตัดผืน",
+  sheet_cutting: "ตัดผืน",
+  garbage_bag_cut: "ตัดถุงขยะ",
+  rain_tape: "เทปน้ำพุ่ง",
+  rain_tape_cut_punch: "ตัดเจาะเทปน้ำพุ่ง",
+  shade_net: "สแลน / ตาข่ายกรองแสง",
+  cut_punch: "ตัดเจาะ",
+  print: "ม้วนพิมพ์",
+  accounting: "บัญชี",
+  management: "ผู้บริหาร",
+};
+
+function getDepartmentLabelTH(code) {
+  const normalized = normalizeDepartmentCode(code);
+  return DEPARTMENT_LABELS_TH[normalized] || code || "-";
+}
+
+
+
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     initDateRange();
@@ -148,12 +172,14 @@ function renderUserInfo() {
   );
 
   const deptText = canSeeAllDepartments()
-    ? "เห็นข้อมูลทุกแผนก"
+    ? "รับผิดชอบ: ทุกแผนก"
     : getAllowedDepartmentCodes().length
-      ? `รับผิดชอบ: ${getAllowedDepartmentCodes().join(", ")}`
-      : currentProfile.department_name ||
-        currentProfile.department_code?.toUpperCase() ||
-        "-";
+      ? `รับผิดชอบ: ${getAllowedDepartmentCodes()
+          .map(getDepartmentLabelTH)
+          .join(", ")}`
+      : `รับผิดชอบ: ${getDepartmentLabelTH(
+          currentProfile.department_name || currentProfile.department_code
+        )}`;
 
   setText("userDept", deptText);
 }
