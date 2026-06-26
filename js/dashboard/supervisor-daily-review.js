@@ -695,6 +695,29 @@ function renderRecordCard(record) {
         >${safeText(record.supervisor_note || "")}</textarea>
       </div>
 
+      <div class="evidence-box">
+        <div class="evidence-title">หลักฐานรูปภาพ (ไม่บังคับ)</div>
+        <div class="evidence-actions">
+          <input
+            id="evidence-file-${safeAttr(record.id)}"
+            class="evidence-file-input"
+            type="file"
+            accept="image/*"
+          />
+          <button
+            class="btn secondary"
+            type="button"
+            onclick="uploadEvidenceForRecord('${safeAttr(record.id)}')"
+          >
+            📷 อัปโหลดรูปหลักฐาน
+          </button>
+        </div>
+        <div class="evidence-preview" id="evidence-preview-${safeAttr(record.id)}">
+          ${renderEvidencePreview(record)}
+        </div>
+        <div class="evidence-empty">รูปภาพจะถูกเก็บไว้กับรายการนี้เพื่อใช้เป็นหลักฐานประกอบการตรวจสอบ</div>
+      </div>
+
       <div class="action-row">
         ${
           isPending
@@ -726,6 +749,162 @@ function renderRecordCard(record) {
       </div>
     </article>
   `;
+}
+
+// ======================================================
+// EVIDENCE IMAGE
+// ======================================================
+
+function renderEvidencePreview(record) {
+  const evidenceUrl = getEvidenceImageUrl(record);
+
+  if (!evidenceUrl) {
+    return `<div class="evidence-empty">ยังไม่มีรูปภาพหลักฐานในรายการนี้</div>`;
+  }
+
+  return `
+    <img src="${safeAttr(evidenceUrl)}" alt="หลักฐานของเสีย" />
+    <a class="evidence-link" href="${safeAttr(evidenceUrl)}" target="_blank" rel="noreferrer">
+      เปิดรูปภาพในแท็บใหม่
+    </a>
+  `;
+}
+
+function getEvidenceImageUrl(record) {
+  const directValue =
+    record?.evidence_image_url ||
+    record?.evidence_url ||
+    record?.image_url ||
+    record?.photo_url ||
+    record?.evidence_image ||
+    record?.photo ||
+    "";
+
+  if (directValue) return directValue;
+
+  const combinedText = [record?.detail, record?.note, record?.supervisor_note]
+    .filter(Boolean)
+    .join("\n");
+
+  if (!combinedText) return "";
+
+  const markerMatch = combinedText.match(/__evidence_image__:(.+)$/im);
+  if (markerMatch?.[1]) return markerMatch[1].trim();
+
+  const urlMatch = combinedText.match(/(data:image\/[^\s]+|https?:\/\/[^\s]+)/i);
+  return urlMatch?.[1] || "";
+}
+
+async function uploadEvidenceForRecord(id) {
+  const input = document.getElementById(`evidence-file-${CSS.escape(String(id))}`);
+  const file = input?.files?.[0];
+
+  if (!file) {
+    alert("กรุณาเลือกไฟล์รูปภาพก่อนอัปโหลด");
+    return;
+  }
+
+  if (!file.type.startsWith("image/")) {
+    alert("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
+    return;
+  }
+
+  const record = currentRecords.find((item) => String(item.id) === String(id));
+  if (!record) {
+    alert("ไม่พบรายการที่เลือก");
+    return;
+  }
+
+  const preview = document.getElementById(`evidence-preview-${CSS.escape(String(id))}`);
+  if (preview) {
+    preview.innerHTML = '<div class="evidence-empty">กำลังอัปโหลดรูปภาพหลักฐาน...</div>';
+  }
+
+  try {
+    let imageUrl = "";
+    let objectPath = "";
+
+    try {
+      const storagePath = `daily_waste_evidence/${currentProfile?.id || "unknown"}/${String(id)}/${Date.now()}-${String(file.name).replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+
+      const { data: uploadData, error: uploadError } = await supabaseClient.storage
+        .from("daily-waste-evidence")
+        .upload(storagePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (!uploadError && uploadData) {
+        const { data: publicData } = supabaseClient.storage
+          .from("daily-waste-evidence")
+          .getPublicUrl(storagePath);
+
+        imageUrl = publicData?.publicUrl || "";
+        objectPath = storagePath;
+      } else {
+        console.warn("Upload evidence image to storage failed:", uploadError);
+      }
+    } catch (storageError) {
+      console.warn("Storage upload exception:", storageError);
+    }
+
+    if (!imageUrl) {
+      imageUrl = await readFileAsDataUrl(file);
+    }
+
+    const existingDetail = String(record.detail || "").replace(/__evidence_image__:.+/gim, "").trim();
+    const fallbackDetail = existingDetail
+      ? `${existingDetail}\n__evidence_image__:${imageUrl}`
+      : `__evidence_image__:${imageUrl}`;
+
+    const existingNote = String(record.note || "").replace(/__evidence_image__:.+/gim, "").trim();
+    const fallbackNote = existingNote
+      ? `${existingNote}\n__evidence_image__:${imageUrl}`
+      : `__evidence_image__:${imageUrl}`;
+
+    const updatePayload = {
+      detail: fallbackDetail,
+      note: fallbackNote,
+      evidence_image_url: imageUrl,
+      evidence_image_path: objectPath || null,
+    };
+
+    let query = supabaseClient
+      .from("daily_waste_reports")
+      .update(updatePayload)
+      .eq("id", id);
+
+    const { error } = await query;
+
+    if (error) {
+      const fallbackQuery = supabaseClient
+        .from("daily_waste_reports")
+        .update({
+          detail: fallbackDetail,
+          note: fallbackNote,
+        })
+        .eq("id", id);
+
+      const fallbackResponse = await fallbackQuery;
+      if (fallbackResponse.error) throw fallbackResponse.error;
+    }
+
+    alert("อัปโหลดรูปภาพหลักฐานเรียบร้อยแล้ว");
+    input.value = "";
+    await loadRecords();
+  } catch (error) {
+    console.error("อัปโหลดรูปภาพหลักฐานไม่สำเร็จ:", error);
+    alert("อัปโหลดรูปภาพหลักฐานไม่สำเร็จ: " + (error.message || error));
+  }
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result || "");
+    reader.onerror = () => reject(new Error("อ่านไฟล์ไม่สำเร็จ"));
+    reader.readAsDataURL(file);
+  });
 }
 
 // ======================================================
@@ -1071,3 +1250,4 @@ window.closeEditModal = closeEditModal;
 window.saveEditRecord = saveEditRecord;
 window.approveRecord = approveRecord;
 window.deleteRecord = deleteRecord;
+window.uploadEvidenceForRecord = uploadEvidenceForRecord;

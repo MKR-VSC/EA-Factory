@@ -306,7 +306,7 @@ button {
 .summary-card {
   background: var(--panel);
   border: 1px solid rgba(255, 255, 255, 0.74);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(14px);
 }
@@ -584,6 +584,64 @@ textarea:focus {
   font-weight: 900;
 }
 
+.evidence-box {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.9), rgba(255, 255, 255, 0.96));
+}
+
+.evidence-title {
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.evidence-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.evidence-file-input {
+  min-height: 48px;
+  padding: 10px 12px;
+  background: #ffffff;
+}
+
+.evidence-preview {
+  margin-top: 10px;
+}
+
+.evidence-preview img {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: var(--shadow-card);
+}
+
+.evidence-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  color: var(--primary);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.evidence-empty {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .action-row {
   display: flex;
   gap: 10px;
@@ -814,8 +872,9 @@ textarea:focus {
   }
 
   .title-area h1 {
-    align-items: flex-start;
-    font-size: clamp(28px, 9vw, 34px);
+    align-items: center;
+    font-size: clamp(20px, 9vw, 28px);
+
   }
 
   .title-area h1 .material-symbols-outlined {
@@ -829,6 +888,7 @@ textarea:focus {
   .title-area p {
     font-size: 14px;
     margin-top: 8px;
+    /* align-items: center; */
   }
 
   .header-actions {

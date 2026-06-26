@@ -15,7 +15,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>หัวหน้าตรวจสอบข้อมูลรายวัน</title>
+    <title>ตรวจสอบข้อมูลรายวัน | SUPERVISOR</title>
 
     <!-- Fonts -->
     <link
@@ -51,14 +51,14 @@
           <div class="title-area">
             <h1>
               <span class="material-symbols-outlined">fact_check</span>
-              หัวหน้าตรวจสอบข้อมูลรายวัน
+              ตรวจสอบข้อมูลรายวัน
             </h1>
-            <p>ตรวจสอบข้อมูลของเสียก่อนส่งต่อให้บัญชี</p>
+            <p>ตรวจสอบข้อมูลของเสียก่อนส่งเข้าฐานข้อมูล</p>
           </div>
 
           <div class="header-actions">
             <a href="/pages/supervisor-dashboard.html" class="btn primary">
-              ดู Dashboard
+              Dashboard
             </a>
 
             <button class="btn secondary" type="button" onclick="loadRecords()">
@@ -66,7 +66,7 @@
             </button>
 
             <button class="btn danger" type="button" onclick="logout()">
-              ออกจากระบบ
+              ออกระบบ
             </button>
           </div>
         </div>
@@ -98,7 +98,7 @@
           <label for="filterStatus">สถานะ</label>
           <select id="filterStatus">
             <option value="pending">รอตรวจสอบ</option>
-            <option value="resolved">ส่งบัญชีแล้ว</option>
+            <option value="resolved">ส่งข้อมูลแล้วแล้ว</option>
             <option value="all">ทั้งหมด</option>
           </select>
         </div>
@@ -138,7 +138,7 @@
         <div class="table-header">
           <h2>รายการของเสีย</h2>
           <p class="muted">
-            หัวหน้าสามารถแก้ไขข้อมูลก่อนส่งบัญชี และลบรายการที่กรอกผิดได้
+            ตรวจสอบ | แก้ไข | ลบ ข้อมูลก่อนส่งเข้าฐานข้อมูล และลบรายการที่กรอกผิดได้
           </p>
         </div>
 
@@ -236,7 +236,7 @@
               <span class="material-symbols-outlined">edit</span>
               แก้ไขรายการของเสีย
             </h2>
-            <p>ตรวจและแก้ข้อมูลให้ถูกต้องก่อนส่งบัญชี</p>
+            <p>ตรวจและแก้ข้อมูลให้ถูกต้องก่อนส่งเข้าฐานข้อมูล</p>
           </div>
 
           <button type="button" class="modal-close" onclick="closeEditModal()">
