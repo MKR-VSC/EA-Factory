@@ -345,6 +345,17 @@ textarea:focus {
   min-height: 36px;
   padding: 7px 9px;
   background: #f8fafc;
+  border: 1px solid transparent;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.cell-input.empty {
+  background: #fef3e8;
+  border-color: #f59e0b;
+}
+
+.waiting-input td {
+  background: #fff7ed;
 }
 
 .cell-note {

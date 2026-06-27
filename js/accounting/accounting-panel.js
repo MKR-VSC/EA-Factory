@@ -1,4 +1,4 @@
-/* ======================================================
+﻿/* ======================================================
    ACCOUNTING PANEL JS
    ------------------------------------------------------
    หน้านี้ใช้สำหรับแผนกบัญชี:
@@ -70,8 +70,6 @@ async function initAccountingPanel() {
   bindEvents();
   setDefaultMonth();
 
-  // รองรับทั้ง window.supabaseClient และ window.supabase
-  // แล้วแต่ไฟล์ supabaseClient.js ของโปรเจกต์ตั้งชื่อไว้แบบไหน
   state.supabase = window.supabaseClient || window.supabase || null;
 
   if (!state.supabase) {
@@ -118,10 +116,6 @@ async function loadAccountingData() {
   if (btn) btn.disabled = true;
 
   try {
-    /*
-      ดึงข้อมูล 1000 รายการล่าสุด
-      ถ้าข้อมูลเยอะมาก ภายหลังค่อยทำ pagination ได้ค่ะ
-    */
     const { data, error } = await state.supabase
       .from(REPORT_TABLE)
       .select("*")
@@ -171,7 +165,6 @@ function applyFilters() {
       getProblem(row),
       getProblemDetail(row),
       getReporter(row),
-      getAccountingNote(row),
       row.note,
       row.reason_detail,
       row.corrective_action,
@@ -209,14 +202,15 @@ function renderTable(rows) {
       const id = row.id;
       const date = getIncidentDate(row);
       const waste = getWasteWeight(row);
-      const production = getProductionWeight(row);
-      const unitCost = getUnitCost(row);
-      const wastePercent = calcWastePercent(waste, production);
-      const damageCost = waste * unitCost;
       const status = getAccountingStatus(row);
+      const productionValue = status === "pending" ? "" : getProductionValue(row);
+      const production = productionValue === "" ? null : toNumber(productionValue);
+      const hasProduction = production !== null && production > 0;
+      const wastePercent = hasProduction ? calcWastePercent(waste, production) : null;
+      const rowClass = status === "pending" ? " waiting-input" : "";
 
       return `
-        <tr data-row-id="${escapeAttr(id)}">
+        <tr data-row-id="${escapeAttr(id)}" class="${rowClass}">
           <td>${escapeHtml(formatDate(date))}</td>
           <td>${escapeHtml(formatMonthText(date))}</td>
           <td>Week ${escapeHtml(getWeekOfMonth(date))}</td>
@@ -229,43 +223,20 @@ function renderTable(rows) {
 
           <td class="text-right">
             <input
-              class="cell-input text-right"
+              class="cell-input text-right${!hasProduction ? " empty" : ""}"
               type="number"
               step="0.01"
               min="0"
-              value="${escapeAttr(production || "")}"
+              placeholder="กรอก kg"
+              value="${escapeAttr(productionValue)}"
               data-field="production"
               data-id="${escapeAttr(id)}"
             />
           </td>
 
-          <td class="text-right">
-            <input
-              class="cell-input text-right"
-              type="number"
-              step="0.01"
-              min="0"
-              value="${escapeAttr(unitCost || "")}"
-              data-field="unit_cost"
-              data-id="${escapeAttr(id)}"
-            />
-          </td>
-
-          <td class="text-right">${formatPercent(wastePercent)}</td>
-          <td class="text-right">${formatMoney(damageCost)}</td>
+          <td class="text-right">${hasProduction ? formatPercent(wastePercent) : "-"}</td>
 
           <td>${escapeHtml(getReporter(row) || "-")}</td>
-
-          <td>
-            <input
-              class="cell-input cell-note"
-              type="text"
-              value="${escapeAttr(getAccountingNote(row) || "")}"
-              placeholder="หมายเหตุบัญชี"
-              data-field="accounting_note"
-              data-id="${escapeAttr(id)}"
-            />
-          </td>
 
           <td>
             <span class="status-pill status-${status}">
@@ -295,9 +266,6 @@ function renderSummary(rows) {
 
   const totalWaste = rows.reduce((sum, row) => sum + getWasteWeight(row), 0);
   const totalProduction = rows.reduce((sum, row) => sum + getProductionWeight(row), 0);
-  const totalCost = rows.reduce((sum, row) => {
-    return sum + getWasteWeight(row) * getUnitCost(row);
-  }, 0);
 
   const percent = calcWastePercent(totalWaste, totalProduction);
 
@@ -305,7 +273,6 @@ function renderSummary(rows) {
   setText("sum-waste", formatNumber(totalWaste));
   setText("sum-production", formatNumber(totalProduction));
   setText("sum-waste-percent", formatPercent(percent));
-  setText("sum-cost", formatMoney(totalCost));
 }
 
 function renderEmpty(message) {
@@ -314,7 +281,7 @@ function renderEmpty(message) {
 
   tbody.innerHTML = `
     <tr>
-      <td colspan="16" class="tb-empty">${escapeHtml(message)}</td>
+      <td colspan="13" class="tb-empty">${escapeHtml(message)}</td>
     </tr>
   `;
 
@@ -332,33 +299,17 @@ async function saveAccountingRow(id) {
   if (!rowEl) return;
 
   const production = getInputNumber(rowEl, "production");
-  const unitCost = getInputNumber(rowEl, "unit_cost");
-  const accountingNote = getInputValue(rowEl, "accounting_note");
+  const activeUserId = localStorage.getItem("activeUserId") || null;
 
-  /*
-    บันทึกลง daily_waste_reports โดยใช้คอลัมน์ที่มีโอกาสมีอยู่แล้ว:
-    - total_qty = น้ำหนักผลิต
-    - unit_cost = ต้นทุน/กก.
-    - note = หมายเหตุบัญชี
-    - status = checked
-    - checked_by, checked_at = ผู้ตรวจและเวลา
-
-    ถ้าฐานข้อมูลไม่มีคอลัมน์ใด ให้ลบ field นั้นออกจาก payload ได้ค่ะ
-  */
   const payload = {
     total_qty: production,
-    unit_cost: unitCost,
-    note: accountingNote,
     status: "checked",
-    checked_by:
-      localStorage.getItem("activeName") ||
-      localStorage.getItem("activeUser") ||
-      "accounting",
+    checked_by: activeUserId,
     checked_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
 
-  await updateReport(id, payload, "บันทึกข้อมูลบัญชีเรียบร้อยแล้ว");
+  await updateReport(id, payload, "บันทึกข้อมูลเรียบร้อยแล้ว");
 }
 
 async function markPending(id) {
@@ -400,9 +351,6 @@ async function updateReport(id, payload, successMessage) {
 
 /* ======================================================
    EXPORT CSV
-   ------------------------------------------------------
-   ใช้ CSV เพราะเปิดด้วย Excel ได้ทันที
-   และไม่ต้องเพิ่ม library ภายนอก
 ====================================================== */
 
 function exportRawCsv() {
@@ -419,11 +367,8 @@ function exportRawCsv() {
     "รายละเอียด",
     "น้ำหนักสูญเสีย kg",
     "น้ำหนักผลิต kg",
-    "ต้นทุนต่อกก.",
     "% Waste",
-    "มูลค่าความเสียหาย",
     "ผู้แจ้ง",
-    "หมายเหตุบัญชี",
     "สถานะ",
   ];
 
@@ -431,7 +376,7 @@ function exportRawCsv() {
     const date = getIncidentDate(row);
     const waste = getWasteWeight(row);
     const production = getProductionWeight(row);
-    const unitCost = getUnitCost(row);
+    const wastePercent = calcWastePercent(waste, production);
 
     return [
       formatDate(date),
@@ -444,11 +389,8 @@ function exportRawCsv() {
       getProblemDetail(row),
       waste,
       production,
-      unitCost,
-      calcWastePercent(waste, production),
-      waste * unitCost,
+      wastePercent,
       getReporter(row),
-      getAccountingNote(row),
       getAccountingStatus(row) === "checked" ? "บัญชีตรวจแล้ว" : "รอบัญชีตรวจ",
     ];
   });
@@ -457,9 +399,6 @@ function exportRawCsv() {
 }
 
 function exportSummaryCsv() {
-  /*
-    สรุปตาม แผนก + เครื่อง + อาการ
-  */
   const map = new Map();
 
   state.filteredReports.forEach((row) => {
@@ -471,7 +410,6 @@ function exportSummaryCsv() {
 
     const waste = getWasteWeight(row);
     const production = getProductionWeight(row);
-    const cost = waste * getUnitCost(row);
 
     if (!map.has(key)) {
       map.set(key, {
@@ -481,7 +419,6 @@ function exportSummaryCsv() {
         count: 0,
         waste: 0,
         production: 0,
-        cost: 0,
       });
     }
 
@@ -489,7 +426,6 @@ function exportSummaryCsv() {
     item.count += 1;
     item.waste += waste;
     item.production += production;
-    item.cost += cost;
   });
 
   const header = [
@@ -500,7 +436,6 @@ function exportSummaryCsv() {
     "น้ำหนักสูญเสีย kg",
     "น้ำหนักผลิต kg",
     "% Waste",
-    "มูลค่าความเสียหาย",
   ];
 
   const body = Array.from(map.values()).map((item) => [
@@ -511,19 +446,13 @@ function exportSummaryCsv() {
     item.waste,
     item.production,
     calcWastePercent(item.waste, item.production),
-    item.cost,
   ]);
 
   downloadCsv("accounting-waste-summary.csv", [header, ...body]);
 }
 
 function downloadCsv(filename, rows) {
-  /*
-    ใส่ BOM \ufeff เพื่อให้ Excel อ่านภาษาไทยไม่เพี้ยน
-  */
-  const csv = rows.map((row) => {
-    return row.map(csvCell).join(",");
-  }).join("\n");
+  const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
 
   const blob = new Blob(["\ufeff" + csv], {
     type: "text/csv;charset=utf-8;",
@@ -546,8 +475,6 @@ function csvCell(value) {
 
 /* ======================================================
    DATA MAPPING HELPERS
-   ------------------------------------------------------
-   ช่วยให้โค้ดอ่านข้อมูลได้ แม้ชื่อคอลัมน์ในฐานข้อมูลไม่ตรงกัน
 ====================================================== */
 
 function getIncidentDate(row) {
@@ -585,26 +512,22 @@ function getWasteWeight(row) {
   return toNumber(row.waste_weight_kg || row.waste_qty || 0);
 }
 
-function getProductionWeight(row) {
-  return toNumber(
-    row.production_weight_kg ||
-      row.total_qty ||
-      row.produced_weight_kg ||
-      row.production_qty ||
-      0
+function getProductionValue(row) {
+  return (
+    row.production_weight_kg ??
+    row.total_qty ??
+    row.produced_weight_kg ??
+    row.production_qty ??
+    ""
   );
 }
 
-function getUnitCost(row) {
-  return toNumber(row.unit_cost || row.cost_per_kg || 0);
+function getProductionWeight(row) {
+  return toNumber(getProductionValue(row));
 }
 
 function getReporter(row) {
   return row.reported_by || row.reporter_name || row.created_by || "";
-}
-
-function getAccountingNote(row) {
-  return row.accounting_note || row.account_note || row.note || "";
 }
 
 function getAccountingStatus(row) {
@@ -626,12 +549,6 @@ function getWeekOfMonth(value) {
 
   if (Number.isNaN(d.getTime())) return "-";
 
-  // แบ่งแบบบัญชีใช้งานง่าย:
-  // วันที่ 1-7 = Week 1
-  // วันที่ 8-14 = Week 2
-  // วันที่ 15-21 = Week 3
-  // วันที่ 22-28 = Week 4
-  // วันที่ 29-31 = Week 5
   return Math.ceil(d.getDate() / 7);
 }
 
@@ -694,7 +611,9 @@ function getInputValue(parent, field) {
 }
 
 function getInputNumber(parent, field) {
-  return toNumber(getInputValue(parent, field));
+  const value = getInputValue(parent, field);
+  if (value === "") return null;
+  return toNumber(value);
 }
 
 function toNumber(value) {
@@ -758,7 +677,7 @@ function escapeAttr(value) {
 }
 
 function cssEscape(value) {
-  if (window.CSS?.escape) return CSS.escape(value);
+  if (window.CSS?.escape) return window.CSS.escape(value);
   return String(value).replaceAll('"', '\\"');
 }
 
