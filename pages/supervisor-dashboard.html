@@ -37,35 +37,35 @@
   <body>
     <main class="page">
       <header class="page-header">
-  <div class="header-top">
-    <div class="title-area">
-      <h1>
-        <span class="material-symbols-outlined">monitoring</span>
-        Dashboard สถิติของเสีย
-      </h1>
-      <p>ดูแนวโน้มของเสีย เพื่อแก้ปัญหาหน้างาน</p>
-    </div>
+        <div class="header-top">
+          <div class="title-area">
+            <h1>
+              <span class="material-symbols-outlined">monitoring</span>
+              Dashboard สถิติของเสีย
+            </h1>
+            <p>ดูแนวโน้มของเสีย เพื่อแก้ปัญหาหน้างาน</p>
+          </div>
 
-    <div class="header-actions">
-      <a href="/pages/supervisor-daily-review.html" class="btn secondary">
-        กลับหน้าตรวจสอบ
-      </a>
-      <button class="btn danger" type="button" onclick="logout()">
-        ออกจากระบบ
-      </button>
-    </div>
-  </div>
+          <div class="header-actions">
+            <a href="/pages/supervisor-daily-review.html" class="btn secondary">
+              กลับหน้าตรวจสอบ
+            </a>
+            <button class="btn danger" type="button" onclick="logout()">
+              ออกจากระบบ
+            </button>
+          </div>
+        </div>
 
-  <div class="header-user-row">
-    <div class="user-info-card">
-      <div class="user-avatar">👨‍🏭</div>
-      <div>
-        <strong id="userName">หัวหน้างาน แผนกที่รับผิดชอบ</strong>
-        <div id="userDept">-</div>
-      </div>
-    </div>
-  </div>
-</header>
+        <div class="header-user-row">
+          <div class="user-info-card">
+            <div class="user-avatar">👨‍🏭</div>
+            <div>
+              <strong id="userName">หัวหน้างาน แผนกที่รับผิดชอบ</strong>
+              <div id="userDept">-</div>
+            </div>
+          </div>
+        </div>
+      </header>
 
       <section class="filter-card">
         <div class="form-group">
@@ -106,6 +106,12 @@
           <span>เครื่องที่ของเสียสูงสุด</span>
           <strong id="topMachine">-</strong>
           <small id="topMachineSub">-</small>
+        </article>
+
+        <article class="summary-card warning">
+          <span>% Waste</span>
+          <strong id="wastePercent">0%</strong>
+          <small>ของเสีย / น้ำหนักผลิต</small>
         </article>
       </section>
 

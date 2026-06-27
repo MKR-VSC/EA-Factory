@@ -13,6 +13,7 @@
 
 let currentProfile = null;
 let responsibleDepartments = [];
+let departmentStandards = {};
 
 let dailyTrendChart = null;
 let machineChart = null;
@@ -53,7 +54,7 @@ const DEPARTMENT_LABELS_TH = {
 
 function getDepartmentLabelTH(code) {
   const normalized = normalizeDepartmentCode(code);
-  return DEPARTMENT_LABELS_TH[normalized] || code || "-";
+  return departmentStandards[normalized]?.name || code || "-";
 }
 
 
@@ -84,7 +85,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    await loadResponsibleDepartments();
+   await loadDepartmentStandards();
+await loadResponsibleDepartments();
 
     renderUserInfo();
 
@@ -115,6 +117,28 @@ function initDateRange() {
 
   setValue("startDate", toDateInputValue(start));
   setValue("endDate", endDate);
+}
+
+async function loadDepartmentStandards() {
+  const { data, error } = await supabaseClient
+    .from("master_departments")
+    .select("department_code, department_name, max_waste_percent, warning_percent")
+    .eq("is_active", true);
+
+  if (error) throw error;
+
+  departmentStandards = {};
+
+  (data || []).forEach((dept) => {
+    const code = normalizeDepartmentCode(dept.department_code);
+
+    departmentStandards[code] = {
+      code,
+      name: dept.department_name,
+      maxWastePercent: Number(dept.max_waste_percent || 3),
+      warningPercent: Number(dept.warning_percent || 0),
+    };
+  });
 }
 
 function toDateInputValue(date) {
@@ -241,14 +265,43 @@ function getAllowedDepartmentCodes() {
 }
 
 function normalizeDepartmentCode(value) {
-  const text = normalizeText(value);
-  if (!text) return "";
+  const text = String(value || "").trim();
+  const key = text.toLowerCase();
 
-  for (const [code, aliases] of Object.entries(DEPARTMENT_ALIASES)) {
-    if (aliases.map(normalizeText).includes(text)) return code;
-  }
+  const aliases = {
+    blow: "BLOW",
+    bag_blow: "BLOW",
+    "เป่าถุง": "BLOW",
 
-  return text.replace(/[\s-]+/g, "_");
+    pipe: "PIPE",
+    "ท่อ": "PIPE",
+
+    mono: "MONO",
+    "โมโน": "MONO",
+
+    sheet: "SHEET_CUTTING",
+    sheet_cutting: "SHEET_CUTTING",
+    "ตัดผืน": "SHEET_CUTTING",
+
+    cut_punch: "CUT_PUNCH",
+    cutting: "CUT_PUNCH",
+    "ตัดเจาะ": "CUT_PUNCH",
+
+    garbage_bag_cut: "GARBAGE_BAG_CUT",
+    "ตัดถุงขยะ": "GARBAGE_BAG_CUT",
+
+    rain_tape: "RAIN_TAPE",
+    "เทปน้ำพุ่ง": "RAIN_TAPE",
+    "เป่าเทปน้ำพุ่ง": "RAIN_TAPE",
+
+    rain_tape_cut_punch: "RAIN_TAPE_CUT_PUNCH",
+    "ตัดเทปน้ำพุ่ง": "RAIN_TAPE_CUT_PUNCH",
+
+    shade_net: "SHADE_NET",
+    "สแลน": "SHADE_NET",
+  };
+
+  return aliases[key] || text.toUpperCase().replace(/[\s-]+/g, "_");
 }
 
 function filterRowsForCurrentUser(rows) {
@@ -320,6 +373,7 @@ function showLoadingText() {
   setText("topMachine", "...");
   setText("topProblemSub", "กำลังโหลด");
   setText("topMachineSub", "กำลังโหลด");
+  setText("wastePercent", "...");
 
   const priorityArea = document.getElementById("priorityArea");
   if (priorityArea) priorityArea.textContent = "กำลังวิเคราะห์ข้อมูล...";
@@ -335,6 +389,8 @@ function showLoadingText() {
 function renderDashboard(rows, meta = {}) {
   const totalRecords = rows.length;
   const totalWaste = sumWaste(rows);
+  const totalProduction = sumProduction(rows);
+const wastePercent = calcWastePercent(totalWaste, totalProduction);
 
   const problemCountMap = groupCount(rows, "problem_type");
   const statusMap = groupCount(rows, "status");
@@ -350,6 +406,7 @@ function renderDashboard(rows, meta = {}) {
 
   setText("totalRecords", totalRecords.toLocaleString("th-TH"));
   setText("totalWaste", `${formatNumber(totalWaste)} kg`);
+  setText("wastePercent", `${formatNumber(wastePercent)}%`);
   setText("topProblem", topProblemEntry?.[0] || "-");
   setText(
     "topProblemSub",
@@ -376,6 +433,39 @@ function sumWaste(rows) {
 function getWasteValue(row) {
   return Number(row.waste_weight_kg || row.waste_qty || 0) || 0;
 }
+
+
+function getProductionValue(row) {
+  return Number(
+    row.production_weight_kg ||
+    row.total_qty ||
+    row.produced_weight_kg ||
+    row.production_qty ||
+    0
+  ) || 0;
+}
+
+function sumProduction(rows) {
+  return rows.reduce((sum, row) => sum + getProductionValue(row), 0);
+}
+
+function calcWastePercent(waste, production) {
+  if (!production) return 0;
+  return (waste / production) * 100;
+}
+
+function getDepartmentInfo(row) {
+  const code = normalizeDepartmentCode(row.department_code || row.department || "");
+  const master = departmentStandards[code];
+
+  return {
+    code,
+    name: master?.name || row.department || row.department_code || "-",
+    maxWastePercent: master?.maxWastePercent ?? null,
+    warningPercent: master?.warningPercent ?? null,
+  };
+}
+
 
 function groupCount(rows, key) {
   return rows.reduce((map, row) => {
@@ -560,7 +650,7 @@ function renderTopList(rows) {
       map[key] = {
         machine,
         problem,
-        department: row.department_code || row.department || "-",
+        department: getDepartmentInfo(row).name,
         count: 0,
         waste: 0,
       };
@@ -625,7 +715,7 @@ function renderPriorityArea(rows, meta = {}) {
   rows.forEach((row) => {
     const machine = row.machine_no || "-";
     const problem = row.problem_type || row.reason_detail || "-";
-    const department = row.department_code || row.department || "-";
+    const department = getDepartmentInfo(row).name;
     const key = `${department}|${machine}|${problem}`;
 
     if (!summary[key]) {

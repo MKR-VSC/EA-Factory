@@ -33,6 +33,7 @@ const state = {
   supabase: null,
   reports: [],
   filteredReports: [],
+  departmentStandards: {},
 };
 
 /* ======================================================
@@ -51,10 +52,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function protectAccountingPage() {
   const activeUser = localStorage.getItem("activeUser");
-  const activeRole = String(localStorage.getItem("activeRole") || "").toLowerCase();
+  const activeRole = String(
+    localStorage.getItem("activeRole") || "",
+  ).toLowerCase();
 
   if (!activeUser || !ALLOW_ROLES.includes(activeRole)) {
-    alert("สิทธิ์การเข้าถึงล้มเหลว: เฉพาะบัญชี / หัวหน้า / ผู้บริหาร / แอดมินเท่านั้น");
+    alert(
+      "สิทธิ์การเข้าถึงล้มเหลว: เฉพาะบัญชี / หัวหน้า / ผู้บริหาร / แอดมินเท่านั้น",
+    );
     window.location.href = "/login.html";
     return false;
   }
@@ -73,7 +78,9 @@ async function initAccountingPanel() {
   state.supabase = window.supabaseClient || window.supabase || null;
 
   if (!state.supabase) {
-    renderEmpty("ไม่พบ Supabase Client กรุณาตรวจสอบ path /core/supabaseClient.js");
+    renderEmpty(
+      "ไม่พบ Supabase Client กรุณาตรวจสอบ path /core/supabaseClient.js",
+    );
     showAlert("ไม่พบ Supabase Client กรุณาตรวจสอบไฟล์ supabaseClient.js");
     return;
   }
@@ -82,16 +89,32 @@ async function initAccountingPanel() {
 }
 
 function bindEvents() {
-  document.getElementById("btn-refresh")?.addEventListener("click", loadAccountingData);
+  document
+    .getElementById("btn-refresh")
+    ?.addEventListener("click", loadAccountingData);
 
-  document.getElementById("filter-dept")?.addEventListener("change", applyFilters);
-  document.getElementById("filter-month")?.addEventListener("change", applyFilters);
-  document.getElementById("filter-week")?.addEventListener("change", applyFilters);
-  document.getElementById("filter-status")?.addEventListener("change", applyFilters);
-  document.getElementById("search-input")?.addEventListener("input", applyFilters);
+  document
+    .getElementById("filter-dept")
+    ?.addEventListener("change", applyFilters);
+  document
+    .getElementById("filter-month")
+    ?.addEventListener("change", applyFilters);
+  document
+    .getElementById("filter-week")
+    ?.addEventListener("change", applyFilters);
+  document
+    .getElementById("filter-status")
+    ?.addEventListener("change", applyFilters);
+  document
+    .getElementById("search-input")
+    ?.addEventListener("input", applyFilters);
 
-  document.getElementById("btn-export-raw")?.addEventListener("click", exportRawCsv);
-  document.getElementById("btn-export-summary")?.addEventListener("click", exportSummaryCsv);
+  document
+    .getElementById("btn-export-raw")
+    ?.addEventListener("click", exportRawCsv);
+  document
+    .getElementById("btn-export-summary")
+    ?.addEventListener("click", exportSummaryCsv);
 }
 
 function setDefaultMonth() {
@@ -109,6 +132,27 @@ function setDefaultMonth() {
    LOAD DATA
 ====================================================== */
 
+async function loadDepartmentStandards() {
+  const { data, error } = await state.supabase
+    .from("master_departments")
+    .select(
+      "department_code, department_name, max_waste_percent, warning_percent",
+    )
+    .eq("is_active", true);
+
+  if (error) throw error;
+
+  state.departmentStandards = {};
+
+  (data || []).forEach((dept) => {
+    state.departmentStandards[normalizeDept(dept.department_code)] = {
+      name_th: dept.department_name,
+      max_waste_percent: toNumber(dept.max_waste_percent || 3),
+      warning_percent: toNumber(dept.warning_percent || 0),
+    };
+  });
+}
+
 async function loadAccountingData() {
   hideAlert();
 
@@ -116,6 +160,7 @@ async function loadAccountingData() {
   if (btn) btn.disabled = true;
 
   try {
+    await loadDepartmentStandards();
     const { data, error } = await state.supabase
       .from(REPORT_TABLE)
       .select("*")
@@ -128,7 +173,10 @@ async function loadAccountingData() {
 
     state.reports = Array.isArray(data) ? data : [];
 
-    setText("last-update", `อัปเดตล่าสุด: ${new Date().toLocaleString("th-TH")}`);
+    setText(
+      "last-update",
+      `อัปเดตล่าสุด: ${new Date().toLocaleString("th-TH")}`,
+    );
 
     applyFilters();
   } catch (err) {
@@ -152,14 +200,14 @@ function applyFilters() {
   const keyword = getValue("search-input").toLowerCase();
 
   const rows = state.reports.filter((row) => {
-    const rowDept = normalizeDept(getDepartment(row));
+    const rowDept = getDepartmentInfo(row).code;
     const rowDate = getIncidentDate(row);
     const rowMonth = toMonthInputValue(rowDate);
     const rowWeek = getWeekOfMonth(rowDate);
     const rowStatus = getAccountingStatus(row);
 
     const text = [
-      getDepartment(row),
+      getDepartmentName(row),
       getMachine(row),
       getShift(row),
       getProblem(row),
@@ -203,22 +251,31 @@ function renderTable(rows) {
       const date = getIncidentDate(row);
       const waste = getWasteWeight(row);
       const status = getAccountingStatus(row);
-      const productionValue = status === "pending" ? "" : getProductionValue(row);
-      const production = productionValue === "" ? null : toNumber(productionValue);
+      const productionValue =
+        status === "pending" ? "" : getProductionValue(row);
+      const production =
+        productionValue === "" ? null : toNumber(productionValue);
       const hasProduction = production !== null && production > 0;
-      const wastePercent = hasProduction ? calcWastePercent(waste, production) : null;
+      const wastePercent = hasProduction
+        ? calcWastePercent(waste, production)
+        : null;
       const rowClass = status === "pending" ? " waiting-input" : "";
+
+      const standard = getDepartmentStandard(row);
+      const maxWastePercent = standard ? standard.max_waste_percent : null;
+      const result = hasProduction
+        ? getWasteResult(wastePercent, standard)
+        : { label: "-", className: "result-none" };
 
       return `
         <tr data-row-id="${escapeAttr(id)}" class="${rowClass}">
           <td>${escapeHtml(formatDate(date))}</td>
           <td>${escapeHtml(formatMonthText(date))}</td>
           <td>Week ${escapeHtml(getWeekOfMonth(date))}</td>
-          <td>${escapeHtml(getDepartment(row) || "-")}</td>
+          <td>${escapeHtml(getDepartmentName(row))}</td>
           <td>${escapeHtml(getShift(row) || "-")}</td>
           <td>${escapeHtml(getMachine(row) || "-")}</td>
           <td>${escapeHtml(getProblem(row) || "-")}</td>
-
           <td class="text-right">${formatNumber(waste)}</td>
 
           <td class="text-right">
@@ -235,6 +292,13 @@ function renderTable(rows) {
           </td>
 
           <td class="text-right">${hasProduction ? formatPercent(wastePercent) : "-"}</td>
+          <td class="text-right">${maxWastePercent !== null ? formatPercent(maxWastePercent) : "-"}</td>
+
+          <td>
+            <span class="result-pill ${result.className}">
+              ${escapeHtml(result.label)}
+            </span>
+          </td>
 
           <td>${escapeHtml(getReporter(row) || "-")}</td>
 
@@ -265,7 +329,10 @@ function renderSummary(rows) {
   const count = rows.length;
 
   const totalWaste = rows.reduce((sum, row) => sum + getWasteWeight(row), 0);
-  const totalProduction = rows.reduce((sum, row) => sum + getProductionWeight(row), 0);
+  const totalProduction = rows.reduce(
+    (sum, row) => sum + getProductionWeight(row),
+    0,
+  );
 
   const percent = calcWastePercent(totalWaste, totalProduction);
 
@@ -281,7 +348,7 @@ function renderEmpty(message) {
 
   tbody.innerHTML = `
     <tr>
-      <td colspan="13" class="tb-empty">${escapeHtml(message)}</td>
+      <td colspan="15" class="tb-empty">${escapeHtml(message)}</td>
     </tr>
   `;
 
@@ -403,7 +470,7 @@ function exportSummaryCsv() {
 
   state.filteredReports.forEach((row) => {
     const key = [
-      getDepartment(row) || "-",
+      getDepartmentInfo(row).code,
       getMachine(row) || "-",
       getProblem(row) || "-",
     ].join("||");
@@ -413,7 +480,7 @@ function exportSummaryCsv() {
 
     if (!map.has(key)) {
       map.set(key, {
-        department: getDepartment(row) || "-",
+        department: getDepartmentName(row),
         machine: getMachine(row) || "-",
         problem: getProblem(row) || "-",
         count: 0,
@@ -489,7 +556,45 @@ function getIncidentDate(row) {
 }
 
 function getDepartment(row) {
-  return row.department || row.department_code || row.dept || "";
+  return row.department_code || row.department || row.dept || "";
+}
+
+function getDepartmentInfo(row) {
+  const code = normalizeDept(row.department_code || row.department || row.dept);
+  const master = state.departmentStandards[code];
+
+  return {
+    code,
+    name:
+      master?.name_th ||
+      row.department ||
+      row.department_code ||
+      row.dept ||
+      "-",
+    maxWastePercent: master?.max_waste_percent ?? null,
+    warningPercent: master?.warning_percent ?? null,
+    hasStandard: !!master,
+  };
+}
+
+function getDepartmentStandard(row) {
+  const dept = getDepartmentInfo(row);
+
+  if (!dept.hasStandard) return null;
+
+  return {
+    max_waste_percent: dept.maxWastePercent,
+    warning_percent: dept.warningPercent,
+  };
+}
+
+function getDepartmentName(row) {
+  const code = normalizeDept(row.department_code);
+  const master = state.departmentStandards[code];
+
+  if (master) return master.name_th;
+
+  return row.department || row.department_code || "-";
 }
 
 function getShift(row) {
@@ -505,7 +610,9 @@ function getProblem(row) {
 }
 
 function getProblemDetail(row) {
-  return row.detail || row.problem_detail || row.reason_detail || row.note || "";
+  return (
+    row.detail || row.problem_detail || row.reason_detail || row.note || ""
+  );
 }
 
 function getWasteWeight(row) {
@@ -533,7 +640,9 @@ function getReporter(row) {
 function getAccountingStatus(row) {
   const status = String(row.status || "").toLowerCase();
 
-  if (["checked", "approved", "done", "completed", "ตรวจสอบแล้ว"].includes(status)) {
+  if (
+    ["checked", "approved", "done", "completed", "ตรวจสอบแล้ว"].includes(status)
+  ) {
     return "checked";
   }
 
@@ -643,7 +752,9 @@ function formatPercent(value) {
 }
 
 function normalizeDept(value) {
-  return String(value || "").trim().toUpperCase();
+  return String(value || "")
+    .trim()
+    .toUpperCase();
 }
 
 function showAlert(message, type = "error") {
@@ -679,6 +790,41 @@ function escapeAttr(value) {
 function cssEscape(value) {
   if (window.CSS?.escape) return window.CSS.escape(value);
   return String(value).replaceAll('"', '\\"');
+}
+
+function getWasteResult(wastePercent, standard) {
+  if (!standard) {
+    return {
+      label: "ไม่พบเกณฑ์",
+      className: "result-none",
+      diffText: "-",
+    };
+  }
+
+  const max = toNumber(standard.max_waste_percent);
+  const warning = toNumber(standard.warning_percent);
+
+  if (wastePercent > max) {
+    return {
+      label: `เกิน ${formatPercent(wastePercent - max)}`,
+      className: "result-danger",
+      diffText: `เกิน ${formatPercent(wastePercent - max)}`,
+    };
+  }
+
+  if (warning > 0 && wastePercent >= warning) {
+    return {
+      label: "ใกล้เกิน",
+      className: "result-warning",
+      diffText: `เหลือ ${formatPercent(max - wastePercent)}`,
+    };
+  }
+
+  return {
+    label: "ผ่าน",
+    className: "result-success",
+    diffText: `ต่ำกว่า ${formatPercent(max - wastePercent)}`,
+  };
 }
 
 /* ======================================================

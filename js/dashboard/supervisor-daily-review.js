@@ -14,6 +14,7 @@
 let currentProfile = null;
 let currentRecords = [];
 let responsibleDepartments = [];
+let departmentStandards = {};
 
 const STATUS = {
   PENDING: "pending",
@@ -39,7 +40,11 @@ const DEPARTMENT_LABELS_TH = {
 
 function getDepartmentLabelTH(code) {
   const normalized = normalizeDepartmentCode(code);
-  return DEPARTMENT_LABELS_TH[normalized] || code;
+  return (
+    departmentStandards[normalized]?.name ||
+    DEPARTMENT_LABELS_TH[normalized.toLowerCase()] ||
+    code
+  );
 }
 
 // สถานะที่ถือว่ายังรอหัวหน้าตรวจ
@@ -97,7 +102,13 @@ async function initPage() {
     return;
   }
 
-  const allowedRoles = ["admin", "management", "supervisor", "manager", "executive"];
+  const allowedRoles = [
+    "admin",
+    "management",
+    "supervisor",
+    "manager",
+    "executive",
+  ];
 
   if (!allowedRoles.includes(normalizeText(currentProfile.role))) {
     alert("สิทธิ์การเข้าถึงล้มเหลว: เฉพาะหัวหน้างานหรือผู้ดูแลระบบ");
@@ -105,6 +116,7 @@ async function initPage() {
     return;
   }
 
+  await loadDepartmentStandards();
   // โหลดแผนกที่รับผิดชอบแบบไม่บังคับ
   // ถ้าอ่าน user_departments ไม่ได้ ระบบจะยังใช้ activeDept เดิม เพื่อไม่ให้ข้อมูลเดิมหาย
   await loadResponsibleDepartments();
@@ -112,13 +124,38 @@ async function initPage() {
   renderLoginUserInfo();
 
   if (!canSeeAllDepartments() && !getCurrentDepartmentKey()) {
-    alert("User นี้ยังไม่ได้กำหนดแผนก กรุณาไปเพิ่ม department_code ในหน้า Admin");
+    alert(
+      "User นี้ยังไม่ได้กำหนดแผนก กรุณาไปเพิ่ม department_code ในหน้า Admin",
+    );
     return;
   }
 
   await loadRecords();
 }
 
+async function loadDepartmentStandards() {
+  const { data, error } = await supabaseClient
+    .from("master_departments")
+    .select(
+      "department_code, department_name, max_waste_percent, warning_percent",
+    )
+    .eq("is_active", true);
+
+  if (error) throw error;
+
+  departmentStandards = {};
+
+  (data || []).forEach((dept) => {
+    const code = normalizeDepartmentCode(dept.department_code);
+
+    departmentStandards[code] = {
+      code,
+      name: dept.department_name,
+      maxWastePercent: Number(dept.max_waste_percent || 3),
+      warningPercent: Number(dept.warning_percent || 0),
+    };
+  });
+}
 // ======================================================
 // DATE HELPERS
 // ======================================================
@@ -221,7 +258,7 @@ function getLocalProfile() {
 
 function canSeeAllDepartments() {
   return ["admin", "management", "executive"].includes(
-    normalizeText(currentProfile?.role)
+    normalizeText(currentProfile?.role),
   );
 }
 
@@ -232,7 +269,7 @@ async function loadResponsibleDepartments() {
 
   // สำคัญ: เอา activeDept เดิมใส่ก่อน เพื่อไม่ให้ข้อมูลเดิมหาย
   const fallbackDept = normalizeDepartmentCode(
-    currentProfile?.department_code || currentProfile?.department_name || ""
+    currentProfile?.department_code || currentProfile?.department_name || "",
   );
 
   if (fallbackDept) responsibleDepartments.push(fallbackDept);
@@ -250,7 +287,10 @@ async function loadResponsibleDepartments() {
       .eq("user_id", currentProfile.id);
 
     if (error) {
-      console.warn("อ่าน user_departments ไม่ได้ ใช้ activeDept เดิมแทน:", error);
+      console.warn(
+        "อ่าน user_departments ไม่ได้ ใช้ activeDept เดิมแทน:",
+        error,
+      );
       responsibleDepartments = uniqueArray(responsibleDepartments);
       return;
     }
@@ -259,9 +299,15 @@ async function loadResponsibleDepartments() {
       .map((row) => normalizeDepartmentCode(row.department_code))
       .filter(Boolean);
 
-    responsibleDepartments = uniqueArray([...responsibleDepartments, ...mapped]);
+    responsibleDepartments = uniqueArray([
+      ...responsibleDepartments,
+      ...mapped,
+    ]);
   } catch (error) {
-    console.warn("โหลดแผนกที่รับผิดชอบไม่สำเร็จ ใช้ activeDept เดิมแทน:", error);
+    console.warn(
+      "โหลดแผนกที่รับผิดชอบไม่สำเร็จ ใช้ activeDept เดิมแทน:",
+      error,
+    );
     responsibleDepartments = uniqueArray(responsibleDepartments);
   }
 }
@@ -287,14 +333,43 @@ function applyDepartmentFilter(query) {
 }
 
 function normalizeDepartmentCode(value) {
-  const text = normalizeText(value);
-  if (!text) return "";
+  const text = String(value || "").trim();
+  const key = text.toLowerCase();
 
-  for (const [code, aliases] of Object.entries(DEPARTMENT_ALIASES)) {
-    if (aliases.map(normalizeText).includes(text)) return code;
-  }
+  const aliases = {
+    blow: "BLOW",
+    bag_blow: "BLOW",
+    เป่าถุง: "BLOW",
 
-  return text.replace(/[\s-]+/g, "_");
+    pipe: "PIPE",
+    ท่อ: "PIPE",
+
+    mono: "MONO",
+    โมโน: "MONO",
+
+    sheet: "SHEET_CUTTING",
+    sheet_cutting: "SHEET_CUTTING",
+    ตัดผืน: "SHEET_CUTTING",
+
+    cut_punch: "CUT_PUNCH",
+    cutting: "CUT_PUNCH",
+    ตัดเจาะ: "CUT_PUNCH",
+
+    garbage_bag_cut: "GARBAGE_BAG_CUT",
+    ตัดถุงขยะ: "GARBAGE_BAG_CUT",
+
+    rain_tape: "RAIN_TAPE",
+    เทปน้ำพุ่ง: "RAIN_TAPE",
+    เป่าเทปน้ำพุ่ง: "RAIN_TAPE",
+
+    rain_tape_cut_punch: "RAIN_TAPE_CUT_PUNCH",
+    ตัดเทปน้ำพุ่ง: "RAIN_TAPE_CUT_PUNCH",
+
+    shade_net: "SHADE_NET",
+    สแลน: "SHADE_NET",
+  };
+
+  return aliases[key] || text.toUpperCase().replace(/[\s-]+/g, "_");
 }
 
 function filterRecordsForCurrentDepartment(rows) {
@@ -307,7 +382,9 @@ function filterRecordsForCurrentDepartment(rows) {
   if (!allowedDepartments.length) return rows;
 
   return rows.filter((row) => {
-    const rowDept = normalizeDepartmentCode(row.department_code || row.department || "");
+    const rowDept = normalizeDepartmentCode(
+      row.department_code || row.department || "",
+    );
     return allowedDepartments.includes(rowDept);
   });
 }
@@ -315,7 +392,7 @@ function filterRecordsForCurrentDepartment(rows) {
 function renderLoginUserInfo() {
   setText(
     "userName",
-    currentProfile.display_name || currentProfile.username || "-"
+    currentProfile.display_name || currentProfile.username || "-",
   );
 
   const deptText = canSeeAllDepartments()
@@ -325,7 +402,7 @@ function renderLoginUserInfo() {
           .map(getDepartmentLabelTH)
           .join(", ")}`
       : `รับผิดชอบ: ${getDepartmentLabelTH(
-          currentProfile.department_name || currentProfile.department_code
+          currentProfile.department_name || currentProfile.department_code,
         )}`;
 
   setText("userDept", deptText);
@@ -385,7 +462,11 @@ async function loadRecords() {
     });
 
     if (currentRecords.length === 0) {
-      list.innerHTML = renderEmptyRecordMessage(rows.length, deptRows.length, filterStatus);
+      list.innerHTML = renderEmptyRecordMessage(
+        rows.length,
+        deptRows.length,
+        filterStatus,
+      );
     } else {
       list.innerHTML = currentRecords.map(renderRecordCard).join("");
     }
@@ -451,7 +532,9 @@ async function loadSummary(reportDate) {
   try {
     let query = supabaseClient
       .from("daily_waste_reports")
-      .select("status, machine_no, waste_weight_kg, waste_qty, department_code, department")
+      .select(
+        "status, machine_no, waste_weight_kg, waste_qty, department_code, department",
+      )
       .eq("report_date", reportDate);
 
     query = applyDepartmentFilter(query);
@@ -460,7 +543,9 @@ async function loadSummary(reportDate) {
 
     if (error) throw error;
 
-    const rows = filterRecordsForCurrentDepartment(Array.isArray(data) ? data : []);
+    const rows = filterRecordsForCurrentDepartment(
+      Array.isArray(data) ? data : [],
+    );
 
     const pending = rows.filter((row) => {
       const status = normalizeText(row.status);
@@ -554,7 +639,9 @@ async function loadHistory() {
 
     if (error) throw error;
 
-    const allRows = filterRecordsForCurrentDepartment(Array.isArray(data) ? data : []);
+    const allRows = filterRecordsForCurrentDepartment(
+      Array.isArray(data) ? data : [],
+    );
     const rows = filterRecordsByStatus(allRows, STATUS.RESOLVED);
 
     renderHistorySummary(rows, startDate, endDate);
@@ -643,6 +730,8 @@ function renderRecordCard(record) {
   const isResolved = RESOLVED_STATUS_SET.has(normalizeText(record.status));
   const isPending = !isResolved;
 
+  const wasteResult = getWasteResult(record);
+
   return `
     <article class="record-card">
       <div class="record-top">
@@ -678,6 +767,25 @@ function renderRecordCard(record) {
           <span>น้ำหนักของเสีย</span>
           <strong>${formatNumber(getWasteValue(record))} kg</strong>
         </div>
+
+        <div class="detail-box">
+  <span>% Waste</span>
+  <strong>${safeText(wasteResult.percentText)}</strong>
+</div>
+
+<div class="detail-box">
+  <span>เกณฑ์</span>
+  <strong>${safeText(wasteResult.standardText)}</strong>
+</div>
+
+<div class="detail-box">
+  <span>ผลประเมิน</span>
+  <strong>
+    <span class="result-pill ${wasteResult.className}">
+      ${safeText(wasteResult.label)}
+    </span>
+  </strong>
+</div>
 
         <div class="detail-box">
           <span>สถานะ</span>
@@ -791,12 +899,16 @@ function getEvidenceImageUrl(record) {
   const markerMatch = combinedText.match(/__evidence_image__:(.+)$/im);
   if (markerMatch?.[1]) return markerMatch[1].trim();
 
-  const urlMatch = combinedText.match(/(data:image\/[^\s]+|https?:\/\/[^\s]+)/i);
+  const urlMatch = combinedText.match(
+    /(data:image\/[^\s]+|https?:\/\/[^\s]+)/i,
+  );
   return urlMatch?.[1] || "";
 }
 
 async function uploadEvidenceForRecord(id) {
-  const input = document.getElementById(`evidence-file-${CSS.escape(String(id))}`);
+  const input = document.getElementById(
+    `evidence-file-${CSS.escape(String(id))}`,
+  );
   const file = input?.files?.[0];
 
   if (!file) {
@@ -815,9 +927,12 @@ async function uploadEvidenceForRecord(id) {
     return;
   }
 
-  const preview = document.getElementById(`evidence-preview-${CSS.escape(String(id))}`);
+  const preview = document.getElementById(
+    `evidence-preview-${CSS.escape(String(id))}`,
+  );
   if (preview) {
-    preview.innerHTML = '<div class="evidence-empty">กำลังอัปโหลดรูปภาพหลักฐาน...</div>';
+    preview.innerHTML =
+      '<div class="evidence-empty">กำลังอัปโหลดรูปภาพหลักฐาน...</div>';
   }
 
   try {
@@ -827,12 +942,13 @@ async function uploadEvidenceForRecord(id) {
     try {
       const storagePath = `daily_waste_evidence/${currentProfile?.id || "unknown"}/${String(id)}/${Date.now()}-${String(file.name).replace(/[^a-zA-Z0-9._-]/g, "_")}`;
 
-      const { data: uploadData, error: uploadError } = await supabaseClient.storage
-        .from("daily-waste-evidence")
-        .upload(storagePath, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
+      const { data: uploadData, error: uploadError } =
+        await supabaseClient.storage
+          .from("daily-waste-evidence")
+          .upload(storagePath, file, {
+            cacheControl: "3600",
+            upsert: false,
+          });
 
       if (!uploadError && uploadData) {
         const { data: publicData } = supabaseClient.storage
@@ -852,12 +968,16 @@ async function uploadEvidenceForRecord(id) {
       imageUrl = await readFileAsDataUrl(file);
     }
 
-    const existingDetail = String(record.detail || "").replace(/__evidence_image__:.+/gim, "").trim();
+    const existingDetail = String(record.detail || "")
+      .replace(/__evidence_image__:.+/gim, "")
+      .trim();
     const fallbackDetail = existingDetail
       ? `${existingDetail}\n__evidence_image__:${imageUrl}`
       : `__evidence_image__:${imageUrl}`;
 
-    const existingNote = String(record.note || "").replace(/__evidence_image__:.+/gim, "").trim();
+    const existingNote = String(record.note || "")
+      .replace(/__evidence_image__:.+/gim, "")
+      .trim();
     const fallbackNote = existingNote
       ? `${existingNote}\n__evidence_image__:${imageUrl}`
       : `__evidence_image__:${imageUrl}`;
@@ -922,7 +1042,10 @@ function openEditModal(id) {
   setValue("editRecordId", record.id);
   setValue("editShift", record.shift || record.work_shift || "");
   setValue("editMachineNo", record.machine_no || "");
-  setValue("editProblemType", record.problem_type || record.reason_detail || "");
+  setValue(
+    "editProblemType",
+    record.problem_type || record.reason_detail || "",
+  );
   setValue("editWasteWeight", getWasteValue(record));
   setValue("editDetail", record.detail || record.note || "");
   setValue("editSupervisorNote", record.supervisor_note || "");
@@ -1009,7 +1132,8 @@ async function approveRecord(id) {
   const confirmApprove = confirm("ยืนยันตรวจแล้ว และส่งข้อมูลให้บัญชีใช่ไหม?");
   if (!confirmApprove) return;
 
-  const note = document.getElementById(`note-${CSS.escape(String(id))}`)?.value || "";
+  const note =
+    document.getElementById(`note-${CSS.escape(String(id))}`)?.value || "";
 
   try {
     let query = supabaseClient
@@ -1085,21 +1209,110 @@ function getWasteValue(row) {
   return Number(row.waste_weight_kg || row.waste_qty || 0) || 0;
 }
 
-function getDepartmentText(row) {
+function getProductionValue(row) {
   return (
-    row.department_name ||
-    row.department_code ||
-    row.department ||
-    row.dept ||
-    row.dept_code ||
-    "-"
+    Number(
+      row.production_weight_kg ||
+        row.total_qty ||
+        row.produced_weight_kg ||
+        row.production_qty ||
+        0,
+    ) || 0
   );
 }
 
-function normalizeText(value) {
-  return String(value || "").trim().toLowerCase();
+function calcWastePercent(waste, production) {
+  if (!production) return null;
+  return (waste / production) * 100;
 }
 
+function getDepartmentInfo(row) {
+  const code = normalizeDepartmentCode(
+    row.department_code || row.department || "",
+  );
+  const master = departmentStandards[code];
+
+  return {
+    code,
+    name: master?.name || row.department || row.department_code || "-",
+    maxWastePercent: master?.maxWastePercent ?? null,
+    warningPercent: master?.warningPercent ?? null,
+  };
+}
+
+function getWasteResult(row) {
+  const waste = getWasteValue(row);
+  const production = getProductionValue(row);
+  const percent = calcWastePercent(waste, production);
+  const dept = getDepartmentInfo(row);
+
+  if (percent === null) {
+    return {
+      percentText: "-",
+      standardText:
+        dept.maxWastePercent !== null
+          ? `${formatNumber(dept.maxWastePercent)}%`
+          : "-",
+      label: "รอข้อมูลผลิต",
+      className: "result-none",
+    };
+  }
+
+  if (dept.maxWastePercent === null) {
+    return {
+      percentText: `${formatNumber(percent)}%`,
+      standardText: "-",
+      label: "ไม่พบเกณฑ์",
+      className: "result-none",
+    };
+  }
+
+  if (percent > dept.maxWastePercent) {
+    return {
+      percentText: `${formatNumber(percent)}%`,
+      standardText: `${formatNumber(dept.maxWastePercent)}%`,
+      label: `เกิน ${formatNumber(percent - dept.maxWastePercent)}%`,
+      className: "result-danger",
+    };
+  }
+
+  if (dept.warningPercent > 0 && percent >= dept.warningPercent) {
+    return {
+      percentText: `${formatNumber(percent)}%`,
+      standardText: `${formatNumber(dept.maxWastePercent)}%`,
+      label: "ใกล้เกิน",
+      className: "result-warning",
+    };
+  }
+
+  return {
+    percentText: `${formatNumber(percent)}%`,
+    standardText: `${formatNumber(dept.maxWastePercent)}%`,
+    label: "ผ่าน",
+    className: "result-success",
+  };
+}
+
+function getDepartmentText(row) {
+  return getDepartmentInfo(row).name;
+}
+
+// function getDepartmentText(row) {
+//   return (
+//     row.department_name ||
+//     row.department_code ||
+//     row.department ||
+//     row.dept ||
+//     row.dept_code ||
+//     "-"
+//   );
+// }
+
+function normalizeText(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
 
 function safeJsonParse(value) {
   try {
@@ -1168,7 +1381,6 @@ function safeAttr(value) {
   return safeText(value).replaceAll("`", "&#096;");
 }
 
-
 // ======================================================
 // DEBUG HELPER
 // ใช้ใน Console ได้: debugDailyWasteToday()
@@ -1179,7 +1391,9 @@ async function debugDailyWasteToday() {
 
   const { data, error } = await supabaseClient
     .from("daily_waste_reports")
-    .select("id, report_date, status, department_code, department, machine_no, problem_type, waste_weight_kg, waste_qty, reported_by, created_at")
+    .select(
+      "id, report_date, status, department_code, department, machine_no, problem_type, waste_weight_kg, waste_qty, reported_by, created_at",
+    )
     .eq("report_date", date)
     .order("created_at", { ascending: false });
 
@@ -1215,7 +1429,6 @@ async function debugMyDepartments() {
 }
 
 window.debugMyDepartments = debugMyDepartments;
-
 
 // ======================================================
 // LOGOUT

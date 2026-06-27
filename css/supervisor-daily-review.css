@@ -996,3 +996,34 @@ textarea:focus {
     padding-inline: 6px;
   }
 }
+
+
+.result-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.result-success {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.result-warning {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.result-danger {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.result-none {
+  color: #475569;
+  background: #e2e8f0;
+}
