@@ -167,10 +167,13 @@ function getLocalDateString(date) {
 }
 
 function initHistoryWeekRange() {
-  const range = getThisWeekMondayToSunday();
+  const today = new Date();
 
-  setValue("historyStartDate", range.start);
-  setValue("historyEndDate", range.end);
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+  setValue("historyStartDate", getLocalDateString(firstDay));
+  setValue("historyEndDate", getLocalDateString(lastDay));
 }
 
 function getThisWeekMondayToSunday() {
@@ -730,7 +733,7 @@ function renderRecordCard(record) {
   const isResolved = RESOLVED_STATUS_SET.has(normalizeText(record.status));
   const isPending = !isResolved;
 
-  const wasteResult = getWasteResult(record);
+
 
   return `
     <article class="record-card">
@@ -767,30 +770,9 @@ function renderRecordCard(record) {
           <span>น้ำหนักของเสีย</span>
           <strong>${formatNumber(getWasteValue(record))} kg</strong>
         </div>
+      
 
-        <div class="detail-box">
-  <span>% Waste</span>
-  <strong>${safeText(wasteResult.percentText)}</strong>
-</div>
-
-<div class="detail-box">
-  <span>เกณฑ์</span>
-  <strong>${safeText(wasteResult.standardText)}</strong>
-</div>
-
-<div class="detail-box">
-  <span>ผลประเมิน</span>
-  <strong>
-    <span class="result-pill ${wasteResult.className}">
-      ${safeText(wasteResult.label)}
-    </span>
-  </strong>
-</div>
-
-        <div class="detail-box">
-          <span>สถานะ</span>
-          <strong>${getStatusLabel(record.status)}</strong>
-        </div>
+        
       </div>
 
       <div class="note-box">
@@ -1246,14 +1228,22 @@ function getWasteResult(row) {
   const percent = calcWastePercent(waste, production);
   const dept = getDepartmentInfo(row);
 
-  if (percent === null) {
+  const status = normalizeText(row.status);
+  const isAccountingChecked = [
+    "checked",
+    "approved",
+    "done",
+    "completed",
+  ].includes(status);
+
+  if (!isAccountingChecked || !production) {
     return {
       percentText: "-",
       standardText:
         dept.maxWastePercent !== null
           ? `${formatNumber(dept.maxWastePercent)}%`
           : "-",
-      label: "รอข้อมูลผลิต",
+      label: "รอบัญชีกรอกน้ำหนักผลิต",
       className: "result-none",
     };
   }
@@ -1280,7 +1270,7 @@ function getWasteResult(row) {
     return {
       percentText: `${formatNumber(percent)}%`,
       standardText: `${formatNumber(dept.maxWastePercent)}%`,
-      label: "ใกล้เกิน",
+      label: "เริ่มสูง",
       className: "result-warning",
     };
   }
@@ -1288,7 +1278,7 @@ function getWasteResult(row) {
   return {
     percentText: `${formatNumber(percent)}%`,
     standardText: `${formatNumber(dept.maxWastePercent)}%`,
-    label: "ผ่าน",
+    label: "ปกติ",
     className: "result-success",
   };
 }

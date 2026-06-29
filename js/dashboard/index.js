@@ -1,77 +1,918 @@
 // =========================================================
 // index.js
-// Dashboard / Accounting Controller
-// ใช้ Supabase Client กลางจากไฟล์ supabaseClient.js เท่านั้น
-// ห้ามสร้าง supabase.createClient ซ้ำในไฟล์นี้
+// EA Factory Waste Management - Executive Dashboard v1.0
+// ---------------------------------------------------------
+// หน้าที่หลัก:
+// 1) โหลดข้อมูลของเสียจาก daily_waste_reports
+// 2) โหลด master_departments เพื่อแสดงชื่อไทยและเกณฑ์
+// 3) สรุปภาพรวมรายเดือนทั้งโรงงาน
+// 4) สรุป % Waste รายแผนก / รายเครื่อง / รายปัญหา
+// 5) Export CSV สำหรับผู้บริหาร
 // =========================================================
 
-// =========================================================
-// GLOBAL CONFIG
-// =========================================================
+/* =========================================================
+   CONFIG
+========================================================= */
 
 const LOGIN_PAGE = "/login.html";
-const FORM_PAGE = "/pages/form-department.html";
+const REPORT_TABLE = "daily_waste_reports";
+const MASTER_DEPARTMENT_TABLE = "master_departments";
+const MACHINE_LIMIT_PERCENT = 1;
+const MACHINE_WARNING_PERCENT = 0.7;
+const FACTORY_LIMIT_PERCENT = 1;
+const FACTORY_WARNING_PERCENT = 0.7;
 
-const ALLOWED_ROLES = [
-  "admin",
-  "accounting",
-  "supervisor",
-  "management",
-  "manager",
-  "executive",
-  "MAN",
-  "man",
+const ALLOWED_ROLES = ["admin", "management", "manager", "executive"];
+const ACCOUNTING_CHECKED_STATUS = [
+  "checked",
+  "approved",
+  "done",
+  "completed",
+  "ตรวจสอบแล้ว",
 ];
 
-const DEPARTMENT_LABELS = {
-  print: "ม้วนพิมพ์",
-  pipe: "ท่อ",
-  sheet: "แผ่นหล่อ/ตัดผืน",
-  tape: "เทปพัน/เทปน้ำพุ่ง",
-  blow: "เป่าถุง",
-  drill: "ตัดเจาะ",
-  garbage: "ถุงขยะ",
-  accounting: "บัญชี",
-  management: "ผู้บริหาร",
-  "it-support": "IT Support",
-};
+const EXCLUDE_DEPARTMENT_CODES = [
+  "IT_SUPPORT",
+  "IT_SUPORT",
+  "ACCOUNTING",
+  "MANAGEMENT",
+  "ADMIN",
+];
+
+/* =========================================================
+   GLOBAL STATE
+========================================================= */
 
 let dashboardDataCache = [];
 let filteredDataCache = [];
-let currentFetchedData = [];
+let departmentMasters = {};
+let departmentOptions = [];
 
+let chartDailyWastePercent = null;
+let chartMachineRisk = null;
+let chartProblem = null;
 let chartDeptDonut = null;
-let chartWeeklyWaste = null;
-let chartMonthlyCount = null;
-let chartMonthlyWeight = null;
 
-// =========================================================
-// SUPABASE CLIENT
-// =========================================================
+/* =========================================================
+   INIT
+========================================================= */
+
+window.addEventListener("DOMContentLoaded", async () => {
+  if (!protectExecutivePage()) return;
+
+  setActiveUserLabel();
+  initMonthFilter();
+
+  await loadDepartmentMasters();
+  renderDepartmentFilter();
+  await loadAndProcessDashboardData();
+});
+
+/* =========================================================
+   AUTH
+========================================================= */
+
+function protectExecutivePage() {
+  const activeUser = localStorage.getItem("activeUser");
+  const role = normalizeText(localStorage.getItem("activeRole"));
+
+  if (!activeUser || !ALLOWED_ROLES.includes(role)) {
+    alert("คุณไม่มีสิทธิ์เข้าใช้งานหน้า Executive Dashboard");
+    window.location.href = LOGIN_PAGE;
+    return false;
+  }
+
+  return true;
+}
+
+function setActiveUserLabel() {
+  setText(
+    "lbl-active-user",
+    localStorage.getItem("activeName") || localStorage.getItem("activeUser") || "-"
+  );
+}
+
+async function handleDashboardLogout() {
+  const client = getSupabaseClient();
+
+  try {
+    if (client?.auth) await client.auth.signOut();
+  } catch (error) {
+    console.warn("Supabase signOut ไม่สำเร็จ:", error);
+  }
+
+  localStorage.clear();
+  window.location.href = LOGIN_PAGE;
+}
+
+/* =========================================================
+   SUPABASE
+========================================================= */
 
 function getSupabaseClient() {
   const client = window.supabaseClient;
 
   if (!client || typeof client.from !== "function") {
-    console.error(
-      "ไม่พบ window.supabaseClient กรุณาตรวจสอบว่าโหลด supabaseClient.js ก่อน index.js"
-    );
+    console.error("ไม่พบ window.supabaseClient กรุณาตรวจสอบ /core/supabaseClient.js");
     return null;
   }
 
   return client;
 }
 
-// =========================================================
-// BASIC HELPERS
-// =========================================================
+/* =========================================================
+   MASTER DATA
+========================================================= */
+
+async function loadDepartmentMasters() {
+  const client = getSupabaseClient();
+  if (!client) return;
+
+  const { data, error } = await client
+    .from(MASTER_DEPARTMENT_TABLE)
+    .select("department_code, department_name, max_waste_percent, warning_percent, sort_order, is_active")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    console.warn("โหลด master_departments ไม่สำเร็จ:", error);
+    return;
+  }
+
+  departmentMasters = {};
+  departmentOptions = [];
+
+  (data || []).forEach((dept) => {
+    const code = normalizeDepartmentCode(dept.department_code);
+    if (!code || EXCLUDE_DEPARTMENT_CODES.includes(code)) return;
+
+    const item = {
+      code,
+      name: dept.department_name || code,
+      maxWastePercent: toNumber(dept.max_waste_percent || FACTORY_LIMIT_PERCENT),
+      warningPercent: toNumber(dept.warning_percent || FACTORY_WARNING_PERCENT),
+      sortOrder: toNumber(dept.sort_order || 0),
+    };
+
+    departmentMasters[code] = item;
+    departmentOptions.push(item);
+  });
+}
+
+function renderDepartmentFilter() {
+  const select = document.getElementById("sel-dept-filter");
+  if (!select) return;
+
+  select.innerHTML = `
+    <option value="all">ทุกแผนกผลิต</option>
+    ${departmentOptions
+      .map((dept) => `<option value="${escapeAttr(dept.code)}">${escapeHTML(dept.name)} (${escapeHTML(dept.code)})</option>`)
+      .join("")}
+  `;
+}
+
+/* =========================================================
+   DATE / FILTER
+========================================================= */
+
+function initMonthFilter() {
+  const input = document.getElementById("filter-month");
+  if (!input) return;
+
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+
+  input.value = `${yyyy}-${mm}`;
+}
+
+function getSelectedDateRange() {
+  const month = document.getElementById("filter-month")?.value;
+
+  if (!month) {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return {
+      start: toDateInputValue(firstDay),
+      end: toDateInputValue(lastDay),
+    };
+  }
+
+  const [yyyy, mm] = month.split("-").map(Number);
+  const firstDay = new Date(yyyy, mm - 1, 1);
+  const lastDay = new Date(yyyy, mm, 0);
+
+  return {
+    start: toDateInputValue(firstDay),
+    end: toDateInputValue(lastDay),
+  };
+}
+
+/* =========================================================
+   LOAD DATA
+========================================================= */
+
+async function loadAndProcessDashboardData() {
+  const client = getSupabaseClient();
+  if (!client) return;
+
+  const range = getSelectedDateRange();
+  const selectedDept = document.getElementById("sel-dept-filter")?.value || "all";
+
+  showLoading();
+
+  try {
+    const { data, error } = await client
+      .from(REPORT_TABLE)
+      .select("*")
+      .gte("report_date", range.start)
+      .lte("report_date", range.end)
+      .order("report_date", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+
+    const checkedRows = (data || []).filter(isAccountingChecked);
+
+    dashboardDataCache = checkedRows;
+    filteredDataCache =
+      selectedDept === "all"
+        ? checkedRows
+        : checkedRows.filter((row) => getDepartmentInfo(row).code === selectedDept);
+
+    window.pvtDashboardRawCache = dashboardDataCache;
+    window.pvtExecutiveFilteredCache = filteredDataCache;
+
+    renderAllDashboard(filteredDataCache, range);
+  } catch (error) {
+    console.error("โหลดข้อมูลไม่สำเร็จ:", error);
+    alert("โหลดข้อมูลไม่สำเร็จ: " + (error.message || error));
+    renderAllDashboard([], range);
+  }
+}
+
+function showLoading() {
+  setText("cnt-today", "...");
+  setText("cnt-waste-percent", "...");
+  setText("cnt-waste-percent-sub", "กำลังโหลด");
+  setText("cnt-machine-risk", "...");
+  setText("cnt-top-machine", "...");
+  setText("cnt-top-machine-sub", "กำลังโหลด");
+
+  const insight = document.getElementById("exec-insight-box");
+  if (insight) insight.textContent = "กำลังวิเคราะห์ข้อมูล...";
+
+  const machineList = document.getElementById("machine-summary-list");
+  if (machineList) machineList.textContent = "กำลังโหลดข้อมูล...";
+}
+
+/* =========================================================
+   RENDER ALL
+========================================================= */
+
+function renderAllDashboard(records, range) {
+  const deptSummary = summarizeByDepartment(records);
+  const machineSummary = summarizeByMachine(records);
+  const problemSummary = summarizeByProblem(records);
+  const dailySummary = summarizeByDate(records, range);
+
+  updateMetricCards(records, machineSummary, range);
+  renderExecutiveInsight(records, machineSummary);
+  renderDepartmentSummaryTable(deptSummary);
+  renderMachineSummaryList(machineSummary);
+
+  renderDailyWastePercentChart(dailySummary);
+  renderMachineRiskChart(machineSummary);
+  renderProblemChart(problemSummary);
+  renderDepartmentDonutChart(deptSummary);
+}
+
+/* =========================================================
+   KPI CARDS
+========================================================= */
+
+function updateMetricCards(records, machineSummary, range) {
+  const todayText = toDateInputValue(new Date());
+  const todayCount = records.filter((row) => row.report_date === todayText).length;
+
+  const totalWaste = sumWaste(records);
+  const totalProduction = sumProductionUnique(records);
+  const wastePercent = calcWastePercent(totalWaste, totalProduction);
+  const riskyMachines = machineSummary.filter((item) => item.percent >= MACHINE_WARNING_PERCENT);
+  const topMachine = [...machineSummary].sort((a, b) => b.percent - a.percent || b.waste - a.waste)[0];
+
+  setText("cnt-today", todayCount.toLocaleString("th-TH"));
+  setText("cnt-waste-percent", `${formatNumber(wastePercent)}%`);
+  setText("cnt-waste-percent-sub", `ผลิต ${formatNumber(totalProduction)} kg / เสีย ${formatNumber(totalWaste)} kg`);
+  setText("cnt-machine-risk", riskyMachines.length.toLocaleString("th-TH"));
+  setText("cnt-top-machine", topMachine ? topMachine.machine : "-");
+  setText(
+    "cnt-top-machine-sub",
+    topMachine
+      ? `${topMachine.department} | ${formatNumber(topMachine.percent)}% | เสีย ${formatNumber(topMachine.waste)} kg`
+      : "-"
+  );
+
+  const pill = document.getElementById("overall-result-pill");
+  if (pill) {
+    const result = getResultByPercent(wastePercent, FACTORY_WARNING_PERCENT, FACTORY_LIMIT_PERCENT);
+    pill.textContent = result.label;
+    pill.className = `result-pill ${result.className}`;
+  }
+}
+
+/* =========================================================
+   EXECUTIVE INSIGHT
+========================================================= */
+
+function renderExecutiveInsight(records, machineSummary) {
+  const box = document.getElementById("exec-insight-box");
+  if (!box) return;
+
+  if (!records.length) {
+    box.textContent = "ไม่พบข้อมูลที่บัญชีตรวจแล้วในช่วงเดือนที่เลือก";
+    return;
+  }
+
+  const totalWaste = sumWaste(records);
+  const totalProduction = sumProductionUnique(records);
+  const wastePercent = calcWastePercent(totalWaste, totalProduction);
+  const overLimit = machineSummary.filter((item) => item.percent >= MACHINE_LIMIT_PERCENT);
+  const warning = machineSummary.filter(
+    (item) => item.percent >= MACHINE_WARNING_PERCENT && item.percent < MACHINE_LIMIT_PERCENT
+  );
+
+  box.innerHTML = `
+    <strong>ภาพรวมเดือนนี้:</strong>
+    ผลิตรวม <b>${formatNumber(totalProduction)} kg</b>,
+    ของเสียรวม <b>${formatNumber(totalWaste)} kg</b>,
+    Waste <b>${formatNumber(wastePercent)}%</b><br />
+    พบเครื่องเกินเกณฑ์ <b>${formatNumber(overLimit.length)}</b> เครื่อง
+    และเครื่องใกล้เกินเกณฑ์ <b>${formatNumber(warning.length)}</b> เครื่อง
+  `;
+}
+
+/* =========================================================
+   SUMMARY: DEPARTMENT / MACHINE / PROBLEM / DATE
+========================================================= */
+
+function summarizeByDepartment(records) {
+  const map = {};
+
+  records.forEach((row) => {
+    const dept = getDepartmentInfo(row);
+    const key = dept.code || "UNKNOWN";
+
+    if (!map[key]) {
+      map[key] = {
+        code: key,
+        department: dept.name,
+        waste: 0,
+        production: 0,
+        productionKeys: new Set(),
+      };
+    }
+
+    map[key].waste += getWasteWeight(row);
+    addProductionOnce(map[key], row);
+  });
+
+  return Object.values(map).map((item) => ({
+    ...item,
+    percent: calcWastePercent(item.waste, item.production),
+  }));
+}
+
+function summarizeByMachine(records) {
+  const map = {};
+
+  records.forEach((row) => {
+    const dept = getDepartmentInfo(row);
+    const machine = row.machine_no || "ไม่ระบุเครื่อง";
+    const problem = getProblem(row);
+    const key = `${dept.code}|${machine}`;
+
+    if (!map[key]) {
+      map[key] = {
+        departmentCode: dept.code,
+        department: dept.name,
+        machine,
+        waste: 0,
+        production: 0,
+        productionKeys: new Set(),
+        count: 0,
+        problems: {},
+      };
+    }
+
+    map[key].count += 1;
+    map[key].waste += getWasteWeight(row);
+    addProductionOnce(map[key], row);
+
+    map[key].problems[problem] = (map[key].problems[problem] || 0) + getWasteWeight(row);
+  });
+
+  return Object.values(map)
+    .map((item) => {
+      const topProblem = Object.entries(item.problems).sort((a, b) => b[1] - a[1])[0];
+
+      return {
+        ...item,
+        percent: calcWastePercent(item.waste, item.production),
+        topProblemName: topProblem?.[0] || "-",
+        topProblemWaste: topProblem?.[1] || 0,
+      };
+    })
+    .sort(sortByDepartmentAndMachine);
+}
+
+function summarizeByProblem(records) {
+  const map = {};
+
+  records.forEach((row) => {
+    const problem = getProblem(row);
+
+    if (!map[problem]) {
+      map[problem] = {
+        problem,
+        count: 0,
+        waste: 0,
+      };
+    }
+
+    map[problem].count += 1;
+    map[problem].waste += getWasteWeight(row);
+  });
+
+  return Object.values(map).sort((a, b) => b.waste - a.waste).slice(0, 10);
+}
+
+function summarizeByDate(records, range) {
+  const map = {};
+
+  const current = new Date(`${range.start}T00:00:00`);
+  const end = new Date(`${range.end}T00:00:00`);
+
+  while (current <= end) {
+    const key = toDateInputValue(current);
+    map[key] = {
+      date: key,
+      waste: 0,
+      production: 0,
+      productionKeys: new Set(),
+    };
+    current.setDate(current.getDate() + 1);
+  }
+
+  records.forEach((row) => {
+    const date = row.report_date || toDateInputValue(new Date(getRowDate(row)));
+    if (!map[date]) return;
+
+    map[date].waste += getWasteWeight(row);
+    addProductionOnce(map[date], row);
+  });
+
+  return Object.values(map).map((item) => ({
+    ...item,
+    percent: calcWastePercent(item.waste, item.production),
+  }));
+}
+
+function addProductionOnce(target, row) {
+  const key = getProductionUniqueKey(row);
+
+  if (target.productionKeys.has(key)) return;
+
+  target.production += getProductionWeight(row);
+  target.productionKeys.add(key);
+}
+
+function getProductionUniqueKey(row) {
+  const dept = getDepartmentInfo(row);
+  const date = row.report_date || toDateInputValue(new Date(getRowDate(row)));
+  const shift = row.work_shift || row.shift || "-";
+  const machine = row.machine_no || "-";
+
+  return `${date}|${dept.code}|${shift}|${machine}`;
+}
+
+/* =========================================================
+   TABLES / LISTS
+========================================================= */
+
+function renderDepartmentSummaryTable(rows) {
+  const tbody = document.getElementById("department-summary-body");
+  if (!tbody) return;
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-cell">ไม่พบข้อมูลแผนกในช่วงเดือนที่เลือก</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows
+    .sort((a, b) => a.department.localeCompare(b.department, "th"))
+    .map((item) => {
+      const result = getResultByPercent(item.percent, FACTORY_WARNING_PERCENT, FACTORY_LIMIT_PERCENT);
+
+      return `
+        <tr>
+          <td><strong>${escapeHTML(item.department)}</strong></td>
+          <td class="text-right">${formatNumber(item.production)}</td>
+          <td class="text-right">${formatNumber(item.waste)}</td>
+          <td class="text-right"><strong>${formatNumber(item.percent)}%</strong></td>
+          <td><span class="result-pill ${result.className}">${escapeHTML(result.label)}</span></td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+function renderMachineSummaryList(rows) {
+  const box = document.getElementById("machine-summary-list");
+  if (!box) return;
+
+  if (!rows.length) {
+    box.innerHTML = `<div class="empty-cell">ไม่พบข้อมูลเครื่องจักรในช่วงเดือนที่เลือก</div>`;
+    return;
+  }
+
+  const groupedByDept = {};
+
+  rows.forEach((item) => {
+    const dept = item.department || "ไม่ระบุแผนก";
+    if (!groupedByDept[dept]) groupedByDept[dept] = [];
+    groupedByDept[dept].push(item);
+  });
+
+  box.innerHTML = Object.entries(groupedByDept)
+    .map(([deptName, machines]) => {
+      const machineHtml = machines
+        .map((item) => {
+          const rowClass = getMachineRowClass(item.percent);
+
+          return `
+            <div class="machine-item ${rowClass}">
+              <div>
+                <strong>เครื่อง ${escapeHTML(item.machine)}</strong>
+                <small>
+                  ปัญหาหลัก: ${escapeHTML(item.topProblemName)}
+                  ${item.topProblemWaste ? `(${formatNumber(item.topProblemWaste)} kg)` : ""}
+                </small>
+              </div>
+
+              <div class="machine-value">
+                <strong>${formatNumber(item.percent)}%</strong>
+                <small>
+                  เสีย ${formatNumber(item.waste)} kg |
+                  ผลิต ${formatNumber(item.production)} kg |
+                  ${formatNumber(item.count)} รายการ
+                </small>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+
+      return `
+        <div class="dept-machine-group">
+          <div class="dept-machine-title">${escapeHTML(deptName)}</div>
+          ${machineHtml}
+        </div>
+      `;
+    })
+    .join("");
+}
+
+/* =========================================================
+   CHARTS
+========================================================= */
+
+function renderDailyWastePercentChart(rows) {
+  chartDailyWastePercent = replaceChart(chartDailyWastePercent, "chart-daily-waste-percent", {
+    type: "line",
+    data: {
+      labels: rows.map((item) => formatDateShort(item.date)),
+      datasets: [
+        {
+          label: "% Waste รายวัน",
+          data: rows.map((item) => item.percent),
+          tension: 0.35,
+          fill: true,
+        },
+      ],
+    },
+  });
+}
+
+function renderMachineRiskChart(rows) {
+  const top = [...rows].sort((a, b) => b.percent - a.percent || b.waste - a.waste).slice(0, 10);
+
+  chartMachineRisk = replaceChart(chartMachineRisk, "chart-machine-risk", {
+    type: "bar",
+    data: {
+      labels: top.map((item) => item.machine),
+      datasets: [
+        {
+          label: "% Waste",
+          data: top.map((item) => item.percent),
+        },
+      ],
+    },
+  });
+}
+
+function renderProblemChart(rows) {
+  chartProblem = replaceChart(chartProblem, "chart-problem-count-bar", {
+    type: "bar",
+    data: {
+      labels: rows.map((item) => item.problem),
+      datasets: [
+        {
+          label: "น้ำหนักของเสีย (kg)",
+          data: rows.map((item) => item.waste),
+        },
+      ],
+    },
+  });
+}
+
+function renderDepartmentDonutChart(rows) {
+  chartDeptDonut = replaceChart(chartDeptDonut, "chart-dept-donut", {
+    type: "doughnut",
+    data: {
+      labels: rows.map((item) => item.department),
+      datasets: [
+        {
+          label: "ของเสีย kg",
+          data: rows.map((item) => item.waste),
+        },
+      ],
+    },
+  });
+}
+
+function replaceChart(oldChart, canvasId, config) {
+  if (oldChart) oldChart.destroy();
+
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || typeof Chart === "undefined") return null;
+
+  return new Chart(canvas, {
+    ...config,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true },
+        tooltip: {
+          callbacks: {
+            label(context) {
+              const label = context.dataset.label || "";
+              return `${label}: ${formatNumber(context.raw)}`;
+            },
+          },
+        },
+      },
+      scales:
+        config.type === "doughnut"
+          ? {}
+          : {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback(value) {
+                    return formatNumber(value);
+                  },
+                },
+              },
+            },
+    },
+  });
+}
+
+/* =========================================================
+   EXPORT CSV
+========================================================= */
+
+function exportToDataExcelCSV() {
+  const machineSummary = summarizeByMachine(filteredDataCache);
+
+  if (!machineSummary.length) {
+    alert("ไม่มีข้อมูลสำหรับ Export");
+    return;
+  }
+
+  const header = [
+    "แผนก",
+    "เครื่อง",
+    "ผลิต kg",
+    "ของเสีย kg",
+    "% Waste",
+    "ปัญหาหลัก",
+    "น้ำหนักปัญหาหลัก kg",
+    "จำนวนรายการ",
+  ];
+
+  const body = machineSummary.map((item) => [
+    item.department,
+    item.machine,
+    item.production,
+    item.waste,
+    item.percent,
+    item.topProblemName,
+    item.topProblemWaste,
+    item.count,
+  ]);
+
+  downloadCsv(`executive-waste-summary-${getSelectedMonthText()}.csv`, [header, ...body]);
+}
+
+function downloadCsv(filename, rows) {
+  const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function csvCell(value) {
+  return `"${String(value ?? "").replaceAll('"', '""')}"`;
+}
+
+/* =========================================================
+   DATA HELPERS
+========================================================= */
+
+function getDepartmentInfo(row) {
+  const code = normalizeDepartmentCode(row.department_code || row.department || "");
+  const master = departmentMasters[code];
+
+  return {
+    code,
+    name: master?.name || row.department || row.department_code || "-",
+    maxWastePercent: master?.maxWastePercent ?? FACTORY_LIMIT_PERCENT,
+    warningPercent: master?.warningPercent ?? FACTORY_WARNING_PERCENT,
+  };
+}
+
+function normalizeDepartmentCode(value) {
+  const text = String(value || "").trim();
+  const key = text.toLowerCase();
+
+  const aliases = {
+    blow: "BLOW",
+    bag_blow: "BLOW",
+    "เป่าถุง": "BLOW",
+    pipe: "PIPE",
+    "ท่อ": "PIPE",
+    mono: "MONO",
+    "โมโน": "MONO",
+    blown_film: "BLOWN_FILM",
+    "เป่าฟิล์ม": "BLOWN_FILM",
+    sheet: "SHEET_CUTTING",
+    sheet_cutting: "SHEET_CUTTING",
+    "ตัดผืน": "SHEET_CUTTING",
+    cut_punch: "CUT_PUNCH",
+    cutting: "CUT_PUNCH",
+    drill: "CUT_PUNCH",
+    "ตัดเจาะ": "CUT_PUNCH",
+    garbage: "GARBAGE_BAG_CUT",
+    garbage_bag_cut: "GARBAGE_BAG_CUT",
+    "ตัดถุงขยะ": "GARBAGE_BAG_CUT",
+    rain_tape: "RAIN_TAPE",
+    tape: "RAIN_TAPE",
+    "เทปน้ำพุ่ง": "RAIN_TAPE",
+    "เทปสายฝน": "RAIN_TAPE",
+    "เป่าเทปน้ำพุ่ง": "RAIN_TAPE",
+    rain_tape_cut_punch: "RAIN_TAPE_CUT_PUNCH",
+    "ตัดเทปน้ำพุ่ง": "RAIN_TAPE_CUT_PUNCH",
+    "ตัดเทปน้ำพุง": "RAIN_TAPE_CUT_PUNCH",
+    shade_net: "SHADE_NET",
+    "สแลน": "SHADE_NET",
+    "ตาข่ายกรองแสง": "SHADE_NET",
+  };
+
+  return aliases[key] || text.toUpperCase().replace(/[\s-]+/g, "_");
+}
+
+function isAccountingChecked(row) {
+  return ACCOUNTING_CHECKED_STATUS.includes(normalizeText(row.status));
+}
+
+function getWasteWeight(row) {
+  return toNumber(row.waste_weight_kg || row.waste_qty || 0);
+}
+
+function getProductionWeight(row) {
+  return toNumber(row.production_weight_kg || row.total_qty || row.produced_weight_kg || row.production_qty || 0);
+}
+
+function getProblem(row) {
+  return row.problem_type || row.reason_detail || row.detail || "ไม่ระบุปัญหา";
+}
+
+function getRowDate(row) {
+  return row.incident_datetime || row.report_date || row.created_at || null;
+}
+
+function sumWaste(records) {
+  return records.reduce((sum, row) => sum + getWasteWeight(row), 0);
+}
+
+function sumProductionUnique(records) {
+  const box = {
+    production: 0,
+    productionKeys: new Set(),
+  };
+
+  records.forEach((row) => addProductionOnce(box, row));
+  return box.production;
+}
+
+function calcWastePercent(waste, production) {
+  if (!production) return 0;
+  return (toNumber(waste) / toNumber(production)) * 100;
+}
+
+function getResultByPercent(percent, warning, max) {
+  if (!percent && percent !== 0) return { label: "รอข้อมูล", className: "result-none" };
+
+  if (percent >= max) return { label: "เกินเกณฑ์", className: "result-danger" };
+  if (percent >= warning) return { label: "เริ่มสูง", className: "result-warning" };
+  return { label: "อยู่ในเกณฑ์", className: "result-success" };
+}
+
+function getMachineRowClass(percent) {
+  if (percent >= MACHINE_LIMIT_PERCENT) return "machine-danger";
+  if (percent >= MACHINE_WARNING_PERCENT) return "machine-warning";
+  return "machine-normal";
+}
+
+function sortByDepartmentAndMachine(a, b) {
+  const deptCompare = String(a.department || "").localeCompare(String(b.department || ""), "th");
+  if (deptCompare !== 0) return deptCompare;
+
+  return String(a.machine || "").localeCompare(String(b.machine || ""), "th", {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
+/* =========================================================
+   FORMAT / SMALL HELPERS
+========================================================= */
 
 function normalizeText(value) {
   return String(value || "").trim().toLowerCase();
 }
 
-function normalizeDept(value) {
-  return normalizeText(value);
+function toNumber(value) {
+  const n = Number(value || 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function toDateInputValue(date) {
+  const d = new Date(date);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+}
+
+function formatNumber(value) {
+  return toNumber(value).toLocaleString("th-TH", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatDateShort(value) {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value || "-";
+
+  return date.toLocaleDateString("th-TH", {
+    day: "2-digit",
+    month: "2-digit",
+  });
+}
+
+function getSelectedMonthText() {
+  return document.getElementById("filter-month")?.value || toDateInputValue(new Date()).slice(0, 7);
+}
+
+function safeJsonParse(value) {
+  try {
+    return value ? JSON.parse(value) : null;
+  } catch (_) {
+    return null;
+  }
 }
 
 function escapeHTML(value) {
@@ -83,917 +924,18 @@ function escapeHTML(value) {
     .replaceAll("'", "&#039;");
 }
 
-function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
+function escapeAttr(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-function getDeptLabel(code) {
-  return DEPARTMENT_LABELS[normalizeDept(code)] || code || "-";
-}
-
-function getWasteWeight(row) {
-  return parseFloat(row?.waste_qty || row?.waste_weight_kg || 0) || 0;
-}
-
-function getRowDate(row) {
-  return row?.incident_datetime || row?.report_date || row?.created_at || null;
-}
-
-function getStatusText(status) {
-  if (status === "progress") return "กำลังซ่อม";
-  if (status === "resolved") return "ปิดงานสำเร็จ";
-  return "รอดำเนินการ";
-}
-
-function getStatusBadge(status) {
-  if (status === "progress") {
-    return `<span class="badge-status status-progress">กำลังซ่อม</span>`;
-  }
-
-  if (status === "resolved") {
-    return `<span class="badge-status status-resolved">ปิดงานสำเร็จ</span>`;
-  }
-
-  return `<span class="badge-status status-pending">รอดำเนินการ</span>`;
-}
-
-function csvCell(value) {
-  return `"${String(value ?? "").replaceAll('"', '""')}"`;
-}
-
-// เช็กก่อนว่าไฟล์ index.js กำลังทำงานอยู่บนหน้า Dashboard จริงไหม
-// เหตุผล: ถ้าเผลอโหลด index.js ใน login.html จะไม่ให้ protectExecutivePage() เด้ง alert
-function isDashboardPage() {
-  return Boolean(
-    document.getElementById("dom-table-body") ||
-      document.getElementById("accounting-table-body") ||
-      document.getElementById("cnt-total") ||
-      document.getElementById("chart-dept-donut") ||
-      document.body?.dataset?.page === "dashboard"
-  );
-}
-
-// =========================================================
-// ERROR LOGGER
-// =========================================================
-
-window.addEventListener("error", (event) => {
-  console.error(
-    `[Runtime_Error] ไฟล์: ${event.filename}\nบรรทัด: ${event.lineno}\nข้อความ: ${event.message}`
-  );
-});
-
-window.addEventListener("unhandledrejection", (event) => {
-  console.error(
-    "[Async_Rejection_Error]",
-    event.reason?.message || event.reason
-  );
-});
-
-// =========================================================
-// AUTH / PAGE PROTECT
-// =========================================================
-
-function protectExecutivePage() {
-  // ถ้าไฟล์นี้ถูกโหลดผิดหน้า เช่น login.html ให้หยุดเงียบ ๆ ไม่ต้อง alert
-  if (!isDashboardPage()) return false;
-
-  const user = localStorage.getItem("activeUser");
-  const role = normalizeText(localStorage.getItem("activeRole"));
-  const allowedRoles = ALLOWED_ROLES.map((item) => normalizeText(item));
-
-  if (!user || !allowedRoles.includes(role)) {
-    alert("🔒 คุณไม่มีสิทธิ์เข้าใช้งานหน้าแดชบอร์ดสรุปผลนี้");
-    window.location.href = LOGIN_PAGE;
-    return false;
-  }
-
-  return true;
-}
-
-function setActiveUserLabel() {
-  const label = document.getElementById("lbl-active-user");
-  if (!label) return;
-
-  label.textContent =
-    localStorage.getItem("activeName") ||
-    localStorage.getItem("activeUser") ||
-    "ผู้จัดการระบบ";
-}
-
-async function handleDashboardLogout() {
-  const client = getSupabaseClient();
-
-  try {
-    if (client?.auth) {
-      await client.auth.signOut();
-    }
-  } catch (error) {
-    console.warn("Supabase signOut ไม่สำเร็จ:", error);
-  }
-
-  localStorage.clear();
-  alert("🔒 ออกจากระบบเรียบร้อยแล้ว");
-  window.location.href = LOGIN_PAGE;
-}
-
-// =========================================================
-// SWITCH DEPARTMENT
-// =========================================================
-
-function switchDepartment(deptName) {
-  const cleanDept = normalizeDept(deptName);
-
-  if (!cleanDept) {
-    alert("ไม่พบรหัสแผนก");
-    return;
-  }
-
-  localStorage.setItem("activeDept", cleanDept);
-
-  const finalUrl =
-    "../html/form-department.html?dept=" + encodeURIComponent(cleanDept);
-
-  console.log("เปิดหน้าฟอร์มแผนก:", finalUrl);
-  window.location.href = finalUrl;
-}
-
-// =========================================================
-// LOAD DASHBOARD DATA
-// =========================================================
-
-async function loadAndProcessDashboardData() {
-  const client = getSupabaseClient();
-  if (!client) return;
-
-  try {
-    console.log("กำลังโหลดข้อมูลจาก daily_waste_reports...");
-
-    const { data, error } = await client
-      .from("daily_waste_reports")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-
-    dashboardDataCache = data || [];
-    filteredDataCache = dashboardDataCache;
-    window.pvtDashboardRawCache = dashboardDataCache;
-    window.pvtExecutiveFilteredCache = filteredDataCache;
-
-    console.log(`โหลดข้อมูลสำเร็จ: ${dashboardDataCache.length} รายการ`);
-
-    renderAllDashboard(dashboardDataCache);
-  } catch (error) {
-    console.error("[database_error]", error);
-    alert("โหลดข้อมูลไม่สำเร็จ: " + (error.message || error));
-  }
-}
-
-function renderAllDashboard(records) {
-  updateMetricCards(records);
-  renderReportTable(records);
-  renderPivotSummaryTable(records);
-  renderDepartmentDonutChart(getDepartmentCounters(records));
-  renderMonthlyCharts(records);
-  renderWeeklyChart(records);
-  generateExecutiveInsight(records);
-  generateExecutiveSummary(records);
-}
-
-// =========================================================
-// METRIC CARDS
-// =========================================================
-
-function updateMetricCards(records) {
-  if (!Array.isArray(records)) return;
-
-  // Total transactions
-  setText("cnt-total", records.length);
-
-  // Open orders (pending)
-  setText(
-    "cnt-pending",
-    records.filter((r) => !r.status || r.status === "pending").length
-  );
-
-  // Inventory items (unique machine/item codes)
-  const uniqueItems = new Set(records.map((r) => r.machine_no || r.item_code).filter(Boolean));
-  setText("cnt-progress", uniqueItems.size);
-
-  // Total value (reuse waste weight field as numeric value if present)
-  const totalValue = records.reduce((s, r) => s + getWasteWeight(r), 0);
-  setText("cnt-resolved", totalValue.toLocaleString());
-}
-
-// =========================================================
-// TABLE
-// =========================================================
-
-function renderReportTable(records) {
-  const tbody = document.getElementById("dom-table-body");
-  if (!tbody) return;
-
-  const filter = document.getElementById("sel-dept-filter")?.value || "all";
-
-  const displayRecords =
-    filter === "all"
-      ? records
-      : records.filter((r) => normalizeDept(r.department_code) === filter);
-
-  filteredDataCache = displayRecords;
-  window.pvtExecutiveFilteredCache = displayRecords;
-
-  if (displayRecords.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="8" class="empty-cell">
-          📭 ไม่พบบันทึกรายงานตามเงื่อนไขที่เลือก
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = "";
-
-  displayRecords.forEach((row) => {
-    const tr = document.createElement("tr");
-
-    const deptCode = normalizeDept(row.department_code || row.department);
-    const deptLabel = getDeptLabel(deptCode);
-
-    const dateValue = getRowDate(row);
-    const renderedDate = dateValue
-      ? new Date(dateValue).toLocaleString("th-TH")
-      : "-";
-
-    tr.innerHTML = `
-        <td class="nowrap strong">${escapeHTML(renderedDate)}</td>
-
-        <td>${escapeHTML(deptLabel)}</td>
-
-        <td>${escapeHTML(row.id || row.reference || '-')}</td>
-
-        <td>
-          <div class="cell-detail">${escapeHTML(row.detail || row.note || '-')}</div>
-        </td>
-
-        <td class="strong">${escapeHTML(String(getWasteWeight(row)))} kg</td>
-
-        <td>
-          <div class="status-space">${getStatusBadge(row.status)}</div>
-        </td>
-
-        <td>
-          <span class="reporter-code">${escapeHTML(row.reported_by || 'System')}</span>
-        </td>
-    `;
-
-    tbody.appendChild(tr);
-  });
-}
-
-// =========================================================
-// SUMMARY TABLE
-// =========================================================
-
-function getDepartmentCounters(records) {
-  const counters = {};
-
-  records.forEach((row) => {
-    const dept = normalizeDept(row.department_code || row.department) || "unknown";
-    counters[dept] = (counters[dept] || 0) + 1;
-  });
-
-  return counters;
-}
-
-function renderPivotSummaryTable(records) {
-  const tbody = document.getElementById("pivot-summary-body");
-  if (!tbody) return;
-
-  const summary = {};
-
-  records.forEach((row) => {
-    const dept = normalizeDept(row.department_code || row.department) || "unknown";
-    const problem = row.problem_type || row.reason_detail || "อื่นๆ";
-    const key = `${dept}||${problem}`;
-
-    if (!summary[key]) {
-      summary[key] = {
-        dept,
-        problem,
-        count: 0,
-        weight: 0,
-      };
-    }
-
-    summary[key].count += 1;
-    summary[key].weight += getWasteWeight(row);
-  });
-
-  const rows = Object.values(summary).sort((a, b) => b.weight - a.weight);
-
-  if (rows.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="4" class="empty-cell">ไม่มีข้อมูลสรุป</td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = rows
-    .map(
-      (item) => `
-        <tr>
-          <td>${escapeHTML(getDeptLabel(item.dept))}</td>
-          <td>${escapeHTML(item.problem)}</td>
-          <td>${item.count.toLocaleString()}</td>
-          <td>${item.weight.toLocaleString()} kg</td>
-        </tr>
-      `
-    )
-    .join("");
-}
-
-// =========================================================
-// CHARTS
-// =========================================================
-
-function renderDepartmentDonutChart(counters) {
-  const canvas = document.getElementById("chart-dept-donut");
-  if (!canvas || typeof Chart === "undefined") return;
-
-  if (chartDeptDonut) {
-    chartDeptDonut.destroy();
-    chartDeptDonut = null;
-  }
-
-  const labels = Object.keys(counters).map(getDeptLabel);
-  const dataValues = Object.values(counters);
-
-  chartDeptDonut = new Chart(canvas.getContext("2d"), {
-    type: "doughnut",
-    data: {
-      labels,
-      datasets: [
-        {
-          data: dataValues,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "bottom",
-        },
-      },
-    },
-  });
-}
-
-function renderMonthlyCharts(records) {
-  const monthLabels = [
-    "ม.ค.",
-    "ก.พ.",
-    "มี.ค.",
-    "เม.ย.",
-    "พ.ค.",
-    "มิ.ย.",
-    "ก.ค.",
-    "ส.ค.",
-    "ก.ย.",
-    "ต.ค.",
-    "พ.ย.",
-    "ธ.ค.",
-  ];
-
-  const monthlyCounts = Array(12).fill(0);
-  const monthlyWeights = Array(12).fill(0);
-
-  records.forEach((row) => {
-    const dateValue = getRowDate(row);
-    if (!dateValue) return;
-
-    const dateObj = new Date(dateValue);
-    if (Number.isNaN(dateObj.getTime())) return;
-
-    const monthIndex = dateObj.getMonth();
-    monthlyCounts[monthIndex] += 1;
-    monthlyWeights[monthIndex] += getWasteWeight(row);
-  });
-
-  const countCanvas = document.getElementById("chart-problem-count-bar");
-  if (countCanvas && typeof Chart !== "undefined") {
-    if (chartMonthlyCount) chartMonthlyCount.destroy();
-
-    chartMonthlyCount = new Chart(countCanvas.getContext("2d"), {
-      type: "bar",
-      data: {
-        labels: monthLabels,
-        datasets: [
-          {
-            label: "จำนวนครั้งที่เกิดปัญหา",
-            data: monthlyCounts,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-      },
-    });
-  }
-
-  const weightCanvas = document.getElementById("chart-waste-weight-bar");
-  if (weightCanvas && typeof Chart !== "undefined") {
-    if (chartMonthlyWeight) chartMonthlyWeight.destroy();
-
-    chartMonthlyWeight = new Chart(weightCanvas.getContext("2d"), {
-      type: "bar",
-      data: {
-        labels: monthLabels,
-        datasets: [
-          {
-            label: "น้ำหนักของเสียรวมรายเดือน (kg)",
-            data: monthlyWeights,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-      },
-    });
-  }
-}
-
-function renderWeeklyChart(records) {
-  const canvas = document.getElementById("chart-waste-weekly-line");
-  if (!canvas || typeof Chart === "undefined") return;
-
-  const weeklyWeights = {};
-
-  records.forEach((row) => {
-    const dateValue = getRowDate(row);
-    if (!dateValue) return;
-
-    const dateObj = new Date(dateValue);
-    if (Number.isNaN(dateObj.getTime())) return;
-
-    const week = getWeekNumber(dateObj);
-    const label = `สัปดาห์ที่ ${week}`;
-
-    weeklyWeights[label] = (weeklyWeights[label] || 0) + getWasteWeight(row);
-  });
-
-  const labels = Object.keys(weeklyWeights).sort((a, b) => {
-    return (
-      parseInt(a.replace("สัปดาห์ที่ ", ""), 10) -
-      parseInt(b.replace("สัปดาห์ที่ ", ""), 10)
-    );
-  });
-
-  const values = labels.map((label) => weeklyWeights[label]);
-
-  if (chartWeeklyWaste) {
-    chartWeeklyWaste.destroy();
-    chartWeeklyWaste = null;
-  }
-
-  chartWeeklyWaste = new Chart(canvas.getContext("2d"), {
-    type: "bar",
-    data: {
-      labels: labels.length ? labels : ["ไม่มีข้อมูล"],
-      datasets: [
-        {
-          label: "ปริมาณของเสียรายสัปดาห์ (kg)",
-          data: values.length ? values : [0],
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: {
-          beginAtZero: true,
-        },
-      },
-    },
-  });
-}
-
-function getWeekNumber(date) {
-  const start = new Date(date.getFullYear(), 0, 1);
-  const diff = date - start + (start.getDay() + 1) * 86400000;
-  return Math.ceil(diff / 604800000);
-}
-
-// =========================================================
-// UPDATE STATUS / RESOLUTION
-// =========================================================
-
-async function executeModifyCaseStatus(caseId, targetStatus) {
-  const client = getSupabaseClient();
-  if (!client) {
-    alert("ไม่พบการเชื่อมต่อ Supabase");
-    return;
-  }
-
-  const actingManager = localStorage.getItem("activeUser") || "MAN";
-
-  try {
-    const { error } = await client
-      .from("daily_waste_reports")
-      .update({
-        status: targetStatus,
-        resolver: actingManager,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", caseId);
-
-    if (error) throw error;
-
-    await loadAndProcessDashboardData();
-  } catch (error) {
-    console.error("แก้สถานะไม่สำเร็จ:", error);
-    alert("แก้สถานะไม่สำเร็จ: " + (error.message || error));
-  }
-}
-
-async function executeModifyCaseResolution(caseId, updatedText) {
-  const client = getSupabaseClient();
-  if (!client) {
-    alert("ไม่พบการเชื่อมต่อ Supabase");
-    return;
-  }
-
-  const actingManager = localStorage.getItem("activeUser") || "MAN";
-
-  try {
-    const { error } = await client
-      .from("daily_waste_reports")
-      .update({
-        resolution: updatedText,
-        resolver: actingManager,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", caseId);
-
-    if (error) throw error;
-  } catch (error) {
-    console.error("บันทึกข้อสั่งการไม่สำเร็จ:", error);
-    alert("บันทึกข้อสั่งการไม่สำเร็จ: " + (error.message || error));
-  }
-}
-
-// =========================================================
-// DATE FILTER
-// =========================================================
-
-function executeDateRangeFilter() {
-  const startInput = document.getElementById("inp-start-date")?.value;
-  const endInput = document.getElementById("inp-end-date")?.value;
-
-  if (!startInput || !endInput) {
-    alert("กรุณาเลือกวันที่เริ่มต้นและสิ้นสุดให้ครบถ้วน");
-    return;
-  }
-
-  const start = new Date(startInput + "T00:00:00");
-  const end = new Date(endInput + "T23:59:59");
-
-  const filtered = dashboardDataCache.filter((row) => {
-    const dateValue = getRowDate(row);
-    if (!dateValue) return false;
-
-    const targetDate = new Date(dateValue);
-    return targetDate >= start && targetDate <= end;
-  });
-
-  filteredDataCache = filtered;
-  window.pvtExecutiveFilteredCache = filtered;
-
-  renderAllDashboard(filtered);
-}
-
-function clearDateFilter() {
-  const startEl = document.getElementById("inp-start-date");
-  const endEl = document.getElementById("inp-end-date");
-
-  if (startEl) startEl.value = "";
-  if (endEl) endEl.value = "";
-
-  filteredDataCache = dashboardDataCache;
-  window.pvtExecutiveFilteredCache = filteredDataCache;
-
-  renderAllDashboard(dashboardDataCache);
-}
-
-// =========================================================
-// INSIGHT / SUMMARY
-// =========================================================
-
-function generateExecutiveInsight(records) {
-  const box =
-    document.getElementById("executive-summary-box") ||
-    document.getElementById("insight-container") ||
-    document.getElementById("exec-insight-box");
-
-  if (!box) return;
-
-  if (!records || records.length === 0) {
-    box.textContent = "ไม่พบข้อมูลรายงานของเสียในระบบ";
-    return;
-  }
-
-  const totalWaste = records.reduce((sum, row) => sum + getWasteWeight(row), 0);
-
-  box.innerHTML = `
-    ⚙️ <strong>วิเคราะห์ภาพรวมสำเร็จ:</strong>
-    มีรายงานทั้งหมด <strong>${records.length.toLocaleString()} รายการ</strong>
-    พบยอดของเสียสะสมรวม
-    <span style="color:#e74a3b;font-weight:bold;">
-      ${totalWaste.toLocaleString()} kg
-    </span>
-  `;
-}
-
-function generateExecutiveSummary(records) {
-  const box = document.getElementById("ai-summary-box");
-  if (!box) return;
-
-  if (!records || records.length === 0) {
-    box.textContent = "ไม่พบข้อมูลปัญหาในขณะนี้";
-    return;
-  }
-
-  const machineCounter = {};
-
-  records.forEach((row) => {
-    const machine = row.machine_no || "ไม่ระบุ";
-    const problem = row.problem_type || row.reason_detail || "อื่นๆ";
-
-    if (!machineCounter[machine]) {
-      machineCounter[machine] = {
-        total: 0,
-        problems: {},
-      };
-    }
-
-    machineCounter[machine].total += 1;
-    machineCounter[machine].problems[problem] =
-      (machineCounter[machine].problems[problem] || 0) + 1;
-  });
-
-  let topMachine = "";
-  let maxCount = 0;
-
-  Object.entries(machineCounter).forEach(([machine, info]) => {
-    if (info.total > maxCount) {
-      topMachine = machine;
-      maxCount = info.total;
-    }
-  });
-
-  const topProblems = Object.entries(machineCounter[topMachine].problems)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3);
-
-  const listItems = topProblems
-    .map(
-      ([problem, count]) =>
-        `<li>❌ <strong>${escapeHTML(problem)}</strong> (${count} ครั้ง)</li>`
-    )
-    .join("");
-
-  box.innerHTML = `
-    <div style="padding:10px;background:#fff;border-radius:8px;">
-      <h3 style="color:#e74a3b;margin-top:0;">
-        🚨 เครื่อง ${escapeHTML(topMachine)} มีปัญหามากที่สุด
-      </h3>
-      <p>ตรวจพบทั้งหมด <strong>${maxCount}</strong> ครั้ง</p>
-      <ul style="padding-left:20px;">${listItems}</ul>
-    </div>
-  `;
-}
-
-// =========================================================
-// EXPORT CSV
-// =========================================================
-
-function exportTableToExcel() {
-  const records = filteredDataCache.length ? filteredDataCache : dashboardDataCache;
-
-  if (!records.length) {
-    alert("ไม่มีข้อมูลสำหรับดาวน์โหลด");
-    return;
-  }
-
-  let csvContent = "\uFEFF";
-  csvContent += "Date/Time,Module,Reference,Description,Amount,Status,Owner\n";
-
-  records.forEach((row) => {
-    const dateValue = getRowDate(row);
-    const renderedDate = dateValue ? new Date(dateValue).toLocaleString("th-TH") : "-";
-    const moduleLabel = getDeptLabel(normalizeDept(row.department_code || row.department));
-    const reference = row.id || row.reference || "-";
-    const description = row.detail || row.note || row.problem_type || "-";
-    const amount = String(getWasteWeight(row));
-    const status = getStatusText(row.status);
-    const owner = row.reported_by || "-";
-
-    csvContent += [
-      renderedDate,
-      moduleLabel,
-      reference,
-      description,
-      amount,
-      status,
-      owner,
-    ]
-      .map(csvCell)
-      .join(",") + "\n";
-  });
-
-  const blob = new Blob([csvContent], {
-    type: "text/csv;charset=utf-8;",
-  });
-
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `รายงานปัญหาของเสีย_${new Date()
-    .toLocaleDateString("th-TH")
-    .replaceAll("/", "-")}.csv`;
-
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-function exportToDataExcelCSV() {
-  exportTableToExcel();
-}
-
-// =========================================================
-// ACCOUNTING TABLE
-// =========================================================
-
-async function loadAccountingData() {
-  const tbody = document.getElementById("accounting-table-body");
-  if (!tbody) return;
-
-  const client = getSupabaseClient();
-  if (!client) {
-    setTimeout(loadAccountingData, 300);
-    return;
-  }
-
-  try {
-    const dept = document.getElementById("filter-dept")?.value || "all";
-
-    let query = client
-      .from("daily_waste_reports")
-      .select("*")
-      .order("incident_datetime", { ascending: false });
-
-    if (dept !== "all") {
-      query = query.eq("department_code", dept);
-    }
-
-    const { data, error } = await query;
-    if (error) throw error;
-
-    currentFetchedData = data || [];
-    tbody.innerHTML = "";
-
-    if (currentFetchedData.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="9" style="text-align:center;padding:20px;color:#94a3b8;">
-            📭 ไม่พบประวัติรายงานปัญหาในหมวดนี้
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    currentFetchedData.forEach((item) => {
-      const tr = document.createElement("tr");
-
-      const dateValue = getRowDate(item);
-      const dateText = dateValue
-        ? new Date(dateValue).toLocaleString("th-TH")
-        : "-";
-
-      tr.innerHTML = `
-        <td>${escapeHTML(dateText)}</td>
-        <td>${escapeHTML(getDeptLabel(item.department_code || item.department))}</td>
-        <td>${escapeHTML(item.machine_no || "-")}</td>
-        <td>${escapeHTML(item.problem_type || item.reason_detail || "-")}</td>
-        <td>${escapeHTML(item.detail || item.note || "-")}</td>
-        <td>${getWasteWeight(item).toLocaleString()} kg</td>
-        <td>${getStatusBadge(item.status)}</td>
-        <td>${escapeHTML(item.resolution || "-")}</td>
-        <td>${escapeHTML(item.reported_by || "-")}</td>
-      `;
-
-      tbody.appendChild(tr);
-    });
-  } catch (error) {
-    console.error("loadAccountingData error:", error);
-    alert("โหลดข้อมูลบัญชีไม่สำเร็จ: " + (error.message || error));
-  }
-}
-
-// =========================================================
-// REALTIME
-// =========================================================
-
-function listenToWasteReportsRealtime() {
-  const client = getSupabaseClient();
-  if (!client || typeof client.channel !== "function") return;
-
-  console.log("เริ่ม Realtime daily_waste_reports");
-
-  client
-    .channel("daily-waste-realtime")
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "daily_waste_reports",
-      },
-      async () => {
-        await loadAndProcessDashboardData();
-        await loadAccountingData();
-      }
-    )
-    .subscribe();
-}
-
-// =========================================================
-// INIT
-// =========================================================
-
-window.addEventListener("DOMContentLoaded", async () => {
-  // สำคัญ: กันกรณี login.html เผลอโหลด index.js
-  // ถ้าไม่ใช่หน้า Dashboard ให้ไม่ต้องเช็กสิทธิ์ และไม่ต้องเด้ง alert
-  if (!isDashboardPage()) return;
-
-  const allowed = protectExecutivePage();
-  if (!allowed) return;
-
-  setActiveUserLabel();
-
-  await loadAndProcessDashboardData();
-  await loadAccountingData();
-
-  listenToWasteReportsRealtime();
-});
-
-// =========================================================
-// EXPORT GLOBAL FUNCTIONS
-// =========================================================
-
-window.getSupabaseClient = getSupabaseClient;
-
-window.protectExecutivePage = protectExecutivePage;
-window.isDashboardPage = isDashboardPage;
-window.setActiveUserLabel = setActiveUserLabel;
-window.handleDashboardLogout = handleDashboardLogout;
-
-window.switchDepartment = switchDepartment;
+/* =========================================================
+   GLOBAL EXPORT
+========================================================= */
 
 window.loadAndProcessDashboardData = loadAndProcessDashboardData;
-window.loadAccountingData = loadAccountingData;
-
-window.renderReportTable = renderReportTable;
-window.updateMetricCards = updateMetricCards;
-window.renderPivotSummaryTable = renderPivotSummaryTable;
-window.renderDepartmentDonutChart = renderDepartmentDonutChart;
-
-window.getDepartmentCounters = getDepartmentCounters;
-
-window.executeModifyCaseStatus = executeModifyCaseStatus;
-window.executeModifyCaseResolution = executeModifyCaseResolution;
-
-window.executeDateRangeFilter = executeDateRangeFilter;
-window.clearDateFilter = clearDateFilter;
-
-window.generateExecutiveInsight = generateExecutiveInsight;
-window.generateExecutiveSummary = generateExecutiveSummary;
-
-window.exportTableToExcel = exportTableToExcel;
+window.handleDashboardLogout = handleDashboardLogout;
 window.exportToDataExcelCSV = exportToDataExcelCSV;
-
-window.normalizeDept = normalizeDept;
-window.escapeHTML = escapeHTML;
-
+window.getSupabaseClient = getSupabaseClient;

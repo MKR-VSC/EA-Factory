@@ -2,14 +2,47 @@
 // supervisor-dashboard.js
 // Dashboard สถิติของเสียสำหรับหัวหน้างาน
 // ------------------------------------------------------
-// ปรับรอบนี้:
-// - รองรับหัวหน้าที่รับผิดชอบหลายแผนกจากตาราง user_departments
-// - Admin / Management / Executive เห็นทุกแผนก
-// - Supervisor / Manager เห็นเฉพาะแผนกที่รับผิดชอบ
-// - ถ้าอ่าน user_departments ไม่ได้ จะ fallback ใช้ activeDept เดิม
-// - ไม่กรอง department_code ใน Supabase query เพื่อกันข้อมูลหาย
-// - กรองใน JS หลังโหลดข้อมูลแทน
+// Version: EA Factory Waste Management v1.0 - Go Live
+// หน้าที่หลัก:
+// 1) โหลดข้อมูลของเสียจาก daily_waste_reports
+// 2) จำกัดสิทธิ์การมองเห็นข้อมูลตาม Role / user_departments
+// 3) โหลด Master แผนกจาก master_departments
+// 4) แสดง KPI, Chart, Priority และ Top List
+// 5) คำนวณ % Waste จากน้ำหนักของเสีย / น้ำหนักผลิตที่บัญชีกรอก
 // ======================================================
+
+/* ======================================================
+   CONFIG
+   ค่าคงที่ของหน้านี้
+====================================================== */
+
+const REPORT_TABLE = "daily_waste_reports";
+const MASTER_DEPARTMENT_TABLE = "master_departments";
+const USER_DEPARTMENT_TABLE = "user_departments";
+
+// Role ที่เข้า Dashboard ได้
+const ALLOW_ROLES = ["admin", "management", "executive", "supervisor", "manager"];
+
+// Role ที่เห็นข้อมูลทุกแผนก
+const SEE_ALL_ROLES = ["admin", "management", "executive"];
+
+// Mapping ชื่อสถานะให้แสดงเป็นภาษาไทย
+const STATUS_LABELS = {
+  pending: "รอตรวจสอบ",
+  draft: "แบบร่าง",
+  submitted: "ส่งแล้ว",
+  progress: "กำลังตรวจสอบ",
+  checking: "กำลังตรวจสอบ",
+  resolved: "ส่งบัญชีแล้ว",
+  checked: "บัญชีตรวจแล้ว",
+  approved: "ตรวจสอบแล้ว",
+  rejected: "ไม่ผ่าน",
+};
+
+/* ======================================================
+   GLOBAL STATE
+   ตัวแปรกลางของหน้านี้
+====================================================== */
 
 let currentProfile = null;
 let responsibleDepartments = [];
@@ -20,44 +53,10 @@ let machineChart = null;
 let problemChart = null;
 let statusChart = null;
 
-const DEPARTMENT_ALIASES = {
-  blow: ["blow", "เป่าถุง"],
-  blown_film: ["blown_film", "เป่าฟิล์ม"],
-  bag_blow: ["bag_blow", "เป่าถุง"],
-  pipe: ["pipe", "ท่อ"],
-  sheet: ["sheet", "sheet_cutting", "ตัดผืน"],
-  garbage_bag_cut: ["garbage_bag_cut", "ตัดถุงขยะ"],
-  rain_tape: ["rain_tape", "เทปน้ำพุ่ง", "เทปสายฝน"],
-  shade_net: ["shade_net", "สแลน", "ตาข่ายกรองแสง"],
-  cut_punch: ["cut_punch", "ตัดเจาะ"],
-  print: ["print", "ม้วนพิมพ์"],
-  accounting: ["accounting", "บัญชี"],
-  management: ["management", "ผู้บริหาร"],
-};
-
-const DEPARTMENT_LABELS_TH = {
-  blow: "เป่าถุง",
-  blown_film: "เป่าฟิล์ม",
-  bag_blow: "เป่าถุง",
-  pipe: "ท่อ",
-  sheet: "ตัดผืน",
-  sheet_cutting: "ตัดผืน",
-  garbage_bag_cut: "ตัดถุงขยะ",
-  rain_tape: "เทปน้ำพุ่ง",
-  rain_tape_cut_punch: "ตัดเจาะเทปน้ำพุ่ง",
-  shade_net: "สแลน / ตาข่ายกรองแสง",
-  cut_punch: "ตัดเจาะ",
-  print: "ม้วนพิมพ์",
-  accounting: "บัญชี",
-  management: "ผู้บริหาร",
-};
-
-function getDepartmentLabelTH(code) {
-  const normalized = normalizeDepartmentCode(code);
-  return departmentStandards[normalized]?.name || code || "-";
-}
-
-
+/* ======================================================
+   INITIALIZE
+   เริ่มทำงานเมื่อเปิดหน้า Dashboard
+====================================================== */
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
@@ -71,29 +70,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    const allowedRoles = [
-      "admin",
-      "management",
-      "executive",
-      "supervisor",
-      "manager",
-    ];
-
-    if (!allowedRoles.includes(normalizeText(currentProfile.role))) {
+    if (!ALLOW_ROLES.includes(normalizeText(currentProfile.role))) {
       alert("สิทธิ์การเข้าถึงล้มเหลว");
       window.location.href = "/login.html";
       return;
     }
 
-   await loadDepartmentStandards();
-await loadResponsibleDepartments();
+    await loadDepartmentStandards();
+    await loadResponsibleDepartments();
 
     renderUserInfo();
 
     if (!canSeeAllDepartments() && !getAllowedDepartmentCodes().length) {
-      alert(
-        "User นี้ยังไม่ได้กำหนดแผนก กรุณาติดต่อ Admin หรือเพิ่มข้อมูลในตาราง user_departments"
-      );
+      alert("User นี้ยังไม่ได้กำหนดแผนก กรุณาติดต่อ Admin หรือเพิ่มข้อมูลในตาราง user_departments");
       return;
     }
 
@@ -104,24 +93,29 @@ await loadResponsibleDepartments();
   }
 });
 
-// ======================================================
-// INIT / PROFILE
-// ======================================================
+/* ======================================================
+   DATE INITIALIZE
+   ตั้งค่าช่วงวันที่เริ่มต้นย้อนหลัง 30 วัน
+====================================================== */
 
 function initDateRange() {
   const today = new Date();
-  const endDate = toDateInputValue(today);
 
-  const start = new Date(today);
-  start.setDate(start.getDate() - 29);
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-  setValue("startDate", toDateInputValue(start));
-  setValue("endDate", endDate);
+  setValue("startDate", toDateInputValue(firstDay));
+  setValue("endDate", toDateInputValue(lastDay));
 }
+
+/* ======================================================
+   MASTER DATA: DEPARTMENTS
+   โหลดแผนกจาก master_departments เพื่อใช้ชื่อไทยและเกณฑ์ % Waste
+====================================================== */
 
 async function loadDepartmentStandards() {
   const { data, error } = await supabaseClient
-    .from("master_departments")
+    .from(MASTER_DEPARTMENT_TABLE)
     .select("department_code, department_name, max_waste_percent, warning_percent")
     .eq("is_active", true);
 
@@ -135,17 +129,16 @@ async function loadDepartmentStandards() {
     departmentStandards[code] = {
       code,
       name: dept.department_name,
-      maxWastePercent: Number(dept.max_waste_percent || 3),
-      warningPercent: Number(dept.warning_percent || 0),
+      maxWastePercent: toNumber(dept.max_waste_percent || 3),
+      warningPercent: toNumber(dept.warning_percent || 0),
     };
   });
 }
 
-function toDateInputValue(date) {
-  const d = new Date(date);
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 10);
-}
+/* ======================================================
+   USER / ROLE / PROFILE
+   อ่านข้อมูลผู้ใช้จาก localStorage และกำหนดสิทธิ์การเห็นข้อมูล
+====================================================== */
 
 function getLocalProfile() {
   const savedProfile = safeJsonParse(localStorage.getItem("ea_profile"));
@@ -189,29 +182,8 @@ function getLocalProfile() {
   };
 }
 
-function renderUserInfo() {
-  setText(
-    "userName",
-    currentProfile.display_name || currentProfile.username || "-"
-  );
-
-  const deptText = canSeeAllDepartments()
-    ? "รับผิดชอบ: ทุกแผนก"
-    : getAllowedDepartmentCodes().length
-      ? `รับผิดชอบ: ${getAllowedDepartmentCodes()
-          .map(getDepartmentLabelTH)
-          .join(", ")}`
-      : `รับผิดชอบ: ${getDepartmentLabelTH(
-          currentProfile.department_name || currentProfile.department_code
-        )}`;
-
-  setText("userDept", deptText);
-}
-
 function canSeeAllDepartments() {
-  return ["admin", "management", "executive"].includes(
-    normalizeText(currentProfile?.role)
-  );
+  return SEE_ALL_ROLES.includes(normalizeText(currentProfile?.role));
 }
 
 async function loadResponsibleDepartments() {
@@ -219,7 +191,7 @@ async function loadResponsibleDepartments() {
 
   if (canSeeAllDepartments()) return;
 
-  // fallback จาก localStorage/profile เดิม เพื่อไม่ให้ระบบเดิมพัง
+  // fallback จาก localStorage/profile เดิม เพื่อไม่ให้ข้อมูลหายถ้า user_departments ยังไม่พร้อม
   const fallbackDept = normalizeDepartmentCode(
     currentProfile?.department_code || currentProfile?.department_name || ""
   );
@@ -233,7 +205,7 @@ async function loadResponsibleDepartments() {
 
   try {
     const { data, error } = await supabaseClient
-      .from("user_departments")
+      .from(USER_DEPARTMENT_TABLE)
       .select("department_code")
       .eq("user_id", currentProfile.id);
 
@@ -264,6 +236,23 @@ function getAllowedDepartmentCodes() {
   return uniqueArray(depts.map(normalizeDepartmentCode).filter(Boolean));
 }
 
+function renderUserInfo() {
+  setText("userName", currentProfile.display_name || currentProfile.username || "-");
+
+  const deptText = canSeeAllDepartments()
+    ? "รับผิดชอบ: ทุกแผนก"
+    : getAllowedDepartmentCodes().length
+      ? `รับผิดชอบ: ${getAllowedDepartmentCodes().map(getDepartmentLabelTH).join(", ")}`
+      : `รับผิดชอบ: ${getDepartmentLabelTH(currentProfile.department_name || currentProfile.department_code)}`;
+
+  setText("userDept", deptText);
+}
+
+/* ======================================================
+   DEPARTMENT HELPERS
+   จัดการ department_code ให้เป็นมาตรฐานเดียวกับ master_departments
+====================================================== */
+
 function normalizeDepartmentCode(value) {
   const text = String(value || "").trim();
   const key = text.toLowerCase();
@@ -279,6 +268,9 @@ function normalizeDepartmentCode(value) {
     mono: "MONO",
     "โมโน": "MONO",
 
+    blown_film: "BLOWN_FILM",
+    "เป่าฟิล์ม": "BLOWN_FILM",
+
     sheet: "SHEET_CUTTING",
     sheet_cutting: "SHEET_CUTTING",
     "ตัดผืน": "SHEET_CUTTING",
@@ -292,16 +284,36 @@ function normalizeDepartmentCode(value) {
 
     rain_tape: "RAIN_TAPE",
     "เทปน้ำพุ่ง": "RAIN_TAPE",
+    "เทปสายฝน": "RAIN_TAPE",
     "เป่าเทปน้ำพุ่ง": "RAIN_TAPE",
 
     rain_tape_cut_punch: "RAIN_TAPE_CUT_PUNCH",
     "ตัดเทปน้ำพุ่ง": "RAIN_TAPE_CUT_PUNCH",
+    "ตัดเทปน้ำพุง": "RAIN_TAPE_CUT_PUNCH",
 
     shade_net: "SHADE_NET",
     "สแลน": "SHADE_NET",
+    "ตาข่ายกรองแสง": "SHADE_NET",
   };
 
   return aliases[key] || text.toUpperCase().replace(/[\s-]+/g, "_");
+}
+
+function getDepartmentLabelTH(code) {
+  const normalized = normalizeDepartmentCode(code);
+  return departmentStandards[normalized]?.name || code || "-";
+}
+
+function getDepartmentInfo(row) {
+  const code = normalizeDepartmentCode(row.department_code || row.department || "");
+  const master = departmentStandards[code];
+
+  return {
+    code,
+    name: master?.name || row.department || row.department_code || "-",
+    maxWastePercent: master?.maxWastePercent ?? null,
+    warningPercent: master?.warningPercent ?? null,
+  };
 }
 
 function filterRowsForCurrentUser(rows) {
@@ -309,21 +321,18 @@ function filterRowsForCurrentUser(rows) {
   if (canSeeAllDepartments()) return rows;
 
   const allowedDepartments = getAllowedDepartmentCodes();
-
   if (!allowedDepartments.length) return rows;
 
   return rows.filter((row) => {
-    const rowDept = normalizeDepartmentCode(
-      row.department_code || row.department || ""
-    );
-
+    const rowDept = normalizeDepartmentCode(row.department_code || row.department || "");
     return allowedDepartments.includes(rowDept);
   });
 }
 
-// ======================================================
-// LOAD DASHBOARD
-// ======================================================
+/* ======================================================
+   LOAD DASHBOARD
+   โหลดข้อมูลของเสียจาก Supabase ตามช่วงวันที่ แล้วกรองตามสิทธิ์ผู้ใช้
+====================================================== */
 
 async function loadDashboard() {
   const startDate = getValue("startDate");
@@ -342,11 +351,8 @@ async function loadDashboard() {
   try {
     showLoadingText();
 
-    // สำคัญ:
-    // ไม่กรอง department_code ใน query ตรงนี้
-    // เพราะถ้า user_departments / activeDept ยังไม่ตรง จะทำให้ข้อมูลหายทั้งหน้า
     const { data, error } = await supabaseClient
-      .from("daily_waste_reports")
+      .from(REPORT_TABLE)
       .select("*")
       .gte("report_date", startDate)
       .lte("report_date", endDate)
@@ -356,7 +362,7 @@ async function loadDashboard() {
     if (error) throw error;
 
     const rawRows = Array.isArray(data) ? data : [];
-    const rows = filterRowsForCurrentUser(rawRows);
+    const rows = filterRowsForCurrentUser(rawRows).filter(isAccountingChecked);
 
     renderDashboard(rows, { rawCount: rawRows.length, startDate, endDate });
   } catch (error) {
@@ -369,11 +375,12 @@ async function loadDashboard() {
 function showLoadingText() {
   setText("totalRecords", "...");
   setText("totalWaste", "...");
+  setText("totalProduction", "...");
+  setText("wastePercent", "...");
   setText("topProblem", "...");
   setText("topMachine", "...");
   setText("topProblemSub", "กำลังโหลด");
   setText("topMachineSub", "กำลังโหลด");
-  setText("wastePercent", "...");
 
   const priorityArea = document.getElementById("priorityArea");
   if (priorityArea) priorityArea.textContent = "กำลังวิเคราะห์ข้อมูล...";
@@ -382,23 +389,20 @@ function showLoadingText() {
   if (topList) topList.textContent = "กำลังโหลดข้อมูล...";
 }
 
-// ======================================================
-// RENDER DASHBOARD
-// ======================================================
+/* ======================================================
+   RENDER DASHBOARD
+   คำนวณ KPI และส่งข้อมูลไปแสดงผลบนหน้า Dashboard
+====================================================== */
 
 function renderDashboard(rows, meta = {}) {
   const totalRecords = rows.length;
   const totalWaste = sumWaste(rows);
   const totalProduction = sumProduction(rows);
-const wastePercent = calcWastePercent(totalWaste, totalProduction);
+  const wastePercent = calcWastePercent(totalWaste, totalProduction);
 
   const problemCountMap = groupCount(rows, "problem_type");
   const statusMap = groupCount(rows, "status");
-  const dailyWasteMap = fillDateRangeMap(
-    groupWasteByDate(rows),
-    meta.startDate,
-    meta.endDate
-  );
+  const dailyWasteMap = fillDateRangeMap(groupWasteByDate(rows), meta.startDate, meta.endDate);
   const machineWasteMap = groupWaste(rows, "machine_no");
 
   const topProblemEntry = getTopEntry(problemCountMap);
@@ -406,17 +410,12 @@ const wastePercent = calcWastePercent(totalWaste, totalProduction);
 
   setText("totalRecords", totalRecords.toLocaleString("th-TH"));
   setText("totalWaste", `${formatNumber(totalWaste)} kg`);
+  setText("totalProduction", `${formatNumber(totalProduction)} kg`);
   setText("wastePercent", `${formatNumber(wastePercent)}%`);
   setText("topProblem", topProblemEntry?.[0] || "-");
-  setText(
-    "topProblemSub",
-    topProblemEntry ? `${formatNumber(topProblemEntry[1])} ครั้ง` : "-"
-  );
+  setText("topProblemSub", topProblemEntry ? `${formatNumber(topProblemEntry[1])} ครั้ง` : "-");
   setText("topMachine", topMachineEntry?.[0] || "-");
-  setText(
-    "topMachineSub",
-    topMachineEntry ? `${formatNumber(topMachineEntry[1])} kg` : "-"
-  );
+  setText("topMachineSub", topMachineEntry ? `${formatNumber(topMachineEntry[1])} kg` : "-");
 
   renderDailyTrendChart(dailyWasteMap);
   renderMachineChart(machineWasteMap);
@@ -426,46 +425,42 @@ const wastePercent = calcWastePercent(totalWaste, totalProduction);
   renderPriorityArea(rows, meta);
 }
 
+/* ======================================================
+   CALCULATE HELPERS
+   ฟังก์ชันคำนวณค่าน้ำหนักและ % Waste
+====================================================== */
+
+function getWasteValue(row) {
+  return toNumber(row.waste_weight_kg || row.waste_qty || 0);
+}
+
+function getProductionWeight(row) {
+  return toNumber(
+    row.production_weight_kg ||
+      row.total_qty ||
+      row.produced_weight_kg ||
+      row.production_qty ||
+      0
+  );
+}
+
 function sumWaste(rows) {
   return rows.reduce((sum, row) => sum + getWasteValue(row), 0);
 }
 
-function getWasteValue(row) {
-  return Number(row.waste_weight_kg || row.waste_qty || 0) || 0;
-}
-
-
-function getProductionValue(row) {
-  return Number(
-    row.production_weight_kg ||
-    row.total_qty ||
-    row.produced_weight_kg ||
-    row.production_qty ||
-    0
-  ) || 0;
-}
-
 function sumProduction(rows) {
-  return rows.reduce((sum, row) => sum + getProductionValue(row), 0);
+  return rows.reduce((sum, row) => sum + getProductionWeight(row), 0);
 }
 
 function calcWastePercent(waste, production) {
   if (!production) return 0;
-  return (waste / production) * 100;
+  return (toNumber(waste) / toNumber(production)) * 100;
 }
 
-function getDepartmentInfo(row) {
-  const code = normalizeDepartmentCode(row.department_code || row.department || "");
-  const master = departmentStandards[code];
-
-  return {
-    code,
-    name: master?.name || row.department || row.department_code || "-",
-    maxWastePercent: master?.maxWastePercent ?? null,
-    warningPercent: master?.warningPercent ?? null,
-  };
-}
-
+/* ======================================================
+   GROUP HELPERS
+   รวมข้อมูลเพื่อใช้ทำ KPI และ Chart
+====================================================== */
 
 function groupCount(rows, key) {
   return rows.reduce((map, row) => {
@@ -515,9 +510,10 @@ function sortTop(map, limit = 10) {
   return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, limit);
 }
 
-// ======================================================
-// CHARTS
-// ======================================================
+/* ======================================================
+   CHARTS
+   แสดงกราฟด้วย Chart.js
+====================================================== */
 
 function renderDailyTrendChart(map) {
   dailyTrendChart = replaceChart(dailyTrendChart, "dailyTrendChart", {
@@ -631,9 +627,10 @@ function replaceChart(oldChart, canvasId, config) {
   });
 }
 
-// ======================================================
-// TOP / PRIORITY
-// ======================================================
+/* ======================================================
+   TOP LIST
+   แสดง Top 5 จุดที่ควรแก้ก่อน
+====================================================== */
 
 function renderTopList(rows) {
   const topList = document.getElementById("topList");
@@ -642,54 +639,105 @@ function renderTopList(rows) {
   const map = {};
 
   rows.forEach((row) => {
+    const dept = getDepartmentInfo(row);
     const machine = row.machine_no || "ไม่ระบุเครื่อง";
     const problem = row.problem_type || row.reason_detail || "ไม่ระบุปัญหา";
-    const key = `${machine} | ${problem}`;
+    const key = `${dept.code}|${machine}`;
 
     if (!map[key]) {
       map[key] = {
         machine,
-        problem,
-        department: getDepartmentInfo(row).name,
+        department: dept.name,
         count: 0,
         waste: 0,
+        production: 0,
+        problems: {},
       };
     }
 
     map[key].count += 1;
     map[key].waste += getWasteValue(row);
+    map[key].production += getProductionWeight(row);
+    map[key].problems[problem] =
+      (map[key].problems[problem] || 0) + getWasteValue(row);
   });
 
-  const top = Object.values(map)
-    .sort((a, b) => b.waste - a.waste || b.count - a.count)
-    .slice(0, 5);
+  const list = Object.values(map).sort((a, b) => {
+    const deptCompare = a.department.localeCompare(b.department, "th");
+    if (deptCompare !== 0) return deptCompare;
 
-  if (!top.length) {
+    return a.machine.localeCompare(b.machine, "th", {
+      numeric: true,
+      sensitivity: "base",
+    });
+  });
+
+  if (!list.length) {
     topList.innerHTML = `<div class="empty-state">ไม่พบข้อมูลในช่วงวันที่เลือก</div>`;
     return;
   }
 
-  topList.innerHTML = top
-    .map(
-      (item, index) => `
-      <div class="top-item">
-        <div>
-          <strong>${index + 1}. เครื่อง ${safeText(item.machine)}</strong>
-          <small>
-            แผนก: ${safeText(item.department)}
-            <br />
-            ปัญหา: ${safeText(item.problem)}
-          </small>
-        </div>
-        <div class="top-value">
-          <strong>${formatNumber(item.waste)} kg</strong>
-          <small>${formatNumber(item.count)} ครั้ง</small>
-        </div>
+  const groupedByDept = {};
+
+list.forEach((item) => {
+  const dept = item.department || "ไม่ระบุแผนก";
+
+  if (!groupedByDept[dept]) groupedByDept[dept] = [];
+
+  groupedByDept[dept].push(item);
+});
+
+topList.innerHTML = Object.entries(groupedByDept)
+  .map(([deptName, machines]) => {
+    const machineHtml = machines
+      .map((item) => {
+        const percent = calcWastePercent(item.waste, item.production);
+        const topProblem = Object.entries(item.problems).sort((a, b) => b[1] - a[1])[0];
+
+        const rowClass =
+          percent >= 1
+            ? "machine-danger"
+            : percent >= 0.7
+              ? "machine-warning"
+              : "machine-normal";
+
+        return `
+          <div class="top-item ${rowClass}">
+            <div>
+              <strong>เครื่อง ${safeText(item.machine)}</strong>
+              <small>
+                ปัญหาหลัก: ${safeText(topProblem?.[0] || "-")}
+                ${topProblem ? `(${formatNumber(topProblem[1])} kg)` : ""}
+              </small>
+            </div>
+
+            <div class="top-value">
+              <strong>${formatNumber(percent)}%</strong>
+              <small>
+                เสีย ${formatNumber(item.waste)} kg |
+                ผลิต ${formatNumber(item.production)} kg |
+                ${formatNumber(item.count)} รายการ
+              </small>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    return `
+      <div class="dept-machine-group">
+        <div class="dept-machine-title">${safeText(deptName)}</div>
+        ${machineHtml}
       </div>
-    `
-    )
-    .join("");
+    `;
+  })
+  .join("");
 }
+
+/* ======================================================
+   PRIORITY AREA
+   วิเคราะห์จุดที่ควรแก้ไขเร่งด่วนจากของเสียสูงสุด
+====================================================== */
 
 function renderPriorityArea(rows, meta = {}) {
   const area = document.getElementById("priorityArea");
@@ -713,28 +761,32 @@ function renderPriorityArea(rows, meta = {}) {
   const summary = {};
 
   rows.forEach((row) => {
+    const dept = getDepartmentInfo(row);
     const machine = row.machine_no || "-";
     const problem = row.problem_type || row.reason_detail || "-";
-    const department = getDepartmentInfo(row).name;
-    const key = `${department}|${machine}|${problem}`;
+    const key = `${dept.code}|${machine}|${problem}`;
 
     if (!summary[key]) {
       summary[key] = {
-        department,
+        department: dept.name,
         machine,
         problem,
         count: 0,
         waste: 0,
+        production: 0,
       };
     }
 
     summary[key].count += 1;
     summary[key].waste += getWasteValue(row);
+    summary[key].production += getProductionWeight(row);
   });
 
   const top = Object.values(summary).sort(
     (a, b) => b.waste - a.waste || b.count - a.count
   )[0];
+
+  const percent = calcWastePercent(top.waste, top.production);
 
   area.innerHTML = `
     <div class="priority-result">
@@ -744,38 +796,43 @@ function renderPriorityArea(rows, meta = {}) {
         <p>
           แผนก: <b>${safeText(top.department)}</b><br />
           ปัญหา: <b>${safeText(top.problem)}</b><br />
-          เกิด ${formatNumber(top.count)} ครั้ง /
-          ของเสียรวม ${formatNumber(top.waste)} kg
+          เกิด ${formatNumber(top.count)} ครั้ง / ของเสียรวม ${formatNumber(top.waste)} kg<br />
+          น้ำหนักผลิต ${formatNumber(top.production)} kg / Waste ${formatNumber(percent)}%
         </p>
       </div>
     </div>
   `;
 }
 
-// ======================================================
-// LABELS / HELPERS
-// ======================================================
+/* ======================================================
+   LABEL HELPERS
+   แปลง label ต่าง ๆ ให้เป็นภาษาไทย
+====================================================== */
 
 function getStatusLabel(status) {
   const key = normalizeText(status);
+  return STATUS_LABELS[key] || status || "-";
+}
 
-  const labels = {
-    pending: "รอตรวจสอบ",
-    draft: "แบบร่าง",
-    submitted: "ส่งแล้ว",
-    progress: "กำลังตรวจสอบ",
-    checking: "กำลังตรวจสอบ",
-    resolved: "ส่งบัญชีแล้ว",
-    approved: "ตรวจสอบแล้ว",
-    rejected: "ไม่ผ่าน",
-  };
+function isAccountingChecked(row) {
+  const status = normalizeText(row.status);
+  return ["checked", "approved", "done", "completed", "ตรวจสอบแล้ว"].includes(status);
+}
 
-  return labels[key] || status || "-";
+/* ======================================================
+   FORMAT / SMALL HELPERS
+   ฟังก์ชันย่อยทั่วไป
+====================================================== */
+
+function toDateInputValue(date) {
+  const d = new Date(date);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
 }
 
 function normalizeText(value) {
   return String(value || "").trim().toLowerCase();
-}
+}sort((a, b) => b.waste - a.waste)
 
 function safeJsonParse(value) {
   try {
@@ -803,8 +860,14 @@ function setValue(id, value) {
   if (el) el.value = value;
 }
 
+function toNumber(value) {
+  const n = Number(value || 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
 function formatNumber(value) {
-  return Number(value || 0).toLocaleString("th-TH", {
+  return toNumber(value).toLocaleString("th-TH", {
+    minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
 }
@@ -832,11 +895,10 @@ function safeText(value) {
     .replaceAll("'", "&#039;");
 }
 
-// ======================================================
-// DEBUG
-// เปิด DevTools Console แล้วพิมพ์:
-// debugSupervisorDashboard()
-// ======================================================
+/* ======================================================
+   DEBUG
+   ใช้สำหรับตรวจสอบข้อมูลผ่าน DevTools Console
+====================================================== */
 
 async function debugSupervisorDashboard() {
   const startDate = getValue("startDate");
@@ -845,10 +907,11 @@ async function debugSupervisorDashboard() {
   console.log("currentProfile:", currentProfile);
   console.log("responsibleDepartments:", responsibleDepartments);
   console.log("allowedDepartments:", getAllowedDepartmentCodes());
+  console.log("departmentStandards:", departmentStandards);
 
   if (currentProfile?.id) {
     const userDeptResult = await supabaseClient
-      .from("user_departments")
+      .from(USER_DEPARTMENT_TABLE)
       .select("department_code")
       .eq("user_id", currentProfile.id);
 
@@ -857,8 +920,8 @@ async function debugSupervisorDashboard() {
   }
 
   const reportsResult = await supabaseClient
-    .from("daily_waste_reports")
-    .select("id, report_date, status, department_code, department, machine_no, problem_type, waste_weight_kg, waste_qty, reported_by, created_at")
+    .from(REPORT_TABLE)
+    .select("id, report_date, status, department_code, department, machine_no, problem_type, waste_weight_kg, waste_qty, total_qty, production_weight_kg, reported_by, created_at")
     .gte("report_date", startDate)
     .lte("report_date", endDate)
     .order("report_date", { ascending: true });
@@ -869,9 +932,10 @@ async function debugSupervisorDashboard() {
   return reportsResult;
 }
 
-// ======================================================
-// LOGOUT / GLOBAL EXPORT
-// ======================================================
+/* ======================================================
+   LOGOUT
+   ออกจากระบบและล้างข้อมูล Session ใน localStorage
+====================================================== */
 
 function logout() {
   const confirmLogout = confirm("ต้องการออกจากระบบใช่ไหม?");
@@ -891,6 +955,11 @@ function logout() {
 
   window.location.href = "/login.html";
 }
+
+/* ======================================================
+   GLOBAL EXPORT
+   เปิดฟังก์ชันให้ HTML onclick เรียกใช้งานได้
+====================================================== */
 
 window.loadDashboard = loadDashboard;
 window.logout = logout;

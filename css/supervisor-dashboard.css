@@ -190,6 +190,12 @@ button {
   background: rgba(37, 99, 235, 0.09);
 }
 
+.material-symbols-outlined {
+  font-size: 50px;
+  color: var(--primary-dark);
+}
+
+
 .user-avatar {
   position: relative;
   z-index: 1;
@@ -768,4 +774,47 @@ button {
     font-size: 12px;
     padding-inline: 8px;
   }
+}
+
+
+.top-item.machine-danger {
+  border-color: rgba(220, 38, 38, 0.45);
+  background: linear-gradient(135deg, #fef2f2, #ffffff);
+}
+
+.top-item.machine-danger .top-value strong {
+  color: #dc2626;
+}
+
+.top-item.machine-warning {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: linear-gradient(135deg, #fffbeb, #ffffff);
+}
+
+.top-item.machine-warning .top-value strong {
+  color: #d97706;
+}
+
+.top-item.machine-normal {
+  border-color: rgba(22, 163, 74, 0.25);
+}
+
+.top-item.machine-normal .top-value strong {
+  color: #16a34a;
+}
+
+.dept-machine-group {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.dept-machine-title {
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 950;
+  color: #0f172a;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
 }

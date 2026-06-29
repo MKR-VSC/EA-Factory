@@ -58,7 +58,7 @@
 
         <div class="header-user-row">
           <div class="user-info-card">
-            <div class="user-avatar">👨‍🏭</div>
+            <div class="user-avatar"> <span class="material-symbols-outlined">person</span></div>
             <div>
               <strong id="userName">หัวหน้างาน แผนกที่รับผิดชอบ</strong>
               <div id="userDept">-</div>
@@ -96,6 +96,12 @@
           <small>รวมทุกเครื่องในแผนก</small>
         </article>
 
+        <article class="summary-card success">
+          <span>น้ำหนักผลิตรวม</span>
+          <strong id="totalProduction">0 kg</strong>
+          <small>ข้อมูลจากการผลิต</small>
+        </article>
+
         <article class="summary-card warning">
           <span>ปัญหาที่พบบ่อยสุด</span>
           <strong id="topProblem">-</strong>
@@ -111,14 +117,14 @@
         <article class="summary-card warning">
           <span>% Waste</span>
           <strong id="wastePercent">0%</strong>
-          <small>ของเสีย / น้ำหนักผลิต</small>
+          <small>ของเสียรวมเดือนนี้</small>
         </article>
       </section>
 
-      <section class="priority-card">
+      <!-- <section class="priority-card">
         <h2>⚠ จุดที่ควรแก้ไขเร่งด่วน</h2>
         <div id="priorityArea">กำลังวิเคราะห์ข้อมูล...</div>
-      </section>
+      </section> -->
 
       <section class="chart-grid">
         <article class="chart-card">
@@ -143,7 +149,7 @@
       </section>
 
       <section class="table-card">
-        <h2>Top 5 จุดที่ควรแก้ก่อน</h2>
+        <h2>สถิติของเสียรายเดือน</h2>
         <div id="topList" class="top-list">กำลังโหลดข้อมูล...</div>
       </section>
     </main>

@@ -1,38 +1,59 @@
 ﻿/* ======================================================
    ACCOUNTING PANEL JS
+   EA Factory Waste Management v1.0
    ------------------------------------------------------
    หน้านี้ใช้สำหรับแผนกบัญชี:
    1) โหลดข้อมูลของเสียจาก daily_waste_reports
-   2) กรองตามแผนก / เดือน / Week / สถานะ
-   3) บัญชีเติมน้ำหนักผลิต + ต้นทุน/กก. + หมายเหตุ
-   4) คำนวณ % Waste และมูลค่าความเสียหาย
-   5) Export CSV เปิดด้วย Excel ได้
+   2) โหลดเกณฑ์ % Waste จาก master_departments
+   3) รวมข้อมูลตาม วันที่ + แผนก + กะ + เครื่อง
+      เพราะ 1 เครื่องใน 1 วัน อาจมีหลายอาการ/หลายสาเหตุ
+   4) ให้บัญชีกรอกน้ำหนักผลิต 1 ครั้งต่อกลุ่ม
+   5) คำนวณ % Waste ของเครื่องจาก:
+      ของเสียรวมทุกอาการ / น้ำหนักผลิตของเครื่อง
+   6) แสดงสัดส่วนของแต่ละอาการในช่องอาการ
+   7) Export CSV สำหรับเปิดด้วย Excel
 
    ตารางหลักที่ใช้:
    - daily_waste_reports
+   - master_departments
 
-   หมายเหตุ:
-   โค้ดนี้พยายามรองรับชื่อคอลัมน์หลายแบบ
-   เพราะฐานข้อมูลอาจยังไม่ตรงกัน 100%
+   หมายเหตุสำคัญ:
+   - ของเสีย = รายการละเอียด แยกตามอาการ/สาเหตุ
+   - น้ำหนักผลิต = กรอกระดับกลุ่ม วันที่+แผนก+กะ+เครื่อง
+   - เวลา Save ระบบจะบันทึกน้ำหนักผลิตเดียวกันให้ทุกรายการในกลุ่ม
+     แต่เวลาแสดง/สรุป จะนับน้ำหนักผลิตแค่ 1 ครั้งต่อกลุ่ม
+====================================================== */
+
+/* ======================================================
+   CONFIG
 ====================================================== */
 
 const REPORT_TABLE = "daily_waste_reports";
+const MASTER_DEPARTMENT_TABLE = "master_departments";
 
-/*
-  รายชื่อ role ที่เข้าใช้งานหน้าบัญชีได้
-  ถ้าบริษัทอยากให้เฉพาะ accounting ให้เหลือ ["accounting", "admin"] ได้ค่ะ
-*/
+// Role ที่เข้าใช้งานหน้าบัญชีได้
 const ALLOW_ROLES = ["admin", "accounting", "management", "supervisor"];
 
-/*
-  state คือที่เก็บข้อมูลกลางของหน้านี้
-  - reports = ข้อมูลทั้งหมดจาก Supabase
-  - filteredReports = ข้อมูลหลังผ่านตัวกรอง
-*/
+// สถานะที่ถือว่าบัญชีตรวจแล้ว
+const CHECKED_STATUS_SET = new Set([
+  "checked",
+  "approved",
+  "done",
+  "completed",
+  "ตรวจสอบแล้ว",
+  "บัญชีตรวจแล้ว",
+]);
+
+/* ======================================================
+   STATE
+   เก็บข้อมูลกลางของหน้านี้
+====================================================== */
+
 const state = {
   supabase: null,
   reports: [],
   filteredReports: [],
+  groupedReports: [],
   departmentStandards: {},
 };
 
@@ -42,7 +63,6 @@ const state = {
 
 document.addEventListener("DOMContentLoaded", () => {
   if (!protectAccountingPage()) return;
-
   initAccountingPanel();
 });
 
@@ -52,14 +72,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function protectAccountingPage() {
   const activeUser = localStorage.getItem("activeUser");
-  const activeRole = String(
-    localStorage.getItem("activeRole") || "",
-  ).toLowerCase();
+  const activeRole = String(localStorage.getItem("activeRole") || "").toLowerCase();
 
   if (!activeUser || !ALLOW_ROLES.includes(activeRole)) {
-    alert(
-      "สิทธิ์การเข้าถึงล้มเหลว: เฉพาะบัญชี / หัวหน้า / ผู้บริหาร / แอดมินเท่านั้น",
-    );
+    alert("สิทธิ์การเข้าถึงล้มเหลว: เฉพาะบัญชี / หัวหน้า / ผู้บริหาร / แอดมินเท่านั้น");
     window.location.href = "/login.html";
     return false;
   }
@@ -78,9 +94,7 @@ async function initAccountingPanel() {
   state.supabase = window.supabaseClient || window.supabase || null;
 
   if (!state.supabase) {
-    renderEmpty(
-      "ไม่พบ Supabase Client กรุณาตรวจสอบ path /core/supabaseClient.js",
-    );
+    renderEmpty("ไม่พบ Supabase Client กรุณาตรวจสอบ path /core/supabaseClient.js");
     showAlert("ไม่พบ Supabase Client กรุณาตรวจสอบไฟล์ supabaseClient.js");
     return;
   }
@@ -89,32 +103,14 @@ async function initAccountingPanel() {
 }
 
 function bindEvents() {
-  document
-    .getElementById("btn-refresh")
-    ?.addEventListener("click", loadAccountingData);
-
-  document
-    .getElementById("filter-dept")
-    ?.addEventListener("change", applyFilters);
-  document
-    .getElementById("filter-month")
-    ?.addEventListener("change", applyFilters);
-  document
-    .getElementById("filter-week")
-    ?.addEventListener("change", applyFilters);
-  document
-    .getElementById("filter-status")
-    ?.addEventListener("change", applyFilters);
-  document
-    .getElementById("search-input")
-    ?.addEventListener("input", applyFilters);
-
-  document
-    .getElementById("btn-export-raw")
-    ?.addEventListener("click", exportRawCsv);
-  document
-    .getElementById("btn-export-summary")
-    ?.addEventListener("click", exportSummaryCsv);
+  document.getElementById("btn-refresh")?.addEventListener("click", loadAccountingData);
+  document.getElementById("filter-dept")?.addEventListener("change", applyFilters);
+  document.getElementById("filter-month")?.addEventListener("change", applyFilters);
+  document.getElementById("filter-week")?.addEventListener("change", applyFilters);
+  document.getElementById("filter-status")?.addEventListener("change", applyFilters);
+  document.getElementById("search-input")?.addEventListener("input", applyFilters);
+  document.getElementById("btn-export-raw")?.addEventListener("click", exportRawCsv);
+  document.getElementById("btn-export-summary")?.addEventListener("click", exportSummaryCsv);
 }
 
 function setDefaultMonth() {
@@ -124,20 +120,17 @@ function setDefaultMonth() {
   const now = new Date();
   const yyyy = now.getFullYear();
   const mm = String(now.getMonth() + 1).padStart(2, "0");
-
   input.value = `${yyyy}-${mm}`;
 }
 
 /* ======================================================
-   LOAD DATA
+   LOAD MASTER DATA
 ====================================================== */
 
 async function loadDepartmentStandards() {
   const { data, error } = await state.supabase
-    .from("master_departments")
-    .select(
-      "department_code, department_name, max_waste_percent, warning_percent",
-    )
+    .from(MASTER_DEPARTMENT_TABLE)
+    .select("department_code, department_name, max_waste_percent, warning_percent")
     .eq("is_active", true);
 
   if (error) throw error;
@@ -145,13 +138,19 @@ async function loadDepartmentStandards() {
   state.departmentStandards = {};
 
   (data || []).forEach((dept) => {
-    state.departmentStandards[normalizeDept(dept.department_code)] = {
+    const code = normalizeDept(dept.department_code);
+    state.departmentStandards[code] = {
+      code,
       name_th: dept.department_name,
-      max_waste_percent: toNumber(dept.max_waste_percent || 3),
-      warning_percent: toNumber(dept.warning_percent || 0),
+      max_waste_percent: toNumber(dept.max_waste_percent || 2),
+      warning_percent: toNumber(dept.warning_percent || 1),
     };
   });
 }
+
+/* ======================================================
+   LOAD REPORT DATA
+====================================================== */
 
 async function loadAccountingData() {
   hideAlert();
@@ -161,23 +160,18 @@ async function loadAccountingData() {
 
   try {
     await loadDepartmentStandards();
+
     const { data, error } = await state.supabase
       .from(REPORT_TABLE)
       .select("*")
       .order("incident_datetime", { ascending: false })
-      .limit(1000);
+      .limit(1500);
 
-    if (error) {
-      throw new Error(`โหลดข้อมูลไม่สำเร็จ: ${error.message}`);
-    }
+    if (error) throw new Error(`โหลดข้อมูลไม่สำเร็จ: ${error.message}`);
 
     state.reports = Array.isArray(data) ? data : [];
 
-    setText(
-      "last-update",
-      `อัปเดตล่าสุด: ${new Date().toLocaleString("th-TH")}`,
-    );
-
+    setText("last-update", `อัปเดตล่าสุด: ${new Date().toLocaleString("th-TH")}`);
     applyFilters();
   } catch (err) {
     console.error(err);
@@ -189,7 +183,8 @@ async function loadAccountingData() {
 }
 
 /* ======================================================
-   FILTER / RENDER
+   FILTER
+   กรองข้อมูลก่อนรวมกลุ่ม
 ====================================================== */
 
 function applyFilters() {
@@ -199,15 +194,15 @@ function applyFilters() {
   const status = getValue("filter-status");
   const keyword = getValue("search-input").toLowerCase();
 
-  const rows = state.reports.filter((row) => {
-    const rowDept = getDepartmentInfo(row).code;
+  const baseRows = state.reports.filter((row) => {
+    const deptInfo = getDepartmentInfo(row);
     const rowDate = getIncidentDate(row);
     const rowMonth = toMonthInputValue(rowDate);
     const rowWeek = getWeekOfMonth(rowDate);
-    const rowStatus = getAccountingStatus(row);
 
     const text = [
-      getDepartmentName(row),
+      deptInfo.name,
+      deptInfo.code,
       getMachine(row),
       getShift(row),
       getProblem(row),
@@ -216,130 +211,239 @@ function applyFilters() {
       row.note,
       row.reason_detail,
       row.corrective_action,
+      row.supervisor_note,
     ]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
 
-    const matchDept = dept === "all" || rowDept === normalizeDept(dept);
+    const matchDept = dept === "all" || deptInfo.code === normalizeDept(dept);
     const matchMonth = !month || rowMonth === month;
     const matchWeek = week === "all" || String(rowWeek) === String(week);
-    const matchStatus = status === "all" || rowStatus === status;
     const matchKeyword = !keyword || text.includes(keyword);
 
-    return matchDept && matchMonth && matchWeek && matchStatus && matchKeyword;
+    return matchDept && matchMonth && matchWeek && matchKeyword;
   });
 
-  state.filteredReports = rows;
+  const groups = buildAccountingGroups(baseRows);
+  const filteredGroups = groups.filter((group) => {
+    if (status === "all") return true;
+    return group.status === status;
+  });
 
-  renderTable(rows);
-  renderSummary(rows);
+  state.filteredReports = baseRows;
+  state.groupedReports = filteredGroups;
+
+  renderTable(filteredGroups);
+  renderSummary(filteredGroups);
 }
 
-function renderTable(rows) {
+/* ======================================================
+   GROUP ACCOUNTING ROWS
+   รวมข้อมูลตาม วันที่ + แผนก + กะ + เครื่อง
+   เพื่อให้บัญชีกรอกน้ำหนักผลิตเพียงครั้งเดียวต่อกลุ่ม
+====================================================== */
+
+function buildAccountingGroups(rows) {
+  const map = new Map();
+
+  rows.forEach((row) => {
+    const key = getAccountingGroupKey(row);
+    const dept = getDepartmentInfo(row);
+    const date = getReportDateKey(row);
+    const shift = getShift(row) || "-";
+    const machine = getMachine(row) || "-";
+    const waste = getWasteWeight(row);
+    const production = getProductionWeight(row);
+    const rowStatus = getAccountingStatus(row);
+    const problem = getProblem(row) || "ไม่ระบุอาการ";
+    const detail = getProblemDetail(row);
+
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        ids: [],
+        rows: [],
+        date,
+        monthText: formatMonthText(date),
+        week: getWeekOfMonth(date),
+        departmentCode: dept.code,
+        departmentName: dept.name,
+        shift,
+        machine,
+        reporterNames: new Set(),
+        problems: new Map(),
+        waste: 0,
+        production: 0,
+        hasProduction: false,
+        status: "checked",
+      });
+    }
+
+    const group = map.get(key);
+    group.ids.push(row.id);
+    group.rows.push(row);
+    group.waste += waste;
+
+    if (production > 0 && !group.hasProduction) {
+      group.production = production;
+      group.hasProduction = true;
+    }
+
+    if (rowStatus !== "checked") {
+      group.status = "pending";
+    }
+
+    const reporter = getReporter(row);
+    if (reporter) group.reporterNames.add(reporter);
+
+    const problemKey = problem || "ไม่ระบุอาการ";
+    if (!group.problems.has(problemKey)) {
+      group.problems.set(problemKey, {
+        problem: problemKey,
+        details: new Set(),
+        waste: 0,
+        count: 0,
+      });
+    }
+
+    const problemItem = group.problems.get(problemKey);
+    problemItem.waste += waste;
+    problemItem.count += 1;
+    if (detail) problemItem.details.add(detail);
+  });
+
+  return Array.from(map.values()).sort((a, b) => {
+    const dateCompare = String(b.date).localeCompare(String(a.date));
+    if (dateCompare !== 0) return dateCompare;
+    const deptCompare = String(a.departmentName).localeCompare(String(b.departmentName), "th");
+    if (deptCompare !== 0) return deptCompare;
+    return String(a.machine).localeCompare(String(b.machine), "th");
+  });
+}
+
+function getAccountingGroupKey(row) {
+  return [
+    getReportDateKey(row),
+    getDepartmentInfo(row).code,
+    normalizeText(getShift(row)),
+    normalizeText(getMachine(row)),
+  ].join("||");
+}
+
+/* ======================================================
+   RENDER TABLE
+====================================================== */
+
+function renderTable(groups) {
   const tbody = document.getElementById("accounting-table-body");
   if (!tbody) return;
 
-  if (!rows.length) {
+  if (!groups.length) {
     renderEmpty("ไม่พบข้อมูลตามตัวกรอง");
     return;
   }
 
-  tbody.innerHTML = rows
-    .map((row) => {
-      const id = row.id;
-      const date = getIncidentDate(row);
-      const waste = getWasteWeight(row);
-      const status = getAccountingStatus(row);
-      const productionValue =
-        status === "pending" ? "" : getProductionValue(row);
-      const production =
-        productionValue === "" ? null : toNumber(productionValue);
-      const hasProduction = production !== null && production > 0;
-      const wastePercent = hasProduction
-        ? calcWastePercent(waste, production)
-        : null;
-      const rowClass = status === "pending" ? " waiting-input" : "";
-
-      const standard = getDepartmentStandard(row);
-      const maxWastePercent = standard ? standard.max_waste_percent : null;
-      const result = hasProduction
-        ? getWasteResult(wastePercent, standard)
-        : { label: "-", className: "result-none" };
-
-      return `
-        <tr data-row-id="${escapeAttr(id)}" class="${rowClass}">
-          <td>${escapeHtml(formatDate(date))}</td>
-          <td>${escapeHtml(formatMonthText(date))}</td>
-          <td>Week ${escapeHtml(getWeekOfMonth(date))}</td>
-          <td>${escapeHtml(getDepartmentName(row))}</td>
-          <td>${escapeHtml(getShift(row) || "-")}</td>
-          <td>${escapeHtml(getMachine(row) || "-")}</td>
-          <td>${escapeHtml(getProblem(row) || "-")}</td>
-          <td class="text-right">${formatNumber(waste)}</td>
-
-          <td class="text-right">
-            <input
-              class="cell-input text-right${!hasProduction ? " empty" : ""}"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="กรอก kg"
-              value="${escapeAttr(productionValue)}"
-              data-field="production"
-              data-id="${escapeAttr(id)}"
-            />
-          </td>
-
-          <td class="text-right">${hasProduction ? formatPercent(wastePercent) : "-"}</td>
-          <td class="text-right">${maxWastePercent !== null ? formatPercent(maxWastePercent) : "-"}</td>
-
-          <td>
-            <span class="result-pill ${result.className}">
-              ${escapeHtml(result.label)}
-            </span>
-          </td>
-
-          <td>${escapeHtml(getReporter(row) || "-")}</td>
-
-          <td>
-            <span class="status-pill status-${status}">
-              ${status === "checked" ? "บัญชีตรวจแล้ว" : "รอบัญชีตรวจ"}
-            </span>
-          </td>
-
-          <td>
-            <div class="row-actions">
-              <button class="btn btn-green" type="button" onclick="saveAccountingRow('${escapeAttr(id)}')">
-                บันทึก
-              </button>
-
-              <button class="btn btn-gray" type="button" onclick="markPending('${escapeAttr(id)}')">
-                ย้อนสถานะ
-              </button>
-            </div>
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
+  tbody.innerHTML = groups.map(renderGroupRow).join("");
 }
 
-function renderSummary(rows) {
-  const count = rows.length;
+function renderGroupRow(group) {
+  const wastePercent = group.hasProduction
+    ? calcWastePercent(group.waste, group.production)
+    : null;
 
-  const totalWaste = rows.reduce((sum, row) => sum + getWasteWeight(row), 0);
-  const totalProduction = rows.reduce(
-    (sum, row) => sum + getProductionWeight(row),
-    0,
-  );
+  const standard = getDepartmentStandardByCode(group.departmentCode);
+  const maxWastePercent = standard ? standard.max_waste_percent : null;
+  const result = group.hasProduction
+    ? getWasteResult(wastePercent, standard)
+    : { label: "รอน้ำหนักผลิต", className: "result-none" };
 
-  const percent = calcWastePercent(totalWaste, totalProduction);
+  const productionValue = group.hasProduction ? group.production : "";
+  const rowClass = group.status === "pending" ? " waiting-input" : "";
 
-  setText("sum-count", count.toLocaleString("th-TH"));
-  setText("sum-waste", formatNumber(totalWaste));
-  setText("sum-production", formatNumber(totalProduction));
-  setText("sum-waste-percent", formatPercent(percent));
+  return `
+    <tr data-row-id="${escapeAttr(group.key)}" class="${rowClass}">
+      <td>${escapeHtml(formatDateOnly(group.date))}</td>
+      <td>${escapeHtml(group.monthText)}</td>
+      <td>Week ${escapeHtml(group.week)}</td>
+      <td>${escapeHtml(group.departmentName)}</td>
+      <td>${escapeHtml(group.shift)}</td>
+      <td>${escapeHtml(group.machine)}</td>
+      <td>${renderProblemSummary(group)}</td>
+      <td class="text-right">${formatNumber(group.waste)}</td>
+
+      <td class="text-right">
+        <input
+          class="cell-input text-right${!group.hasProduction ? " empty" : ""}"
+          type="number"
+          step="0.01"
+          min="0"
+          placeholder="กรอก kg"
+          value="${escapeAttr(productionValue)}"
+          data-field="production"
+          data-id="${escapeAttr(group.key)}"
+        />
+      </td>
+
+      <td class="text-right">${group.hasProduction ? formatPercent(wastePercent) : "-"}</td>
+      <td class="text-right">${maxWastePercent !== null ? formatPercent(maxWastePercent) : "-"}</td>
+
+      <td>
+        <span class="result-pill ${result.className}">
+          ${escapeHtml(result.label)}
+        </span>
+      </td>
+
+      <td>${escapeHtml(formatReporterNames(group))}</td>
+
+      <td>
+        <span class="status-pill status-${group.status}">
+          ${group.status === "checked" ? "บัญชีตรวจแล้ว" : "รอบัญชีตรวจ"}
+        </span>
+      </td>
+
+      <td>
+        <div class="row-actions">
+          <button class="btn btn-green" type="button" onclick="saveAccountingRow('${escapeAttr(group.key)}')">
+            บันทึก
+          </button>
+
+          <button class="btn btn-gray" type="button" onclick="markPending('${escapeAttr(group.key)}')">
+            ย้อนสถานะ
+          </button>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+function renderProblemSummary(group) {
+  const problemItems = Array.from(group.problems.values()).sort((a, b) => b.waste - a.waste);
+
+  return `
+    <div class="problem-list">
+      ${problemItems
+        .map((item) => {
+          const share = group.waste > 0 ? (item.waste / group.waste) * 100 : 0;
+          const details = Array.from(item.details).slice(0, 2).join(" / ");
+
+          return `
+            <div class="problem-item">
+              <strong>${escapeHtml(item.problem)}</strong>
+              <span>${formatNumber(item.waste)} kg | ${formatPercent(share)} ของของเสีย</span>
+              ${details ? `<small>${escapeHtml(details)}</small>` : ""}
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function formatReporterNames(group) {
+  const names = Array.from(group.reporterNames).filter(Boolean);
+  if (!names.length) return "-";
+  return names.slice(0, 3).join(", ");
 }
 
 function renderEmpty(message) {
@@ -356,16 +460,46 @@ function renderEmpty(message) {
 }
 
 /* ======================================================
-   SAVE ACCOUNTING DATA
+   SUMMARY
+   สรุปจากกลุ่ม เพื่อไม่ให้น้ำหนักผลิตถูกนับซ้ำ
 ====================================================== */
 
-async function saveAccountingRow(id) {
-  if (!id) return;
+function renderSummary(groups) {
+  const count = groups.length;
+  const totalWaste = groups.reduce((sum, group) => sum + group.waste, 0);
+  const totalProduction = groups.reduce((sum, group) => sum + (group.production || 0), 0);
+  const percent = calcWastePercent(totalWaste, totalProduction);
 
-  const rowEl = document.querySelector(`tr[data-row-id="${cssEscape(id)}"]`);
+  setText("sum-count", count.toLocaleString("th-TH"));
+  setText("sum-waste", formatNumber(totalWaste));
+  setText("sum-production", formatNumber(totalProduction));
+  setText("sum-waste-percent", formatPercent(percent));
+}
+
+/* ======================================================
+   SAVE ACCOUNTING DATA
+   บันทึกน้ำหนักผลิตให้ทุกแถวในกลุ่มเดียวกัน
+====================================================== */
+
+async function saveAccountingRow(groupKey) {
+  if (!groupKey) return;
+
+  const group = state.groupedReports.find((item) => item.key === groupKey);
+  if (!group) {
+    showAlert("ไม่พบกลุ่มข้อมูลที่ต้องการบันทึก");
+    return;
+  }
+
+  const rowEl = document.querySelector(`tr[data-row-id="${cssEscape(groupKey)}"]`);
   if (!rowEl) return;
 
   const production = getInputNumber(rowEl, "production");
+
+  if (!production || production <= 0) {
+    showAlert("กรุณากรอกน้ำหนักผลิตให้ถูกต้อง");
+    return;
+  }
+
   const activeUserId = localStorage.getItem("activeUserId") || null;
 
   const payload = {
@@ -376,13 +510,19 @@ async function saveAccountingRow(id) {
     updated_at: new Date().toISOString(),
   };
 
-  await updateReport(id, payload, "บันทึกข้อมูลเรียบร้อยแล้ว");
+  await updateReports(group.ids, payload, "บันทึกข้อมูลกลุ่มนี้เรียบร้อยแล้ว");
 }
 
-async function markPending(id) {
-  if (!id) return;
+async function markPending(groupKey) {
+  if (!groupKey) return;
 
-  const ok = confirm("ต้องการย้อนสถานะรายการนี้กลับเป็นรอบัญชีตรวจใช่ไหม?");
+  const group = state.groupedReports.find((item) => item.key === groupKey);
+  if (!group) {
+    showAlert("ไม่พบกลุ่มข้อมูลที่ต้องการย้อนสถานะ");
+    return;
+  }
+
+  const ok = confirm("ต้องการย้อนสถานะกลุ่มนี้กลับเป็นรอบัญชีตรวจใช่ไหม?");
   if (!ok) return;
 
   const payload = {
@@ -392,21 +532,19 @@ async function markPending(id) {
     updated_at: new Date().toISOString(),
   };
 
-  await updateReport(id, payload, "ย้อนสถานะเรียบร้อยแล้ว");
+  await updateReports(group.ids, payload, "ย้อนสถานะกลุ่มนี้เรียบร้อยแล้ว");
 }
 
-async function updateReport(id, payload, successMessage) {
+async function updateReports(ids, payload, successMessage) {
   hideAlert();
 
   try {
     const { error } = await state.supabase
       .from(REPORT_TABLE)
       .update(payload)
-      .eq("id", id);
+      .in("id", ids);
 
-    if (error) {
-      throw new Error(error.message);
-    }
+    if (error) throw new Error(error.message);
 
     showAlert(successMessage, "success");
     await loadAccountingData();
@@ -421,7 +559,7 @@ async function updateReport(id, payload, successMessage) {
 ====================================================== */
 
 function exportRawCsv() {
-  const rows = state.filteredReports;
+  const groups = state.groupedReports;
 
   const header = [
     "วันที่",
@@ -430,101 +568,92 @@ function exportRawCsv() {
     "แผนก",
     "กะ",
     "เครื่อง",
-    "อาการ",
-    "รายละเอียด",
+    "อาการ/สาเหตุ",
     "น้ำหนักสูญเสีย kg",
     "น้ำหนักผลิต kg",
-    "% Waste",
+    "% Waste เครื่อง",
+    "เกณฑ์ %",
+    "ผลประเมิน",
     "ผู้แจ้ง",
     "สถานะ",
   ];
 
-  const body = rows.map((row) => {
-    const date = getIncidentDate(row);
-    const waste = getWasteWeight(row);
-    const production = getProductionWeight(row);
-    const wastePercent = calcWastePercent(waste, production);
+  const body = [];
 
-    return [
-      formatDate(date),
-      formatMonthText(date),
-      `Week ${getWeekOfMonth(date)}`,
-      getDepartment(row),
-      getShift(row),
-      getMachine(row),
-      getProblem(row),
-      getProblemDetail(row),
-      waste,
-      production,
-      wastePercent,
-      getReporter(row),
-      getAccountingStatus(row) === "checked" ? "บัญชีตรวจแล้ว" : "รอบัญชีตรวจ",
-    ];
+  groups.forEach((group) => {
+    const wastePercent = calcWastePercent(group.waste, group.production);
+    const standard = getDepartmentStandardByCode(group.departmentCode);
+    const result = group.hasProduction
+      ? getWasteResult(wastePercent, standard)
+      : { label: "รอน้ำหนักผลิต" };
+
+    Array.from(group.problems.values()).forEach((item) => {
+      const share = group.waste > 0 ? (item.waste / group.waste) * 100 : 0;
+      body.push([
+        formatDateOnly(group.date),
+        group.monthText,
+        `Week ${group.week}`,
+        group.departmentName,
+        group.shift,
+        group.machine,
+        `${item.problem} (${formatNumber(item.waste)} kg / ${formatPercent(share)} ของของเสีย)`,
+        item.waste,
+        group.production,
+        wastePercent,
+        standard ? standard.max_waste_percent : "-",
+        result.label,
+        formatReporterNames(group),
+        group.status === "checked" ? "บัญชีตรวจแล้ว" : "รอบัญชีตรวจ",
+      ]);
+    });
   });
 
   downloadCsv("accounting-waste-raw.csv", [header, ...body]);
 }
 
 function exportSummaryCsv() {
-  const map = new Map();
-
-  state.filteredReports.forEach((row) => {
-    const key = [
-      getDepartmentInfo(row).code,
-      getMachine(row) || "-",
-      getProblem(row) || "-",
-    ].join("||");
-
-    const waste = getWasteWeight(row);
-    const production = getProductionWeight(row);
-
-    if (!map.has(key)) {
-      map.set(key, {
-        department: getDepartmentName(row),
-        machine: getMachine(row) || "-",
-        problem: getProblem(row) || "-",
-        count: 0,
-        waste: 0,
-        production: 0,
-      });
-    }
-
-    const item = map.get(key);
-    item.count += 1;
-    item.waste += waste;
-    item.production += production;
-  });
+  const groups = state.groupedReports;
 
   const header = [
+    "วันที่",
     "แผนก",
+    "กะ",
     "เครื่อง",
-    "อาการ",
-    "จำนวนครั้ง",
-    "น้ำหนักสูญเสีย kg",
+    "จำนวนอาการ",
+    "น้ำหนักสูญเสียรวม kg",
     "น้ำหนักผลิต kg",
     "% Waste",
+    "เกณฑ์ %",
+    "ผลประเมิน",
   ];
 
-  const body = Array.from(map.values()).map((item) => [
-    item.department,
-    item.machine,
-    item.problem,
-    item.count,
-    item.waste,
-    item.production,
-    calcWastePercent(item.waste, item.production),
-  ]);
+  const body = groups.map((group) => {
+    const wastePercent = calcWastePercent(group.waste, group.production);
+    const standard = getDepartmentStandardByCode(group.departmentCode);
+    const result = group.hasProduction
+      ? getWasteResult(wastePercent, standard)
+      : { label: "รอน้ำหนักผลิต" };
+
+    return [
+      formatDateOnly(group.date),
+      group.departmentName,
+      group.shift,
+      group.machine,
+      group.problems.size,
+      group.waste,
+      group.production,
+      wastePercent,
+      standard ? standard.max_waste_percent : "-",
+      result.label,
+    ];
+  });
 
   downloadCsv("accounting-waste-summary.csv", [header, ...body]);
 }
 
 function downloadCsv(filename, rows) {
   const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
-
-  const blob = new Blob(["\ufeff" + csv], {
-    type: "text/csv;charset=utf-8;",
-  });
-
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
 
@@ -545,18 +674,20 @@ function csvCell(value) {
 ====================================================== */
 
 function getIncidentDate(row) {
-  return (
-    row.incident_datetime ||
-    row.report_date ||
-    row.date_time ||
-    row.created_at ||
-    row.date ||
-    null
-  );
+  return row.incident_datetime || row.report_date || row.date_time || row.created_at || row.date || null;
 }
 
-function getDepartment(row) {
-  return row.department_code || row.department || row.dept || "";
+function getReportDateKey(row) {
+  const value = row.report_date || getIncidentDate(row);
+  if (!value) return "-";
+
+  const text = String(value);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return text.slice(0, 10);
+
+  return toDateInputValue(d);
 }
 
 function getDepartmentInfo(row) {
@@ -565,36 +696,21 @@ function getDepartmentInfo(row) {
 
   return {
     code,
-    name:
-      master?.name_th ||
-      row.department ||
-      row.department_code ||
-      row.dept ||
-      "-",
+    name: master?.name_th || row.department || row.department_code || row.dept || "-",
     maxWastePercent: master?.max_waste_percent ?? null,
     warningPercent: master?.warning_percent ?? null,
     hasStandard: !!master,
   };
 }
 
-function getDepartmentStandard(row) {
-  const dept = getDepartmentInfo(row);
-
-  if (!dept.hasStandard) return null;
+function getDepartmentStandardByCode(code) {
+  const standard = state.departmentStandards[normalizeDept(code)];
+  if (!standard) return null;
 
   return {
-    max_waste_percent: dept.maxWastePercent,
-    warning_percent: dept.warningPercent,
+    max_waste_percent: standard.max_waste_percent,
+    warning_percent: standard.warning_percent,
   };
-}
-
-function getDepartmentName(row) {
-  const code = normalizeDept(row.department_code);
-  const master = state.departmentStandards[code];
-
-  if (master) return master.name_th;
-
-  return row.department || row.department_code || "-";
 }
 
 function getShift(row) {
@@ -610,9 +726,7 @@ function getProblem(row) {
 }
 
 function getProblemDetail(row) {
-  return (
-    row.detail || row.problem_detail || row.reason_detail || row.note || ""
-  );
+  return row.detail || row.problem_detail || row.reason_detail || row.note || "";
 }
 
 function getWasteWeight(row) {
@@ -620,13 +734,7 @@ function getWasteWeight(row) {
 }
 
 function getProductionValue(row) {
-  return (
-    row.production_weight_kg ??
-    row.total_qty ??
-    row.produced_weight_kg ??
-    row.production_qty ??
-    ""
-  );
+  return row.production_weight_kg ?? row.total_qty ?? row.produced_weight_kg ?? row.production_qty ?? "";
 }
 
 function getProductionWeight(row) {
@@ -638,14 +746,8 @@ function getReporter(row) {
 }
 
 function getAccountingStatus(row) {
-  const status = String(row.status || "").toLowerCase();
-
-  if (
-    ["checked", "approved", "done", "completed", "ตรวจสอบแล้ว"].includes(status)
-  ) {
-    return "checked";
-  }
-
+  const status = normalizeText(row.status);
+  if (CHECKED_STATUS_SET.has(status)) return "checked";
   return "pending";
 }
 
@@ -655,26 +757,21 @@ function getAccountingStatus(row) {
 
 function getWeekOfMonth(value) {
   const d = new Date(value);
-
   if (Number.isNaN(d.getTime())) return "-";
-
   return Math.ceil(d.getDate() / 7);
 }
 
 function toMonthInputValue(value) {
   const d = new Date(value);
-
   if (Number.isNaN(d.getTime())) return "";
 
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
-
   return `${yyyy}-${mm}`;
 }
 
 function formatMonthText(value) {
   const d = new Date(value);
-
   if (Number.isNaN(d.getTime())) return "-";
 
   return d.toLocaleDateString("th-TH", {
@@ -683,23 +780,20 @@ function formatMonthText(value) {
   });
 }
 
-function formatDate(value) {
-  const d = new Date(value);
+function formatDateOnly(value) {
+  const d = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return value || "-";
 
-  if (Number.isNaN(d.getTime())) return "-";
-
-  return d.toLocaleString("th-TH", {
+  return d.toLocaleDateString("th-TH", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
   });
 }
 
 function calcWastePercent(waste, production) {
   if (!production) return 0;
-  return (waste / production) * 100;
+  return (toNumber(waste) / toNumber(production)) * 100;
 }
 
 /* ======================================================
@@ -725,19 +819,18 @@ function getInputNumber(parent, field) {
   return toNumber(value);
 }
 
+function toDateInputValue(date) {
+  const d = new Date(date);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+}
+
 function toNumber(value) {
   const n = Number(value || 0);
   return Number.isFinite(n) ? n : 0;
 }
 
 function formatNumber(value) {
-  return toNumber(value).toLocaleString("th-TH", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-function formatMoney(value) {
   return toNumber(value).toLocaleString("th-TH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -752,9 +845,11 @@ function formatPercent(value) {
 }
 
 function normalizeDept(value) {
-  return String(value || "")
-    .trim()
-    .toUpperCase();
+  return String(value || "").trim().toUpperCase();
+}
+
+function normalizeText(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
 function showAlert(message, type = "error") {
@@ -794,11 +889,7 @@ function cssEscape(value) {
 
 function getWasteResult(wastePercent, standard) {
   if (!standard) {
-    return {
-      label: "ไม่พบเกณฑ์",
-      className: "result-none",
-      diffText: "-",
-    };
+    return { label: "ไม่พบเกณฑ์", className: "result-none" };
   }
 
   const max = toNumber(standard.max_waste_percent);
@@ -808,22 +899,19 @@ function getWasteResult(wastePercent, standard) {
     return {
       label: `เกิน ${formatPercent(wastePercent - max)}`,
       className: "result-danger",
-      diffText: `เกิน ${formatPercent(wastePercent - max)}`,
     };
   }
 
   if (warning > 0 && wastePercent >= warning) {
     return {
-      label: "ใกล้เกิน",
+      label: "เริ่มสูง",
       className: "result-warning",
-      diffText: `เหลือ ${formatPercent(max - wastePercent)}`,
     };
   }
 
   return {
     label: "ผ่าน",
     className: "result-success",
-    diffText: `ต่ำกว่า ${formatPercent(max - wastePercent)}`,
   };
 }
 

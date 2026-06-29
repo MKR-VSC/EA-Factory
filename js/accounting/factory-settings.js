@@ -2,10 +2,27 @@
    FACTORY SETTINGS
    ใช้สำหรับบัญชีตั้งค่าเกณฑ์ % Waste รายแผนก
    Admin / Accounting เท่านั้น
+
+   ใช้ Master หลัก:
+   - master_departments
+
+   ไม่ใช้:
+   - departments
+   - waste_standards
 ====================================================== */
 
-const DEPARTMENT_TABLE = "departments";
+const DEPARTMENT_TABLE = "master_departments";
 const ALLOW_ROLES = ["admin", "accounting"];
+
+/* แผนกที่ไม่เกี่ยวกับการผลิต ไม่ต้องแสดงในหน้านี้ */
+const EXCLUDE_DEPARTMENT_CODES = [
+  "IT_SUPPORT",
+  "IT_SUPORT",
+  "ACCOUNTING",
+  "MANAGEMENT",
+  "ADMIN",
+  "PRINT",
+];
 
 const state = {
   supabase: null,
@@ -54,12 +71,24 @@ async function loadDepartments() {
   try {
     const { data, error } = await state.supabase
       .from(DEPARTMENT_TABLE)
-      .select("code, name_th, sort_order, is_active, max_waste_percent, warning_percent")
+      .select(`
+        department_code,
+        department_name,
+        sort_order,
+        is_active,
+        max_waste_percent,
+        warning_percent
+      `)
+      .eq("is_active", true)
       .order("sort_order", { ascending: true });
 
     if (error) throw error;
 
-    state.departments = Array.isArray(data) ? data : [];
+    state.departments = (Array.isArray(data) ? data : []).filter((dept) => {
+      const code = normalizeCode(dept.department_code);
+      return !EXCLUDE_DEPARTMENT_CODES.includes(code);
+    });
+
     renderTable(state.departments);
   } catch (err) {
     console.error(err);
@@ -75,14 +104,14 @@ function renderTable(rows) {
   if (!tbody) return;
 
   if (!rows.length) {
-    renderEmpty("ยังไม่มีข้อมูลแผนก");
+    renderEmpty("ยังไม่มีข้อมูลแผนกผลิต");
     return;
   }
 
   tbody.innerHTML = rows
     .map((dept, index) => {
-      const code = dept.code || "";
-      const name = dept.name_th || code || "-";
+      const code = dept.department_code || "";
+      const name = dept.department_name || code || "-";
       const max = toNumber(dept.max_waste_percent || 3);
       const warning = toNumber(dept.warning_percent || 0);
       const active = dept.is_active !== false;
@@ -162,7 +191,7 @@ async function saveSettings() {
           max_waste_percent: maxWaste,
           warning_percent: warning,
         })
-        .eq("code", code);
+        .eq("department_code", code);
 
       if (error) throw error;
     }
@@ -175,6 +204,10 @@ async function saveSettings() {
   } finally {
     if (btn) btn.disabled = false;
   }
+}
+
+function normalizeCode(value) {
+  return String(value || "").trim().toUpperCase();
 }
 
 function getInputNumber(parent, field) {
