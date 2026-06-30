@@ -2408,7 +2408,7 @@ function printMachineQrByDepartment() {
     })
     .join("");
 
-  const printWindow = window.open("", "_blank", "noopener,noreferrer");
+  const printWindow = window.open("", "_blank");
 
   if (!printWindow) {
     showAlert("เบราว์เซอร์บล็อกหน้าต่างพิมพ์ กรุณาอนุญาต Popup ก่อนค่ะ");
