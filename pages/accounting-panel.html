@@ -1,222 +1,132 @@
 <!doctype html>
 <html lang="th">
   <head>
-    <!-- ======================================================
-      ACCOUNTING PANEL - DAILY DEFECT / DAILY WASTE
-      หน้าสำหรับแผนกบัญชีตรวจสอบข้อมูลของเสียจากหน้างาน
-      และเติมข้อมูลที่บัญชีต้องใช้ เช่น น้ำหนักผลิต / ต้นทุน / หมายเหตุ
-    ======================================================= -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>ระบบตรวจสอบและสรุปข้อมูลต้นทุน - แผนกบัญชี</title>
-
-    <!-- Fonts -->
+    <title>บัญชีตรวจสอบของเสีย | EA Factory</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-
-    <!-- Material Symbols -->
     <link
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
       rel="stylesheet"
     />
-
-    <!-- CSS แยกไฟล์ -->
-    <link rel="stylesheet" href="/css/accounting-panel.css" />
-    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/css/ea-go-live.css" />
   </head>
-
   <body>
-    <div class="accounting-shell">
-      <!-- ================= HEADER ================= -->
-      <header class="accounting-header">
-        <div class="header-left">
-          <span class="header-icon material-symbols-outlined"
-            >account_balance</span
-          >
-
-          <div>
-            <h1>แผงควบคุมข้อมูลของเสีย - แผนกบัญชี</h1>
-            <p>
-              ตรวจสอบข้อมูลจากหน้างาน เติมน้ำหนักผลิต / ต้นทุน
-              และส่งออกข้อมูลสำหรับรายงาน Excel
-            </p>
-          </div>
+    <main class="page">
+      <header class="topbar">
+        <div class="title">
+          <h1>
+            <span class="material-symbols-outlined">account_balance</span>
+            แผงควบคุมข้อมูลของเสีย - บัญชี
+          </h1>
+          <p>รับเฉพาะรายการที่หัวหน้างานส่งบัญชีแล้ว</p>
         </div>
-
-        <div class="header-actions">
-          <a href="/pages/factory-settings.html" class="btn btn-light">
-            <span class="material-symbols-outlined">settings</span>
-            ตั้งค่า
-          </a>
-
-          <a href="/index.html" class="btn btn-light">
-            <span class="material-symbols-outlined">arrow_back</span>
-            ย้อนกลับ
-          </a>
-
-          <button id="btn-refresh" class="btn btn-dark" type="button">
-            <span class="material-symbols-outlined">refresh</span>
+        <div class="actions">
+          <a class="btn light" href="/pages/factory-settings.html">ตั้งค่า</a
+          ><a class="btn light" href="/index.html">ย้อนกลับ</a
+          ><button class="btn secondary" onclick="loadAccountingData()">
             โหลดใหม่
           </button>
         </div>
       </header>
-
-      <!-- กล่องแจ้งเตือน Error / Success -->
-      <div id="alert-box" class="alert-box" hidden></div>
-
-      <!-- ================= FILTER ================= -->
-      <section class="panel filter-panel">
+      <section class="panel">
         <div class="filter-grid">
-          <div class="filter-group">
-            <label for="filter-dept">แผนก</label>
-            <select id="filter-dept">
+          <div class="form-group">
+            <label>เดือน</label><input type="month" id="filterMonth" />
+          </div>
+          <div class="form-group">
+            <label>แผนก</label
+            ><select id="filterDept">
               <option value="all">ทุกแผนก</option>
-              <option value="BLOW">เป่าถุง (BLOW)</option>
-              <option value="PIPE">ท่อ (PIPE)</option>
-              <option value="SHEET">ตัดผืน (SHEET)</option>
-              <option value="MONO">โมโน (MONO)</option>
-              <option value="TAPE">เทป / สแลน</option>
-              <option value="CUTTING">ตัดเจาะ</option>
             </select>
           </div>
-
-          <div class="filter-group">
-            <label for="filter-month">เดือน</label>
-            <input id="filter-month" type="month" />
-          </div>
-
-          <div class="filter-group">
-            <label for="filter-week">Week</label>
-            <select id="filter-week">
-              <option value="all">ทุก Week</option>
-              <option value="1">Week 1</option>
-              <option value="2">Week 2</option>
-              <option value="3">Week 3</option>
-              <option value="4">Week 4</option>
-              <option value="5">Week 5</option>
+          <div class="form-group">
+            <label>สถานะ</label
+            ><select id="filterStatus">
+              <option value="sent_accounting">รอบัญชีตรวจ</option>
+              <option value="accounting_checked">บัญชีตรวจแล้ว</option>
+              <option value="all">ทั้งหมด</option>
             </select>
           </div>
-
-          <div class="filter-group">
-            <label for="filter-status">สถานะ</label>
-            <select id="filter-status">
-              <option value="all">ทุกสถานะ</option>
-              <option value="pending">รอบัญชีตรวจ</option>
-              <option value="checked">บัญชีตรวจแล้ว</option>
-            </select>
-          </div>
-
-          <div class="filter-group filter-search">
-            <label for="search-input">ค้นหา</label>
-            <input
-              id="search-input"
+          <div class="form-group">
+            <label>ค้นหา</label
+            ><input
               type="search"
-              placeholder="ค้นหาเครื่อง / อาการ / ผู้แจ้ง / หมายเหตุ..."
+              id="searchInput"
+              placeholder="เครื่อง / ปัญหา / ผู้บันทึก"
             />
           </div>
-        </div>
-
-        <div class="export-row">
-          <button id="btn-export-summary" class="btn btn-green" type="button">
-            <span class="material-symbols-outlined">summarize</span>
-            Export สรุป
-          </button>
-
-          <button id="btn-export-raw" class="btn btn-blue" type="button">
-            <span class="material-symbols-outlined">table_view</span>
-            Export ข้อมูลดิบ
-          </button>
+          <div class="form-group">
+            <label>&nbsp;</label
+            ><button class="btn primary" onclick="applyFilters()">ค้นหา</button>
+          </div>
         </div>
       </section>
-
-      <!-- ================= SUMMARY ================= -->
       <section class="summary-grid">
-        <article class="summary-card">
-          <span>จำนวนรายการ</span>
-          <strong id="sum-count">0</strong>
-          <small>รายการตามตัวกรอง</small>
-        </article>
-
-        <article class="summary-card danger">
-          <span>น้ำหนักสูญเสียรวม</span>
-          <strong id="sum-waste">0.00</strong>
-          <small>กิโลกรัม</small>
-        </article>
-
-        <article class="summary-card success">
-          <span>น้ำหนักผลิตรวม</span>
-          <strong id="sum-production">0.00</strong>
-          <small>กิโลกรัม</small>
-        </article>
-
-        <article class="summary-card warning">
-          <span>% Waste</span>
-          <strong id="sum-waste-percent">0.00%</strong>
-          <small>ของเสีย / น้ำหนักผลิต</small>
-        </article>
+        <div class="summary-card">
+          <span>จำนวนรายการ</span><strong id="sumCount">0</strong>
+        </div>
+        <div class="summary-card danger">
+          <span>น้ำหนักสูญเสียรวม</span><strong id="sumWaste">0.00</strong>
+        </div>
+        <div class="summary-card success">
+          <span>น้ำหนักผลิตรวม</span><strong id="sumProduction">0.00</strong>
+        </div>
       </section>
-
-      <!-- ================= DATA TABLE ================= -->
-      <section class="panel table-panel">
-        <div class="panel-head">
+      <section class="panel">
+        <div class="table-head">
           <div>
             <h2>รายการข้อมูลของเสียจากหน้างาน</h2>
-            <p>
-              ช่องสีอ่อนเป็นข้อมูลที่บัญชีเติมหรือแก้ไขได้ เช่น
-              น้ำหนักผลิตและสถานะรายการ
-              รายการที่ยังรอบัญชีตรวจจะยังไม่แสดงค่าน้ำหนักผลิตและ % Waste
-              จนกว่าจะกดบันทึก
-            </p>
+            <p class="muted">กรอกน้ำหนักผลิต แล้วบันทึกเพื่อปิดรายการบัญชี</p>
           </div>
-
-          <span id="last-update" class="muted">ยังไม่ได้โหลดข้อมูล</span>
+          <span id="lastUpdate" class="muted">-</span>
         </div>
-
         <div class="table-scroll">
           <table class="data-table">
             <thead>
               <tr>
+                <th></th>
                 <th>วันที่</th>
-                <th>เดือน</th>
-                <th>Week</th>
                 <th>แผนก</th>
                 <th>กะ</th>
                 <th>เครื่อง</th>
-                <th>อาการ</th>
-                <th class="text-right">สูญเสีย kg</th>
+                <th>ผู้บันทึก</th>
+                <th class="text-right">ของเสีย kg</th>
+                <th>รายการปัญหา</th>
                 <th class="text-right">ผลิต kg</th>
                 <th class="text-right">% Waste</th>
-                <th class="text-right">เกณฑ์ %</th>
                 <th>ผลประเมิน</th>
-                <th>ผู้แจ้ง</th>
                 <th>สถานะ</th>
                 <th>จัดการ</th>
               </tr>
             </thead>
-
-            <tbody id="accounting-table-body">
+            <tbody id="accountingBody">
               <tr>
-                <td colspan="15" class="tb-empty">กำลังโหลดข้อมูล...</td>
+                <td colspan="13" class="empty">กำลังโหลดข้อมูล...</td>
               </tr>
             </tbody>
           </table>
         </div>
       </section>
+    </main>
+    <div id="appModal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-head">
+          <h3 id="modalTitle">แจ้งเตือน</h3>
+          <button class="modal-close" onclick="closeModal()">×</button>
+        </div>
+        <div id="modalBody"></div>
+        <div id="modalActions" class="modal-actions"></div>
+      </div>
     </div>
-
-    <!-- Supabase -->
+    <div id="toast" class="toast hidden"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- ถ้าโปรเจกต์คุณใช้ /js/core/supabaseClient.js ให้เปลี่ยนบรรทัดนี้เป็น path เดิมได้เลย -->
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/activityLogger.js"></script>
-
     <script src="/core/roleConfig.js"></script>
-
-    <!-- JS เฉพาะหน้าบัญชี -->
-    <script src="/js/accounting/accounting-panel.js"></script>
+    <script src="/js/accounting/accounting-panel.js?v=go-live-1"></script>
   </body>
 </html>
