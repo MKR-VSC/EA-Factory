@@ -268,22 +268,6 @@
                 </small>
               </section>
 
-              <div class="form-group full-textarea">
-                <label for="problem-description">
-                  <span class="material-symbols-outlined label-icon blue"
-                    >edit_note</span
-                  >
-                  รายละเอียดปัญหา / หมายเหตุ
-                  <span class="required">*</span>
-                </label>
-                <textarea
-                  id="problem-description"
-                  rows="4"
-                  placeholder="กรุณาระบุรายละเอียดของปัญหาที่เกิดขึ้น"
-                  required
-                ></textarea>
-              </div>
-
               <div class="form-actions">
                 <button
                   type="button"
@@ -346,6 +330,22 @@
           >ระบบจะเก็บรายละเอียดนี้ไว้ในรายงาน
           เพื่อสรุปสาเหตุของปัญหาอื่นๆ</small
         >
+      </div>
+    </div>
+
+
+    <!-- Popup กลางของระบบ ใช้แทน alert/confirm เพื่อไม่ให้ข้อความระบบเด้งทับ -->
+    <div id="app-dialog" class="app-dialog hidden" role="dialog" aria-modal="true">
+      <div class="app-dialog-box">
+        <div class="app-dialog-icon">
+          <span class="material-symbols-outlined" id="app-dialog-icon-symbol">info</span>
+        </div>
+        <h3 id="app-dialog-title">แจ้งเตือน</h3>
+        <p id="app-dialog-message">-</p>
+        <div class="app-dialog-actions">
+          <button type="button" id="app-dialog-cancel" class="btn-dialog-cancel">ยกเลิก</button>
+          <button type="button" id="app-dialog-ok" class="btn-dialog-ok">ตกลง</button>
+        </div>
       </div>
     </div>
 

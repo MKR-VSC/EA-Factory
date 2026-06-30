@@ -475,3 +475,71 @@ textarea:focus {
   color: #475569;
   background: #e2e8f0;
 }
+
+
+
+
+
+
+/* ======================================================
+   ADD-ON: Accounting Problem Table
+   ใช้ต่อท้าย accounting-panel.css เดิม
+====================================================== */
+
+.problem-mini-table-wrap {
+  min-width: 360px;
+  overflow: auto;
+}
+
+.problem-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.problem-mini-table th,
+.problem-mini-table td {
+  padding: 7px 9px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 13px;
+  vertical-align: top;
+}
+
+.problem-mini-table th {
+  color: #475569;
+  background: #f8fafc;
+  white-space: nowrap;
+}
+
+.problem-mini-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.problem-mini-table td:nth-child(1) {
+  min-width: 130px;
+}
+
+.problem-mini-table td:nth-child(2) {
+  width: 86px;
+  color: var(--red);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.problem-mini-table td:nth-child(3) {
+  min-width: 160px;
+  color: var(--muted);
+}
+
+@media (max-width: 760px) {
+  .problem-mini-table-wrap {
+    min-width: 300px;
+  }
+
+  .data-table {
+    min-width: 1300px;
+  }
+}
