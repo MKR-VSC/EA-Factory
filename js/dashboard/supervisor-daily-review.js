@@ -1439,6 +1439,8 @@ function logout() {
   window.location.href = "/login.html";
 }
 
+
+
 // ======================================================
 // GLOBAL EXPORT
 // ======================================================
@@ -1454,3 +1456,6 @@ window.saveEditRecord = saveEditRecord;
 window.approveRecord = approveRecord;
 window.deleteRecord = deleteRecord;
 window.uploadEvidenceForRecord = uploadEvidenceForRecord;
+
+
+

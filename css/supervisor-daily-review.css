@@ -1027,3 +1027,97 @@ textarea:focus {
   color: #475569;
   background: #e2e8f0;
 }
+
+
+/* ======================================================
+   SUPERVISOR DAILY REVIEW - PROBLEM TABLE PATCH
+   วางท้ายไฟล์ /css/supervisor-daily-review.css
+====================================================== */
+
+.problem-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 10px;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.problem-section-title .material-symbols-outlined {
+  color: var(--primary);
+  font-size: 22px;
+}
+
+.problem-section-title strong {
+  margin-left: auto;
+  color: var(--danger);
+  font-size: 18px;
+}
+
+.problem-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.problem-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+}
+
+.problem-table th,
+.problem-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  vertical-align: top;
+  text-align: left;
+  font-size: 14px;
+}
+
+.problem-table th {
+  color: #475569;
+  background: #f8fafc;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.problem-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+.problem-table tfoot td {
+  color: #0f172a;
+  background: #fefce8;
+  font-weight: 950;
+  border-bottom: 0;
+}
+
+.text-right {
+  text-align: right !important;
+}
+
+@media (max-width: 760px) {
+  .problem-section-title {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .problem-section-title strong {
+    width: 100%;
+    margin-left: 30px;
+  }
+
+  .problem-table {
+    min-width: 560px;
+  }
+
+  .problem-table th,
+  .problem-table td {
+    padding: 10px 11px;
+    font-size: 13px;
+  }
+}

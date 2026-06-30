@@ -30,12 +30,27 @@
 
 const REPORT_TABLE = "daily_waste_reports";
 const MASTER_DEPARTMENT_TABLE = "master_departments";
+const REPORT_ITEM_TABLE = "daily_waste_report_items";
 
 // Role ที่เข้าใช้งานหน้าบัญชีได้
-const ALLOW_ROLES = ["admin", "accounting", "management", "supervisor"];
+const ALLOW_ROLES = ["admin", "accounting", "management"];
 
 // สถานะที่ถือว่าบัญชีตรวจแล้ว
+const ACCOUNTING_PENDING_STATUS = "sent_accounting";
+const ACCOUNTING_CHECKED_STATUS = "accounting_checked";
+
+// สถานะที่บัญชีควรเห็น:
+// - sent_accounting = หัวหน้าตรวจแล้ว ส่งเข้าบัญชี
+// - accounting_checked = บัญชีตรวจแล้ว
+const ACCOUNTING_VISIBLE_STATUS_SET = new Set([
+  ACCOUNTING_PENDING_STATUS,
+  ACCOUNTING_CHECKED_STATUS,
+  "checked",
+  "บัญชีตรวจแล้ว",
+]);
+
 const CHECKED_STATUS_SET = new Set([
+  ACCOUNTING_CHECKED_STATUS,
   "checked",
   "approved",
   "done",
@@ -164,12 +179,14 @@ async function loadAccountingData() {
     const { data, error } = await state.supabase
       .from(REPORT_TABLE)
       .select("*")
+      // บัญชีเห็นเฉพาะรายการที่หัวหน้ากด "ส่งบัญชี" แล้ว
+      .in("status", Array.from(ACCOUNTING_VISIBLE_STATUS_SET))
       .order("incident_datetime", { ascending: false })
       .limit(1500);
 
     if (error) throw new Error(`โหลดข้อมูลไม่สำเร็จ: ${error.message}`);
 
-    state.reports = Array.isArray(data) ? data : [];
+    state.reports = await attachProblemItems(Array.isArray(data) ? data : []);
 
     setText("last-update", `อัปเดตล่าสุด: ${new Date().toLocaleString("th-TH")}`);
     applyFilters();
@@ -179,6 +196,45 @@ async function loadAccountingData() {
     renderEmpty("โหลดข้อมูลไม่สำเร็จ");
   } finally {
     if (btn) btn.disabled = false;
+  }
+}
+
+
+/* ======================================================
+   LOAD REPORT ITEMS
+   ดึงรายการปัญหาย่อยจาก daily_waste_report_items
+   เพื่อให้ Accounting แสดงปัญหาเป็นตาราง ไม่ใช้ข้อความรวมยาว
+====================================================== */
+
+async function attachProblemItems(reports) {
+  if (!reports.length) return [];
+
+  const reportIds = reports.map((row) => row.id).filter(Boolean);
+  if (!reportIds.length) return reports;
+
+  try {
+    const { data, error } = await state.supabase
+      .from(REPORT_ITEM_TABLE)
+      .select("id, report_id, problem_type, waste_weight_kg, detail")
+      .in("report_id", reportIds)
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+
+    const itemMap = new Map();
+
+    (data || []).forEach((item) => {
+      if (!itemMap.has(item.report_id)) itemMap.set(item.report_id, []);
+      itemMap.get(item.report_id).push(item);
+    });
+
+    return reports.map((row) => ({
+      ...row,
+      problem_items: itemMap.get(row.id) || [],
+    }));
+  } catch (err) {
+    console.warn("โหลด daily_waste_report_items ไม่สำเร็จ ใช้ข้อมูลหัวรายงานแทน:", err);
+    return reports.map((row) => ({ ...row, problem_items: [] }));
   }
 }
 
@@ -207,6 +263,11 @@ function applyFilters() {
       getShift(row),
       getProblem(row),
       getProblemDetail(row),
+      ...(row.problem_items || []).flatMap((item) => [
+        item.problem_type,
+        item.detail,
+        item.waste_weight_kg,
+      ]),
       getReporter(row),
       row.note,
       row.reason_detail,
@@ -256,8 +317,7 @@ function buildAccountingGroups(rows) {
     const waste = getWasteWeight(row);
     const production = getProductionWeight(row);
     const rowStatus = getAccountingStatus(row);
-    const problem = getProblem(row) || "ไม่ระบุอาการ";
-    const detail = getProblemDetail(row);
+    const reportProblemItems = getProblemItems(row);
 
     if (!map.has(key)) {
       map.set(key, {
@@ -297,20 +357,26 @@ function buildAccountingGroups(rows) {
     const reporter = getReporter(row);
     if (reporter) group.reporterNames.add(reporter);
 
-    const problemKey = problem || "ไม่ระบุอาการ";
-    if (!group.problems.has(problemKey)) {
-      group.problems.set(problemKey, {
-        problem: problemKey,
-        details: new Set(),
-        waste: 0,
-        count: 0,
-      });
-    }
+    reportProblemItems.forEach((item) => {
+      const problemKey = item.problem || "ไม่ระบุอาการ";
 
-    const problemItem = group.problems.get(problemKey);
-    problemItem.waste += waste;
-    problemItem.count += 1;
-    if (detail) problemItem.details.add(detail);
+      if (!group.problems.has(problemKey)) {
+        group.problems.set(problemKey, {
+          problem: problemKey,
+          details: [],
+          waste: 0,
+          count: 0,
+        });
+      }
+
+      const problemItem = group.problems.get(problemKey);
+      problemItem.waste += item.waste;
+      problemItem.count += 1;
+
+      if (item.detail) {
+        problemItem.details.push(item.detail);
+      }
+    });
   });
 
   return Array.from(map.values()).sort((a, b) => {
@@ -420,22 +486,37 @@ function renderGroupRow(group) {
 function renderProblemSummary(group) {
   const problemItems = Array.from(group.problems.values()).sort((a, b) => b.waste - a.waste);
 
-  return `
-    <div class="problem-list">
-      ${problemItems
-        .map((item) => {
-          const share = group.waste > 0 ? (item.waste / group.waste) * 100 : 0;
-          const details = Array.from(item.details).slice(0, 2).join(" / ");
+  if (!problemItems.length) return "-";
 
-          return `
-            <div class="problem-item">
-              <strong>${escapeHtml(item.problem)}</strong>
-              <span>${formatNumber(item.waste)} kg | ${formatPercent(share)} ของของเสีย</span>
-              ${details ? `<small>${escapeHtml(details)}</small>` : ""}
-            </div>
-          `;
-        })
-        .join("")}
+  return `
+    <div class="problem-mini-table-wrap">
+      <table class="problem-mini-table">
+        <thead>
+          <tr>
+            <th>ปัญหา</th>
+            <th class="text-right">kg</th>
+            <th>รายละเอียด</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${problemItems
+            .map((item) => {
+              const details = [...new Set(item.details || [])]
+                .filter(Boolean)
+                .slice(0, 3)
+                .join(" / ");
+
+              return `
+                <tr>
+                  <td><strong>${escapeHtml(item.problem)}</strong></td>
+                  <td class="text-right">${formatNumber(item.waste)}</td>
+                  <td>${details ? escapeHtml(details) : "-"}</td>
+                </tr>
+              `;
+            })
+            .join("")}
+        </tbody>
+      </table>
     </div>
   `;
 }
@@ -504,7 +585,7 @@ async function saveAccountingRow(groupKey) {
 
   const payload = {
     total_qty: production,
-    status: "checked",
+    status: ACCOUNTING_CHECKED_STATUS,
     checked_by: activeUserId,
     checked_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -522,11 +603,8 @@ async function markPending(groupKey) {
     return;
   }
 
-  const ok = confirm("ต้องการย้อนสถานะกลุ่มนี้กลับเป็นรอบัญชีตรวจใช่ไหม?");
-  if (!ok) return;
-
   const payload = {
-    status: "pending",
+    status: ACCOUNTING_PENDING_STATUS,
     checked_by: null,
     checked_at: null,
     updated_at: new Date().toISOString(),
@@ -719,6 +797,27 @@ function getShift(row) {
 
 function getMachine(row) {
   return row.machine_no || row.machine || row.machine_name || "";
+}
+
+
+function getProblemItems(row) {
+  const items = Array.isArray(row.problem_items) ? row.problem_items : [];
+
+  if (items.length) {
+    return items.map((item) => ({
+      problem: item.problem_type || "ไม่ระบุอาการ",
+      waste: toNumber(item.waste_weight_kg),
+      detail: item.detail || "",
+    }));
+  }
+
+  return [
+    {
+      problem: getProblem(row) || "ไม่ระบุอาการ",
+      waste: getWasteWeight(row),
+      detail: getProblemDetail(row),
+    },
+  ];
 }
 
 function getProblem(row) {
