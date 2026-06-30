@@ -1121,3 +1121,94 @@ textarea:focus {
     font-size: 13px;
   }
 }
+
+
+/* ======================================================
+   Supervisor Daily Review - Problem Items Table Addons
+   วางต่อท้าย /css/supervisor-daily-review.css
+====================================================== */
+
+.problem-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 10px;
+  color: #0f172a;
+  font-weight: 950;
+}
+
+.problem-section-title .material-symbols-outlined {
+  color: #2563eb;
+  font-size: 22px;
+}
+
+.problem-section-title strong {
+  margin-left: auto;
+  color: #dc2626;
+  font-size: 18px;
+}
+
+.problem-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.problem-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+}
+
+.problem-table th,
+.problem-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  text-align: left;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.problem-table th {
+  color: #475569;
+  background: #f8fafc;
+  font-weight: 950;
+}
+
+.problem-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+.problem-table tfoot td {
+  color: #0f172a;
+  background: #fffbea;
+  font-weight: 950;
+  border-bottom: 0;
+}
+
+.text-right {
+  text-align: right !important;
+}
+
+button:disabled,
+input:disabled,
+textarea:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+  .problem-section-title {
+    align-items: flex-start;
+  }
+
+  .problem-section-title strong {
+    font-size: 16px;
+  }
+
+  .problem-table {
+    min-width: 560px;
+  }
+}
