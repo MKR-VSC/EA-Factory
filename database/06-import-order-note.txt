@@ -1,0 +1,19 @@
+EA Factory Import Order
+
+ให้ import ตามลำดับนี้เสมอ:
+
+1. master_departments
+2. master_machines
+3. master_problems
+4. master_shifts
+5. factory_settings
+6. Authentication Users
+7. profiles
+8. user_departments
+9. ทดสอบ Login
+10. daily_waste_reports เฉพาะกรณีต้องการย้ายข้อมูลทดสอบ
+
+ถ้าเจอ error foreign key:
+- profiles_department_code_fkey
+แปลว่า department_code ใน profiles ยังไม่มีใน master_departments
+ให้เพิ่ม master_departments ก่อน แล้วค่อย import profiles ใหม่
