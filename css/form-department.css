@@ -1093,3 +1093,162 @@ img {
 .online-btn .material-symbols-outlined{
     font-size:18px;
 }
+/* ======================================================
+   MULTI PROBLEM ITEMS
+   ใช้กับฟอร์มเลือกหลายปัญหา + น้ำหนักแยกตามปัญหา
+====================================================== */
+
+.problem-items-card {
+  grid-column: 1 / -1;
+}
+
+.problem-items-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.problem-items-header label {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.btn-add-problem {
+  min-height: 44px;
+  border: 0;
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: #ecfdf5;
+  color: #15803d;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.btn-add-problem .material-symbols-outlined {
+  font-size: 21px;
+}
+
+.problem-items-list {
+  display: grid;
+  gap: 14px;
+}
+
+.problem-item {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid #dbeafe;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.055);
+}
+
+.problem-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.problem-item-head strong {
+  color: var(--primary-dark);
+  font-size: 16px;
+}
+
+.btn-remove-problem {
+  min-height: 36px;
+  border: 0;
+  border-radius: 12px;
+  padding: 8px 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: 800;
+}
+
+.btn-remove-problem .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.problem-item-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(150px, 0.55fr);
+  gap: 12px;
+}
+
+.problem-mini-label {
+  display: block !important;
+  margin: 0 0 7px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  color: var(--ink) !important;
+}
+
+.problem-detail-wrap {
+  margin-top: 12px;
+}
+
+.problem-detail-wrap textarea {
+  min-height: 82px;
+}
+
+.detail-required-hint {
+  border-color: #f59e0b !important;
+  background: #fff7ed !important;
+}
+
+.problem-total-box {
+  margin-top: 14px;
+  min-height: 58px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.problem-total-box .material-symbols-outlined {
+  font-size: 28px;
+}
+
+.problem-total-box strong {
+  font-size: 22px;
+  color: #1d4ed8;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .problem-items-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .btn-add-problem {
+    width: 100%;
+  }
+
+  .problem-item-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .problem-total-box {
+    grid-template-columns: 30px 1fr;
+  }
+
+  .problem-total-box strong {
+    grid-column: 1 / -1;
+    text-align: right;
+    font-size: 24px;
+  }
+}

@@ -232,38 +232,41 @@
                 </select>
               </div>
 
-              <div class="form-group">
-                <label for="problem-type">
-                  <span class="material-symbols-outlined label-icon red"
-                    >error</span
-                  >
-                  ประเภทปัญหาที่พบ
-                  <span class="required">*</span>
-                </label>
-                <select id="problem-type" required>
-                  <option value="">-- กำลังโหลดรายการปัญหา --</option>
-                </select>
-              </div>
+              <!-- รายการปัญหาแบบหลายข้อ
+                   1 เครื่องสามารถมีได้หลายปัญหาใน 1 ครั้งบันทึก
+                   แต่ละปัญหาระบุน้ำหนักแยกกัน และระบบจะรวมให้อัตโนมัติ -->
+              <section class="form-group problem-items-card">
+                <div class="problem-items-header">
+                  <label>
+                    <span class="material-symbols-outlined label-icon red">error</span>
+                    รายการปัญหาที่พบ
+                    <span class="required">*</span>
+                  </label>
 
-              <div class="form-group">
-                <label for="waste-weight">
-                  <span class="material-symbols-outlined label-icon green"
-                    >scale</span
+                  <button
+                    type="button"
+                    id="btn-add-problem"
+                    class="btn-add-problem"
                   >
-                  น้ำหนักของเสียที่เกิดขึ้น (กิโลกรัม)
-                  <span class="required">*</span>
-                </label>
-                <input
-                  type="number"
-                  id="waste-weight"
-                  step="0.01"
-                  placeholder="0.00"
-                  class="form-input"
-                />
-                <small class="helper-text"
-                  >กรอกน้ำหนักจริงจากการชั่ง เพื่อใช้คำนวณต้นทุน</small
-                >
-              </div>
+                    <span class="material-symbols-outlined">add_circle</span>
+                    เพิ่มปัญหา
+                  </button>
+                </div>
+
+                <div id="problem-items" class="problem-items-list">
+                  <!-- JS จะสร้างแถวปัญหาให้อัตโนมัติ -->
+                </div>
+
+                <div class="problem-total-box">
+                  <span class="material-symbols-outlined">scale</span>
+                  <span>น้ำหนักของเสียรวม</span>
+                  <strong><span id="total-waste-kg">0.00</span> kg</strong>
+                </div>
+
+                <small class="helper-text">
+                  เลือกปัญหาได้หลายข้อในเครื่องเดียว แล้วกรอกน้ำหนักแยกตามปัญหา
+                </small>
+              </section>
 
               <div class="form-group full-textarea">
                 <label for="problem-description">
