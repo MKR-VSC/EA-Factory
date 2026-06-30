@@ -68,16 +68,16 @@ function loadRememberedUser() {
 
 function togglePasswordVisibility() {
   const input = document.getElementById("pvtPassword");
-  const btn = document.querySelector(".btn-eye");
+  const icon = document.getElementById("eyeIcon");
 
   if (!input) return;
 
   if (input.type === "password") {
     input.type = "text";
-    if (btn) btn.textContent = "🙈";
+    if (icon) icon.textContent = "visibility_off";
   } else {
     input.type = "password";
-    if (btn) btn.textContent = "👁️";
+    if (icon) icon.textContent = "visibility";
   }
 }
 
@@ -156,12 +156,21 @@ async function handlePasswordLogin(event) {
       userId: profile.id,
       username: profile.username || usernameInput,
       fullName: activeName,
-      department: profile.department_code || profile.department || "",
+      department:
+  (profile.department_code || profile.department || "").toLowerCase(),
       departmentName: profile.department || profile.department_code || "",
       role: profile.role || "staff",
     });
 
-    redirectByRole(profile.role);
+    console.log("=== LOGIN SUCCESS ===");
+    console.log("ROLE =", profile.role);
+    console.log("DEPT =", profile.department_code);
+    console.log(
+      "TARGET =",
+      ROLE_CONFIG.getDefaultPage(profile.role || "staff"),
+    );
+
+    redirectByRole(profile.role || "staff");
   } catch (err) {
     console.error("Login Error:", err);
     alert("Username หรือ Password ไม่ถูกต้อง หรือบัญชีถูกปิดใช้งาน");
@@ -303,6 +312,8 @@ function handleQrLogin() {
 
   const selected = select.options[select.selectedIndex];
 
+  const userRole = selected.dataset.role || "staff";
+
   saveSession({
     loginType: "qr",
     userId: select.value,
@@ -314,10 +325,10 @@ function handleQrLogin() {
       selected.dataset.departmentName ||
       localStorage.getItem("qrDeptName") ||
       "",
-    role: "staff_qr",
+    role: userRole,
   });
 
-  window.location.href = "/html/form-department.html";
+  redirectByRole(userRole || "staff");
 }
 
 /* ======================================================
@@ -325,6 +336,10 @@ function handleQrLogin() {
 ====================================================== */
 
 function saveSession(data) {
+  const role = window.ROLE_CONFIG
+    ? ROLE_CONFIG.normalizeRole(data.role)
+    : String(data.role || "staff").toLowerCase();
+
   localStorage.setItem("loginType", data.loginType || "");
   localStorage.setItem("activeUserId", data.userId || "");
   localStorage.setItem("activeUser", data.username || "");
@@ -334,10 +349,7 @@ function saveSession(data) {
     "activeDeptName",
     data.departmentName || data.department || "",
   );
-  localStorage.setItem(
-    "activeRole",
-    String(data.role || "staff").toLowerCase(),
-  );
+  localStorage.setItem("activeRole", role);
 }
 
 /* ======================================================
@@ -345,23 +357,13 @@ function saveSession(data) {
 ====================================================== */
 
 function redirectByRole(role) {
-  const currentRole = String(role || "staff")
-    .toLowerCase()
-    .trim();
+  if (!window.ROLE_CONFIG) {
+    console.error("❌ ROLE_CONFIG ไม่พร้อมใช้งาน");
+    window.location.href = "/pages/form-department.html";
+    return;
+  }
 
-  const rolePages = {
-    admin: "/html/admintor.html",
-    accounting: "/html/accounting-panel.html",
-    management: "/index.html",
-    manager: "/index.html",
-    executive: "/index.html",
-    supervisor: "/html/form-department.html",
-    staff: "/html/form-department.html",
-    staff_qr: "/html/form-department.html",
-  };
-
-  const targetPage = rolePages[currentRole] || "/html/form-department.html";
-
+  const targetPage = ROLE_CONFIG.getDefaultPage(role);
   window.location.href = targetPage;
 }
 
@@ -392,4 +394,72 @@ function openQrScanner() {
 
   // ถ้าต้องการให้ไปหน้าสแกน QR แยก
   // window.location.href = "/html/qr-scanner.html";
+  window.location.href = "https://ea-factory-2sx.pages.dev/pages/form-department.html?dept=SHEET";
+}
+
+let qrScanner = null;
+
+/* ======================================================
+   QR SCANNER
+====================================================== */
+
+function showQrScanner() {
+  const modal = document.getElementById("qrScannerModal");
+
+  if (!modal) return;
+
+  modal.classList.remove("hidden");
+
+  qrScanner = new Html5Qrcode("qr-reader");
+
+  qrScanner
+    .start(
+      {
+        facingMode: "environment",
+      },
+      {
+        fps: 10,
+        qrbox: 250,
+      },
+      onQrScanSuccess,
+    )
+    .catch((err) => {
+      console.error(err);
+      alert("ไม่สามารถเปิดกล้องได้");
+    });
+}
+
+function closeQrScanner() {
+  const modal = document.getElementById("qrScannerModal");
+
+  if (qrScanner) {
+    qrScanner
+      .stop()
+      .then(() => {
+        qrScanner.clear();
+        qrScanner = null;
+      })
+      .catch(console.error);
+  }
+
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+}
+
+function onQrScanSuccess(decodedText) {
+  console.log("QR =", decodedText);
+
+  if (qrScanner) {
+    qrScanner.stop();
+  }
+  
+
+  /*
+    ตัวอย่าง QR
+
+    https://prod-ea-factory.pages.dev/login?dept=blow&token=BLOW001
+  */
+
+  window.location.href = decodedText;
 }

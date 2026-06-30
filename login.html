@@ -1,48 +1,39 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - EA Factory</title>
+    <title>Login | EA Factory</title>
 
     <!-- Fonts -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
     <!-- Icons -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 
-    <!-- Favicon / PWA -->
-    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/BG1.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/BG1.png" />
+    <link rel="apple-touch-icon" href="/icons/Ea_Factory_512.png" />
+
+    <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#4caf8a" />
 
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="192x192"
-      href="/assets/icons/logo_192.png"
-    />
-    <link rel="apple-touch-icon" href="/assets/icons/logo_512.png" />
-
     <!-- CSS -->
+    <link rel="stylesheet" href="/css/loadingService.css" />
     <link rel="stylesheet" href="/css/login.css" />
   </head>
 
   <body>
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/js/core/supabaseClient.js"></script>
-
+    <script src="/core/supabaseClient.js"></script>
+    <script src="/core/activityLogger.js"></script>
     <!-- Splash Screen -->
     <div id="splash-screen">
       <div class="splash-logo">
-        <img src="/assets/icons/logo_192.png" alt="EA Factory Logo" />
+        <img src="/icons/Ea_Factory_512.png" alt="EA Factory Logo" />
       </div>
       <!-- <div class="splash-title">EA Factory</div> -->
       <div class="splash-sub">ศูนย์รวมข้อมูลและระบบงาน</div>
@@ -58,10 +49,9 @@
       </div>
     </div>
 
-    <!-- Header -->
-    <header class="pvt-top-header">
+    <div class="pvt-top-header">
       <div class="logo">
-        <img src="/assets/icons/logo_512.png" alt="EA Factory Logo" />
+        <img src="/icons/Ea_Factory_512.png" alt="EA Factory Logo" />
         <div>
           <!-- <h2>EA Factory</h2> -->
           <!-- <p>ศูนย์รวมข้อมูลและระบบงาน</p> -->
@@ -70,34 +60,13 @@
 
       <h1>ระบบบันทึกข้อมูลของเสียจากการผลิต</h1>
       <p>บริษัท พี.วี.ที.แอนด์ ที.พลาส จำกัด</p>
-    </header>
-
-    <!-- Guide Panel -->
-    <!-- <section class="guide-card" id="guideCard">
-      <button type="button" class="btn-guide-toggle" onclick="toggleGuidePanel()">
-        <span class="toggle-icon">ℹ️</span>
-        <span class="toggle-text"></span>
-      </button>
-
-      <h3>วิธีเข้าใช้งาน</h3>
-
-      <div class="mode-box">
-        <b>💻 Notebook / PC</b>
-        <p>ใช้ Username + Password สำหรับ Admin, บัญชี, หัวหน้า, ผู้บริหาร</p>
-      </div>
-
-      <div class="mode-box">
-        <b>📱 Tablet / Mobile</b>
-        <p>สแกน QR Code ประจำแผนก แล้วเลือกชื่อผู้บันทึก</p>
-      </div>
-    </section> -->
-
+    </div>
     <!-- Main Login -->
     <main class="login-page">
       <section class="login-card">
         <form id="loginForm" onsubmit="handlePasswordLogin(event)">
           <h2>🔐 เข้าสู่ระบบ</h2>
-          <p class="subtitle">สำหรับ Notebook / PC</p>
+          <!-- <p class="subtitle">สำหรับ Notebook / PC</p> -->
 
           <div class="form-group">
             <label for="username">Username</label>
@@ -126,9 +95,10 @@
                 type="button"
                 class="btn-eye"
                 onclick="togglePasswordVisibility()"
-                aria-label="แสดง/ซ่อนรหัสผ่าน"
               >
-                👁️
+                <span class="material-symbols-outlined" id="eyeIcon">
+                  visibility
+                </span>
               </button>
             </div>
           </div>
@@ -140,22 +110,31 @@
 
           <button type="submit" class="btn-login">เข้าสู่ระบบ</button>
 
-          <button type="button" class="btn-scan-qr" onclick="openQrScanner()">
-            📷 สแกน QR Code
+          <button type="button" class="btn-scan-qr" onclick="showQrScanner()">
+            <span class="material-symbols-outlined"> qr_code_scanner </span>
+            สแกน QR Code
           </button>
-
-          <div class="forgot-redirect-container">
-            <p class="forgot-text">ลืมรหัสผ่าน หรือเข้าใช้งานไม่ได้?</p>
-            <button
-              type="button"
-              class="btn-secondary-forgot"
-              onclick="alert('กรุณาติดต่อผู้ดูแลระบบ')"
-            >
-              แจ้งลืมรหัสผ่าน
-            </button>
-          </div>
         </form>
       </section>
+      <div id="qrScannerModal" class="qr-modal hidden">
+        <div class="qr-modal-box">
+          <div class="qr-modal-header">
+            <h3>สแกน QR Code</h3>
+
+            <button
+              type="button"
+              class="qr-close"
+              onclick="window.location.href = 'login.html'"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div id="qr-reader"></div>
+
+          <p class="qr-hint">นำกล้องไปส่อง QR Code ประจำแผนก</p>
+        </div>
+      </div>
 
       <!-- QR Login Box -->
       <section class="qr-login-box hidden" id="qrLoginBox">
@@ -174,8 +153,11 @@
         </button>
       </section>
     </main>
-
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <!-- JS -->
+
+    <script src="/core/roleConfig.js"></script>
+
     <script src="/auth/login.js"></script>
   </body>
 </html>

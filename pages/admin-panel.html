@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <!-- ======================================================
+      ADMIN PANEL HTML
+      Daily Defect System
+      ------------------------------------------------------
+      ไฟล์นี้เพิ่มเมนู QR รายเครื่องให้ Admin แล้ว
+      ใช้ร่วมกับ:
+      - /css/admin-panel.css
+      - /js/admin/admin-panel.js
+    ======================================================= -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Panel - Daily Defect</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/loadingService.css" />
+    <link rel="stylesheet" href="/css/admin-panel.css" />
+    <link rel="icon" href="data:," />
+    <style>
+      .user-dept-permission-panel {
+        margin: 14px 0 18px;
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        background: #f8fafc;
+      }
+
+      .user-dept-permission-panel strong {
+        display: block;
+        margin-bottom: 4px;
+        color: #0f172a;
+      }
+
+      .user-dept-permission-panel .muted {
+        display: block;
+        margin-bottom: 12px;
+        color: #64748b;
+        font-size: 13px;
+      }
+
+      .dept-checkbox-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+      }
+
+      .dept-check-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 14px;
+        background: #ffffff;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .dept-check-item input {
+        width: 18px;
+        height: 18px;
+        accent-color: #2563eb;
+      }
+
+      .user-dept-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .user-dept-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #e0f2fe;
+        color: #075985;
+        font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .modal-form-full {
+        grid-column: 1 / -1;
+      }
+    </style>
+
+  </head>
+
+  <body>
+    <div class="app-shell">
+      <!-- ======================================================
+        SIDEBAR MENU
+        ------------------------------------------------------
+        เพิ่มเมนู "QR รายเครื่อง" แล้ว
+        data-section="machine-qr" จะไปเปิด section-machine-qr
+      ======================================================= -->
+      <aside class="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-icon">
+            <img src="/icons/Icon_Logo_512.png" alt="EA Factory Logo" />
+          </div>
+
+          <div class="logo-text">
+            <strong>Admin Panel</strong>
+            <small>Daily Defect System</small>
+          </div>
+        </div>
+
+        <nav class="sidebar-menu" aria-label="เมนูหลัก">
+          <button
+            class="sidebar-item active"
+            type="button"
+            data-section="dashboard"
+          >
+            <span class="material-symbols-outlined">bar_chart</span> Dashboard
+          </button>
+
+          <button class="sidebar-item" type="button" data-section="masters">
+            <span class="material-symbols-outlined">settings</span> Master Data
+          </button>
+
+          <button class="sidebar-item" type="button" data-section="users">
+            <span class="material-symbols-outlined">groups</span> Users / Roles
+          </button>
+
+          <button
+            class="sidebar-item"
+            type="button"
+            data-section="department-qr"
+          >
+            <span class="material-symbols-outlined">qr_code</span> QR แผนก
+          </button>
+
+          <button class="sidebar-item" type="button" data-section="machine-qr">
+            <span class="material-symbols-outlined">qr_code</span> QR รายเครื่อง
+          </button>
+
+          <button class="sidebar-item" type="button" data-section="logs">
+            <span class="material-symbols-outlined">bug_report</span> System Logs
+          </button>
+
+          <button
+            class="sidebar-item"
+            type="button"
+            data-section="activity-logs"
+          >
+            <span class="material-symbols-outlined">history</span> การใช้งานระบบ
+          </button>
+        </nav>
+
+        <button id="btnLogout" class="btn-red" type="button">ออกจากระบบ</button>
+      </aside>
+
+      <main class="main-workspace">
+        <header class="workspace-header">
+          <div>
+            <h1>แผงควบคุมระบบของเสียรายวัน</h1>
+            <p>ตรวจสอบรายการ จัดการข้อมูลพื้นฐาน และกำหนดสิทธิ์ผู้ใช้งาน</p>
+          </div>
+
+          <button class="btn btn-secondary" type="button" id="btn-refresh">
+            <span class="material-symbols-outlined">refresh</span> โหลดข้อมูลใหม่
+          </button>
+        </header>
+
+        <div id="alert-box" class="alert" hidden></div>
+
+        <!-- ======================================================
+          DASHBOARD
+        ======================================================= -->
+        <section id="section-dashboard" class="page-section active">
+          <div class="metrics-grid">
+            <article class="metric-card">
+              <span class="metric-label">การเชื่อมต่อ Supabase</span>
+              <strong id="status-api">กำลังตรวจสอบ...</strong>
+              <small id="status-latency">-- ms</small>
+            </article>
+
+            <article class="metric-card">
+              <span class="metric-label">รายการทั้งหมด</span>
+              <strong id="dash-total-count">0</strong>
+              <small>รายการในระบบ</small>
+            </article>
+
+            <article class="metric-card warning">
+              <span class="metric-label">รอตรวจสอบ</span>
+              <strong id="dash-pending-count">0</strong>
+              <small>เคส</small>
+            </article>
+
+            <article class="metric-card success">
+              <span class="metric-label">น้ำหนักของเสียรวม</span>
+              <strong id="dash-total-weight">0.00</strong>
+              <small>กิโลกรัม</small>
+            </article>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2><span class="material-symbols-outlined">list_alt</span> รายการของเสียล่าสุด</h2>
+              <span id="last-update" class="muted">ยังไม่ได้โหลดข้อมูล</span>
+            </div>
+
+            <div class="filter-row">
+              <input
+                id="search-input"
+                type="search"
+                placeholder="ค้นหาแผนก / เครื่องจักร / อาการเสีย / ผู้แจ้ง..."
+              />
+
+              <select id="status-filter">
+                <option value="all">ทุกสถานะ</option>
+                <option value="pending">รอตรวจสอบ</option>
+                <option value="approved">ตรวจสอบแล้ว</option>
+                <option value="rejected">ไม่ผ่าน</option>
+              </select>
+            </div>
+
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>วันที่</th>
+                    <th>แผนก</th>
+                    <th>เครื่องจักร</th>
+                    <th>อาการเสีย</th>
+                    <th>น้ำหนัก</th>
+                    <th>ผู้แจ้ง</th>
+                    <th>สถานะ</th>
+                  </tr>
+                </thead>
+
+                <tbody id="tb">
+                  <tr>
+                    <td colspan="7" class="tb-empty">กำลังโหลดข้อมูล...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================
+          MASTER DATA
+        ======================================================= -->
+        <section id="section-masters" class="page-section">
+          <div class="master-helper">
+            <h2><span class="material-symbols-outlined">settings</span> Master Data คืออะไร?</h2>
+            <p>
+              Master Data คือข้อมูลตั้งต้นสำหรับให้พนักงานเลือกในฟอร์ม เช่น แผนก
+              เครื่องจักร อาการเสีย และกะการทำงาน
+              เพื่อช่วยลดการพิมพ์ผิดและทำรายงานบัญชีได้ง่ายขึ้น
+            </p>
+          </div>
+
+          <div class="master-grid master-grid-2">
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2><span class="material-symbols-outlined">apartment</span> จัดการแผนก</h2>
+                  <span class="muted"
+                    >เพิ่มรหัสแผนกสำหรับใช้กับ QR และฟอร์ม</span
+                  >
+                </div>
+              </div>
+
+              <div class="form-row master-form-row">
+                <input
+                  type="text"
+                  id="dept-code-input"
+                  placeholder="รหัส เช่น BLOW"
+                />
+                <input
+                  type="text"
+                  id="dept-name-input"
+                  placeholder="ชื่อแผนก เช่น เป่าถุง"
+                />
+                <button class="btn btn-primary" type="button" id="btn-add-dept">
+                  เพิ่มแผนก
+                </button>
+              </div>
+
+              <ul id="dept-list" class="data-list"></ul>
+            </article>
+
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2><span class="material-symbols-outlined">schedule</span> จัดการกะการทำงาน</h2>
+                  <span class="muted">ใช้เป็นตัวเลือกกะในฟอร์มพนักงาน</span>
+                </div>
+              </div>
+
+              <div class="form-row master-form-row">
+                <input
+                  type="text"
+                  id="shift-name-input"
+                  placeholder="เช่น กะ A (กลางวัน)"
+                />
+                <input
+                  type="text"
+                  id="shift-time-input"
+                  placeholder="เวลา เช่น 08:00 - 17:00"
+                />
+                <button
+                  class="btn btn-primary"
+                  type="button"
+                  id="btn-add-shift"
+                >
+                  เพิ่มกะ
+                </button>
+              </div>
+
+              <ul id="shift-list" class="data-list"></ul>
+            </article>
+          </div>
+
+          <div class="panel master-dept-filter-panel">
+            <div class="panel-head">
+              <div>
+                <h2>เลือกแผนกก่อนจัดการเครื่องจักร / อาการเสีย</h2>
+                <span class="muted">
+                  เพราะแต่ละแผนกใช้เครื่องและอาการเสียไม่เหมือนกัน
+                </span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <select id="master-dept-filter">
+                <option value="">-- เลือกแผนก --</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="master-grid master-grid-2">
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2><span class="material-symbols-outlined">settings</span> จัดการเครื่องจักรตามแผนก</h2>
+                  <span class="muted">
+                    ตัวอย่าง BLOW: F1, F2 / PIPE: PIPE-01 — เพิ่มปุ่ม QR
+                    ให้แต่ละเครื่องแล้ว
+                  </span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <input
+                  type="text"
+                  id="machine-input"
+                  placeholder="เช่น F1, F2, PIPE-01, CUT-01"
+                />
+                <button
+                  class="btn btn-primary"
+                  type="button"
+                  id="btn-add-machine"
+                >
+                  เพิ่มเครื่อง
+                </button>
+              </div>
+
+              <ul id="machine-list" class="data-list"></ul>
+            </article>
+
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2><span class="material-symbols-outlined">warning</span> จัดการหัวข้ออาการเสียตามแผนก</h2>
+                  <span class="muted"
+                    >ตัวอย่าง ขอบเบี้ยว, รูรั่ว, ซีลไม่ติด</span
+                  >
+                </div>
+              </div>
+
+              <div class="form-row">
+                <input
+                  type="text"
+                  id="problem-input"
+                  placeholder="เช่น ขอบเบี้ยว, หนาไม่เท่ากัน"
+                />
+                <button
+                  class="btn btn-danger"
+                  type="button"
+                  id="btn-add-problem"
+                >
+                  เพิ่มอาการ
+                </button>
+              </div>
+
+              <ul id="problem-list" class="data-list"></ul>
+            </article>
+          </div>
+        </section>
+
+        <!-- ======================================================
+          USERS / ROLES - ERP UX
+        ======================================================= -->
+        <section id="section-users" class="page-section">
+          <div class="users-hero-panel">
+            <div>
+              <span class="eyebrow">User Administration</span>
+              <h2><span class="material-symbols-outlined">admin_panel_settings</span> จัดการ User และ Role</h2>
+              <p>กำหนดสิทธิ์ผู้ใช้งาน แผนกหลัก และแผนกที่รับผิดชอบหลายแผนก สำหรับรองรับระบบจริง</p>
+            </div>
+
+            <button class="btn btn-primary btn-add-user-toggle" type="button" id="btn-toggle-user-form">
+              <span class="material-symbols-outlined">person_add</span>
+              เพิ่ม User ใหม่
+            </button>
+          </div>
+
+          <div class="user-stat-grid">
+            <article class="user-stat-card">
+              <span class="material-symbols-outlined">groups</span>
+              <small>Users ทั้งหมด</small>
+              <strong id="user-stat-total">0</strong>
+            </article>
+
+            <article class="user-stat-card supervisor">
+              <span class="material-symbols-outlined">supervisor_account</span>
+              <small>Supervisor</small>
+              <strong id="user-stat-supervisor">0</strong>
+            </article>
+
+            <article class="user-stat-card active">
+              <span class="material-symbols-outlined">verified_user</span>
+              <small>Active</small>
+              <strong id="user-stat-active">0</strong>
+            </article>
+
+            <article class="user-stat-card dept">
+              <span class="material-symbols-outlined">apartment</span>
+              <small>Departments</small>
+              <strong id="user-stat-dept">0</strong>
+            </article>
+          </div>
+
+          <div class="panel user-create-panel is-collapsed" id="user-create-panel">
+            <div class="panel-head user-create-head">
+              <div>
+                <h2><span class="material-symbols-outlined">person_add</span> เพิ่มผู้ใช้งานใหม่</h2>
+                <span class="muted">กรอกข้อมูลพื้นฐาน แล้วเลือกแผนกที่รับผิดชอบได้หลายแผนก</span>
+              </div>
+              <button class="btn btn-secondary btn-sm" type="button" id="btn-close-user-form">
+                ปิดฟอร์ม
+              </button>
+            </div>
+
+            <div class="user-create-body">
+              <div class="user-form-grid">
+                <label>
+                  Username
+                  <input type="text" id="user-username" placeholder="เช่น ADMIN01" />
+                </label>
+
+                <label>
+                  Password
+                  <input type="text" id="user-password" placeholder="รหัสผ่าน" />
+                </label>
+
+                <label>
+                  ชื่อแสดงผล
+                  <input type="text" id="user-display-name" placeholder="ชื่อที่ต้องการให้แสดงในระบบ" />
+                </label>
+
+                <label>
+                  Role
+                  <select id="user-role">
+                    <option value="staff">staff</option>
+                    <option value="supervisor">supervisor</option>
+                    <option value="accounting">accounting</option>
+                    <option value="management">management</option>
+                    <option value="admin">admin</option>
+                  </select>
+                </label>
+
+                <label class="user-form-full">
+                  แผนกหลัก
+                  <select id="user-department">
+                    <option value="">-- เลือกแผนกหลัก --</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="user-dept-permission-panel compact">
+                <div class="permission-head">
+                  <div>
+                    <strong>แผนกที่รับผิดชอบ</strong>
+                    <span class="muted">ใช้สำหรับ Supervisor ที่ดูแลหลายแผนก เลือกได้มากกว่า 1 แผนก</span>
+                  </div>
+                  <span class="permission-count" id="user-create-dept-count">0 แผนก</span>
+                </div>
+
+                <div id="user-department-permissions" class="dept-checkbox-grid dept-card-grid">
+                  <span class="muted">กำลังโหลดรายชื่อแผนก...</span>
+                </div>
+              </div>
+
+              <div class="user-create-actions">
+                <button class="btn btn-secondary" type="button" id="btn-clear-user-form">
+                  ล้างข้อมูล
+                </button>
+                <button class="btn btn-primary" type="button" id="btn-add-user">
+                  <span class="material-symbols-outlined">save</span>
+                  บันทึก User
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel user-list-panel">
+            <div class="panel-head user-list-head">
+              <div>
+                <h2><span class="material-symbols-outlined">manage_accounts</span> รายการผู้ใช้งาน</h2>
+                <span class="muted">ค้นหา เปลี่ยน Role/Status หรือแก้ไขข้อมูลผู้ใช้งาน</span>
+              </div>
+            </div>
+
+            <div class="filter-row user-filter-row">
+              <input
+                id="user-search-input"
+                type="search"
+                placeholder="ค้นหา username / ชื่อ / แผนก / role..."
+              />
+
+              <select id="user-role-filter">
+                <option value="all">ทุก Role</option>
+                <option value="admin">admin</option>
+                <option value="management">management</option>
+                <option value="accounting">accounting</option>
+                <option value="supervisor">supervisor</option>
+                <option value="staff">staff</option>
+              </select>
+
+              <select id="user-status-filter">
+                <option value="all">ทุกสถานะ</option>
+                <option value="active">active</option>
+                <option value="inactive">inactive</option>
+              </select>
+            </div>
+
+            <div class="user-card-list" id="user-card-list">
+              <div class="tb-empty">กำลังโหลดผู้ใช้งาน...</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================
+          DEPARTMENT QR
+          ------------------------------------------------------
+          ใช้สร้าง QR แบบเข้าฟอร์มตามแผนก
+          URL ตัวอย่าง:
+          /pages/form-department.html?dept=blow
+        ======================================================= -->
+        <section id="section-department-qr" class="page-section">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2><span class="material-symbols-outlined">qr_code</span> จัดการ QR แผนก</h2>
+                <span class="muted">
+                  สำหรับสร้างลิงก์ / QR Code ไปติดที่บั๊กเกตของเสียแต่ละแผนก
+                </span>
+              </div>
+            </div>
+
+            <div class="qr-dept-list" id="department-qr-list"></div>
+          </div>
+        </section>
+
+        <!-- ======================================================
+          MACHINE QR
+          ------------------------------------------------------
+          ส่วนใหม่: ใช้สร้าง QR รายเครื่อง
+          URL ตัวอย่าง:
+          /pages/form-department.html?dept=blow&machine=F1
+        ======================================================= -->
+        <section id="section-machine-qr" class="page-section">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2><span class="material-symbols-outlined">qr_code</span> จัดการ QR รายเครื่อง</h2>
+                <span class="muted">
+                  เลือกแผนก แล้วระบบจะดึงเครื่องจักรจาก Master Data มาสร้าง QR
+                  ให้ทีละเครื่อง
+                </span>
+              </div>
+
+              <span id="machine-qr-count" class="qr-machine-count"
+                >0 เครื่อง</span
+              >
+            </div>
+
+            <div class="qr-machine-toolbar">
+              <select id="machine-qr-dept-filter">
+                <option value="">
+                  -- เลือกแผนกเพื่อสร้าง QR รายเครื่อง --
+                </option>
+              </select>
+
+              <button
+                class="btn btn-secondary"
+                type="button"
+                id="btn-refresh-machine-qr"
+              >
+                <span class="material-symbols-outlined">refresh</span> รีเฟรชรายการ
+              </button>
+
+              <button
+                class="btn btn-primary"
+                type="button"
+                id="btn-print-machine-qr"
+              >
+                <span class="material-symbols-outlined">print</span> พิมพ์ QR ทั้งแผนก
+              </button>
+            </div>
+
+            <div class="qr-machine-list" id="machine-qr-list">
+              <div class="qr-empty">
+                กรุณาเลือกแผนกก่อน ระบบจะแสดง QR รายเครื่องให้ค่ะ
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================
+          LOGS
+        ======================================================= -->
+        <section id="section-logs" class="page-section">
+          <div class="panel">
+            <div class="panel-head"><h2><span class="material-symbols-outlined">bug_report</span> System Logs</h2></div>
+
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>เวลา</th>
+                    <th>ประเภท</th>
+                    <th>รายละเอียด</th>
+                  </tr>
+                </thead>
+
+                <tbody id="log-table-body">
+                  <tr>
+                    <td colspan="3" class="tb-empty">ยังไม่มี Log</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================
+          SECTION ACTIVITY LOGS
+        ======================================================= -->
+        <section id="section-activity-logs" class="page-section">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2><span class="material-symbols-outlined">history</span> ประวัติการใช้งานระบบ</h2>
+                <span class="muted">
+                  ดูว่าใครเข้าใช้งาน ทำอะไร เวลาไหน ใช้อุปกรณ์อะไร
+                </span>
+              </div>
+
+              <button
+                class="btn btn-secondary"
+                type="button"
+                onclick="loadActivityLogs()"
+              >
+                รีเฟรช
+              </button>
+            </div>
+
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>เวลา</th>
+                    <th>ชื่อ</th>
+                    <th>Role</th>
+                    <th>แผนก</th>
+                    <th>Action</th>
+                    <th>หน้า</th>
+                    <th>อุปกรณ์</th>
+                    <th>Browser</th>
+                    <th>หมายเหตุ</th>
+                  </tr>
+                </thead>
+
+                <tbody id="activity-log-body">
+                  <tr>
+                    <td colspan="9" class="tb-empty">กำลังโหลดข้อมูล...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- ================= EDIT USER MODAL ================= -->
+    <div id="edit-user-modal" class="modal-overlay" hidden>
+      <div class="modal-card">
+        <div class="modal-head">
+          <div>
+            <h2><span class="material-symbols-outlined">edit</span> แก้ไข User</h2>
+            <p>แก้ไขข้อมูลผู้ใช้งานและสิทธิ์การเข้าใช้งาน</p>
+          </div>
+
+          <button type="button" class="modal-close" id="btn-close-edit-user">
+            ×
+          </button>
+        </div>
+
+        <input type="hidden" id="edit-user-id" />
+
+        <div class="modal-form-grid">
+          <label>
+            Username
+            <input type="text" id="edit-username" />
+          </label>
+
+          <label>
+            ชื่อแสดงผล
+            <input type="text" id="edit-display-name" />
+          </label>
+
+          <label>
+            แผนก
+            <select id="edit-department">
+              <option value="">-- เลือกแผนก --</option>
+            </select>
+          </label>
+
+          <label>
+            Role
+            <select id="edit-role">
+              <option value="staff">staff</option>
+              <option value="supervisor">supervisor</option>
+              <option value="accounting">accounting</option>
+              <option value="management">management</option>
+              <option value="admin">admin</option>
+            </select>
+          </label>
+
+          <label>
+            Status
+            <select id="edit-status">
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+            </select>
+          </label>
+
+          <label>
+            Password ใหม่
+            <input
+              type="text"
+              id="edit-password"
+              placeholder="เว้นว่างไว้ ถ้าไม่ต้องการเปลี่ยน"
+            />
+          </label>
+
+          <div class="user-dept-permission-panel modal-form-full compact">
+            <div class="permission-head">
+              <div>
+                <strong>แผนกที่รับผิดชอบ</strong>
+                <span class="muted">เลือกได้หลายแผนก เหมาะสำหรับ Supervisor ที่ดูแลมากกว่า 1 แผนก</span>
+              </div>
+              <span class="permission-count" id="edit-user-dept-count">0 แผนก</span>
+            </div>
+            <div id="edit-user-department-permissions" class="dept-checkbox-grid dept-card-grid">
+              <span class="muted">กำลังโหลดรายชื่อแผนก...</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            id="btn-cancel-edit-user"
+          >
+            ยกเลิก
+          </button>
+
+          <button type="button" class="btn btn-primary" id="btn-save-edit-user">
+            บันทึกการแก้ไข
+          </button>
+        </div>
+      </div>
+    </div>
+
+     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/core/supabaseClient.js"></script>
+    <script src="/core/roleConfig.js"></script>
+    <script src="/core/departmentConfig.js"></script>
+    <!-- <script src="/core/shiftConfig.js"></script> -->
+     <script src="/services/popupService.js"></script>
+    <script src="/services/loadingService.js"></script>
+    <script src="/js/admin/admin-panel.js"></script>
+
+    <!-- =====================================================
+     CONFIRM POPUP
+===================================================== -->
+
+<div id="app-confirm" class="app-confirm hidden">
+  <div class="app-confirm-box">
+
+    <h3 id="app-confirm-title">
+      ยืนยันการทำรายการ
+    </h3>
+
+    <p id="app-confirm-message">
+      ต้องการดำเนินการใช่ไหม?
+    </p>
+
+    <div class="app-confirm-actions">
+
+      <button
+        type="button"
+        id="app-confirm-cancel"
+        class="btn btn-secondary"
+      >
+        ยกเลิก
+      </button>
+
+      <button
+        type="button"
+        id="app-confirm-ok"
+        class="btn btn-danger"
+      >
+        ตกลง
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
+   
+  </body>
+</html>

@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <!-- ======================================================
+      QR SUCCESS PAGE
+      EA Factory
+      ------------------------------------------------------
+      ใช้หลังจากบันทึกข้อมูลจากหน้า form-department สำเร็จ
+      โดยเฉพาะกรณีเข้าผ่าน QR
+    ======================================================= -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>บันทึกสำเร็จ | EA Factory</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Material Symbols Outlined -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --primary: #2563eb;
+        --primary-hover: #1d4ed8;
+        --success: #16a34a;
+        --body-bg: #f8fafc;
+        --card-bg: #ffffff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        font-family: "Noto Sans Thai", "Kanit", sans-serif;
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(37, 99, 235, 0.14),
+            transparent 34%
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(22, 163, 74, 0.14),
+            transparent 34%
+          ),
+          var(--body-bg);
+        color: var(--text-main);
+      }
+
+      .success-card {
+        width: min(440px, 100%);
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        padding: 30px;
+        text-align: center;
+        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.14);
+      }
+
+      .success-icon {
+        width: 82px;
+        height: 82px;
+        display: grid;
+        place-items: center;
+        margin: 0 auto 16px;
+        border-radius: 26px;
+        background: #dcfce7;
+        color: var(--success);
+        font-size: 46px;
+      }
+
+      .material-symbols-outlined {
+        font-family: "Material Symbols Outlined";
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 700,
+          "GRAD" 0,
+          "opsz" 48;
+        font-size: 64px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(24px, 6vw, 30px);
+        line-height: 1.25;
+      }
+
+      p {
+        margin: 0 0 24px;
+        color: var(--text-muted);
+        font-size: 16px;
+        line-height: 1.7;
+      }
+
+      .actions {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .btn {
+        border: 2px solid transparent;
+        border-radius: 16px;
+        padding: 14px 18px;
+        min-height: 48px;
+        font-family: inherit;
+        font-size: 16px;
+        font-weight: 800;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        letter-spacing: 0.02em;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease,
+          filter 0.15s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.04);
+      }
+
+      .btn-primary {
+        width: min(100%, 240px);
+        aspect-ratio: 1;
+        border-radius: 24px;
+        padding: 24px;
+        font-size: 24px;
+        font-weight: 900;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #ffffff;
+        box-shadow: 0 18px 40px rgba(37, 99, 235, 0.35);
+        flex-direction: column;
+        border-color: rgba(255, 255, 255, 0.22);
+      }
+
+      .btn-primary:active {
+        background: var(--primary-hover);
+      }
+
+      .btn-secondary {
+        width: min(100%, 220px);
+        background: #f8fafc;
+        color: var(--text-main);
+        border-color: #cbd5e1;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+      }
+
+      .hint {
+        display: block;
+        margin-top: 16px;
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      #qr-reader {
+        overflow: hidden;
+        border-radius: 20px;
+        border: 2px solid #cbd5e1;
+        background: #0f172a;
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="success-card">
+      <div class="success-icon">✓</div>
+
+      <h1>บันทึกข้อมูลสำเร็จ</h1>
+
+      <p>
+        หากต้องกรอกข้อมูลเครื่องถัดไป ให้กดปุ่มสแกน QR ใหม่ หรือกลับหน้า Login
+        เพื่อเข้าใช้งานตามปกติ
+      </p>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="button" onclick="scanAgain()">
+          <span class="material-symbols-outlined">qr_code_scanner</span>
+          <span>สแกน QR</span>
+        </button>
+
+        <button class="btn btn-secondary" type="button" onclick="goLogin()">
+          กลับหน้า Login
+        </button>
+      </div>
+
+      <small class="hint">
+        หากไม่มีการกดปุ่มภายใน 5 นาที ระบบจะกลับหน้า Login อัตโนมัติ
+      </small>
+    </main>
+
+    <!-- <script>
+      const IDLE_LIMIT = 5 * 60 * 1000;
+
+      function clearQrSession() {
+        localStorage.removeItem("activeUser");
+        localStorage.removeItem("activeName");
+        localStorage.removeItem("activeRole");
+        localStorage.removeItem("activeUserId");
+        localStorage.removeItem("activeDept");
+      }
+
+      function scanAgain() {
+        clearQrSession();
+
+        // กลับหน้า Login เพื่อให้เครื่องพร้อมรับการสแกน QR ใหม่
+        window.location.href = "/login.html";
+      }
+
+      function goLogin() {
+        clearQrSession();
+        window.location.href = "/login.html";
+      }
+
+      setTimeout(() => {
+        goLogin();
+      }, IDLE_LIMIT);
+    </script> -->
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <script>
+      const IDLE_LIMIT = 5 * 60 * 1000;
+      let qrScanner = null;
+      let idleTimer = null;
+
+      function clearQrSession() {
+        localStorage.removeItem("activeUser");
+        localStorage.removeItem("activeName");
+        localStorage.removeItem("activeRole");
+        localStorage.removeItem("activeUserId");
+        localStorage.removeItem("activeDept");
+      }
+
+      function scanAgain() {
+        clearQrSession();
+        resetIdleTimer();
+
+        const card = document.querySelector(".success-card");
+
+        card.innerHTML = `
+          <h1>สแกน QR เครื่องถัดไป</h1>
+          <p>กรุณาอนุญาตให้ระบบเปิดกล้อง แล้วสแกน QR ที่เครื่องจักร</p>
+
+          <div id="qr-reader" style="width:100%; margin-top:18px;"></div>
+
+          <button class="btn btn-secondary" type="button" onclick="goLogin()" style="margin-top:16px;">
+            กลับหน้า Login
+          </button>
+        `;
+
+        qrScanner = new Html5Qrcode("qr-reader");
+
+        qrScanner
+          .start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: {
+                width: 250,
+                height: 250,
+              },
+            },
+            async (decodedText) => {
+              try {
+                if (qrScanner) {
+                  await qrScanner.stop();
+                }
+              } catch (err) {
+                console.warn(err);
+              }
+
+              handleQrResult(decodedText);
+            },
+            () => {},
+          )
+          .catch((err) => {
+            console.error(err);
+            alert("เปิดกล้องไม่ได้ กรุณาอนุญาตใช้กล้องก่อนค่ะ");
+          });
+      }
+
+      function handleQrResult(decodedText) {
+        const text = String(decodedText || "").trim();
+
+        if (!text) {
+          alert("อ่าน QR ไม่สำเร็จ กรุณาสแกนใหม่");
+          return;
+        }
+
+        // ถ้า QR เป็นลิงก์เต็ม
+        if (text.includes("form-department.html")) {
+          window.location.href = text;
+          return;
+        }
+
+        // ถ้า QR เป็น path เช่น /pages/form-department.html?dept=BLOW
+        if (text.startsWith("/pages/")) {
+          window.location.href = text;
+          return;
+        }
+
+        // ถ้า QR เป็นแค่รหัสแผนก เช่น BLOW
+        window.location.href =
+          "/pages/form-department.html?dept=" + encodeURIComponent(text);
+      }
+
+      function goLogin() {
+        clearQrSession();
+
+        if (qrScanner) {
+          qrScanner.stop().catch(() => {});
+        }
+
+        window.location.href = "/login.html";
+      }
+
+      function resetIdleTimer() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          goLogin();
+        }, IDLE_LIMIT);
+      }
+
+      ["click", "touchstart", "keydown"].forEach((eventName) => {
+        document.addEventListener(eventName, resetIdleTimer, true);
+      });
+
+      resetIdleTimer();
+    </script>
+  </body>
+</html>

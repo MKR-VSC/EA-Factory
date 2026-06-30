@@ -1,0 +1,231 @@
+/* =========================================================== 
+     1. SAP Style ⭐ นิยมมากสุด 
+ =========================================================== */
+
+ :root {
+  --primary: #0f6cbd;
+  --primary-dark: #0a4d88;
+
+  --success: #107c10;
+  --warning: #ffb900;
+  --danger: #d13438;
+
+  --bg: #f5f7fa;
+  --card: #ffffff;
+
+  --text: #323130;
+  --border: #e1dfdd;
+}
+
+/* =========================================================== 
+     2. Microsoft Dynamics 365 Style ⭐⭐⭐ 
+ =========================================================== */
+
+ :root {
+  --primary: #0078d4;
+  --primary-dark: #005a9e;
+
+  --sidebar: #0f172a;
+
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --danger: #dc2626;
+
+  --bg: #f8fafc;
+}
+
+
+/* =========================================================== 
+     3. Odoo Style
+ =========================================================== */
+
+ :root {
+  --primary: #714b67;
+  --primary-dark: #5c3d54;
+
+  --success: #28a745;
+  --warning: #ffc107;
+  --danger: #dc3545;
+
+  --bg: #f6f7f9;
+}
+
+
+/* =========================================================== 
+     4. ERPNext Style
+ =========================================================== */
+
+ :root {
+  --primary: #2490ef;
+
+  --success: #28a745;
+  --warning: #ffa00a;
+  --danger: #e24c4b;
+
+  --sidebar: #2c3e50;
+  --bg: #f7fafc;
+}
+
+
+/* =========================================================== 
+     5. Industrial Factory Style ⭐⭐⭐⭐⭐
+ =========================================================== */
+
+ :root {
+  --primary: #0284c7;
+
+  --production: #0f766e;
+  --warehouse: #1d4ed8;
+  --quality: #ea580c;
+  --maintenance: #7c3aed;
+
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+
+  --sidebar: #0f172a;
+
+  --bg: #f8fafc;
+  --card: #ffffff;
+}
+
+
+
+
+
+/* =========================================================== 
+     ROOT ADMIN CSS 
+     - รวมตัวแปรสีและสไตล์พื้นฐาน
+     - ใช้ร่วมกันในทุกหน้าของระบบ Admin
+   ===========================================================*/
+
+
+
+
+/* =========================================================== 
+     1. Navy Admin ⭐ นิยมที่สุด
+ =========================================================== */
+
+:root {
+  /* Primary */
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+
+  /* Sidebar */
+  --sidebar-bg: #0f172a;
+  --sidebar-hover: #1e293b;
+  --sidebar-active: #2563eb;
+
+  /* Layout */
+  --body-bg: #f8fafc;
+  --card-bg: #ffffff;
+
+  /* Text */
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+
+  /* Status */
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --danger: #dc2626;
+
+  /* Border */
+  --border: #e2e8f0;
+}
+
+
+
+/* =========================================================== 
+     2. Charcoal Admin ⭐⭐⭐
+ =========================================================== */
+
+
+ :root {
+  --primary: #3b82f6;
+
+  --sidebar-bg: #111827;
+  --sidebar-hover: #1f2937;
+
+  --body-bg: #f9fafb;
+  --card-bg: #ffffff;
+
+  --text-main: #111827;
+  --text-muted: #6b7280;
+
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  --border: #e5e7eb;
+}
+
+
+
+/* =========================================================== 
+     3. Enterprise ERP ⭐⭐⭐⭐⭐
+ =========================================================== */
+
+
+ :root {
+  /* Brand */
+  --primary: #0284c7;
+  --primary-hover: #0369a1;
+
+  /* Sidebar */
+  --sidebar-bg: #0f172a;
+  --sidebar-hover: #1e293b;
+  --sidebar-active: #0284c7;
+
+  /* Background */
+  --body-bg: #f1f5f9;
+  --page-bg: #ffffff;
+  --card-bg: #ffffff;
+
+  /* Text */
+  --text-main: #0f172a;
+  --text-body: #334155;
+  --text-muted: #64748b;
+
+  /* Border */
+  --border: #e2e8f0;
+
+  /* Status */
+  --success: #16a34a;
+  --success-bg: #dcfce7;
+
+  --warning: #d97706;
+  --warning-bg: #fef3c7;
+
+  --danger: #dc2626;
+  --danger-bg: #fee2e2;
+
+  --info: #0284c7;
+  --info-bg: #e0f2fe;
+}
+
+
+/* =========================================================== 
+     4. Admin ของ EA Factory
+ =========================================================== */
+
+
+ :root {
+  --primary: #0284c7;
+
+  --sidebar-bg: #0f172a;
+  --sidebar-active: #0284c7;
+
+  --body-bg: #f8fafc;
+  --card-bg: #ffffff;
+
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+
+  --border: #e2e8f0;
+
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+
+  --executive: #541029;
+}

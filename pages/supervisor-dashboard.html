@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <!-- ======================================================
+      SUPERVISOR DASHBOARD
+      ไฟล์: pages/supervisor-dashboard.html
+      หน้าที่: Dashboard ให้หัวหน้างานดูสถิติของเสีย
+
+      ปรับรอบนี้:
+      - Admin / Management / Executive เห็นทุกแผนก
+      - Supervisor / Manager เห็นตาม user_departments
+      - ใช้ข้อมูลจาก daily_waste_reports
+    ======================================================= -->
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Dashboard ของเสีย - หัวหน้างาน</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+      rel="stylesheet"
+    />
+
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#4caf8a" />
+    <link rel="apple-touch-icon" href="/icons/logo_512.png" />
+
+    <link rel="stylesheet" href="/css/supervisor-dashboard.css" />
+  </head>
+
+  <body>
+    <main class="page">
+      <header class="page-header">
+        <div class="header-top">
+          <div class="title-area">
+            <h1>
+              <span class="material-symbols-outlined">monitoring</span>
+              Dashboard สถิติของเสีย
+            </h1>
+            <p>ดูแนวโน้มของเสีย เพื่อแก้ปัญหาหน้างาน</p>
+          </div>
+
+          <div class="header-actions">
+            <a href="/pages/supervisor-daily-review.html" class="btn secondary">
+              กลับหน้าตรวจสอบ
+            </a>
+            <button class="btn danger" type="button" onclick="logout()">
+              ออกจากระบบ
+            </button>
+          </div>
+        </div>
+
+        <div class="header-user-row">
+          <div class="user-info-card">
+            <div class="user-avatar"> <span class="material-symbols-outlined">person</span></div>
+            <div>
+              <strong id="userName">หัวหน้างาน แผนกที่รับผิดชอบ</strong>
+              <div id="userDept">-</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section class="filter-card">
+        <div class="form-group">
+          <label for="startDate">วันที่เริ่มต้น</label>
+          <input type="date" id="startDate" />
+        </div>
+
+        <div class="form-group">
+          <label for="endDate">วันที่สิ้นสุด</label>
+          <input type="date" id="endDate" />
+        </div>
+
+        <button class="btn primary" type="button" onclick="loadDashboard()">
+          ค้นหา
+        </button>
+      </section>
+
+      <section class="summary-grid">
+        <article class="summary-card">
+          <span>จำนวนรายการ</span>
+          <strong id="totalRecords">0</strong>
+          <small>รายการในช่วงวันที่เลือก</small>
+        </article>
+
+        <article class="summary-card success">
+          <span>น้ำหนักของเสียรวม</span>
+          <strong id="totalWaste">0 kg</strong>
+          <small>รวมทุกเครื่องในแผนก</small>
+        </article>
+
+        <article class="summary-card success">
+          <span>น้ำหนักผลิตรวม</span>
+          <strong id="totalProduction">0 kg</strong>
+          <small>ข้อมูลจากการผลิต</small>
+        </article>
+
+        <article class="summary-card warning">
+          <span>ปัญหาที่พบบ่อยสุด</span>
+          <strong id="topProblem">-</strong>
+          <small id="topProblemSub">-</small>
+        </article>
+
+        <article class="summary-card danger">
+          <span>เครื่องที่ของเสียสูงสุด</span>
+          <strong id="topMachine">-</strong>
+          <small id="topMachineSub">-</small>
+        </article>
+
+        <article class="summary-card warning">
+          <span>% Waste</span>
+          <strong id="wastePercent">0%</strong>
+          <small>ของเสียรวมเดือนนี้</small>
+        </article>
+      </section>
+
+      <!-- <section class="priority-card">
+        <h2>⚠ จุดที่ควรแก้ไขเร่งด่วน</h2>
+        <div id="priorityArea">กำลังวิเคราะห์ข้อมูล...</div>
+      </section> -->
+
+      <section class="chart-grid">
+        <article class="chart-card">
+          <h2>แนวโน้มของเสียรายวัน</h2>
+          <canvas id="dailyTrendChart"></canvas>
+        </article>
+
+        <article class="chart-card">
+          <h2>Top 10 เครื่องที่มีของเสียสูงสุด</h2>
+          <canvas id="machineChart"></canvas>
+        </article>
+
+        <article class="chart-card">
+          <h2>Top 10 ประเภทปัญหาที่เกิดบ่อย</h2>
+          <canvas id="problemChart"></canvas>
+        </article>
+
+        <article class="chart-card">
+          <h2>สถานะรายการ</h2>
+          <canvas id="statusChart"></canvas>
+        </article>
+      </section>
+
+      <section class="table-card">
+        <h2>สถิติของเสียรายเดือน</h2>
+        <div id="topList" class="top-list">กำลังโหลดข้อมูล...</div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/core/supabaseClient.js"></script>
+    <script src="/core/roleConfig.js"></script>
+    <script src="/core/departmentConfig.js"></script>
+    <script src="/js/dashboard/supervisor-dashboard.js"></script>
+  </body>
+</html>
