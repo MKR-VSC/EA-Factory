@@ -70,6 +70,14 @@ const currentDeptRaw = QR_DEPT || localStorage.getItem("activeDept") || "";
 
 let currentDept = normalizeDept(currentDeptRaw);
 let appSelectedMachine = QR_MACHINE || "";
+
+// รายการปัญหาหลายข้อใน 1 ใบรายงาน
+// appProblemOptions เก็บ master problem ที่โหลดมาแล้ว
+// problemItemIndex ใช้สร้าง id แยกแต่ละแถว
+let appProblemOptions = [];
+let problemItemIndex = 0;
+
+// เก็บไว้เพื่อไม่ให้โค้ดเดิมที่อาจอ้างตัวแปรนี้พัง
 let appSelectedProblem = "";
 
 // เก็บรายละเอียดเมื่อเลือกประเภทปัญหาเป็น "อื่นๆ"
@@ -342,6 +350,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     setupNetworkStatus();
     setupFormSubmit();
     setupDropdownListeners();
+    setupProblemItemsEvents();
     setupOtherProblemModal();
     renderCurrentDeptLabel();
 
@@ -481,7 +490,7 @@ function renderDeptInfo() {
   const deptName = getDeptDisplayName(currentDept);
 
   const titleEl = document.getElementById("dept-title-main");
-  const badgeEl = document.getElementById("dept-badge-name");
+  const badgeEl = document.getElementById("dept-badge-name") || document.getElementById("dept-badge-text");
   const bodyEl = document.getElementById("dept-body");
 
   if (titleEl) {
@@ -674,15 +683,15 @@ function setupDefaultDateTime() {
 }
 
 function setupNetworkStatus() {
-  const el = document.getElementById("network-status");
+  const el = document.getElementById("network-status") || document.getElementById("network-status-text");
   if (!el) return;
 
   function updateStatus() {
     if (navigator.onLine) {
-      el.innerHTML = `<span class="material-symbols-outlined">fiber_manual_record</span> ระบบออนไลน์`;
+      el.innerHTML = `: ONLINE`;
       el.className = "badge badge-status-online";
     } else {
-      el.innerHTML = `<span class="material-symbols-outlined">fiber_manual_record</span> ระบบออฟไลน์`;
+      el.innerHTML = `: OFFLINE`;
       el.className = "badge badge-status-offline";
     }
   }
@@ -702,29 +711,209 @@ function setupFormSubmit() {
 
 function setupDropdownListeners() {
   const machineSelect = document.getElementById("machine-no");
-  const problemSelect = document.getElementById("problem-type");
 
   if (machineSelect) {
     machineSelect.addEventListener("change", (event) => {
       appSelectedMachine = event.target.value;
     });
   }
+}
 
-  if (problemSelect) {
-    problemSelect.addEventListener("change", (event) => {
-      appSelectedProblem = event.target.value;
+// =========================================================
+// MULTI PROBLEM ITEMS
+// ใช้แทน dropdown ปัญหาเดี่ยว + น้ำหนักเดี่ยว
+// 1 รายงานหลัก สามารถมีหลายปัญหาย่อยได้
+// =========================================================
 
-      // ถ้าเลือก "อื่นๆ" ให้เด้งกล่องกรอกสาเหตุจริงทันที
-      // เพราะถ้าไม่เก็บรายละเอียดเพิ่ม ข้อมูล "อื่นๆ" จะนำไปวิเคราะห์ต่อได้ยาก
-      if (isOtherProblem(appSelectedProblem)) {
-        openOtherProblemModal();
-      } else {
-        appOtherProblemDetail = "";
-      }
-    });
+function setupProblemItemsEvents() {
+  const addButton = document.getElementById("btn-add-problem");
+
+  if (addButton) {
+    addButton.addEventListener("click", () => addProblemItem());
   }
 }
 
+function renderProblemItemsInitial() {
+  const list = document.getElementById("problem-items");
+  if (!list) return;
+
+  list.innerHTML = "";
+  problemItemIndex = 0;
+  addProblemItem();
+}
+
+function addProblemItem(defaultValue = {}) {
+  const list = document.getElementById("problem-items");
+  if (!list) return;
+
+  problemItemIndex += 1;
+
+  const row = document.createElement("div");
+  row.className = "problem-item";
+  row.dataset.index = String(problemItemIndex);
+
+  row.innerHTML = `
+    <div class="problem-item-head">
+      <strong>ปัญหาที่ ${problemItemIndex}</strong>
+      <button type="button" class="btn-remove-problem" title="ลบปัญหานี้">
+        <span class="material-symbols-outlined">delete</span>
+        ลบ
+      </button>
+    </div>
+
+    <div class="problem-item-grid">
+      <div>
+        <label class="problem-mini-label">ประเภทปัญหา <span class="required">*</span></label>
+        <select class="problem-type-select" required>
+          <option value="">-- เลือกปัญหา --</option>
+          ${buildProblemOptionsHtml(defaultValue.problem_type || "")}
+        </select>
+      </div>
+
+      <div>
+        <label class="problem-mini-label">น้ำหนัก (kg) <span class="required">*</span></label>
+        <input
+          type="number"
+          class="problem-weight-input"
+          min="0"
+          step="0.01"
+          placeholder="0.00"
+          value="${defaultValue.waste_weight_kg || ""}"
+          required
+        />
+      </div>
+    </div>
+
+    <div class="problem-detail-wrap">
+      <label class="problem-mini-label">รายละเอียดปัญหานี้</label>
+      <textarea
+        class="problem-detail-input"
+        rows="2"
+        placeholder="เช่น เริ่มเสียช่วงต้นม้วน / พบตอนเปลี่ยนงาน / ถ้าเลือกอื่นๆ ให้ระบุสาเหตุจริง"
+      >${defaultValue.detail || ""}</textarea>
+    </div>
+  `;
+
+  list.appendChild(row);
+
+  const select = row.querySelector(".problem-type-select");
+  const weightInput = row.querySelector(".problem-weight-input");
+  const removeButton = row.querySelector(".btn-remove-problem");
+
+  select?.addEventListener("change", () => {
+    updateProblemItemOtherHint(row);
+    updateTotalWasteKg();
+  });
+
+  weightInput?.addEventListener("input", updateTotalWasteKg);
+
+  removeButton?.addEventListener("click", () => {
+    const rows = document.querySelectorAll(".problem-item");
+
+    if (rows.length <= 1) {
+      alert("ต้องมีรายการปัญหาอย่างน้อย 1 รายการค่ะ");
+      return;
+    }
+
+    row.remove();
+    renumberProblemItems();
+    updateTotalWasteKg();
+  });
+
+  updateProblemItemOtherHint(row);
+  updateTotalWasteKg();
+}
+
+function buildProblemOptionsHtml(selectedValue = "") {
+  return appProblemOptions
+    .map((problem) => {
+      const safeProblem = escapeHtml(problem);
+      const selected = problem === selectedValue ? "selected" : "";
+      return `<option value="${safeProblem}" ${selected}>${safeProblem}</option>`;
+    })
+    .join("");
+}
+
+function renumberProblemItems() {
+  document.querySelectorAll(".problem-item").forEach((row, index) => {
+    const title = row.querySelector(".problem-item-head strong");
+    if (title) title.textContent = `ปัญหาที่ ${index + 1}`;
+  });
+}
+
+function updateProblemItemOtherHint(row) {
+  const select = row.querySelector(".problem-type-select");
+  const detail = row.querySelector(".problem-detail-input");
+  if (!select || !detail) return;
+
+  if (isOtherProblem(select.value)) {
+    detail.placeholder = "กรุณาระบุว่า อื่นๆ คือปัญหาอะไร";
+    detail.classList.add("detail-required-hint");
+  } else {
+    detail.placeholder = "เช่น เริ่มเสียช่วงต้นม้วน / พบตอนเปลี่ยนงาน / รายละเอียดเพิ่มเติม";
+    detail.classList.remove("detail-required-hint");
+  }
+}
+
+function updateTotalWasteKg() {
+  const total = Array.from(document.querySelectorAll(".problem-weight-input"))
+    .reduce((sum, input) => sum + (parseFloat(input.value || "0") || 0), 0);
+
+  const totalEl = document.getElementById("total-waste-kg");
+  if (totalEl) totalEl.textContent = total.toFixed(2);
+}
+
+function collectProblemItems() {
+  const rows = Array.from(document.querySelectorAll(".problem-item"));
+
+  return rows.map((row, index) => {
+    const problemType = row.querySelector(".problem-type-select")?.value || "";
+    const wasteWeight =
+      parseFloat(row.querySelector(".problem-weight-input")?.value || "0") || 0;
+    const detail = row.querySelector(".problem-detail-input")?.value.trim() || "";
+
+    return {
+      item_no: index + 1,
+      problem_type: problemType,
+      waste_weight_kg: wasteWeight,
+      detail,
+    };
+  });
+}
+
+function validateProblemItems(problemItems) {
+  if (!problemItems.length) {
+    alert("กรุณาเพิ่มรายการปัญหาอย่างน้อย 1 รายการค่ะ");
+    return false;
+  }
+
+  for (const item of problemItems) {
+    if (!item.problem_type) {
+      alert(`กรุณาเลือกประเภทปัญหา ในรายการที่ ${item.item_no}`);
+      return false;
+    }
+
+    if (!item.waste_weight_kg || item.waste_weight_kg <= 0) {
+      alert(`กรุณากรอกน้ำหนักมากกว่า 0 kg ในรายการที่ ${item.item_no}`);
+      return false;
+    }
+
+    if (isOtherProblem(item.problem_type) && !item.detail) {
+      alert(`รายการที่ ${item.item_no} เลือก “อื่นๆ” กรุณาระบุรายละเอียดปัญหาค่ะ`);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
 
 // =========================================================
 // OTHER PROBLEM MODAL
@@ -1136,17 +1325,10 @@ function renderMachineDropdown(machineList) {
 }
 
 function renderProblemDropdown(problemList) {
-  const select = document.getElementById("problem-type");
-  if (!select) return;
-
-  select.innerHTML = `<option value="">-- โปรดเลือกปัญหาที่พบ --</option>`;
-
-  problemList.forEach((problem) => {
-    const option = document.createElement("option");
-    option.value = problem;
-    option.textContent = problem;
-    select.appendChild(option);
-  });
+  // ชื่อฟังก์ชันเดิมคงไว้เพื่อไม่กระทบจุดเรียกเดิม
+  // แต่ตอนนี้เปลี่ยนจาก dropdown เดี่ยว เป็นรายการปัญหาหลายข้อ
+  appProblemOptions = Array.from(new Set((problemList || []).filter(Boolean)));
+  renderProblemItemsInitial();
 }
 
 // =========================================================
@@ -1196,32 +1378,28 @@ async function handleFormSubmit(event) {
   const dateInput = document.getElementById("incident-datetime");
   const shiftSelect = document.getElementById("work-shift");
   const machineSelect = document.getElementById("machine-no");
-  const problemSelect = document.getElementById("problem-type");
-  const weightInput = document.getElementById("waste-weight");
   const noteInput = document.getElementById("problem-description");
 
   const finalShift = shiftSelect?.value || "";
   const selectedShift =
     typeof getShiftByCode === "function" ? getShiftByCode(finalShift) : null;
+
   // ถ้าเปิดจาก QR รายเครื่อง ให้ใช้ QR_MACHINE ก่อนเสมอ
   // เพราะบาง browser หรือบาง form อาจไม่ส่งค่าจาก select ที่ disabled
   const finalMachine = QR_MACHINE || machineSelect?.value || appSelectedMachine || "";
-  const finalProblem = problemSelect?.value || appSelectedProblem || "";
   const detailNote = noteInput?.value.trim() || "";
-  const wasteWeight = parseFloat(weightInput?.value || "0") || 0;
+
+  const problemItems = collectProblemItems();
+  const totalWasteWeight = problemItems.reduce(
+    (sum, item) => sum + item.waste_weight_kg,
+    0,
+  );
 
   if (!dateInput?.value) return alert("กรุณาระบุวัน-เวลาเกิดเหตุ");
   if (!finalShift) return alert("กรุณาเลือกกะการทำงาน");
   if (!finalMachine) return alert("กรุณาเลือกหมายเลขเครื่องจักร");
-  if (!finalProblem) return alert("กรุณาเลือกอาการเสีย/ปัญหาที่พบ");
-
-  if (isOtherProblem(finalProblem) && !appOtherProblemDetail.trim()) {
-    alert("กรุณาระบุรายละเอียดว่า อื่นๆ คือปัญหาอะไร");
-    openOtherProblemModal();
-    return;
-  }
-
-  if (!detailNote) return alert("กรุณากรอกรายละเอียดเหตุการณ์");
+  if (!validateProblemItems(problemItems)) return;
+  if (!detailNote) return alert("กรุณากรอกรายละเอียดเหตุการณ์ / หมายเหตุรวม");
 
   const finalDateTime = new Date(dateInput.value).toISOString();
   const reportDate = finalDateTime.slice(0, 10);
@@ -1248,20 +1426,20 @@ async function handleFormSubmit(event) {
 
     showLoginOverlay("กำลังบันทึกข้อมูล...");
 
-    // เตรียมข้อมูลปัญหาสำหรับบันทึก
-    // ถ้าเลือก "อื่นๆ" จะยังเก็บ problem_type = "อื่นๆ"
-    // แต่เพิ่ม other_problem_detail และ reason_detail เพื่อให้ Dashboard วิเคราะห์สาเหตุจริงได้
-    const finalOtherProblemDetail = isOtherProblem(finalProblem)
-      ? appOtherProblemDetail.trim()
-      : "";
+    const problemSummary = problemItems
+      .map((item) => `${item.problem_type} ${item.waste_weight_kg.toFixed(2)} kg`)
+      .join(" | ");
 
-    const finalReasonDetail = finalOtherProblemDetail
-      ? `${finalProblem}: ${finalOtherProblemDetail}`
-      : finalProblem;
+    const firstProblem = problemItems[0]?.problem_type || "หลายปัญหา";
 
-    const finalDetailNote = finalOtherProblemDetail
-      ? `${detailNote}\n\n[รายละเอียดอื่นๆ] ${finalOtherProblemDetail}`
-      : detailNote;
+    const detailByItem = problemItems
+      .map((item) => {
+        const itemDetail = item.detail ? ` - ${item.detail}` : "";
+        return `${item.item_no}. ${item.problem_type}: ${item.waste_weight_kg.toFixed(2)} kg${itemDetail}`;
+      })
+      .join("\n");
+
+    const finalDetailNote = `${detailNote}\n\n[รายการปัญหา]\n${detailByItem}`;
 
     const reportData = {
       report_date: reportDate,
@@ -1269,36 +1447,29 @@ async function handleFormSubmit(event) {
 
       shift: selectedShift?.name || finalShift,
       work_shift: finalShift,
-      // work_shift_name: selectedShift?.name || "",
-      // shift_start: selectedShift?.start || "",
-      // shift_end: selectedShift?.end || "",
-      // shift_type: selectedShift?.type || "",
 
       // สำคัญ: ต้องตรงกับ master_departments.department_code เท่านั้น
-      // currentDept มาจาก QR_DEPT หรือ activeDept ที่ผ่าน normalizeDept() แล้ว
       department_code: currentDept,
 
       // เก็บซ้ำไว้สำหรับหน้าเดิมที่อาจยังใช้ column department
-      // แนะนำให้เก็บชื่อไทยเพื่อแสดงผลอ่านง่าย แต่ตัวกรองหลักให้ใช้ department_code
       department: getDeptDisplayName(currentDept),
 
       machine_no: finalMachine,
       product_name: "ปัญหาการผลิต",
 
-      problem_type: finalProblem,
-      reason_detail: finalReasonDetail,
-
-      // คอลัมน์นี้แนะนำให้เพิ่มใน Supabase:
-      // ALTER TABLE daily_waste_reports ADD COLUMN IF NOT EXISTS other_problem_detail TEXT;
-      // ถ้ายังไม่ได้เพิ่มคอลัมน์ ให้ดู SQL ใน README แล้วรันก่อน deploy
-      other_problem_detail: finalOtherProblemDetail || null,
+      // เก็บค่าแรกไว้เพื่อให้หน้าเดิมที่ยังอ่าน problem_type ทำงานได้
+      // รายละเอียดแยกจริงอยู่ที่ตาราง daily_waste_report_items
+      problem_type: firstProblem,
+      reason_detail: problemSummary,
+      other_problem_detail: null,
 
       note: finalDetailNote,
       detail: finalDetailNote,
 
-      waste_qty: wasteWeight,
-      waste_weight_kg: wasteWeight,
-      total_qty: wasteWeight,
+      // ยอดรวมของทุกปัญหาในรายงานนี้
+      waste_qty: totalWasteWeight,
+      waste_weight_kg: totalWasteWeight,
+      total_qty: totalWasteWeight,
       good_qty: 0,
       unit: "kg",
 
@@ -1316,18 +1487,40 @@ async function handleFormSubmit(event) {
 
     console.log("[SUBMIT_DEPT]", currentDept);
     console.log("[SUBMIT_DATA]", reportData);
+    console.log("[SUBMIT_ITEMS]", problemItems);
 
-    const { error } = await clientSupabase
+    const { data: insertedReport, error: reportError } = await clientSupabase
       .from("daily_waste_reports")
-      .insert([reportData]);
+      .insert([reportData])
+      .select("id")
+      .single();
 
-    if (error) throw error;
+    if (reportError) throw reportError;
+
+    const reportId = insertedReport?.id;
+
+    if (!reportId) {
+      throw new Error("บันทึกรายงานหลักแล้ว แต่ไม่พบ report_id สำหรับบันทึกรายการปัญหา");
+    }
+
+    const itemRows = problemItems.map((item) => ({
+      report_id: reportId,
+      item_no: item.item_no,
+      problem_type: item.problem_type,
+      waste_weight_kg: item.waste_weight_kg,
+      detail: item.detail || null,
+    }));
+
+    const { error: itemError } = await clientSupabase
+      .from("daily_waste_report_items")
+      .insert(itemRows);
+
+    if (itemError) throw itemError;
 
     alert("บันทึกข้อมูลเรียบร้อยแล้ว");
 
     // ถ้าเข้าหน้าฟอร์มด้วย QR:
     // หลังส่งสำเร็จให้ไปหน้าส่งสำเร็จ เพื่อให้เลือก "สแกน QR ใหม่" หรือ "กลับหน้า Login"
-    // เหตุผล: พนักงานที่ต้องกรอกหลายเครื่อง จะได้เริ่มสแกนเครื่องถัดไปใหม่ ไม่ค้างอยู่ฟอร์มเดิม
     if (isQrMode()) {
       goToQrSuccessPage();
       return;
@@ -1424,6 +1617,7 @@ function resetFormAfterSubmit() {
   appSelectedProblem = "";
   appOtherProblemDetail = "";
 
+  renderProblemItemsInitial();
   setupDefaultDateTime();
   applyQrMachineLock();
   renderQrContext();
@@ -1542,3 +1736,5 @@ window.applyQrMachineLock = applyQrMachineLock;
 window.confirmOtherProblem = confirmOtherProblem;
 window.cancelOtherProblem = cancelOtherProblem;
 window.openOtherProblemModal = openOtherProblemModal;
+window.addProblemItem = addProblemItem;
+window.updateTotalWasteKg = updateTotalWasteKg;
