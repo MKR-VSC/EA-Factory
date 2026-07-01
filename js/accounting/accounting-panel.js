@@ -289,15 +289,14 @@ function getDeptName(c) {
   return state.standards[normalizeDept(c)]?.name || c || "-";
 }
 function normalizeDept(v) {
-  return String(v || "")
-    .trim()
-    .toUpperCase()
-    .replace(/[\s-]+/g, "_");
+  return window.EA_COMMON?.normalizeDepartmentCode
+    ? window.EA_COMMON.normalizeDepartmentCode(v)
+    : String(v || "").trim().toUpperCase().replace(/[\s-]+/g, "_");
 }
 function normalizeText(v) {
-  return String(v || "")
-    .trim()
-    .toLowerCase();
+  return window.EA_COMMON?.normalizeText
+    ? window.EA_COMMON.normalizeText(v)
+    : String(v || "").trim().toLowerCase();
 }
 function toMonth(v) {
   const d = new Date(v);
@@ -314,10 +313,9 @@ function formatDate(v) {
   return Number.isNaN(d.getTime()) ? v : d.toLocaleDateString("th-TH");
 }
 function formatNumber(v) {
-  return Number(v || 0).toLocaleString("th-TH", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return window.EA_COMMON?.formatNumber
+    ? window.EA_COMMON.formatNumber(v, 2, 2)
+    : Number(v || 0).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function formatPercent(v) {
   return `${formatNumber(v)}%`;
@@ -334,15 +332,19 @@ function setText(id, v) {
   if (e) e.textContent = v;
 }
 function safeText(v) {
-  return String(v ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  return window.EA_COMMON?.safeText
+    ? window.EA_COMMON.safeText(v)
+    : String(v ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 function safeAttr(v) {
-  return safeText(v).replaceAll("`", "&#096;");
+  return window.EA_COMMON?.safeAttr
+    ? window.EA_COMMON.safeAttr(v)
+    : safeText(v).replaceAll("`", "&#096;");
 }
 function cssEscape(v) {
   return window.CSS?.escape ? CSS.escape(v) : String(v).replaceAll('"', '\\"');

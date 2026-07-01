@@ -19,6 +19,7 @@
 const REPORT_TABLE = "daily_waste_reports";
 const MASTER_DEPARTMENT_TABLE = "master_departments";
 const USER_DEPARTMENT_TABLE = "user_departments";
+const ITEM_TABLE = "daily_waste_report_items";
 
 // Role ที่เข้า Dashboard ได้
 const ALLOW_ROLES = ["admin", "management", "executive", "supervisor", "manager"];
@@ -254,6 +255,7 @@ function renderUserInfo() {
 ====================================================== */
 
 function normalizeDepartmentCode(value) {
+  if (window.EA_COMMON?.normalizeDepartmentCode) return window.EA_COMMON.normalizeDepartmentCode(value);
   const text = String(value || "").trim();
   const key = text.toLowerCase();
 
@@ -362,7 +364,8 @@ async function loadDashboard() {
     if (error) throw error;
 
     const rawRows = Array.isArray(data) ? data : [];
-    const rows = filterRowsForCurrentUser(rawRows).filter(isAccountingChecked);
+    const visibleRows = filterRowsForCurrentUser(rawRows).filter(isAccountingChecked);
+    const rows = await attachProblemItemsToReports(visibleRows);
 
     renderDashboard(rows, { rawCount: rawRows.length, startDate, endDate });
   } catch (error) {
@@ -400,7 +403,7 @@ function renderDashboard(rows, meta = {}) {
   const totalProduction = sumProduction(rows);
   const wastePercent = calcWastePercent(totalWaste, totalProduction);
 
-  const problemCountMap = groupCount(rows, "problem_type");
+  const problemCountMap = groupProblemCount(rows);
   const statusMap = groupCount(rows, "status");
   const dailyWasteMap = fillDateRangeMap(groupWasteByDate(rows), meta.startDate, meta.endDate);
   const machineWasteMap = groupWaste(rows, "machine_no");
@@ -425,13 +428,89 @@ function renderDashboard(rows, meta = {}) {
   renderPriorityArea(rows, meta);
 }
 
+
+async function attachProblemItemsToReports(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return rows || [];
+
+  const reportIds = rows.map((row) => row.id).filter(Boolean);
+  if (!reportIds.length) return rows.map(normalizeReportItemsFallback);
+
+  try {
+    const { data, error } = await supabaseClient
+      .from(ITEM_TABLE)
+      .select("id, report_id, item_no, problem_type, waste_weight_kg, detail, created_at")
+      .in("report_id", reportIds)
+      .order("item_no", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.warn("โหลด daily_waste_report_items ไม่สำเร็จ ใช้ข้อมูลหัวรายงานแทน:", error);
+      return rows.map(normalizeReportItemsFallback);
+    }
+
+    const itemMap = new Map();
+    (data || []).forEach((item) => {
+      const key = String(item.report_id);
+      if (!itemMap.has(key)) itemMap.set(key, []);
+      itemMap.get(key).push({
+        id: item.id,
+        item_no: item.item_no,
+        problem_type: item.problem_type || "ไม่ระบุปัญหา",
+        waste_weight_kg: toNumber(item.waste_weight_kg),
+        detail: item.detail || "",
+      });
+    });
+
+    return rows.map((row) => ({
+      ...row,
+      problem_items: itemMap.get(String(row.id)) || getFallbackProblemItems(row),
+    }));
+  } catch (error) {
+    console.warn("โหลดรายการปัญหาย่อยไม่สำเร็จ:", error);
+    return rows.map(normalizeReportItemsFallback);
+  }
+}
+
+function normalizeReportItemsFallback(row) {
+  return { ...row, problem_items: getFallbackProblemItems(row) };
+}
+
+function getFallbackProblemItems(row) {
+  return [
+    {
+      id: `${row.id || "report"}-fallback`,
+      item_no: 1,
+      problem_type: row.problem_type || row.reason_detail || "ไม่ระบุปัญหา",
+      waste_weight_kg: toNumber(row.waste_weight_kg || row.waste_qty || 0),
+      detail: row.detail || row.note || "",
+    },
+  ];
+}
+
+function groupProblemCount(rows) {
+  return rows.reduce((map, row) => {
+    const items = Array.isArray(row.problem_items) && row.problem_items.length
+      ? row.problem_items
+      : getFallbackProblemItems(row);
+
+    items.forEach((item) => {
+      const name = item.problem_type || "ไม่ระบุ";
+      map[name] = (map[name] || 0) + 1;
+    });
+
+    return map;
+  }, {});
+}
+
 /* ======================================================
    CALCULATE HELPERS
    ฟังก์ชันคำนวณค่าน้ำหนักและ % Waste
 ====================================================== */
 
 function getWasteValue(row) {
-  return toNumber(row.waste_weight_kg || row.waste_qty || 0);
+  const items = Array.isArray(row.problem_items) ? row.problem_items : [];
+  const itemWaste = items.reduce((sum, item) => sum + toNumber(item.waste_weight_kg), 0);
+  return itemWaste || toNumber(row.waste_weight_kg || row.waste_qty || 0);
 }
 
 function getProductionWeight(row) {
@@ -641,7 +720,9 @@ function renderTopList(rows) {
   rows.forEach((row) => {
     const dept = getDepartmentInfo(row);
     const machine = row.machine_no || "ไม่ระบุเครื่อง";
-    const problem = row.problem_type || row.reason_detail || "ไม่ระบุปัญหา";
+    const items = Array.isArray(row.problem_items) && row.problem_items.length
+      ? row.problem_items
+      : getFallbackProblemItems(row);
     const key = `${dept.code}|${machine}`;
 
     if (!map[key]) {
@@ -658,18 +739,24 @@ function renderTopList(rows) {
     map[key].count += 1;
     map[key].waste += getWasteValue(row);
     map[key].production += getProductionWeight(row);
-    map[key].problems[problem] =
-      (map[key].problems[problem] || 0) + getWasteValue(row);
+
+    items.forEach((item) => {
+      const problem = item.problem_type || "ไม่ระบุปัญหา";
+      map[key].problems[problem] =
+        (map[key].problems[problem] || 0) + toNumber(item.waste_weight_kg);
+    });
   });
 
   const list = Object.values(map).sort((a, b) => {
-    const deptCompare = a.department.localeCompare(b.department, "th");
-    if (deptCompare !== 0) return deptCompare;
+    const percentA = calcWastePercent(a.waste, a.production);
+    const percentB = calcWastePercent(b.waste, b.production);
 
-    return a.machine.localeCompare(b.machine, "th", {
-      numeric: true,
-      sensitivity: "base",
-    });
+    return (
+      percentB - percentA ||
+      b.waste - a.waste ||
+      b.count - a.count ||
+      a.machine.localeCompare(b.machine, "th", { numeric: true, sensitivity: "base" })
+    );
   });
 
   if (!list.length) {
@@ -782,9 +869,12 @@ function renderPriorityArea(rows, meta = {}) {
     summary[key].production += getProductionWeight(row);
   });
 
-  const top = Object.values(summary).sort(
-    (a, b) => b.waste - a.waste || b.count - a.count
-  )[0];
+  const top = Object.values(summary).sort((a, b) => {
+    const percentA = calcWastePercent(a.waste, a.production);
+    const percentB = calcWastePercent(b.waste, b.production);
+
+    return percentB - percentA || b.waste - a.waste || b.count - a.count;
+  })[0];
 
   const percent = calcWastePercent(top.waste, top.production);
 
@@ -816,7 +906,7 @@ function getStatusLabel(status) {
 
 function isAccountingChecked(row) {
   const status = normalizeText(row.status);
-  return ["checked", "approved", "done", "completed", "ตรวจสอบแล้ว"].includes(status);
+  return ["accounting_checked", "checked", "approved", "done", "completed", "ตรวจสอบแล้ว"].includes(status);
 }
 
 /* ======================================================
@@ -831,8 +921,8 @@ function toDateInputValue(date) {
 }
 
 function normalizeText(value) {
-  return String(value || "").trim().toLowerCase();
-}sort((a, b) => b.waste - a.waste)
+  return window.EA_COMMON?.normalizeText(value) ?? String(value || "").trim().toLowerCase();
+}
 
 function safeJsonParse(value) {
   try {
@@ -861,15 +951,15 @@ function setValue(id, value) {
 }
 
 function toNumber(value) {
+  if (window.EA_COMMON?.toNumber) return window.EA_COMMON.toNumber(value);
   const n = Number(value || 0);
   return Number.isFinite(n) ? n : 0;
 }
 
 function formatNumber(value) {
-  return toNumber(value).toLocaleString("th-TH", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
+  return window.EA_COMMON?.formatNumber
+    ? window.EA_COMMON.formatNumber(value, 2, 2)
+    : toNumber(value).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatDisplayDateShort(value) {
@@ -885,14 +975,14 @@ function formatDisplayDateShort(value) {
 }
 
 function safeText(value) {
-  if (value === null || value === undefined) return "";
-
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  return window.EA_COMMON?.safeText
+    ? window.EA_COMMON.safeText(value)
+    : String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 
 /* ======================================================

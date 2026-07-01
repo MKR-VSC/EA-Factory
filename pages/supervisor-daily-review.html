@@ -1,77 +1,112 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ตรวจสอบรายวัน | Supervisor</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="/css/ea-go-live.css" />
+    <title>ตรวจสอบข้อมูลรายวัน | SUPERVISOR</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#4caf8a" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/logo_192.png" />
+    <link rel="apple-touch-icon" href="/icons/logo_512.png" />
+
+    <!-- ใช้หัว/ธีมเดิม -->
     <link rel="stylesheet" href="/css/supervisor-daily-review.css" />
+    <!-- CSS เสริมเฉพาะตาราง Go Live -->
+    <link rel="stylesheet" href="/css/supervisor-daily-review-table-addon.css" />
   </head>
+
   <body>
     <main class="page">
-      <header class="topbar">
-        <div class="title">
-          <h1>
-            <span class="material-symbols-outlined">fact_check</span>
-            ตรวจสอบรายงานประจำวัน
-          </h1>
-          <p id="userInfo">-</p>
+      <!-- HEADER เดิม -->
+      <header class="page-header">
+        <div class="header-top">
+          <div class="title-area">
+            <h1>
+              <span class="material-symbols-outlined">fact_check</span>
+              ตรวจสอบข้อมูลรายวัน
+            </h1>
+            <p>ตรวจสอบข้อมูลของเสียก่อนส่งเข้าฐานข้อมูล</p>
+          </div>
+
+          <div class="header-actions">
+            <a href="/pages/supervisor-dashboard.html" class="btn primary">Dashboard</a>
+            <button class="btn secondary" type="button" onclick="loadRecords()">รีเฟรช</button>
+            <button class="btn danger" type="button" onclick="logoutNow()">ออกระบบ</button>
+          </div>
         </div>
-        <div class="actions">
-          <a class="btn light" href="/pages/supervisor-dashboard.html"
-            >Dashboard</a
-          ><button class="btn secondary" onclick="loadPageData()">รีเฟรช</button
-          ><button class="btn danger" onclick="logoutNow()">ออกระบบ</button>
+
+        <div class="header-user-row">
+          <div class="user-info-card">
+            <div class="user-avatar">
+              <span class="material-symbols-outlined">person</span>
+            </div>
+
+            <div>
+              <strong id="userName">-</strong>
+              <div id="userDept">-</div>
+            </div>
+          </div>
         </div>
       </header>
-      <section class="panel">
-        <div class="filter-grid">
-          <div class="form-group">
-            <label>วันที่</label><input type="date" id="filterDate" />
-          </div>
-          <div class="form-group">
-            <label>สถานะ</label
-            ><select id="filterStatus">
-              <option value="pending_supervisor">รอตรวจสอบ</option>
-              <option value="sent_accounting">ส่งบัญชีแล้ว</option>
-              <option value="all">ทั้งหมด</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>&nbsp;</label
-            ><button class="btn primary" onclick="loadPageData()">ค้นหา</button>
-          </div>
+
+      <!-- FILTER เดิม -->
+      <section class="filter-card">
+        <div class="form-group">
+          <label for="filterDate">วันที่</label>
+          <input type="date" id="filterDate" />
         </div>
+
+        <div class="form-group">
+          <label for="filterStatus">สถานะ</label>
+          <select id="filterStatus">
+            <option value="all">ทั้งหมด</option>
+            <option value="pending_supervisor">รอตรวจสอบ</option>
+            <option value="sent_accounting">ส่งบัญชีแล้ว</option>
+            <option value="accounting_checked">บัญชีตรวจแล้ว</option>
+          </select>
+        </div>
+
+        <button class="btn primary" type="button" onclick="loadRecords()">ค้นหา</button>
       </section>
-      <section class="summary-grid">
+
+      <!-- KPI เดิม -->
+      <section class="summary-grid summary-grid-3">
         <div class="summary-card warning">
-          <span>รอตรวจสอบ</span><strong id="sumPending">0</strong>
+          <span>รอตรวจสอบ</span>
+          <strong id="countPending">0</strong>
+          <small>กดตรวจแล้วจะหายจากรายการนี้</small>
         </div>
+
         <div class="summary-card success">
-          <span>ของเสียรวม</span><strong id="sumWaste">0 kg</strong>
+          <span>จำนวนของเสียวันนี้ทั้งหมด</span>
+          <strong id="todayWaste">0 kg</strong>
+          <small>รวมทุกสถานะของวันที่เลือก</small>
         </div>
+
         <div class="summary-card danger">
-          <span>เครื่องสูงสุด</span><strong id="sumTopMachine">-</strong>
+          <span>เครื่องที่เสียเยอะสุดวันนี้</span>
+          <strong id="topMachineToday">-</strong>
+          <small id="topMachineTodaySub">-</small>
         </div>
       </section>
-      <section class="panel">
-        <div class="table-head">
+
+      <!-- CONTENT ใหม่: ตารางแทน Card / ไม่มีอัปโหลดรูป -->
+      <section class="table-card supervisor-table-card">
+        <div class="table-header">
           <div>
             <h2>รายการรายงานของเสีย</h2>
             <p class="muted">ตรวจสอบข้อมูลก่อนส่งให้บัญชีดำเนินการต่อ</p>
           </div>
           <span id="rowCount" class="muted">-</span>
         </div>
-        <div class="table-scroll">
-          <table class="data-table">
+
+        <div class="table-scroll supervisor-table-scroll">
+          <table class="data-table supervisor-data-table">
             <thead>
               <tr>
                 <th></th>
@@ -86,30 +121,36 @@
               </tr>
             </thead>
             <tbody id="reportBody">
-              <tr>
-                <td colspan="9" class="empty">กำลังโหลดข้อมูล...</td>
-              </tr>
+              <tr><td colspan="9" class="empty-cell">กำลังโหลดข้อมูล...</td></tr>
             </tbody>
           </table>
         </div>
       </section>
     </main>
-    <div id="appModal" class="modal hidden">
-      <div class="modal-card">
+
+    <!-- Popup กลางระบบ แทน alert/confirm -->
+    <div id="appModal" class="modal-overlay app-modal" hidden>
+      <div class="modal-card app-modal-card">
         <div class="modal-head">
-          <h3 id="modalTitle">แจ้งเตือน</h3>
-          <button class="modal-close" onclick="closeModal()">×</button>
+          <div>
+            <h2 id="modalTitle">แจ้งเตือน</h2>
+            <p id="modalSubTitle"></p>
+          </div>
+          <button type="button" class="modal-close" onclick="closeModal()">×</button>
         </div>
-        <div id="modalBody"></div>
+        <div id="modalBody" class="app-modal-body"></div>
         <div id="modalActions" class="modal-actions"></div>
       </div>
     </div>
+
     <div id="toast" class="toast hidden"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/activityLogger.js"></script>
     <script src="/core/roleConfig.js"></script>
+    <script src="/core/ea-common.js"></script>
     <script src="/core/departmentConfig.js"></script>
-    <script src="/js/dashboard/supervisor-daily-review.js"></script>
+    <script src="/js/dashboard/supervisor-daily-review.js?v=old-header-table-v1"></script>
   </body>
 </html>

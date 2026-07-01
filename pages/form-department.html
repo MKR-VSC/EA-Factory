@@ -1,80 +1,358 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ฟอร์มบันทึกของเสีย | EA Factory</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/ea-go-live.css" />
-</head>
-<body>
-  <main class="page">
-    <header class="topbar">
-      <div class="title">
-        <h1><span class="material-symbols-outlined">assignment</span> ฟอร์มบันทึกของเสีย</h1>
-        <p id="deptText">กำลังเตรียมข้อมูลแผนก...</p>
-      </div>
-      <div class="actions">
-        <button class="btn secondary" type="button" onclick="resetFormAfterSubmit()">ล้างฟอร์ม</button>
-        <button class="btn danger" type="button" onclick="logoutNow()">ออกระบบ</button>
-      </div>
-    </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>ระบบบันทึกข้อมูลปัญหาการผลิตส่วนกลาง - PVT</title>
 
-    <section class="panel login-card" id="staffPanel">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>ชื่อผู้บันทึก</label>
-          <input id="staffName" placeholder="กรอกชื่อผู้บันทึก" />
-        </div>
-        <div class="form-group">
-          <label>&nbsp;</label>
-          <button class="btn primary" type="button" onclick="saveStaffName()">เริ่มกรอกข้อมูล</button>
-        </div>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+      rel="stylesheet"
+    />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/BG1.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/BG1.png" />
+    <link rel="apple-touch-icon" href="/icons/Ea_Factory_512.png" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#4caf8a" />
+
+
+    <link rel="icon" href="data:;base64,=" />
+    <link rel="stylesheet" href="/css/form-department.css" />
+  </head>
+
+  <body>
+    <!-- หน้ารอโหลดตอนเปิดฟอร์ม -->
+    <div id="splash-screen">
+      <div class="splash-logo">
+        <img src="/icons/logo_192.png" alt="EA Factory Logo" />
       </div>
-    </section>
+      <div class="splash-sub">กำลังเตรียมฟอร์มบันทึกข้อมูล</div>
+      <div class="splash-dots"><span></span><span></span><span></span></div>
+    </div>
 
-    <form id="wasteForm" class="panel hidden">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>วัน-เวลา</label>
-          <input type="datetime-local" id="incidentDatetime" required />
-        </div>
-        <div class="form-group">
-          <label>กะ</label>
-          <select id="shiftSelect" required><option value="">กำลังโหลด...</option></select>
-        </div>
-        <div class="form-group">
-          <label>เครื่องจักร</label>
-          <select id="machineSelect" required><option value="">กำลังโหลด...</option></select>
-        </div>
+    <!-- Overlay ตอนบันทึกข้อมูล -->
+    <div id="login-overlay" class="hidden">
+      <div class="overlay-box">
+        <div class="overlay-ring"></div>
+        <h3>กำลังบันทึกข้อมูล...</h3>
+        <p>กรุณารอสักครู่</p>
       </div>
+    </div>
 
-      <div class="table-head" style="margin-top:18px">
-        <div>
-          <h2>รายการปัญหา</h2>
-          <p class="muted">เลือกได้หลายปัญหา และใส่น้ำหนักแยกแต่ละข้อ</p>
+    <!-- Modal กรอกชื่อก่อนใช้งาน -->
+    <div id="staff-name-modal" class="staff-name-modal hidden">
+      <div class="staff-name-box">
+        <div class="staff-name-icon">
+          <span class="material-symbols-outlined">badge</span>
         </div>
-        <button class="btn success" type="button" onclick="addProblemRow()">+ เพิ่มปัญหา</button>
+        <h3>ระบุชื่อผู้บันทึกข้อมูล</h3>
+        <p>
+          กรุณากรอกชื่อก่อนเข้าใช้งาน
+          เพื่อให้ตรวจสอบย้อนหลังได้ว่าใครเป็นผู้บันทึกข้อมูล
+        </p>
+
+        <label for="staff-name-input">ชื่อผู้บันทึกข้อมูล</label>
+        <input
+          id="staff-name-input"
+          type="text"
+          placeholder="เช่น สมชาย / พนักงานเครื่อง F1"
+          autocomplete="name"
+        />
+
+        <button
+          type="button"
+          class="btn-start-form"
+          onclick="confirmStaffName()"
+        >
+          เริ่มกรอกข้อมูล
+        </button>
+        <small>ระบบจะใช้ชื่อนี้เช็กการบันทึกซ้ำในแผนกเดิมของวันเดียวกัน</small>
       </div>
+    </div>
 
-      <div class="table-scroll">
-        <table class="problem-form-table">
-          <thead><tr><th style="width:34%">ปัญหา</th><th style="width:18%">น้ำหนัก kg</th><th>รายละเอียด</th><th style="width:80px">ลบ</th></tr></thead>
-          <tbody id="problemRows"></tbody>
-        </table>
+    <!-- MAIN APP: JS จะเติม class แผนกลงที่ div นี้ -->
+    <div class="dept-default" id="dept-body">
+      <div class="app-shell">
+        <!-- ส่วนหัวมือถือ -->
+        <aside class="sidebar app-hero">
+          <div class="pvt-top-header">
+            <div class="logo">
+              <img src="/icons/Icon_Logo_192.png" alt="EA Factory Logo" />
+            </div>
+
+            <div class="brand-text">
+              <h3>PVT &amp; T.PLAS</h3>
+              <p>ระบบบันทึกของเสียจากการผลิต</p>
+            </div>
+          </div>
+
+          <nav class="sidebar-menu hero-panel">
+            <div class="menu-group user-group">
+              <span class="menu-label">ข้อมูลผู้ใช้งาน</span>
+              <div class="user-profile-box">
+                <div class="user-info">
+                  <span class="material-symbols-outlined user-icon"
+                    >account_circle</span
+                  >
+                  <span>ผู้บันทึกข้อมูล</span>
+                  <strong id="display-username">ยังไม่ได้ระบุชื่อ</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="menu-group dashboard-group">
+              <a href="/index.html" class="menu-link" id="nav-dashboard-link">
+                <span class="material-symbols-outlined">bar_chart</span>
+                แดชบอร์ดผู้บริหาร
+              </a>
+            </div>
+
+            <div class="hero-actions">
+              <button type="button" class="btn-back" onclick="history.back()">
+                <span class="material-symbols-outlined">arrow_back</span>
+                ย้อนกลับ
+              </button>
+
+              <button type="button" class="btn-logout" onclick="handleLogout()">
+                <span class="material-symbols-outlined">logout</span>
+                ออกจากระบบ
+              </button>
+            </div>
+          </nav>
+        </aside>
+
+        <!-- ฟอร์มหลัก -->
+        <main class="main-content">
+          <section class="form-page-card">
+            <header class="content-header">
+              <div class="header-title-area">
+                <div class="title-icon">
+                  <span class="material-symbols-outlined">assignment</span>
+                </div>
+                <div>
+                  <h1 id="dept-title-main">ฟอร์มบันทึกข้อมูลปัญหาประจำแผนก</h1>
+                  <p class="subtitle">
+                    กรุณากรอกข้อมูลปัญหาที่พบให้ครบถ้วน
+                    เพื่อความถูกต้องในการส่ง
+                  </p>
+                </div>
+              </div>
+
+              <div class="status-buttons">
+                <button class="status-btn dept-btn">
+                  <span class="material-symbols-outlined">my_location</span>
+                  <span id="dept-badge-text">: MONO</span>
+                </button>
+
+                <button class="status-btn online-btn">
+                  <span class="material-symbols-outlined">wifi</span>
+                  <span id="network-status-text">: ONLINE</span>
+                </button>
+              </div>
+            </header>
+
+            <!-- แสดงเฉพาะตอนเปิดจาก QR -->
+            <div
+              id="qr-context-card"
+              class="qr-context-card"
+              style="display: none"
+            >
+              <div>
+                <strong
+                  ><span class="material-symbols-outlined">place</span>
+                  แผนก</strong
+                >
+                <span id="qr-dept-label">-</span>
+              </div>
+              <div>
+                <strong
+                  ><span class="material-symbols-outlined">settings</span>
+                  เครื่องจักร</strong
+                >
+                <span id="qr-machine-label">-</span>
+              </div>
+            </div>
+
+            <!-- แผนกปัจจุบัน แสดงชัดเพื่อกันกรอกผิดแผนก -->
+            <div class="current-dept-box">
+              <span class="material-symbols-outlined">location_on</span>
+              <strong>แผนกปัจจุบัน :</strong>
+              <span id="current-dept-label">-</span>
+            </div>
+
+            <form id="department-waste-form" class="mobile-form">
+              <div class="form-group">
+                <label for="incident-datetime">
+                  <span class="material-symbols-outlined label-icon blue"
+                    >calendar_month</span
+                  >
+                  วัน-เวลาที่เกิดเหตุปัญหาการผลิต
+                  <span class="required">*</span>
+                </label>
+                <input type="datetime-local" id="incident-datetime" required />
+                <small class="helper-text"
+                  >กรุณาระบุวันและเวลาจริงที่พบปัญหาในการทำงานของท่าน</small
+                >
+              </div>
+
+              <div class="form-group">
+                <label for="work-shift">
+                  <span class="material-symbols-outlined label-icon amber"
+                    >schedule</span
+                  >
+                  กะการทำงาน (Shift)
+                  <span class="required">*</span>
+                </label>
+                <select id="work-shift" required>
+                  <option value="">-- โปรดเลือกกะการทำงาน --</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="machine-no">
+                  <span class="material-symbols-outlined label-icon blue"
+                    >precision_manufacturing</span
+                  >
+                  เครื่องจักร / ไลน์การผลิต
+                  <span class="required">*</span>
+                </label>
+                <select id="machine-no" required>
+                  <option value="">-- กำลังโหลดรายการเครื่อง --</option>
+                </select>
+              </div>
+
+              <!-- รายการปัญหาแบบหลายข้อ
+                   1 เครื่องสามารถมีได้หลายปัญหาใน 1 ครั้งบันทึก
+                   แต่ละปัญหาระบุน้ำหนักแยกกัน และระบบจะรวมให้อัตโนมัติ -->
+              <section class="form-group problem-items-card">
+                <div class="problem-items-header">
+                  <label>
+                    <span class="material-symbols-outlined label-icon red">error</span>
+                    รายการปัญหาที่พบ
+                    <span class="required">*</span>
+                  </label>
+
+                  <button
+                    type="button"
+                    id="btn-add-problem"
+                    class="btn-add-problem"
+                  >
+                    <span class="material-symbols-outlined">add_circle</span>
+                    เพิ่มปัญหา
+                  </button>
+                </div>
+
+                <div id="problem-items" class="problem-items-list">
+                  <!-- JS จะสร้างแถวปัญหาให้อัตโนมัติ -->
+                </div>
+
+                <div class="problem-total-box">
+                  <span class="material-symbols-outlined">scale</span>
+                  <span>น้ำหนักของเสียรวม</span>
+                  <strong><span id="total-waste-kg">0.00</span> kg</strong>
+                </div>
+
+                <small class="helper-text">
+                  เลือกปัญหาได้หลายข้อในเครื่องเดียว แล้วกรอกน้ำหนักแยกตามปัญหา
+                </small>
+              </section>
+
+              <!-- <div class="form-group full-textarea">
+                <label for="problem-description">
+                  <span class="material-symbols-outlined label-icon blue"
+                    >edit_note</span
+                  >
+                  รายละเอียดปัญหา / หมายเหตุ
+                  <span class="required">*</span>
+                </label>
+                <textarea
+                  id="problem-description"
+                  rows="4"
+                  placeholder="กรุณาระบุรายละเอียดของปัญหาที่เกิดขึ้น"
+                  required
+                ></textarea>
+              </div> -->
+
+              <div class="form-actions">
+                <button
+                  type="button"
+                  class="btn-clear"
+                  onclick="resetFormWithConfirm()"
+                >
+                  <span class="material-symbols-outlined"
+                    >cleaning_services</span
+                  >
+                  ล้างข้อมูล
+                </button>
+                <button type="submit" class="btn-submit">
+                  <span class="material-symbols-outlined">save</span>
+                  บันทึกข้อมูล
+                </button>
+              </div>
+            </form>
+          </section>
+        </main>
       </div>
+    </div>
 
-      <div class="total-box" style="margin-top:14px"><span>น้ำหนักของเสียรวม</span><strong id="totalWasteText">0.00 kg</strong></div>
-      <div class="actions" style="justify-content:flex-end;margin-top:18px"><button class="btn primary" type="submit">บันทึกข้อมูล</button></div>
-    </form>
-  </main>
+    <!-- Modal ระบุรายละเอียดเมื่อเลือกปัญหาอื่นๆ -->
+    <div id="other-problem-modal" class="other-problem-modal hidden">
+      <div class="other-problem-box">
+        <div class="other-problem-icon">
+          <span class="material-symbols-outlined">help</span>
+        </div>
+        <h3>ระบุรายละเอียดปัญหาอื่นๆ</h3>
+        <p>
+          กรุณาอธิบายว่า “อื่นๆ” คือปัญหาอะไร
+          เพื่อให้นำข้อมูลไปวิเคราะห์ต่อได้แม่นยำขึ้น
+        </p>
 
-  <div id="appModal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h3 id="modalTitle">แจ้งเตือน</h3><button class="modal-close" onclick="closeModal()">×</button></div><div id="modalBody"></div><div id="modalActions" class="modal-actions"></div></div></div>
-  <div id="toast" class="toast hidden"></div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/core/supabaseClient.js"></script>
-  <script src="/core/activityLogger.js"></script>
-  <script src="/js/department/form-department.js?v=go-live-1"></script>
-</body>
+        <label for="other-problem-input">รายละเอียดปัญหาอื่นๆ</label>
+        <textarea
+          id="other-problem-input"
+          rows="4"
+          placeholder="เช่น ฟิล์มย่นช่วงเริ่มเดินเครื่อง / เครื่องสะดุดเป็นช่วง..."
+        ></textarea>
+
+        <div class="other-problem-actions">
+          <button
+            type="button"
+            class="btn-other-cancel"
+            onclick="cancelOtherProblem()"
+          >
+            ยกเลิก
+          </button>
+          <button
+            type="button"
+            class="btn-other-save"
+            onclick="confirmOtherProblem()"
+          >
+            บันทึกรายละเอียด
+          </button>
+        </div>
+
+        <small
+          >ระบบจะเก็บรายละเอียดนี้ไว้ในรายงาน
+          เพื่อสรุปสาเหตุของปัญหาอื่นๆ</small
+        >
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/core/supabaseClient.js"></script>
+    <script src="/core/activityLogger.js"></script>
+    <script src="/core/ea-common.js"></script>
+    <script src="/js/department/form-department.js"></script>
+  </body>
 </html>

@@ -6,8 +6,10 @@
 const REPORT_TABLE = "daily_waste_reports";
 const ITEM_TABLE = "daily_waste_report_items";
 const STATUS_PENDING = "pending_supervisor";
+const STATUS_PENDING_OLD = "pending";
 const STATUS_SENT = "sent_accounting";
 const STATUS_ACCOUNTING = "accounting_checked";
+const PENDING_STATUS_SET = new Set([STATUS_PENDING, STATUS_PENDING_OLD, "submitted", "draft"]);
 
 let state = {
   supabase: null,
@@ -81,15 +83,17 @@ function renderUserInfo() {
   const dept = canSeeAllDepartments()
     ? "รับผิดชอบ: ทุกแผนก"
     : `รับผิดชอบ: ${state.allowedDepts.map(getDeptName).join(", ") || "-"}`;
+  setText("userName", name);
+  setText("userDept", dept);
   setText("userInfo", `${name} | ${dept}`);
 }
 
 async function loadPageData() {
   const tbody = document.getElementById("reportBody");
   if (tbody)
-    tbody.innerHTML = `<tr><td colspan="9" class="empty">กำลังโหลดข้อมูล...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">กำลังโหลดข้อมูล...</td></tr>`;
   const date = getValue("filterDate");
-  const status = getValue("filterStatus") || STATUS_PENDING;
+  const status = getValue("filterStatus") || "all";
   try {
     let q = state.supabase
       .from(REPORT_TABLE)
@@ -108,7 +112,7 @@ async function loadPageData() {
   } catch (err) {
     console.error(err);
     if (tbody)
-      tbody.innerHTML = `<tr><td colspan="9" class="empty">โหลดข้อมูลไม่สำเร็จ: ${safeText(err.message || err)}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">โหลดข้อมูลไม่สำเร็จ: ${safeText(err.message || err)}</td></tr>`;
   }
 }
 
@@ -122,9 +126,13 @@ function filterByDept(rows) {
 }
 function filterByStatus(rows, status) {
   if (status === "all") return rows;
-  return rows.filter(
-    (r) => normalizeText(r.status || STATUS_PENDING) === normalizeText(status),
-  );
+  const target = normalizeText(status);
+  return rows.filter((r) => {
+    const rowStatus = normalizeText(r.status || STATUS_PENDING);
+    if (target === STATUS_PENDING) return PENDING_STATUS_SET.has(rowStatus);
+    if (target === "resolved") return rowStatus === STATUS_SENT || rowStatus === "resolved";
+    return rowStatus === target;
+  });
 }
 
 async function attachProblemItemsToReports(rows) {
@@ -181,8 +189,8 @@ function totalWaste(r) {
 }
 
 function renderSummary(rows) {
-  const pending = rows.filter(
-    (r) => normalizeText(r.status || STATUS_PENDING) === STATUS_PENDING,
+  const pending = rows.filter((r) =>
+    PENDING_STATUS_SET.has(normalizeText(r.status || STATUS_PENDING)),
   ).length;
   const waste = rows.reduce((s, r) => s + totalWaste(r), 0);
   const m = {};
@@ -191,6 +199,15 @@ function renderSummary(rows) {
     m[k] = (m[k] || 0) + totalWaste(r);
   });
   const top = Object.entries(m).sort((a, b) => b[1] - a[1])[0];
+  setText("countPending", pending.toLocaleString("th-TH"));
+  setText("todayWaste", `${formatNumber(waste)} kg`);
+  if (top) {
+    setText("topMachineToday", top[0]);
+    setText("topMachineTodaySub", `${formatNumber(top[1])} kg`);
+  } else {
+    setText("topMachineToday", "-");
+    setText("topMachineTodaySub", "-");
+  }
   setText("sumPending", pending.toLocaleString("th-TH"));
   setText("sumWaste", `${formatNumber(waste)} kg`);
   setText(
@@ -204,7 +221,7 @@ function renderTable(rows) {
   const tbody = document.getElementById("reportBody");
   if (!tbody) return;
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="9" class="empty">ไม่พบข้อมูลตามตัวกรอง</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">ไม่พบข้อมูลตามตัวกรอง</td></tr>`;
     return;
   }
   tbody.innerHTML = rows.map((r, i) => renderRow(r, i)).join("");
@@ -217,7 +234,7 @@ function renderRow(r, i) {
       : st === STATUS_ACCOUNTING
         ? `<span class="status-pill status-done">บัญชีตรวจแล้ว</span>`
         : `<span class="status-pill status-pending">รอตรวจสอบ</span>`;
-  const canApprove = st === STATUS_PENDING;
+  const canApprove = PENDING_STATUS_SET.has(st);
   return `<tr>
     <td><button class="expand-btn" onclick="toggleDetail(${i})">▼</button></td>
     <td>${safeText(formatDateTime(r.incident_datetime || r.created_at || r.report_date))}</td>
@@ -244,7 +261,7 @@ function renderProblemInline(r) {
 }
 function renderDetail(r) {
   const items = r.problem_items || [];
-  return `<table class="problem-table"><thead><tr><th>ปัญหา</th><th class="text-right">น้ำหนัก kg</th><th>รายละเอียด</th></tr></thead><tbody>${items.map((x) => `<tr><td><strong>${safeText(x.problem_type)}</strong></td><td class="text-right">${formatNumber(x.waste_weight_kg)}</td><td>${safeText(x.detail || "-")}</td></tr>`).join("")}</tbody><tfoot><tr><td>รวมของเสีย</td><td class="text-right">${formatNumber(totalWaste(r))}</td><td>kg</td></tr></tfoot></table><div class="form-group" style="margin-top:12px"><label>หมายเหตุหัวหน้า</label><textarea id="note-${safeAttr(r.id)}" rows="2" placeholder="ใส่หมายเหตุถ้ามี" ${normalizeText(r.status) !== STATUS_PENDING ? "disabled" : ""}>${safeText(r.supervisor_note || "")}</textarea></div>`;
+  return `<table class="problem-table"><thead><tr><th>ปัญหา</th><th class="text-right">น้ำหนัก kg</th><th>รายละเอียด</th></tr></thead><tbody>${items.map((x) => `<tr><td><strong>${safeText(x.problem_type)}</strong></td><td class="text-right">${formatNumber(x.waste_weight_kg)}</td><td>${safeText(x.detail || "-")}</td></tr>`).join("")}</tbody><tfoot><tr><td>รวมของเสีย</td><td class="text-right">${formatNumber(totalWaste(r))}</td><td>kg</td></tr></tfoot></table><div class="form-group" style="margin-top:12px"><label>หมายเหตุหัวหน้า</label><textarea id="note-${safeAttr(r.id)}" rows="2" placeholder="ใส่หมายเหตุถ้ามี" ${!PENDING_STATUS_SET.has(normalizeText(r.status || STATUS_PENDING)) ? "disabled" : ""}>${safeText(r.supervisor_note || "")}</textarea></div>`;
 }
 function toggleDetail(i) {
   document.getElementById(`detail-${i}`)?.classList.toggle("hidden");
@@ -327,15 +344,14 @@ function getDeptName(code) {
   return state.standards[normalizeDept(code)]?.name || code || "-";
 }
 function normalizeDept(v) {
-  return String(v || "")
-    .trim()
-    .toUpperCase()
-    .replace(/[\s-]+/g, "_");
+  return window.EA_COMMON?.normalizeDepartmentCode
+    ? window.EA_COMMON.normalizeDepartmentCode(v)
+    : String(v || "").trim().toUpperCase().replace(/[\s-]+/g, "_");
 }
 function normalizeText(v) {
-  return String(v || "")
-    .trim()
-    .toLowerCase();
+  return window.EA_COMMON?.normalizeText
+    ? window.EA_COMMON.normalizeText(v)
+    : String(v || "").trim().toLowerCase();
 }
 function todayString() {
   const d = new Date();
@@ -356,10 +372,9 @@ function formatDateTime(v) {
       });
 }
 function formatNumber(v) {
-  return Number(v || 0).toLocaleString("th-TH", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return window.EA_COMMON?.formatNumber
+    ? window.EA_COMMON.formatNumber(v, 2, 2)
+    : Number(v || 0).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function getValue(id) {
   return document.getElementById(id)?.value?.trim() || "";
@@ -380,15 +395,19 @@ function safeJsonParse(v) {
   }
 }
 function safeText(v) {
-  return String(v ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  return window.EA_COMMON?.safeText
+    ? window.EA_COMMON.safeText(v)
+    : String(v ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 function safeAttr(v) {
-  return safeText(v).replaceAll("`", "&#096;");
+  return window.EA_COMMON?.safeAttr
+    ? window.EA_COMMON.safeAttr(v)
+    : safeText(v).replaceAll("`", "&#096;");
 }
 function showToast(msg, type = "") {
   const t = document.getElementById("toast");
@@ -431,6 +450,7 @@ function logoutNow() {
   location.href = "/login.html";
 }
 window.loadPageData = loadPageData;
+window.loadRecords = loadPageData;
 window.toggleDetail = toggleDetail;
 window.approveReport = approveReport;
 window.deleteReport = deleteReport;
