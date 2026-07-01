@@ -1360,18 +1360,40 @@ function renderProblemDropdown(problemList) {
 // DUPLICATE CHECK
 // =========================================================
 
-async function checkDuplicateReport(clientSupabase, reportDate, reporterName) {
+async function checkDuplicateReport(
+  clientSupabase,
+  reportDate,
+  workShift,
+  machineNo,
+  problemItems,
+) {
+  const problemTypes = problemItems.map((item) => item.problem_type).filter(Boolean);
+
   const { data, error } = await clientSupabase
-    .from("daily_waste_reports")
-    .select("id")
-    .eq("report_date", reportDate)
-    .eq("department_code", currentDept)
-    .eq("reported_by", reporterName)
+    .from("daily_waste_report_items")
+    .select(`
+      id,
+      report_id,
+      problem_type,
+      daily_waste_reports!inner (
+        id,
+        report_date,
+        department_code,
+        work_shift,
+        machine_no,
+        status
+      )
+    `)
+    .eq("daily_waste_reports.report_date", reportDate)
+    .eq("daily_waste_reports.department_code", currentDept)
+    .eq("daily_waste_reports.work_shift", workShift)
+    .eq("daily_waste_reports.machine_no", machineNo)
+    .in("problem_type", problemTypes)
     .limit(1);
 
   if (error) throw error;
 
-  return Array.isArray(data) && data.length > 0;
+  return Array.isArray(data) && data.length > 0 ? data[0] : null;
 }
 
 // =========================================================
@@ -1434,18 +1456,42 @@ async function handleFormSubmit(event) {
     setSubmitLoading(submitButton, true);
     showLoginOverlay("กำลังตรวจสอบข้อมูลซ้ำ...");
 
-    const isDuplicate = await checkDuplicateReport(
-      clientSupabase,
-      reportDate,
-      reporterName,
-    );
+    const duplicateItem = await checkDuplicateReport(
+  clientSupabase,
+  reportDate,
+  finalShift,
+  finalMachine,
+  problemItems,
+);
 
-    if (isDuplicate) {
-      alert(
-        "วันนี้ชื่อนี้เคยบันทึกข้อมูลในแผนกนี้แล้วค่ะ\n\nหากเป็นการกรอกซ้ำ ให้หัวหน้าหรือแอดมินตรวจสอบในแดชบอร์ดก่อนนะคะ",
-      );
-      return;
-    }
+if (duplicateItem) {
+  const duplicateStatus =
+    duplicateItem.daily_waste_reports?.status || "pending";
+
+  const lockedStatuses = ["sent_accounting", "accounting_checked"];
+
+  if (lockedStatuses.includes(duplicateStatus)) {
+    alert(
+      `พบข้อมูลซ้ำ และรายการนี้ส่งบัญชีแล้ว\n\n` +
+        `วันที่: ${reportDate}\n` +
+        `เครื่อง: ${finalMachine}\n` +
+        `กะ: ${finalShift}\n` +
+        `ปัญหา: ${duplicateItem.problem_type}\n\n` +
+        `ไม่สามารถบันทึกซ้ำหรือแก้ไขได้ กรุณาติดต่อหัวหน้างานค่ะ`,
+    );
+    return;
+  }
+
+  alert(
+    `พบข้อมูลซ้ำในระบบแล้ว\n\n` +
+      `วันที่: ${reportDate}\n` +
+      `เครื่อง: ${finalMachine}\n` +
+      `กะ: ${finalShift}\n` +
+      `ปัญหา: ${duplicateItem.problem_type}\n\n` +
+      `หากกรอกผิด ให้หัวหน้าแก้ไขรายการเดิมจากหน้าตรวจสอบค่ะ`,
+  );
+  return;
+}
 
     const confirmed = confirm("ยืนยันการบันทึกรายงานปัญหานี้เข้าสู่ระบบ?");
     if (!confirmed) return;
