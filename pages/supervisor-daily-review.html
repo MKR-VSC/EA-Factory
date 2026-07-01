@@ -126,6 +126,40 @@
           </table>
         </div>
       </section>
+
+
+
+      <section class="table-card supervisor-table-card">
+  <div class="table-header">
+    <div>
+      <h2>รายการที่ส่งบัญชีแล้ว</h2>
+      <p class="muted">ดูย้อนหลังเท่านั้น ไม่สามารถแก้ไขหรือลบได้</p>
+    </div>
+    <span id="sentRowCount" class="muted">-</span>
+  </div>
+
+  <div class="table-scroll supervisor-table-scroll">
+    <table class="data-table supervisor-data-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>วันที่/เวลา</th>
+          <th>แผนก</th>
+          <th>เครื่องจักร</th>
+          <th>ผู้บันทึก</th>
+          <th class="text-right">น้ำหนักของเสีย</th>
+          <th>รายการปัญหา</th>
+          <th>สถานะ</th>
+          <th>จัดการ</th>
+        </tr>
+      </thead>
+      <tbody id="sentReportBody">
+        <tr><td colspan="9" class="empty-cell">กำลังโหลดข้อมูล...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
     </main>
 
     <!-- Popup กลางระบบ แทน alert/confirm -->

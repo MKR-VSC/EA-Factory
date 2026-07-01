@@ -9,7 +9,12 @@ const STATUS_PENDING = "pending_supervisor";
 const STATUS_PENDING_OLD = "pending";
 const STATUS_SENT = "sent_accounting";
 const STATUS_ACCOUNTING = "accounting_checked";
-const PENDING_STATUS_SET = new Set([STATUS_PENDING, STATUS_PENDING_OLD, "submitted", "draft"]);
+const PENDING_STATUS_SET = new Set([
+  STATUS_PENDING,
+  STATUS_PENDING_OLD,
+  "submitted",
+  "draft",
+]);
 
 let state = {
   supabase: null,
@@ -107,8 +112,21 @@ async function loadPageData() {
     rows = filterByStatus(rows, status);
     rows = await attachProblemItemsToReports(rows);
     state.reports = rows;
+
+    const pendingRows = rows.filter((r) =>
+      PENDING_STATUS_SET.has(normalizeText(r.status || STATUS_PENDING)),
+    );
+
+    const sentRows = rows.filter((r) => {
+      const st = normalizeText(r.status || "");
+      return st === STATUS_SENT || st === STATUS_ACCOUNTING;
+    });
+
     renderSummary(rows);
-    renderTable(rows);
+    renderTable(pendingRows);
+    renderSentTable(sentRows);
+
+
   } catch (err) {
     console.error(err);
     if (tbody)
@@ -130,7 +148,8 @@ function filterByStatus(rows, status) {
   return rows.filter((r) => {
     const rowStatus = normalizeText(r.status || STATUS_PENDING);
     if (target === STATUS_PENDING) return PENDING_STATUS_SET.has(rowStatus);
-    if (target === "resolved") return rowStatus === STATUS_SENT || rowStatus === "resolved";
+    if (target === "resolved")
+      return rowStatus === STATUS_SENT || rowStatus === "resolved";
     return rowStatus === target;
   });
 }
@@ -153,15 +172,13 @@ async function attachProblemItemsToReports(rows) {
   (data || []).forEach((item) => {
     const key = String(item.report_id);
     if (!map.has(key)) map.set(key, []);
-    map
-      .get(key)
-      .push({
-        id: item.id,
-        item_no: item.item_no,
-        problem_type: item.problem_type,
-        waste_weight_kg: Number(item.waste_weight_kg || 0),
-        detail: item.detail || "",
-      });
+    map.get(key).push({
+      id: item.id,
+      item_no: item.item_no,
+      problem_type: item.problem_type,
+      waste_weight_kg: Number(item.waste_weight_kg || 0),
+      detail: item.detail || "",
+    });
   });
   return rows.map((r) => ({
     ...r,
@@ -226,6 +243,97 @@ function renderTable(rows) {
   }
   tbody.innerHTML = rows.map((r, i) => renderRow(r, i)).join("");
 }
+
+function renderSentTable(rows) {
+  const tbody = document.getElementById("sentReportBody");
+  if (!tbody) return;
+
+  setText("sentRowCount", `แสดง ${rows.length.toLocaleString("th-TH")} รายการ`);
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">ยังไม่มีรายการที่ส่งบัญชีแล้ว</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map((r, i) => renderSentRow(r, i)).join("");
+}
+
+function renderSentRow(r, i) {
+  const detailId = `sent-detail-${i}`;
+  const st = normalizeText(r.status || STATUS_SENT);
+
+  const pill =
+    st === STATUS_ACCOUNTING
+      ? `<span class="status-pill status-done">บัญชีตรวจแล้ว</span>`
+      : `<span class="status-pill status-sent">ส่งบัญชีแล้ว</span>`;
+
+  return `<tr>
+    <td><button class="expand-btn" onclick="toggleSentDetail(${i})">▼</button></td>
+    <td>${safeText(formatDateTime(r.incident_datetime || r.created_at || r.report_date))}</td>
+    <td><strong>${safeText(getDeptCode(r))}</strong><br><small>${safeText(getDeptName(getDeptCode(r)))}</small></td>
+    <td><strong>${safeText(r.machine_no || "-")}</strong></td>
+    <td>${safeText(r.reported_by || r.created_by_name || "-")}</td>
+    <td class="text-right"><strong>${formatNumber(totalWaste(r))}</strong></td>
+    <td>${renderProblemInline(r)}</td>
+    <td>${pill}</td>
+    <td>
+      <div class="row-actions">
+        <button class="btn secondary" onclick="toggleSentDetail(${i})">ดู</button>
+      </div>
+    </td>
+  </tr>
+  <tr id="${detailId}" class="detail-row hidden">
+    <td colspan="9">${renderDetailReadOnly(r)}</td>
+  </tr>`;
+}
+
+function renderDetailReadOnly(r) {
+  const items = r.problem_items || [];
+
+  return `
+    <table class="problem-table">
+      <thead>
+        <tr>
+          <th>ปัญหา</th>
+          <th class="text-right">น้ำหนัก kg</th>
+          <th>รายละเอียด</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items
+          .map(
+            (x) => `
+              <tr>
+                <td><strong>${safeText(x.problem_type)}</strong></td>
+                <td class="text-right">${formatNumber(x.waste_weight_kg)}</td>
+                <td>${safeText(x.detail || "-")}</td>
+              </tr>
+            `,
+          )
+          .join("")}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td>รวมของเสีย</td>
+          <td class="text-right">${formatNumber(totalWaste(r))}</td>
+          <td>kg</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="form-group" style="margin-top:12px">
+      <label>หมายเหตุหัวหน้า</label>
+      <textarea rows="2" disabled>${safeText(r.supervisor_note || "")}</textarea>
+    </div>
+  `;
+}
+
+function toggleSentDetail(i) {
+  document.getElementById(`sent-detail-${i}`)?.classList.toggle("hidden");
+}
+
+
+
 function renderRow(r, i) {
   const st = normalizeText(r.status || STATUS_PENDING);
   const pill =
@@ -244,7 +352,18 @@ function renderRow(r, i) {
     <td class="text-right"><strong>${formatNumber(totalWaste(r))}</strong></td>
     <td>${renderProblemInline(r)}</td>
     <td>${pill}</td>
-    <td><div class="row-actions">${canApprove ? `<button class="btn success" onclick="approveReport('${safeAttr(r.id)}')">ส่งบัญชี</button>` : "-"}<button class="btn danger" onclick="deleteReport('${safeAttr(r.id)}')">ลบ</button></div></td>
+    <td>
+  <div class="row-actions">
+    <button class="btn secondary" onclick="toggleDetail(${i})">ดู</button>
+    ${
+      canApprove
+        ? `<button class="btn primary" onclick="editReport('${safeAttr(r.id)}')">แก้ไข</button>
+           <button class="btn success" onclick="approveReport('${safeAttr(r.id)}')">ส่งบัญชี</button>`
+        : ""
+    }
+    <button class="btn danger" onclick="deleteReport('${safeAttr(r.id)}')">ลบ</button>
+  </div>
+</td>
   </tr><tr id="detail-${i}" class="detail-row hidden"><td colspan="9">${renderDetail(r)}</td></tr>`;
 }
 function renderProblemInline(r) {
@@ -291,18 +410,175 @@ async function approveReport(id) {
   showToast("ส่งข้อมูลให้บัญชีเรียบร้อยแล้ว", "success");
   await loadPageData();
 }
+
+
 async function deleteReport(id) {
+  const report = state.reports.find((r) => String(r.id) === String(id));
+  if (!report) return showToast("ไม่พบรายการนี้", "error");
+
+  const st = normalizeText(report.status || "");
+  if (st === STATUS_SENT || st === STATUS_ACCOUNTING) {
+    return showToast("รายการที่ส่งแล้วดูได้อย่างเดียว ไม่สามารถลบได้", "error");
+  }
+
   const ok = await askConfirm(
     "ยืนยันลบรายการ",
-    "ลบเฉพาะรายการที่กรอกผิดจริงเท่านั้น",
+    "ต้องการลบรายการนี้ใช่ไหม? ระบบจะลบรายการปัญหาย่อยออกด้วย",
   );
   if (!ok) return;
+
+  const { error: itemError } = await state.supabase
+    .from(ITEM_TABLE)
+    .delete()
+    .eq("report_id", id);
+
+  if (itemError) {
+    return showToast(`ลบรายการย่อยไม่สำเร็จ: ${itemError.message}`, "error");
+  }
+
   const { error } = await state.supabase
     .from(REPORT_TABLE)
     .delete()
     .eq("id", id);
+
   if (error) return showToast(`ลบไม่สำเร็จ: ${error.message}`, "error");
+
   showToast("ลบรายการเรียบร้อยแล้ว", "success");
+  await loadPageData();
+}
+
+
+
+function editReport(id) {
+  const report = state.reports.find((r) => String(r.id) === String(id));
+  if (!report) return showToast("ไม่พบข้อมูลที่ต้องการแก้ไข", "error");
+
+  const st = normalizeText(report.status || "");
+  if (st === STATUS_SENT || st === STATUS_ACCOUNTING) {
+    return showToast("รายการที่ส่งแล้วดูได้อย่างเดียว ไม่สามารถแก้ไขได้", "error");
+  }
+
+  const items = report.problem_items || [];
+
+  // โค้ดเดิมต่อจากนี้เหมือนเดิม
+
+  setText("modalTitle", "แก้ไขรายการของเสีย");
+  setText("modalSubTitle", "แก้ไขน้ำหนัก / รายละเอียดปัญหาก่อนส่งบัญชี");
+
+  document.getElementById("modalBody").innerHTML = `
+    <div class="edit-report-form">
+      <div class="form-group">
+        <label>เครื่องจักร</label>
+        <input id="editMachineNo" value="${safeAttr(report.machine_no || "")}" />
+      </div>
+
+      <div class="form-group">
+        <label>ผู้บันทึก</label>
+        <input id="editReportedBy" value="${safeAttr(report.reported_by || "")}" />
+      </div>
+
+      <div class="form-group">
+        <label>หมายเหตุหัวหน้า</label>
+        <textarea id="editSupervisorNote" rows="2">${safeText(report.supervisor_note || "")}</textarea>
+      </div>
+
+      <div class="edit-items-title">รายการปัญหา</div>
+
+      ${items
+        .map(
+          (item, index) => `
+            <div class="edit-item-box">
+              <input type="hidden" class="editItemId" value="${safeAttr(item.id)}" />
+
+              <div class="form-group">
+                <label>ปัญหาที่ ${index + 1}</label>
+                <input class="editProblemType" value="${safeAttr(item.problem_type || "")}" />
+              </div>
+
+              <div class="form-group">
+                <label>น้ำหนักของเสีย kg</label>
+                <input class="editWasteWeight" type="number" step="0.01" min="0" value="${Number(item.waste_weight_kg || 0)}" />
+              </div>
+
+              <div class="form-group">
+                <label>รายละเอียด</label>
+                <textarea class="editDetail" rows="2">${safeText(item.detail || "")}</textarea>
+              </div>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+
+  document.getElementById("modalActions").innerHTML = `
+    <button class="btn secondary" type="button" onclick="closeModal()">ยกเลิก</button>
+    <button class="btn primary" type="button" onclick="saveEditReport('${safeAttr(id)}')">บันทึกแก้ไข</button>
+  `;
+
+  openModal();
+}
+
+async function saveEditReport(id) {
+  const machineNo = getValue("editMachineNo");
+  const reportedBy = getValue("editReportedBy");
+  const supervisorNote =
+    document.getElementById("editSupervisorNote")?.value || "";
+
+  const itemIds = [...document.querySelectorAll(".editItemId")];
+  const problemTypes = [...document.querySelectorAll(".editProblemType")];
+  const wasteWeights = [...document.querySelectorAll(".editWasteWeight")];
+  const details = [...document.querySelectorAll(".editDetail")];
+
+  const updates = itemIds.map((el, index) => ({
+    id: el.value,
+    problem_type: problemTypes[index]?.value?.trim() || "ไม่ระบุปัญหา",
+    waste_weight_kg: Number(wasteWeights[index]?.value || 0),
+    detail: details[index]?.value?.trim() || "",
+  }));
+
+  const total = updates.reduce(
+    (sum, item) => sum + Number(item.waste_weight_kg || 0),
+    0,
+  );
+
+  const { error: reportError } = await state.supabase
+    .from(REPORT_TABLE)
+    .update({
+      machine_no: machineNo,
+      reported_by: reportedBy,
+      supervisor_note: supervisorNote,
+      waste_weight_kg: total,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (reportError) {
+    return showToast(
+      `บันทึกหัวรายงานไม่สำเร็จ: ${reportError.message}`,
+      "error",
+    );
+  }
+
+  for (const item of updates) {
+    if (String(item.id).includes("fallback")) continue;
+
+    const { error } = await state.supabase
+      .from(ITEM_TABLE)
+      .update({
+        problem_type: item.problem_type,
+        waste_weight_kg: item.waste_weight_kg,
+        detail: item.detail,
+      })
+      .eq("id", item.id);
+
+    if (error) {
+      return showToast(`บันทึกรายการย่อยไม่สำเร็จ: ${error.message}`, "error");
+    }
+  }
+
+  closeModal();
+  showToast("แก้ไขข้อมูลเรียบร้อยแล้ว", "success");
   await loadPageData();
 }
 
@@ -346,12 +622,17 @@ function getDeptName(code) {
 function normalizeDept(v) {
   return window.EA_COMMON?.normalizeDepartmentCode
     ? window.EA_COMMON.normalizeDepartmentCode(v)
-    : String(v || "").trim().toUpperCase().replace(/[\s-]+/g, "_");
+    : String(v || "")
+        .trim()
+        .toUpperCase()
+        .replace(/[\s-]+/g, "_");
 }
 function normalizeText(v) {
   return window.EA_COMMON?.normalizeText
     ? window.EA_COMMON.normalizeText(v)
-    : String(v || "").trim().toLowerCase();
+    : String(v || "")
+        .trim()
+        .toLowerCase();
 }
 function todayString() {
   const d = new Date();
@@ -374,7 +655,10 @@ function formatDateTime(v) {
 function formatNumber(v) {
   return window.EA_COMMON?.formatNumber
     ? window.EA_COMMON.formatNumber(v, 2, 2)
-    : Number(v || 0).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    : Number(v || 0).toLocaleString("th-TH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
 }
 function getValue(id) {
   return document.getElementById(id)?.value?.trim() || "";
@@ -409,6 +693,7 @@ function safeAttr(v) {
     ? window.EA_COMMON.safeAttr(v)
     : safeText(v).replaceAll("`", "&#096;");
 }
+
 function showToast(msg, type = "") {
   const t = document.getElementById("toast");
   if (!t) return;
@@ -417,16 +702,28 @@ function showToast(msg, type = "") {
   t.classList.remove("hidden");
   setTimeout(() => t.classList.add("hidden"), 2600);
 }
-function closeModal() {
-  document.getElementById("appModal")?.classList.add("hidden");
+
+function openModal() {
+  const modal = document.getElementById("appModal");
+  if (!modal) return;
+  modal.hidden = false;
+  modal.classList.remove("hidden");
 }
+
+function closeModal() {
+  const modal = document.getElementById("appModal");
+  if (!modal) return;
+  modal.classList.add("hidden");
+  modal.hidden = true;
+}
+
 function askConfirm(title, msg) {
   return new Promise((resolve) => {
     setText("modalTitle", title);
     document.getElementById("modalBody").innerHTML = `<p>${safeText(msg)}</p>`;
     document.getElementById("modalActions").innerHTML =
       `<button class="btn secondary" id="cancelAsk">ยกเลิก</button><button class="btn primary" id="okAsk">ยืนยัน</button>`;
-    document.getElementById("appModal").classList.remove("hidden");
+    openModal();
     document.getElementById("cancelAsk").onclick = () => {
       closeModal();
       resolve(false);
@@ -456,3 +753,8 @@ window.approveReport = approveReport;
 window.deleteReport = deleteReport;
 window.closeModal = closeModal;
 window.logoutNow = logoutNow;
+window.editReport = editReport;
+window.saveEditReport = saveEditReport;
+window.openModal = openModal;
+window.renderSentTable = renderSentTable;
+window.toggleSentDetail = toggleSentDetail;
