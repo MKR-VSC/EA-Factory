@@ -91,8 +91,7 @@ let appOtherProblemDetail = "";
 if (!VALID_DEPARTMENTS.includes(currentDept)) {
   console.error(`[DEPT_ERROR] ไม่พบแผนก: ${currentDeptRaw}`);
 
-  sessionStorage.setItem(
-    "lastFormError",
+  alert(
     `ไม่พบแผนกของผู้ใช้งาน (${currentDeptRaw})\nกรุณาตรวจสอบ department_code ในตาราง profiles`,
   );
 
@@ -111,6 +110,10 @@ localStorage.setItem("activeDept", currentDept);
 function normalizeDept(dept) {
   // รับได้ทั้งรหัสเก่า / รหัสใหม่ / ชื่อไทย
   // แล้วแปลงให้เป็นรหัสมาตรฐานจาก master_departments.department_code เสมอ
+  if (window.EA_COMMON?.normalizeDepartmentCode) {
+    return window.EA_COMMON.normalizeDepartmentCode(dept || "BLOW");
+  }
+
   const raw = String(dept || "BLOW").trim();
   const key = raw.toLowerCase();
 
@@ -203,11 +206,9 @@ function getDeptDisplayName(dept) {
 
 function validateCurrentDept() {
   if (!VALID_DEPARTMENTS.includes(currentDept)) {
-    showAppMessage({
-      title: "รหัสแผนกไม่ถูกต้อง",
-      message: `รหัสแผนกไม่ถูกต้อง: ${currentDept}\nกรุณาตรวจสอบลิงก์ QR หรือค่า dept ใน URL`,
-      type: "error",
-    });
+    alert(
+      `รหัสแผนกไม่ถูกต้อง: ${currentDept}\n\nกรุณาตรวจสอบลิงก์ QR หรือค่า dept ใน URL`,
+    );
     return false;
   }
 
@@ -219,9 +220,11 @@ function validateCurrentDept() {
 // =========================================================
 
 function normalizeRole(role) {
-  return String(role || "")
-    .toLowerCase()
-    .trim();
+  return window.EA_COMMON?.normalizeText
+    ? window.EA_COMMON.normalizeText(role)
+    : String(role || "")
+        .toLowerCase()
+        .trim();
 }
 
 function isStaffRole(role) {
@@ -273,39 +276,32 @@ function setActiveUserName(name) {
 
 // =========================================================
 // AUTO LOGOUT
-// ใช้ตัวเดียวทั้งโหมด Login และ QR
-// ไม่ใช้ mousemove / scroll เพราะบางเครื่องยิง event เอง ทำให้ไม่ logout
 // =========================================================
 
 const AUTO_LOGOUT_MINUTES = 5;
-let idleLogoutTimer = null;
+let autoLogoutTimer = null;
 
 function startAutoLogoutTimer() {
-  startIdleLogout(AUTO_LOGOUT_MINUTES);
+  resetAutoLogoutTimer();
+
+  ["click", "keydown", "touchstart", "mousemove", "scroll"].forEach(
+    (eventName) => {
+      window.addEventListener(eventName, resetAutoLogoutTimer, {
+        passive: true,
+      });
+    },
+  );
 }
 
-function startIdleLogout(minutes = 5) {
-  resetIdleLogoutTimer(minutes);
+function resetAutoLogoutTimer() {
+  clearTimeout(autoLogoutTimer);
 
-  ["click", "input", "change", "keydown", "touchstart"].forEach((eventName) => {
-    window.addEventListener(
-      eventName,
-      () => resetIdleLogoutTimer(minutes),
-      { passive: true },
-    );
-  });
-
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) resetIdleLogoutTimer(minutes);
-  });
-}
-
-function resetIdleLogoutTimer(minutes = AUTO_LOGOUT_MINUTES) {
-  clearTimeout(idleLogoutTimer);
-
-  idleLogoutTimer = setTimeout(() => {
-    forceLogoutByIdle();
-  }, minutes * 60 * 1000);
+  autoLogoutTimer = setTimeout(
+    () => {
+      forceLogoutByIdle();
+    },
+    AUTO_LOGOUT_MINUTES * 60 * 1000,
+  );
 }
 
 async function forceLogoutByIdle() {
@@ -321,12 +317,7 @@ async function forceLogoutByIdle() {
 
   localStorage.clear();
 
-  await showAppMessage({
-    title: "ออกจากระบบอัตโนมัติ",
-    message: "ไม่มีการใช้งานเกิน 5 นาที\nระบบจะกลับไปหน้า Login",
-    type: "warning",
-    okText: "ตกลง",
-  });
+  alert("ไม่มีการใช้งานเกิน 5 นาที ระบบออกจากระบบอัตโนมัติ");
 
   window.location.href = "/login.html";
 }
@@ -347,6 +338,10 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     // logout auto
     startAutoLogoutTimer();
+
+    // ถ้าเปิดจาก QR ให้จับเวลาไม่ใช้งานอีกชั้น
+    // กันเครื่องค้างอยู่หน้าฟอร์มหลังสแกน QR
+    startQrIdleLogout();
 
     if (!validateCurrentDept()) return;
 
@@ -380,7 +375,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   } catch (err) {
     console.error("[Init_Error]", err);
-    showErrorMessage("เกิดข้อผิดพลาดตอนเปิดหน้าฟอร์ม: " + (err.message || err));
+    alert("เกิดข้อผิดพลาดตอนเปิดหน้าฟอร์ม: " + (err.message || err));
   } finally {
     hideSplash();
   }
@@ -436,7 +431,7 @@ function confirmStaffName() {
   const name = input?.value.trim() || "";
 
   if (!name) {
-    showErrorMessage("กรุณากรอกชื่อผู้บันทึกข้อมูลก่อนค่ะ");
+    alert("กรุณากรอกชื่อผู้บันทึกข้อมูลก่อนค่ะ");
     input?.focus();
     return;
   }
@@ -493,73 +488,6 @@ function hideLoginOverlay() {
   if (overlay) overlay.classList.add("hidden");
 }
 
-
-// =========================================================
-// APP DIALOG
-// ใช้แทน alert() / confirm() ของ Browser
-// กันข้อความระบบเด้งซ้อน Popup ของเรา
-// =========================================================
-
-function showAppMessage({
-  title = "แจ้งเตือน",
-  message = "",
-  type = "info",
-  okText = "ตกลง",
-  cancelText = "ยกเลิก",
-  confirm = false,
-} = {}) {
-  return new Promise((resolve) => {
-    const dialog = document.getElementById("app-dialog");
-
-    if (!dialog) {
-      console.warn("ไม่พบ #app-dialog:", title, message);
-      resolve(!confirm);
-      return;
-    }
-
-    const titleEl = document.getElementById("app-dialog-title");
-    const messageEl = document.getElementById("app-dialog-message");
-    const okBtn = document.getElementById("app-dialog-ok");
-    const cancelBtn = document.getElementById("app-dialog-cancel");
-    const iconEl = document.getElementById("app-dialog-icon-symbol");
-
-    const iconMap = {
-      info: "info",
-      success: "check_circle",
-      warning: "warning",
-      error: "error",
-    };
-
-    dialog.className = `app-dialog ${confirm ? "is-confirm" : ""} is-${type}`;
-    titleEl.textContent = title;
-    messageEl.textContent = message;
-    okBtn.textContent = okText;
-    cancelBtn.textContent = cancelText;
-    iconEl.textContent = iconMap[type] || "info";
-
-    const close = (result) => {
-      dialog.classList.add("hidden");
-      okBtn.onclick = null;
-      cancelBtn.onclick = null;
-      resolve(result);
-    };
-
-    okBtn.onclick = () => close(true);
-    cancelBtn.onclick = () => close(false);
-
-    dialog.classList.remove("hidden");
-    setTimeout(() => okBtn.focus(), 40);
-  });
-}
-
-function showErrorMessage(message) {
-  return showAppMessage({
-    title: "แจ้งเตือน",
-    message,
-    type: "error",
-  });
-}
-
 // =========================================================
 // DEPARTMENT UI
 // =========================================================
@@ -568,7 +496,9 @@ function renderDeptInfo() {
   const deptName = getDeptDisplayName(currentDept);
 
   const titleEl = document.getElementById("dept-title-main");
-  const badgeEl = document.getElementById("dept-badge-name") || document.getElementById("dept-badge-text");
+  const badgeEl =
+    document.getElementById("dept-badge-name") ||
+    document.getElementById("dept-badge-text");
   const bodyEl = document.getElementById("dept-body");
 
   if (titleEl) {
@@ -761,7 +691,9 @@ function setupDefaultDateTime() {
 }
 
 function setupNetworkStatus() {
-  const el = document.getElementById("network-status") || document.getElementById("network-status-text");
+  const el =
+    document.getElementById("network-status") ||
+    document.getElementById("network-status-text");
   if (!el) return;
 
   function updateStatus() {
@@ -889,7 +821,7 @@ function addProblemItem(defaultValue = {}) {
     const rows = document.querySelectorAll(".problem-item");
 
     if (rows.length <= 1) {
-      showErrorMessage("ต้องมีรายการปัญหาอย่างน้อย 1 รายการค่ะ");
+      alert("ต้องมีรายการปัญหาอย่างน้อย 1 รายการค่ะ");
       return;
     }
 
@@ -914,6 +846,7 @@ function buildProblemOptionsHtml(selectedValue = "") {
 
 function renumberProblemItems() {
   document.querySelectorAll(".problem-item").forEach((row, index) => {
+    row.dataset.index = String(index + 1);
     const title = row.querySelector(".problem-item-head strong");
     if (title) title.textContent = `ปัญหาที่ ${index + 1}`;
   });
@@ -928,14 +861,16 @@ function updateProblemItemOtherHint(row) {
     detail.placeholder = "กรุณาระบุว่า อื่นๆ คือปัญหาอะไร";
     detail.classList.add("detail-required-hint");
   } else {
-    detail.placeholder = "เช่น เริ่มเสียช่วงต้นม้วน / พบตอนเปลี่ยนงาน / รายละเอียดเพิ่มเติม";
+    detail.placeholder =
+      "เช่น เริ่มเสียช่วงต้นม้วน / พบตอนเปลี่ยนงาน / รายละเอียดเพิ่มเติม";
     detail.classList.remove("detail-required-hint");
   }
 }
 
 function updateTotalWasteKg() {
-  const total = Array.from(document.querySelectorAll(".problem-weight-input"))
-    .reduce((sum, input) => sum + (parseFloat(input.value || "0") || 0), 0);
+  const total = Array.from(
+    document.querySelectorAll(".problem-weight-input"),
+  ).reduce((sum, input) => sum + (parseFloat(input.value || "0") || 0), 0);
 
   const totalEl = document.getElementById("total-waste-kg");
   if (totalEl) totalEl.textContent = total.toFixed(2);
@@ -945,10 +880,14 @@ function collectProblemItems() {
   const rows = Array.from(document.querySelectorAll(".problem-item"));
 
   return rows.map((row, index) => {
-    const problemType = row.querySelector(".problem-type-select")?.value || "";
-    const wasteWeight =
-      parseFloat(row.querySelector(".problem-weight-input")?.value || "0") || 0;
-    const detail = row.querySelector(".problem-detail-input")?.value.trim() || "";
+    const problemType = (
+      row.querySelector(".problem-type-select")?.value || ""
+    ).trim();
+    const rawWeight = row.querySelector(".problem-weight-input")?.value || "0";
+    const parsedWeight = parseFloat(rawWeight);
+    const wasteWeight = Number.isFinite(parsedWeight) ? parsedWeight : 0;
+    const detail =
+      row.querySelector(".problem-detail-input")?.value.trim() || "";
 
     return {
       item_no: index + 1,
@@ -961,23 +900,25 @@ function collectProblemItems() {
 
 function validateProblemItems(problemItems) {
   if (!problemItems.length) {
-    showErrorMessage("กรุณาเพิ่มรายการปัญหาอย่างน้อย 1 รายการค่ะ");
+    alert("กรุณาเพิ่มรายการปัญหาอย่างน้อย 1 รายการค่ะ");
     return false;
   }
 
   for (const item of problemItems) {
     if (!item.problem_type) {
-      showErrorMessage(`กรุณาเลือกประเภทปัญหา ในรายการที่ ${item.item_no}`);
+      alert(`กรุณาเลือกประเภทปัญหา ในรายการที่ ${item.item_no}`);
       return false;
     }
 
-    if (!item.waste_weight_kg || item.waste_weight_kg <= 0) {
-      showErrorMessage(`กรุณากรอกน้ำหนักมากกว่า 0 kg ในรายการที่ ${item.item_no}`);
+    if (!Number.isFinite(item.waste_weight_kg) || item.waste_weight_kg <= 0) {
+      alert(`กรุณากรอกน้ำหนักมากกว่า 0 kg ในรายการที่ ${item.item_no}`);
       return false;
     }
 
     if (isOtherProblem(item.problem_type) && !item.detail) {
-      showErrorMessage(`รายการที่ ${item.item_no} เลือก “อื่นๆ” กรุณาระบุรายละเอียดปัญหาค่ะ`);
+      alert(
+        `รายการที่ ${item.item_no} เลือก “อื่นๆ” กรุณาระบุรายละเอียดปัญหาค่ะ`,
+      );
       return false;
     }
   }
@@ -986,11 +927,13 @@ function validateProblemItems(problemItems) {
 }
 
 function escapeHtml(value) {
-  return String(value || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
+  return window.EA_COMMON?.safeText
+    ? window.EA_COMMON.safeText(value)
+    : String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
 }
 
 // =========================================================
@@ -1014,15 +957,11 @@ function setupOtherProblemModal() {
 }
 
 function isOtherProblem(value) {
-  const text = String(value || "").trim().toLowerCase();
+  const text = String(value || "")
+    .trim()
+    .toLowerCase();
 
-  return [
-    "อื่นๆ",
-    "อื่น ๆ",
-    "other",
-    "others",
-    "other problem",
-  ].includes(text);
+  return ["อื่นๆ", "อื่น ๆ", "other", "others", "other problem"].includes(text);
 }
 
 function openOtherProblemModal() {
@@ -1031,7 +970,10 @@ function openOtherProblemModal() {
 
   if (!modal) {
     // fallback ถ้า HTML ยังไม่มี modal
-    const text = prompt("กรุณาระบุว่า อื่นๆ คือปัญหาอะไร", appOtherProblemDetail || "");
+    const text = prompt(
+      "กรุณาระบุว่า อื่นๆ คือปัญหาอะไร",
+      appOtherProblemDetail || "",
+    );
 
     if (text === null) {
       clearOtherProblemSelection();
@@ -1041,7 +983,7 @@ function openOtherProblemModal() {
     const cleanText = text.trim();
 
     if (!cleanText) {
-      showErrorMessage("กรุณาระบุรายละเอียดปัญหาอื่นๆ");
+      alert("กรุณาระบุรายละเอียดปัญหาอื่นๆ");
       clearOtherProblemSelection();
       return;
     }
@@ -1068,7 +1010,7 @@ function confirmOtherProblem() {
   const value = input?.value.trim() || "";
 
   if (!value) {
-    showErrorMessage("กรุณาระบุว่า อื่นๆ คือปัญหาอะไร");
+    alert("กรุณาระบุว่า อื่นๆ คือปัญหาอะไร");
     input?.focus();
     return;
   }
@@ -1076,8 +1018,12 @@ function confirmOtherProblem() {
   appOtherProblemDetail = value;
   closeOtherProblemModal();
 
-  // รายละเอียดของ “อื่นๆ” ถูกเก็บในแถวปัญหานั้น ไม่ต้องเติมหมายเหตุรวมแล้ว
-
+  // ช่วยให้พนักงานเห็นในช่องรายละเอียดด้วย
+  // ถ้ายังไม่ได้พิมพ์รายละเอียดเหตุการณ์ ระบบเติมข้อความตั้งต้นให้
+  // const noteInput = document.getElementById("problem-description");
+  // if (noteInput && !noteInput.value.trim()) {
+  //   noteInput.value = `ปัญหาอื่นๆ: ${value}`;
+  // }
 }
 
 function cancelOtherProblem() {
@@ -1220,7 +1166,6 @@ function ensureOtherProblemStyleExists() {
   document.head.appendChild(style);
 }
 
-
 // =========================================================
 // MASTER DATA
 // =========================================================
@@ -1254,7 +1199,13 @@ async function loadMasterDataAndRender() {
     BLOWN_FILM: ["ฟิล์มทะลุ", "ความหนาไม่ได้", "ม้วนเสีย", "อื่นๆ"],
     SHEET_CUTTING: ["แผ่นเสีย", "ความหนาไม่ได้", "ขนาดไม่ได้", "อื่นๆ"],
     CUT_PUNCH: ["รูไม่ตรง", "เจาะไม่ทะลุ", "ใบมีดสึก", "ขนาดผิด", "อื่นๆ"],
-    GARBAGE_BAG_CUT: ["ซีลไม่ติด", "ถุงขาด", "ม้วนไม่เรียบ", "ความยาวผิด", "อื่นๆ"],
+    GARBAGE_BAG_CUT: [
+      "ซีลไม่ติด",
+      "ถุงขาด",
+      "ม้วนไม่เรียบ",
+      "ความยาวผิด",
+      "อื่นๆ",
+    ],
     RAIN_TAPE_CUT_PUNCH: ["รูไม่ตรงระยะ", "เจาะไม่ทะลุ", "เทปขาด", "อื่นๆ"],
     SHADE_NET: ["เส้นขาด", "ตาข่ายไม่สม่ำเสมอ", "ขนาดผิด", "อื่นๆ"],
   };
@@ -1409,18 +1360,40 @@ function renderProblemDropdown(problemList) {
 // DUPLICATE CHECK
 // =========================================================
 
-async function checkDuplicateReport(clientSupabase, reportDate, reporterName) {
+async function checkDuplicateReport(
+  clientSupabase,
+  reportDate,
+  workShift,
+  machineNo,
+  problemItems,
+) {
+  const problemTypes = problemItems.map((item) => item.problem_type).filter(Boolean);
+
   const { data, error } = await clientSupabase
-    .from("daily_waste_reports")
-    .select("id")
-    .eq("report_date", reportDate)
-    .eq("department_code", currentDept)
-    .eq("reported_by", reporterName)
+    .from("daily_waste_report_items")
+    .select(`
+      id,
+      report_id,
+      problem_type,
+      daily_waste_reports!inner (
+        id,
+        report_date,
+        department_code,
+        work_shift,
+        machine_no,
+        status
+      )
+    `)
+    .eq("daily_waste_reports.report_date", reportDate)
+    .eq("daily_waste_reports.department_code", currentDept)
+    .eq("daily_waste_reports.work_shift", workShift)
+    .eq("daily_waste_reports.machine_no", machineNo)
+    .in("problem_type", problemTypes)
     .limit(1);
 
   if (error) throw error;
 
-  return Array.isArray(data) && data.length > 0;
+  return Array.isArray(data) && data.length > 0 ? data[0] : null;
 }
 
 // =========================================================
@@ -1433,7 +1406,7 @@ async function handleFormSubmit(event) {
   const clientSupabase = window.supabaseClient || window.supabase;
 
   if (!clientSupabase) {
-    showErrorMessage("ไม่สามารถเชื่อมต่อฐานข้อมูลได้");
+    alert("ไม่สามารถเชื่อมต่อฐานข้อมูลได้");
     return;
   }
 
@@ -1442,7 +1415,7 @@ async function handleFormSubmit(event) {
   const reporterName = getActiveUserName();
 
   if (!reporterName) {
-    showErrorMessage("กรุณากรอกชื่อผู้บันทึกข้อมูลก่อนค่ะ");
+    alert("กรุณากรอกชื่อผู้บันทึกข้อมูลก่อนค่ะ");
     openStaffNameModal(false);
     return;
   }
@@ -1452,6 +1425,7 @@ async function handleFormSubmit(event) {
   const dateInput = document.getElementById("incident-datetime");
   const shiftSelect = document.getElementById("work-shift");
   const machineSelect = document.getElementById("machine-no");
+  // const noteInput = document.getElementById("problem-description");
 
   const finalShift = shiftSelect?.value || "";
   const selectedShift =
@@ -1459,17 +1433,21 @@ async function handleFormSubmit(event) {
 
   // ถ้าเปิดจาก QR รายเครื่อง ให้ใช้ QR_MACHINE ก่อนเสมอ
   // เพราะบาง browser หรือบาง form อาจไม่ส่งค่าจาก select ที่ disabled
-  const finalMachine = QR_MACHINE || machineSelect?.value || appSelectedMachine || "";
+  const finalMachine =
+    QR_MACHINE || machineSelect?.value || appSelectedMachine || "";
+  // const detailNote = noteInput?.value.trim() || "";
+
   const problemItems = collectProblemItems();
   const totalWasteWeight = problemItems.reduce(
     (sum, item) => sum + item.waste_weight_kg,
     0,
   );
 
-  if (!dateInput?.value) return showErrorMessage("กรุณาระบุวัน-เวลาเกิดเหตุ");
-  if (!finalShift) return showErrorMessage("กรุณาเลือกกะการทำงาน");
-  if (!finalMachine) return showErrorMessage("กรุณาเลือกหมายเลขเครื่องจักร");
+  if (!dateInput?.value) return alert("กรุณาระบุวัน-เวลาเกิดเหตุ");
+  if (!finalShift) return alert("กรุณาเลือกกะการทำงาน");
+  if (!finalMachine) return alert("กรุณาเลือกหมายเลขเครื่องจักร");
   if (!validateProblemItems(problemItems)) return;
+  // if (!detailNote) return alert("กรุณากรอกรายละเอียดเหตุการณ์ / หมายเหตุรวม");
 
   const finalDateTime = new Date(dateInput.value).toISOString();
   const reportDate = finalDateTime.slice(0, 10);
@@ -1478,35 +1456,52 @@ async function handleFormSubmit(event) {
     setSubmitLoading(submitButton, true);
     showLoginOverlay("กำลังตรวจสอบข้อมูลซ้ำ...");
 
-    const isDuplicate = await checkDuplicateReport(
-      clientSupabase,
-      reportDate,
-      reporterName,
+    const duplicateItem = await checkDuplicateReport(
+  clientSupabase,
+  reportDate,
+  finalShift,
+  finalMachine,
+  problemItems,
+);
+
+if (duplicateItem) {
+  const duplicateStatus =
+    duplicateItem.daily_waste_reports?.status || "pending";
+
+  const lockedStatuses = ["sent_accounting", "accounting_checked"];
+
+  if (lockedStatuses.includes(duplicateStatus)) {
+    alert(
+      `พบข้อมูลซ้ำ และรายการนี้ส่งบัญชีแล้ว\n\n` +
+        `วันที่: ${reportDate}\n` +
+        `เครื่อง: ${finalMachine}\n` +
+        `กะ: ${finalShift}\n` +
+        `ปัญหา: ${duplicateItem.problem_type}\n\n` +
+        `ไม่สามารถบันทึกซ้ำหรือแก้ไขได้ กรุณาติดต่อหัวหน้างานค่ะ`,
     );
+    return;
+  }
 
-    if (isDuplicate) {
-      await showAppMessage({
-        title: "พบข้อมูลซ้ำ",
-        message: "วันนี้ชื่อนี้เคยบันทึกข้อมูลในแผนกนี้แล้วค่ะ\nหากเป็นการกรอกซ้ำ ให้หัวหน้าหรือแอดมินตรวจสอบในแดชบอร์ดก่อนนะคะ",
-        type: "warning",
-      });
-      return;
-    }
+  alert(
+    `พบข้อมูลซ้ำในระบบแล้ว\n\n` +
+      `วันที่: ${reportDate}\n` +
+      `เครื่อง: ${finalMachine}\n` +
+      `กะ: ${finalShift}\n` +
+      `ปัญหา: ${duplicateItem.problem_type}\n\n` +
+      `หากกรอกผิด ให้หัวหน้าแก้ไขรายการเดิมจากหน้าตรวจสอบค่ะ`,
+  );
+  return;
+}
 
-    const confirmed = await showAppMessage({
-      title: "ยืนยันการบันทึก",
-      message: `เครื่อง: ${finalMachine}\nจำนวนปัญหา: ${problemItems.length} รายการ\nน้ำหนักรวม: ${totalWasteWeight.toFixed(2)} kg`,
-      type: "info",
-      confirm: true,
-      okText: "ยืนยันบันทึก",
-      cancelText: "กลับไปแก้ไข",
-    });
+    const confirmed = confirm("ยืนยันการบันทึกรายงานปัญหานี้เข้าสู่ระบบ?");
     if (!confirmed) return;
 
     showLoginOverlay("กำลังบันทึกข้อมูล...");
 
     const problemSummary = problemItems
-      .map((item) => `${item.problem_type} ${item.waste_weight_kg.toFixed(2)} kg`)
+      .map(
+        (item) => `${item.problem_type} ${item.waste_weight_kg.toFixed(2)} kg`,
+      )
       .join(" | ");
 
     const firstProblem = problemItems[0]?.problem_type || "หลายปัญหา";
@@ -1518,7 +1513,10 @@ async function handleFormSubmit(event) {
       })
       .join("\n");
 
-    const finalDetailNote = `[รายการปัญหา]\n${detailByItem}`;
+    // const finalDetailNote = `${detailNote}\n\n[รายการปัญหา]\n${detailByItem}`;
+    const finalDetailNote = `[รายการปัญหา]
+
+${detailByItem}`;
 
     const reportData = {
       report_date: reportDate,
@@ -1579,7 +1577,9 @@ async function handleFormSubmit(event) {
     const reportId = insertedReport?.id;
 
     if (!reportId) {
-      throw new Error("บันทึกรายงานหลักแล้ว แต่ไม่พบ report_id สำหรับบันทึกรายการปัญหา");
+      throw new Error(
+        "บันทึกรายงานหลักแล้ว แต่ไม่พบ report_id สำหรับบันทึกรายการปัญหา",
+      );
     }
 
     const itemRows = problemItems.map((item) => ({
@@ -1596,11 +1596,11 @@ async function handleFormSubmit(event) {
 
     if (itemError) throw itemError;
 
-    await showAppMessage({ title: "บันทึกข้อมูลสำเร็จ", message: "ระบบบันทึกข้อมูลเรียบร้อยแล้ว", type: "success", okText: "บันทึกต่อ" });
+    alert("บันทึกข้อมูลเรียบร้อยแล้ว");
 
     // ถ้าเข้าหน้าฟอร์มด้วย QR:
     // หลังส่งสำเร็จให้ไปหน้าส่งสำเร็จ เพื่อให้เลือก "สแกน QR ใหม่" หรือ "กลับหน้า Login"
-    if (QR_DEPT || QR_MACHINE) {
+    if (isQrMode()) {
       goToQrSuccessPage();
       return;
     }
@@ -1609,14 +1609,12 @@ async function handleFormSubmit(event) {
     resetFormAfterSubmit();
   } catch (err) {
     console.error("SQL Insert Error:", err);
-    showErrorMessage("บันทึกข้อมูลไม่สำเร็จ: " + (err.message || err));
+    alert("บันทึกข้อมูลไม่สำเร็จ: " + (err.message || err));
   } finally {
     hideLoginOverlay();
     setSubmitLoading(submitButton, false);
   }
 }
-
-
 
 function setSubmitLoading(button, isLoading) {
   if (!button) return;
@@ -1633,16 +1631,9 @@ async function loadShiftOptions() {
   const select = document.getElementById("work-shift");
   if (!select) return;
 
-  select.innerHTML =
-    '<option value="">-- โปรดเลือกกะการทำงาน --</option>';
+  select.innerHTML = '<option value="">-- โปรดเลือกกะการทำงาน --</option>';
 
-  const fallbackShifts = [
-    "กะเช้า",
-    "กะบ่าย",
-    "กะดึก",
-    "OT",
-    "วันอาทิตย์",
-  ];
+  const fallbackShifts = ["กะเช้า", "กะบ่าย", "กะดึก", "OT", "วันอาทิตย์"];
 
   const clientSupabase = window.supabaseClient || window.supabase;
 
@@ -1660,14 +1651,9 @@ async function loadShiftOptions() {
 
     if (error) throw error;
 
-    const shifts = data
-      .map((item) => item.shift_name)
-      .filter(Boolean);
+    const shifts = data.map((item) => item.shift_name).filter(Boolean);
 
-    renderShiftOptions(
-      select,
-      shifts.length ? shifts : fallbackShifts
-    );
+    renderShiftOptions(select, shifts.length ? shifts : fallbackShifts);
   } catch (err) {
     console.warn("โหลดกะจาก master_shifts ไม่สำเร็จ:", err);
     renderShiftOptions(select, fallbackShifts);
@@ -1704,31 +1690,79 @@ function resetFormAfterSubmit() {
   renderQrContext();
 }
 
-async function resetFormWithConfirm() {
-  const confirmed = await showAppMessage({
-    title: "ล้างข้อมูลทั้งหมด?",
-    message: "ข้อมูลที่กรอกไว้จะหายทั้งหมด และเริ่มรายการปัญหาใหม่ 1 แถว",
-    type: "warning",
-    confirm: true,
-    okText: "ล้างข้อมูล",
-    cancelText: "ยกเลิก",
-  });
+function resetFormWithConfirm() {
+  const confirmed = confirm("ต้องการล้างข้อมูลทั้งหมดใช่หรือไม่?");
   if (!confirmed) return;
 
   resetFormAfterSubmit();
-  await showAppMessage({ title: "ล้างข้อมูลแล้ว", message: "พร้อมกรอกข้อมูลใหม่", type: "success" });
+  alert("ล้างข้อมูลเรียบร้อยแล้ว");
 }
-
 
 // ======================================================
 // QR MODE: ส่งข้อมูลเสร็จแล้วเด้งกลับ Login
 // + Auto logout เมื่อไม่มีการใช้งาน 5 นาที
 // ======================================================
 
-// ระบบจับเวลาไม่ใช้งานถูกรวมไว้ที่ startAutoLogoutTimer() แล้ว
-// คงชื่อฟังก์ชันนี้ไว้ เผื่อไฟล์อื่นเรียกใช้ จะได้ไม่ error
+const QR_IDLE_LIMIT = 5 * 60 * 1000; // 5 นาที
+let qrIdleTimer = null;
+
+// เช็กว่าเข้ามาจาก QR หรือไม่
+function isQrMode() {
+  const params = new URLSearchParams(window.location.search);
+  return (
+    params.has("dept") ||
+    params.has("department") ||
+    params.has("department_code") ||
+    params.has("machine")
+  );
+}
+
+// กลับหน้า Login และล้างข้อมูลคนกรอก
+function goBackToLogin() {
+  localStorage.removeItem("activeUser");
+  localStorage.removeItem("activeName");
+  localStorage.removeItem("activeRole");
+  localStorage.removeItem("activeUserId");
+  localStorage.removeItem("activeDept");
+
+  window.location.href = "/login.html";
+}
+
+// ไปหน้าบันทึกสำเร็จของ QR
+// หน้านี้จะมีปุ่มให้เลือก:
+// 1) สแกน QR ใหม่
+// 2) กลับหน้า Login
+function goToQrSuccessPage() {
+  localStorage.removeItem("activeUser");
+  localStorage.removeItem("activeName");
+  localStorage.removeItem("activeRole");
+  localStorage.removeItem("activeUserId");
+  localStorage.removeItem("activeDept");
+
+  window.location.href = "/pages/qr-success.html";
+}
+
+// เริ่มจับเวลาไม่ใช้งาน
 function startQrIdleLogout() {
-  startAutoLogoutTimer();
+  if (!isQrMode()) return;
+
+  resetQrIdleTimer();
+
+  ["click", "input", "change", "keydown", "touchstart", "mousemove"].forEach(
+    (eventName) => {
+      document.addEventListener(eventName, resetQrIdleTimer, true);
+    },
+  );
+}
+
+// รีเซ็ตเวลาเมื่อมีการใช้งาน
+function resetQrIdleTimer() {
+  clearTimeout(qrIdleTimer);
+
+  qrIdleTimer = setTimeout(() => {
+    alert("ไม่มีการใช้งานเกิน 5 นาที ระบบจะกลับไปหน้า Login");
+    goBackToLogin();
+  }, QR_IDLE_LIMIT);
 }
 
 // =========================================================
@@ -1736,14 +1770,7 @@ function startQrIdleLogout() {
 // =========================================================
 
 async function handleLogout() {
-  const confirmed = await showAppMessage({
-    title: "ออกจากระบบ?",
-    message: "ต้องการออกจากระบบใช่ไหม",
-    type: "warning",
-    confirm: true,
-    okText: "ออกจากระบบ",
-    cancelText: "ยกเลิก",
-  });
+  const confirmed = confirm("ต้องการออกจากระบบใช่ไหม?");
   if (!confirmed) return;
 
   try {

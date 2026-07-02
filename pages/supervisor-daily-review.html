@@ -1,51 +1,28 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
   <head>
-    <!-- ======================================================
-      supervisor-daily-review.html
-      หน้าให้หัวหน้างานตรวจสอบข้อมูลของเสียรายวัน
-
-      เพิ่มรอบนี้:
-      - ประวัติเริ่มต้นเป็น 7 วันของสัปดาห์ปัจจุบัน จันทร์-อาทิตย์
-      - เลือกช่วงวันที่ประวัติย้อนหลังได้เอง
-      - รายการที่ตรวจประจำวันยังใช้ filterDate ด้านบนเหมือนเดิม
-      - ตารางประวัติใช้ historyStartDate / historyEndDate แยกออกมา
-    ======================================================= -->
-
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
     <title>ตรวจสอบข้อมูลรายวัน | SUPERVISOR</title>
 
-    <!-- Fonts -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 
-    <!-- Icons -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-      rel="stylesheet"
-    />
-
-    <!-- Favicon / PWA -->
     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#4caf8a" />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="192x192"
-      href="/icons/logo_192.png"
-    />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/logo_192.png" />
     <link rel="apple-touch-icon" href="/icons/logo_512.png" />
 
+    <!-- ใช้หัว/ธีมเดิม -->
     <link rel="stylesheet" href="/css/supervisor-daily-review.css" />
+    <!-- CSS เสริมเฉพาะตาราง Go Live -->
+    <link rel="stylesheet" href="/css/supervisor-daily-review-table-addon.css" />
   </head>
 
   <body>
     <main class="page">
+      <!-- HEADER เดิม -->
       <header class="page-header">
         <div class="header-top">
           <div class="title-area">
@@ -57,17 +34,9 @@
           </div>
 
           <div class="header-actions">
-            <a href="/pages/supervisor-dashboard.html" class="btn primary">
-              Dashboard
-            </a>
-
-            <button class="btn secondary" type="button" onclick="loadRecords()">
-              รีเฟรช
-            </button>
-
-            <button class="btn danger" type="button" onclick="logout()">
-              ออกระบบ
-            </button>
+            <a href="/pages/supervisor-dashboard.html" class="btn primary">Dashboard</a>
+            <button class="btn secondary" type="button" onclick="loadRecords()">รีเฟรช</button>
+            <button class="btn danger" type="button" onclick="logoutNow()">ออกระบบ</button>
           </div>
         </div>
 
@@ -85,9 +54,7 @@
         </div>
       </header>
 
-      <!-- ======================================================
-        FILTER รายการประจำวัน
-      ======================================================= -->
+      <!-- FILTER เดิม -->
       <section class="filter-card">
         <div class="form-group">
           <label for="filterDate">วันที่</label>
@@ -97,20 +64,17 @@
         <div class="form-group">
           <label for="filterStatus">สถานะ</label>
           <select id="filterStatus">
-            <option value="pending">รอตรวจสอบ</option>
-            <option value="resolved">ส่งข้อมูลแล้วแล้ว</option>
             <option value="all">ทั้งหมด</option>
+            <option value="pending_supervisor">รอตรวจสอบ</option>
+            <option value="sent_accounting">ส่งบัญชีแล้ว</option>
+            <option value="accounting_checked">บัญชีตรวจแล้ว</option>
           </select>
         </div>
 
-        <button class="btn primary" type="button" onclick="loadRecords()">
-          ค้นหา
-        </button>
+        <button class="btn primary" type="button" onclick="loadRecords()">ค้นหา</button>
       </section>
 
-      <!-- ======================================================
-        KPI
-      ======================================================= -->
+      <!-- KPI เดิม -->
       <section class="summary-grid summary-grid-3">
         <div class="summary-card warning">
           <span>รอตรวจสอบ</span>
@@ -131,174 +95,96 @@
         </div>
       </section>
 
-      <!-- ======================================================
-        CURRENT LIST
-      ======================================================= -->
-      <section class="table-card">
+      <!-- CONTENT ใหม่: ตารางแทน Card / ไม่มีอัปโหลดรูป -->
+      <section class="table-card supervisor-table-card">
         <div class="table-header">
-          <h2>รายการของเสีย</h2>
-          <p class="muted">
-            ตรวจสอบ | แก้ไข | ลบ ข้อมูลก่อนส่งเข้าฐานข้อมูล และลบรายการที่กรอกผิดได้
-          </p>
-        </div>
-
-        <div id="recordList" class="record-list">
-          <p class="empty">กำลังโหลดข้อมูล...</p>
-        </div>
-      </section>
-
-      <!-- ======================================================
-        HISTORY TABLE
-        ประวัติแยกช่วงวันที่เอง
-      ======================================================= -->
-      <section class="table-card history-card">
-        <div class="table-header history-header">
           <div>
-            <h2>ประวัติการตรวจสอบ</h2>
-            <p class="muted">
-              ค่าเริ่มต้นแสดง 1 เดือนปัจจุบัน และสามารถเลือกช่วงย้อนหลังได้
-            </p>
+            <h2>รายการรายงานของเสีย</h2>
+            <p class="muted">ตรวจสอบข้อมูลก่อนส่งให้บัญชีดำเนินการต่อ</p>
           </div>
+          <span id="rowCount" class="muted">-</span>
         </div>
 
-        <div class="history-filter">
-          <div class="form-group">
-            <label for="historyStartDate">วันที่เริ่มต้น</label>
-            <input type="date" id="historyStartDate" />
-          </div>
-
-          <div class="form-group">
-            <label for="historyEndDate">วันที่สิ้นสุด</label>
-            <input type="date" id="historyEndDate" />
-          </div>
-
-          <button class="btn primary" type="button" onclick="loadHistory()">
-            ดูประวัติ
-          </button>
-
-          <button
-            class="btn secondary"
-            type="button"
-            onclick="setHistoryRangeThisWeek()"
-          >
-            สัปดาห์นี้
-          </button>
-
-          <button
-            class="btn secondary"
-            type="button"
-            onclick="setHistoryRangeLast7Days()"
-          >
-            7 วันย้อนหลัง
-          </button>
-        </div>
-
-        <div class="history-summary" id="historySummary">
-          กำลังโหลดสรุปประวัติ...
-        </div>
-
-        <div class="table-scroll">
-          <table class="history-table">
+        <div class="table-scroll supervisor-table-scroll">
+          <table class="data-table supervisor-data-table">
             <thead>
               <tr>
-                <th>วันที่</th>
+                <th></th>
+                <th>วันที่/เวลา</th>
                 <th>แผนก</th>
-                <th>กะ</th>
-                <th>เครื่อง</th>
-                <th>ปัญหา</th>
-                <th>น้ำหนัก</th>
-                <th>ผู้กรอก</th>
-                <th>ผู้ตรวจ</th>
-                <th>เวลาตรวจ</th>
-                <th>หมายเหตุ</th>
+                <th>เครื่องจักร</th>
+                <th>ผู้บันทึก</th>
+                <th class="text-right">น้ำหนักของเสีย</th>
+                <th>รายการปัญหา</th>
+                <th>สถานะ</th>
+                <th>จัดการ</th>
               </tr>
             </thead>
-
-            <tbody id="historyTableBody">
-              <tr>
-                <td colspan="10" class="empty-cell">กำลังโหลดประวัติ...</td>
-              </tr>
+            <tbody id="reportBody">
+              <tr><td colspan="9" class="empty-cell">กำลังโหลดข้อมูล...</td></tr>
             </tbody>
           </table>
         </div>
       </section>
+
+
+
+      <section class="table-card supervisor-table-card">
+  <div class="table-header">
+    <div>
+      <h2>รายการที่ส่งบัญชีแล้ว</h2>
+      <p class="muted">ดูย้อนหลังเท่านั้น ไม่สามารถแก้ไขหรือลบได้</p>
+    </div>
+    <span id="sentRowCount" class="muted">-</span>
+  </div>
+
+  <div class="table-scroll supervisor-table-scroll">
+    <table class="data-table supervisor-data-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>วันที่/เวลา</th>
+          <th>แผนก</th>
+          <th>เครื่องจักร</th>
+          <th>ผู้บันทึก</th>
+          <th class="text-right">น้ำหนักของเสีย</th>
+          <th>รายการปัญหา</th>
+          <th>สถานะ</th>
+          <th>จัดการ</th>
+        </tr>
+      </thead>
+      <tbody id="sentReportBody">
+        <tr><td colspan="9" class="empty-cell">กำลังโหลดข้อมูล...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
     </main>
 
-    <!-- ======================================================
-      EDIT MODAL
-    ======================================================= -->
-    <div id="editRecordModal" class="modal-overlay" hidden>
-      <div class="modal-card">
+    <!-- Popup กลางระบบ แทน alert/confirm -->
+    <div id="appModal" class="modal-overlay app-modal" hidden>
+      <div class="modal-card app-modal-card">
         <div class="modal-head">
           <div>
-            <h2>
-              <span class="material-symbols-outlined">edit</span>
-              แก้ไขรายการของเสีย
-            </h2>
-            <p>ตรวจและแก้ข้อมูลให้ถูกต้องก่อนส่งเข้าฐานข้อมูล</p>
+            <h2 id="modalTitle">แจ้งเตือน</h2>
+            <p id="modalSubTitle"></p>
           </div>
-
-          <button type="button" class="modal-close" onclick="closeEditModal()">
-            ×
-          </button>
+          <button type="button" class="modal-close" onclick="closeModal()">×</button>
         </div>
-
-        <input type="hidden" id="editRecordId" />
-
-        <div class="modal-grid">
-          <label>
-            กะ
-            <input type="text" id="editShift" />
-          </label>
-
-          <label>
-            เครื่องจักร
-            <input type="text" id="editMachineNo" />
-          </label>
-
-          <label>
-            ปัญหา
-            <input type="text" id="editProblemType" />
-          </label>
-
-          <label>
-            น้ำหนักของเสีย (kg)
-            <input type="number" id="editWasteWeight" step="0.01" />
-          </label>
-
-          <label class="modal-full">
-            รายละเอียด
-            <textarea id="editDetail" rows="3"></textarea>
-          </label>
-
-          <label class="modal-full">
-            หมายเหตุหัวหน้า
-            <textarea id="editSupervisorNote" rows="3"></textarea>
-          </label>
-        </div>
-
-        <div class="modal-actions">
-          <button
-            type="button"
-            class="btn secondary"
-            onclick="closeEditModal()"
-          >
-            ยกเลิก
-          </button>
-
-          <button type="button" class="btn primary" onclick="saveEditRecord()">
-            บันทึกการแก้ไข
-          </button>
-        </div>
+        <div id="modalBody" class="app-modal-body"></div>
+        <div id="modalActions" class="modal-actions"></div>
       </div>
     </div>
+
+    <div id="toast" class="toast hidden"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/activityLogger.js"></script>
     <script src="/core/roleConfig.js"></script>
+    <script src="/core/ea-common.js"></script>
     <script src="/core/departmentConfig.js"></script>
-
-    <script src="/js/dashboard/supervisor-daily-review.js"></script>
+    <script src="/js/dashboard/supervisor-daily-review.js?v=old-header-table-v1"></script>
   </body>
 </html>

@@ -1,0 +1,97 @@
+/* ======================================================
+   Supervisor Daily Review Table Addon
+   เสริมเฉพาะตาราง Go Live โดยไม่เปลี่ยน Theme หลัก
+====================================================== */
+.supervisor-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 20px;
+}
+
+.supervisor-data-table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+.supervisor-data-table th,
+.supervisor-data-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  text-align: left;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.supervisor-data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  color: #475569;
+  font-weight: 950;
+  white-space: nowrap;
+  background: #f8fafc;
+}
+
+.supervisor-data-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+.expand-btn {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  color: #0f172a;
+  background: #e2e8f0;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.detail-row.hidden {
+  display: none;
+}
+
+.problem-inline {
+  min-width: 220px;
+  line-height: 1.55;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.status-pending {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.status-sent {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.status-done {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .supervisor-data-table {
+    min-width: 980px;
+  }
+}

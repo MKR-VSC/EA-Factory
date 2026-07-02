@@ -1,1461 +1,760 @@
-// ======================================================
-// supervisor-daily-review.js
-// หน้าให้หัวหน้างานตรวจสอบข้อมูลของเสียรายวัน
-//
-// แก้รอบนี้:
-// - แก้ปัญหาข้อมูลไม่แสดงจากการกรอง status / department เข้มเกินไป
-// - โหลดข้อมูลตามวันที่ก่อน แล้วค่อยกรองสถานะด้วย JS เพื่อรองรับ status เดิมหลายแบบ
-// - รองรับ department_code / department / dept / dept_code และชื่อไทยของแผนก
-// - เพิ่มข้อความช่วย debug ใน console และบนหน้าจอ
-// - ประวัติเลือกช่วงวันที่เองได้เหมือนเดิม
-// - ปรับตาม schema จริงของ public.daily_waste_reports แล้ว
-// ======================================================
+/* ======================================================
+   supervisor-daily-review.js - GO LIVE v1.0
+   ใช้ daily_waste_reports + daily_waste_report_items เท่านั้น
+====================================================== */
 
-let currentProfile = null;
-let currentRecords = [];
-let responsibleDepartments = [];
-let departmentStandards = {};
-
-const STATUS = {
-  PENDING: "pending",
-  RESOLVED: "resolved",
-};
-
-const DEPARTMENT_LABELS_TH = {
-  blow: "เป่าถุง",
-  blown_film: "เป่าฟิล์ม",
-  bag_blow: "เป่าถุง",
-  pipe: "ท่อ",
-  sheet: "ตัดผืน",
-  sheet_cutting: "ตัดผืน",
-  garbage_bag_cut: "ตัดถุงขยะ",
-  rain_tape: "เทปน้ำพุ่ง",
-  rain_tape_cut_punch: "ตัดเจาะเทปน้ำพุ่ง",
-  shade_net: "สแลน",
-  cut_punch: "ตัดเจาะ",
-  print: "ม้วนพิมพ์",
-  accounting: "บัญชี",
-  management: "ผู้บริหาร",
-};
-
-function getDepartmentLabelTH(code) {
-  const normalized = normalizeDepartmentCode(code);
-  return (
-    departmentStandards[normalized]?.name ||
-    DEPARTMENT_LABELS_TH[normalized.toLowerCase()] ||
-    code
-  );
-}
-
-// สถานะที่ถือว่ายังรอหัวหน้าตรวจ
-// เพิ่ม submitted / draft / null ไว้กันข้อมูลเก่าหรือข้อมูลจากฟอร์มที่ยังไม่ได้ตั้งเป็น pending
+const REPORT_TABLE = "daily_waste_reports";
+const ITEM_TABLE = "daily_waste_report_items";
+const STATUS_PENDING = "pending_supervisor";
+const STATUS_PENDING_OLD = "pending";
+const STATUS_SENT = "sent_accounting";
+const STATUS_ACCOUNTING = "accounting_checked";
 const PENDING_STATUS_SET = new Set([
-  "",
-  "pending",
+  STATUS_PENDING,
+  STATUS_PENDING_OLD,
   "submitted",
   "draft",
-  "waiting_supervisor",
-  "รอตรวจสอบ",
 ]);
 
-// สถานะที่ถือว่าส่งบัญชีแล้ว / ตรวจแล้ว
-const RESOLVED_STATUS_SET = new Set([
-  "resolved",
-  "checked",
-  "approved",
-  "sent_accounting",
-  "ส่งบัญชีแล้ว",
-  "ตรวจแล้ว",
-]);
-
-const DEPARTMENT_ALIASES = {
-  blow: ["blow", "bag_blow", "เป่าถุง", "แผนกเป่าถุง", "ถุง"],
-  pipe: ["pipe", "ท่อ", "แผนกท่อ"],
-  sheet: ["sheet", "sheet_cutting", "ตัดผืน", "แผนกตัดผืน"],
-  print: ["print", "printing", "ม้วนพิมพ์", "พิมพ์"],
-  accounting: ["accounting", "บัญชี"],
-  management: ["management", "ผู้บริหาร"],
+let state = {
+  supabase: null,
+  profile: null,
+  reports: [],
+  standards: {},
+  allowedDepts: [],
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await initPage();
+  state.supabase = window.supabaseClient || window.supabase;
+  if (!state.supabase) return showToast("ไม่พบ Supabase Client", "error");
+  state.profile = getLocalProfile();
+  if (!state.profile?.role) return (location.href = "/login.html");
+  setValue("filterDate", todayString());
+  await loadDepartmentStandards();
+  await loadAllowedDepartments();
+  renderUserInfo();
+  bindEvents();
+  await loadPageData();
 });
 
-// ======================================================
-// INIT
-// ======================================================
-
-async function initPage() {
-  const today = getLocalDateString(new Date());
-
-  setValue("filterDate", today);
-  setValue("filterStatus", STATUS.PENDING);
-
-  // ตั้งช่วงประวัติเริ่มต้นเป็นจันทร์-อาทิตย์ของสัปดาห์ปัจจุบัน
-  initHistoryWeekRange();
-
-  currentProfile = getLocalProfile();
-
-  if (!currentProfile) {
-    alert("ไม่พบข้อมูลผู้ใช้งาน กรุณา Login ใหม่");
-    window.location.href = "/login.html";
-    return;
-  }
-
-  const allowedRoles = [
-    "admin",
-    "management",
-    "supervisor",
-    "manager",
-    "executive",
-  ];
-
-  if (!allowedRoles.includes(normalizeText(currentProfile.role))) {
-    alert("สิทธิ์การเข้าถึงล้มเหลว: เฉพาะหัวหน้างานหรือผู้ดูแลระบบ");
-    window.location.href = "/login.html";
-    return;
-  }
-
-  await loadDepartmentStandards();
-  // โหลดแผนกที่รับผิดชอบแบบไม่บังคับ
-  // ถ้าอ่าน user_departments ไม่ได้ ระบบจะยังใช้ activeDept เดิม เพื่อไม่ให้ข้อมูลเดิมหาย
-  await loadResponsibleDepartments();
-
-  renderLoginUserInfo();
-
-  if (!canSeeAllDepartments() && !getCurrentDepartmentKey()) {
-    alert(
-      "User นี้ยังไม่ได้กำหนดแผนก กรุณาไปเพิ่ม department_code ในหน้า Admin",
-    );
-    return;
-  }
-
-  await loadRecords();
+function bindEvents() {
+  document
+    .getElementById("filterDate")
+    ?.addEventListener("change", loadPageData);
+  document
+    .getElementById("filterStatus")
+    ?.addEventListener("change", loadPageData);
 }
 
 async function loadDepartmentStandards() {
-  const { data, error } = await supabaseClient
+  const { data, error } = await state.supabase
     .from("master_departments")
-    .select(
-      "department_code, department_name, max_waste_percent, warning_percent",
-    )
+    .select("department_code,department_name,max_waste_percent,warning_percent")
     .eq("is_active", true);
-
-  if (error) throw error;
-
-  departmentStandards = {};
-
-  (data || []).forEach((dept) => {
-    const code = normalizeDepartmentCode(dept.department_code);
-
-    departmentStandards[code] = {
-      code,
-      name: dept.department_name,
-      maxWastePercent: Number(dept.max_waste_percent || 3),
-      warningPercent: Number(dept.warning_percent || 0),
+  if (error) console.warn(error);
+  state.standards = {};
+  (data || []).forEach((d) => {
+    const c = normalizeDept(d.department_code);
+    state.standards[c] = {
+      name: d.department_name,
+      max: Number(d.max_waste_percent || 3),
+      warning: Number(d.warning_percent || 0),
     };
   });
 }
-// ======================================================
-// DATE HELPERS
-// ======================================================
 
-function getLocalDateString(date) {
-  const d = new Date(date);
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 10);
+async function loadAllowedDepartments() {
+  if (canSeeAllDepartments()) {
+    state.allowedDepts = [];
+    return;
+  }
+  const base = normalizeDept(
+    state.profile.department_code || state.profile.department_name || "",
+  );
+  const list = base ? [base] : [];
+  if (state.profile.id) {
+    const { data, error } = await state.supabase
+      .from("user_departments")
+      .select("department_code")
+      .eq("user_id", state.profile.id);
+    if (!error)
+      (data || []).forEach((r) => list.push(normalizeDept(r.department_code)));
+  }
+  state.allowedDepts = [...new Set(list.filter(Boolean))];
 }
 
-function initHistoryWeekRange() {
-  const today = new Date();
-
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
-  setValue("historyStartDate", getLocalDateString(firstDay));
-  setValue("historyEndDate", getLocalDateString(lastDay));
+function renderUserInfo() {
+  const name = state.profile.display_name || state.profile.username || "-";
+  const dept = canSeeAllDepartments()
+    ? "รับผิดชอบ: ทุกแผนก"
+    : `รับผิดชอบ: ${state.allowedDepts.map(getDeptName).join(", ") || "-"}`;
+  setText("userName", name);
+  setText("userDept", dept);
+  setText("userInfo", `${name} | ${dept}`);
 }
 
-function getThisWeekMondayToSunday() {
-  const today = new Date();
+async function loadPageData() {
+  const tbody = document.getElementById("reportBody");
+  if (tbody)
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">กำลังโหลดข้อมูล...</td></tr>`;
+  const date = getValue("filterDate");
+  const status = getValue("filterStatus") || "all";
+  try {
+    let q = state.supabase
+      .from(REPORT_TABLE)
+      .select("*")
+      .eq("report_date", date)
+      .order("created_at", { ascending: false });
+    const { data, error } = await q;
+    if (error) throw error;
+    let rows = Array.isArray(data) ? data : [];
+    rows = filterByDept(rows);
+    rows = filterByStatus(rows, status);
+    rows = await attachProblemItemsToReports(rows);
+    state.reports = rows;
 
-  // JS: Sunday=0, Monday=1
-  // ต้องการให้ Monday เป็นวันเริ่ม
-  const day = today.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
+    const pendingRows = rows.filter((r) =>
+      PENDING_STATUS_SET.has(normalizeText(r.status || STATUS_PENDING)),
+    );
 
-  const monday = new Date(today);
-  monday.setDate(today.getDate() + diffToMonday);
+    const sentRows = rows.filter((r) => {
+      const st = normalizeText(r.status || "");
+      return st === STATUS_SENT || st === STATUS_ACCOUNTING;
+    });
 
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
+    renderSummary(rows);
+    renderTable(pendingRows);
+    renderSentTable(sentRows);
 
-  return {
-    start: getLocalDateString(monday),
-    end: getLocalDateString(sunday),
-  };
+
+  } catch (err) {
+    console.error(err);
+    if (tbody)
+      tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">โหลดข้อมูลไม่สำเร็จ: ${safeText(err.message || err)}</td></tr>`;
+  }
 }
 
-function setHistoryRangeThisWeek() {
-  initHistoryWeekRange();
-  loadHistory();
+function filterByDept(rows) {
+  if (canSeeAllDepartments() || !state.allowedDepts.length) return rows;
+  return rows.filter((r) =>
+    state.allowedDepts.includes(
+      normalizeDept(r.department_code || r.department),
+    ),
+  );
+}
+function filterByStatus(rows, status) {
+  if (status === "all") return rows;
+  const target = normalizeText(status);
+  return rows.filter((r) => {
+    const rowStatus = normalizeText(r.status || STATUS_PENDING);
+    if (target === STATUS_PENDING) return PENDING_STATUS_SET.has(rowStatus);
+    if (target === "resolved")
+      return rowStatus === STATUS_SENT || rowStatus === "resolved";
+    return rowStatus === target;
+  });
 }
 
-function setHistoryRangeLast7Days() {
-  const today = new Date();
-
-  const start = new Date(today);
-  start.setDate(today.getDate() - 6);
-
-  setValue("historyStartDate", getLocalDateString(start));
-  setValue("historyEndDate", getLocalDateString(today));
-
-  loadHistory();
+async function attachProblemItemsToReports(rows) {
+  if (!rows.length) return [];
+  const reportIds = rows.map((r) => r.id).filter(Boolean);
+  const { data, error } = await state.supabase
+    .from(ITEM_TABLE)
+    .select(
+      "id, report_id, item_no, problem_type, waste_weight_kg, detail, created_at",
+    )
+    .in("report_id", reportIds)
+    .order("item_no", { ascending: true });
+  if (error) {
+    console.warn(error);
+    return rows.map((r) => ({ ...r, problem_items: getFallbackItems(r) }));
+  }
+  const map = new Map();
+  (data || []).forEach((item) => {
+    const key = String(item.report_id);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push({
+      id: item.id,
+      item_no: item.item_no,
+      problem_type: item.problem_type,
+      waste_weight_kg: Number(item.waste_weight_kg || 0),
+      detail: item.detail || "",
+    });
+  });
+  return rows.map((r) => ({
+    ...r,
+    problem_items: map.get(String(r.id)) || getFallbackItems(r),
+  }));
+}
+function getFallbackItems(r) {
+  return [
+    {
+      id: `${r.id}-fallback`,
+      item_no: 1,
+      problem_type: r.problem_type || r.reason_detail || "ไม่ระบุปัญหา",
+      waste_weight_kg: Number(r.waste_weight_kg || r.waste_qty || 0),
+      detail: r.detail || r.note || "",
+    },
+  ];
+}
+function totalWaste(r) {
+  return (
+    (r.problem_items || getFallbackItems(r)).reduce(
+      (s, i) => s + Number(i.waste_weight_kg || 0),
+      0,
+    ) || Number(r.waste_weight_kg || r.waste_qty || 0)
+  );
 }
 
-// ======================================================
-// PROFILE / ROLE
-// ======================================================
+function renderSummary(rows) {
+  const pending = rows.filter((r) =>
+    PENDING_STATUS_SET.has(normalizeText(r.status || STATUS_PENDING)),
+  ).length;
+  const waste = rows.reduce((s, r) => s + totalWaste(r), 0);
+  const m = {};
+  rows.forEach((r) => {
+    const k = r.machine_no || "-";
+    m[k] = (m[k] || 0) + totalWaste(r);
+  });
+  const top = Object.entries(m).sort((a, b) => b[1] - a[1])[0];
+  setText("countPending", pending.toLocaleString("th-TH"));
+  setText("todayWaste", `${formatNumber(waste)} kg`);
+  if (top) {
+    setText("topMachineToday", top[0]);
+    setText("topMachineTodaySub", `${formatNumber(top[1])} kg`);
+  } else {
+    setText("topMachineToday", "-");
+    setText("topMachineTodaySub", "-");
+  }
+  setText("sumPending", pending.toLocaleString("th-TH"));
+  setText("sumWaste", `${formatNumber(waste)} kg`);
+  setText(
+    "sumTopMachine",
+    top ? `${top[0]} (${formatNumber(top[1])} kg)` : "-",
+  );
+  setText("rowCount", `แสดง ${rows.length.toLocaleString("th-TH")} รายการ`);
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById("reportBody");
+  if (!tbody) return;
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">ไม่พบข้อมูลตามตัวกรอง</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map((r, i) => renderRow(r, i)).join("");
+}
+
+function renderSentTable(rows) {
+  const tbody = document.getElementById("sentReportBody");
+  if (!tbody) return;
+
+  setText("sentRowCount", `แสดง ${rows.length.toLocaleString("th-TH")} รายการ`);
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">ยังไม่มีรายการที่ส่งบัญชีแล้ว</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map((r, i) => renderSentRow(r, i)).join("");
+}
+
+function renderSentRow(r, i) {
+  const detailId = `sent-detail-${i}`;
+  const st = normalizeText(r.status || STATUS_SENT);
+
+  const pill =
+    st === STATUS_ACCOUNTING
+      ? `<span class="status-pill status-done">บัญชีตรวจแล้ว</span>`
+      : `<span class="status-pill status-sent">ส่งบัญชีแล้ว</span>`;
+
+  return `<tr>
+    <td><button class="expand-btn" onclick="toggleSentDetail(${i})">▼</button></td>
+    <td>${safeText(formatDateTime(r.incident_datetime || r.created_at || r.report_date))}</td>
+    <td><strong>${safeText(getDeptCode(r))}</strong><br><small>${safeText(getDeptName(getDeptCode(r)))}</small></td>
+    <td><strong>${safeText(r.machine_no || "-")}</strong></td>
+    <td>${safeText(r.reported_by || r.created_by_name || "-")}</td>
+    <td class="text-right"><strong>${formatNumber(totalWaste(r))}</strong></td>
+    <td>${renderProblemInline(r)}</td>
+    <td>${pill}</td>
+    <td>
+      <div class="row-actions">
+        <button class="btn secondary" onclick="toggleSentDetail(${i})">ดู</button>
+      </div>
+    </td>
+  </tr>
+  <tr id="${detailId}" class="detail-row hidden">
+    <td colspan="9">${renderDetailReadOnly(r)}</td>
+  </tr>`;
+}
+
+function renderDetailReadOnly(r) {
+  const items = r.problem_items || [];
+
+  return `
+    <table class="problem-table">
+      <thead>
+        <tr>
+          <th>ปัญหา</th>
+          <th class="text-right">น้ำหนัก kg</th>
+          <th>รายละเอียด</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items
+          .map(
+            (x) => `
+              <tr>
+                <td><strong>${safeText(x.problem_type)}</strong></td>
+                <td class="text-right">${formatNumber(x.waste_weight_kg)}</td>
+                <td>${safeText(x.detail || "-")}</td>
+              </tr>
+            `,
+          )
+          .join("")}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td>รวมของเสีย</td>
+          <td class="text-right">${formatNumber(totalWaste(r))}</td>
+          <td>kg</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="form-group" style="margin-top:12px">
+      <label>หมายเหตุหัวหน้า</label>
+      <textarea rows="2" disabled>${safeText(r.supervisor_note || "")}</textarea>
+    </div>
+  `;
+}
+
+function toggleSentDetail(i) {
+  document.getElementById(`sent-detail-${i}`)?.classList.toggle("hidden");
+}
+
+
+
+function renderRow(r, i) {
+  const st = normalizeText(r.status || STATUS_PENDING);
+  const pill =
+    st === STATUS_SENT
+      ? `<span class="status-pill status-sent">ส่งบัญชีแล้ว</span>`
+      : st === STATUS_ACCOUNTING
+        ? `<span class="status-pill status-done">บัญชีตรวจแล้ว</span>`
+        : `<span class="status-pill status-pending">รอตรวจสอบ</span>`;
+  const canApprove = PENDING_STATUS_SET.has(st);
+  return `<tr>
+    <td><button class="expand-btn" onclick="toggleDetail(${i})">▼</button></td>
+    <td>${safeText(formatDateTime(r.incident_datetime || r.created_at || r.report_date))}</td>
+    <td><strong>${safeText(getDeptCode(r))}</strong><br><small>${safeText(getDeptName(getDeptCode(r)))}</small></td>
+    <td><strong>${safeText(r.machine_no || "-")}</strong></td>
+    <td>${safeText(r.reported_by || r.created_by_name || "-")}</td>
+    <td class="text-right"><strong>${formatNumber(totalWaste(r))}</strong></td>
+    <td>${renderProblemInline(r)}</td>
+    <td>${pill}</td>
+    <td>
+  <div class="row-actions">
+    <button class="btn secondary" onclick="toggleDetail(${i})">ดู</button>
+    ${
+      canApprove
+        ? `<button class="btn primary" onclick="editReport('${safeAttr(r.id)}')">แก้ไข</button>
+           <button class="btn success" onclick="approveReport('${safeAttr(r.id)}')">ส่งบัญชี</button>`
+        : ""
+    }
+    <button class="btn danger" onclick="deleteReport('${safeAttr(r.id)}')">ลบ</button>
+  </div>
+</td>
+  </tr><tr id="detail-${i}" class="detail-row hidden"><td colspan="9">${renderDetail(r)}</td></tr>`;
+}
+function renderProblemInline(r) {
+  const items = r.problem_items || [];
+  return `<div class="problem-inline">${items
+    .slice(0, 3)
+    .map(
+      (x) =>
+        `${safeText(x.problem_type)} <strong>${formatNumber(x.waste_weight_kg)} kg</strong>`,
+    )
+    .join(
+      "<br>",
+    )}${items.length > 3 ? `<br><small>+${items.length - 3} รายการ</small>` : ""}</div>`;
+}
+function renderDetail(r) {
+  const items = r.problem_items || [];
+  return `<table class="problem-table"><thead><tr><th>ปัญหา</th><th class="text-right">น้ำหนัก kg</th><th>รายละเอียด</th></tr></thead><tbody>${items.map((x) => `<tr><td><strong>${safeText(x.problem_type)}</strong></td><td class="text-right">${formatNumber(x.waste_weight_kg)}</td><td>${safeText(x.detail || "-")}</td></tr>`).join("")}</tbody><tfoot><tr><td>รวมของเสีย</td><td class="text-right">${formatNumber(totalWaste(r))}</td><td>kg</td></tr></tfoot></table><div class="form-group" style="margin-top:12px"><label>หมายเหตุหัวหน้า</label><textarea id="note-${safeAttr(r.id)}" rows="2" placeholder="ใส่หมายเหตุถ้ามี" ${!PENDING_STATUS_SET.has(normalizeText(r.status || STATUS_PENDING)) ? "disabled" : ""}>${safeText(r.supervisor_note || "")}</textarea></div>`;
+}
+function toggleDetail(i) {
+  document.getElementById(`detail-${i}`)?.classList.toggle("hidden");
+}
+
+async function approveReport(id) {
+  const ok = await askConfirm(
+    "ยืนยันส่งบัญชี",
+    "ตรวจสอบแล้ว และส่งรายการนี้ให้บัญชีใช่ไหม?",
+  );
+  if (!ok) return;
+  const note =
+    document.getElementById(`note-${CSS.escape(String(id))}`)?.value || "";
+  const { error } = await state.supabase
+    .from(REPORT_TABLE)
+    .update({
+      status: STATUS_SENT,
+      supervisor_note: note,
+      checked_by: state.profile.id || null,
+      checked_by_name:
+        state.profile.display_name || state.profile.username || "",
+      checked_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) return showToast(`ส่งบัญชีไม่สำเร็จ: ${error.message}`, "error");
+  showToast("ส่งข้อมูลให้บัญชีเรียบร้อยแล้ว", "success");
+  await loadPageData();
+}
+
+
+async function deleteReport(id) {
+  const report = state.reports.find((r) => String(r.id) === String(id));
+  if (!report) return showToast("ไม่พบรายการนี้", "error");
+
+  const st = normalizeText(report.status || "");
+  if (st === STATUS_SENT || st === STATUS_ACCOUNTING) {
+    return showToast("รายการที่ส่งแล้วดูได้อย่างเดียว ไม่สามารถลบได้", "error");
+  }
+
+  const ok = await askConfirm(
+    "ยืนยันลบรายการ",
+    "ต้องการลบรายการนี้ใช่ไหม? ระบบจะลบรายการปัญหาย่อยออกด้วย",
+  );
+  if (!ok) return;
+
+  const { error: itemError } = await state.supabase
+    .from(ITEM_TABLE)
+    .delete()
+    .eq("report_id", id);
+
+  if (itemError) {
+    return showToast(`ลบรายการย่อยไม่สำเร็จ: ${itemError.message}`, "error");
+  }
+
+  const { error } = await state.supabase
+    .from(REPORT_TABLE)
+    .delete()
+    .eq("id", id);
+
+  if (error) return showToast(`ลบไม่สำเร็จ: ${error.message}`, "error");
+
+  showToast("ลบรายการเรียบร้อยแล้ว", "success");
+  await loadPageData();
+}
+
+
+
+function editReport(id) {
+  const report = state.reports.find((r) => String(r.id) === String(id));
+  if (!report) return showToast("ไม่พบข้อมูลที่ต้องการแก้ไข", "error");
+
+  const st = normalizeText(report.status || "");
+  if (st === STATUS_SENT || st === STATUS_ACCOUNTING) {
+    return showToast("รายการที่ส่งแล้วดูได้อย่างเดียว ไม่สามารถแก้ไขได้", "error");
+  }
+
+  const items = report.problem_items || [];
+
+  // โค้ดเดิมต่อจากนี้เหมือนเดิม
+
+  setText("modalTitle", "แก้ไขรายการของเสีย");
+  setText("modalSubTitle", "แก้ไขน้ำหนัก / รายละเอียดปัญหาก่อนส่งบัญชี");
+
+  document.getElementById("modalBody").innerHTML = `
+    <div class="edit-report-form">
+      <div class="form-group">
+        <label>เครื่องจักร</label>
+        <input id="editMachineNo" value="${safeAttr(report.machine_no || "")}" />
+      </div>
+
+      <div class="form-group">
+        <label>ผู้บันทึก</label>
+        <input id="editReportedBy" value="${safeAttr(report.reported_by || "")}" />
+      </div>
+
+      <div class="form-group">
+        <label>หมายเหตุหัวหน้า</label>
+        <textarea id="editSupervisorNote" rows="2">${safeText(report.supervisor_note || "")}</textarea>
+      </div>
+
+      <div class="edit-items-title">รายการปัญหา</div>
+
+      ${items
+        .map(
+          (item, index) => `
+            <div class="edit-item-box">
+              <input type="hidden" class="editItemId" value="${safeAttr(item.id)}" />
+
+              <div class="form-group">
+                <label>ปัญหาที่ ${index + 1}</label>
+                <input class="editProblemType" value="${safeAttr(item.problem_type || "")}" />
+              </div>
+
+              <div class="form-group">
+                <label>น้ำหนักของเสีย kg</label>
+                <input class="editWasteWeight" type="number" step="0.01" min="0" value="${Number(item.waste_weight_kg || 0)}" />
+              </div>
+
+              <div class="form-group">
+                <label>รายละเอียด</label>
+                <textarea class="editDetail" rows="2">${safeText(item.detail || "")}</textarea>
+              </div>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+
+  document.getElementById("modalActions").innerHTML = `
+    <button class="btn secondary" type="button" onclick="closeModal()">ยกเลิก</button>
+    <button class="btn primary" type="button" onclick="saveEditReport('${safeAttr(id)}')">บันทึกแก้ไข</button>
+  `;
+
+  openModal();
+}
+
+async function saveEditReport(id) {
+  const machineNo = getValue("editMachineNo");
+  const reportedBy = getValue("editReportedBy");
+  const supervisorNote =
+    document.getElementById("editSupervisorNote")?.value || "";
+
+  const itemIds = [...document.querySelectorAll(".editItemId")];
+  const problemTypes = [...document.querySelectorAll(".editProblemType")];
+  const wasteWeights = [...document.querySelectorAll(".editWasteWeight")];
+  const details = [...document.querySelectorAll(".editDetail")];
+
+  const updates = itemIds.map((el, index) => ({
+    id: el.value,
+    problem_type: problemTypes[index]?.value?.trim() || "ไม่ระบุปัญหา",
+    waste_weight_kg: Number(wasteWeights[index]?.value || 0),
+    detail: details[index]?.value?.trim() || "",
+  }));
+
+  const total = updates.reduce(
+    (sum, item) => sum + Number(item.waste_weight_kg || 0),
+    0,
+  );
+
+  const { error: reportError } = await state.supabase
+    .from(REPORT_TABLE)
+    .update({
+      machine_no: machineNo,
+      reported_by: reportedBy,
+      supervisor_note: supervisorNote,
+      waste_weight_kg: total,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (reportError) {
+    return showToast(
+      `บันทึกหัวรายงานไม่สำเร็จ: ${reportError.message}`,
+      "error",
+    );
+  }
+
+  for (const item of updates) {
+    if (String(item.id).includes("fallback")) continue;
+
+    const { error } = await state.supabase
+      .from(ITEM_TABLE)
+      .update({
+        problem_type: item.problem_type,
+        waste_weight_kg: item.waste_weight_kg,
+        detail: item.detail,
+      })
+      .eq("id", item.id);
+
+    if (error) {
+      return showToast(`บันทึกรายการย่อยไม่สำเร็จ: ${error.message}`, "error");
+    }
+  }
+
+  closeModal();
+  showToast("แก้ไขข้อมูลเรียบร้อยแล้ว", "success");
+  await loadPageData();
+}
 
 function getLocalProfile() {
-  const savedProfile = safeJsonParse(localStorage.getItem("ea_profile"));
-
-  const role =
-    localStorage.getItem("activeRole") ||
-    savedProfile?.role ||
-    savedProfile?.user_role ||
-    "";
-
-  if (!role) return null;
-
+  const p = safeJsonParse(localStorage.getItem("ea_profile")) || {};
   return {
-    id:
-      localStorage.getItem("activeUserId") ||
-      savedProfile?.id ||
-      savedProfile?.user_id ||
-      "",
-    username:
-      localStorage.getItem("activeUser") ||
-      savedProfile?.username ||
-      savedProfile?.email ||
-      "",
+    id: localStorage.getItem("activeUserId") || p.id || p.user_id || "",
+    username: localStorage.getItem("activeUser") || p.username || p.email || "",
     display_name:
       localStorage.getItem("activeName") ||
-      savedProfile?.display_name ||
-      savedProfile?.full_name ||
-      savedProfile?.username ||
+      p.display_name ||
+      p.full_name ||
+      p.username ||
       "",
     department_code:
       localStorage.getItem("activeDept") ||
-      savedProfile?.department_code ||
-      savedProfile?.department ||
+      p.department_code ||
+      p.department ||
       "",
     department_name:
       localStorage.getItem("activeDeptName") ||
-      savedProfile?.department_name ||
-      savedProfile?.department ||
+      p.department_name ||
+      p.department ||
       "",
-    role: normalizeText(role),
+    role: normalizeText(
+      localStorage.getItem("activeRole") || p.role || p.user_role || "",
+    ),
   };
 }
-
 function canSeeAllDepartments() {
   return ["admin", "management", "executive"].includes(
-    normalizeText(currentProfile?.role),
+    normalizeText(state.profile?.role),
   );
 }
-
-async function loadResponsibleDepartments() {
-  responsibleDepartments = [];
-
-  if (canSeeAllDepartments()) return;
-
-  // สำคัญ: เอา activeDept เดิมใส่ก่อน เพื่อไม่ให้ข้อมูลเดิมหาย
-  const fallbackDept = normalizeDepartmentCode(
-    currentProfile?.department_code || currentProfile?.department_name || "",
-  );
-
-  if (fallbackDept) responsibleDepartments.push(fallbackDept);
-
-  // ถ้าไม่มี user id ก็ใช้ของเดิมไปก่อน
-  if (!currentProfile?.id) {
-    responsibleDepartments = uniqueArray(responsibleDepartments);
-    return;
-  }
-
-  try {
-    const { data, error } = await supabaseClient
-      .from("user_departments")
-      .select("department_code")
-      .eq("user_id", currentProfile.id);
-
-    if (error) {
-      console.warn(
-        "อ่าน user_departments ไม่ได้ ใช้ activeDept เดิมแทน:",
-        error,
-      );
-      responsibleDepartments = uniqueArray(responsibleDepartments);
-      return;
-    }
-
-    const mapped = (Array.isArray(data) ? data : [])
-      .map((row) => normalizeDepartmentCode(row.department_code))
-      .filter(Boolean);
-
-    responsibleDepartments = uniqueArray([
-      ...responsibleDepartments,
-      ...mapped,
-    ]);
-  } catch (error) {
-    console.warn(
-      "โหลดแผนกที่รับผิดชอบไม่สำเร็จ ใช้ activeDept เดิมแทน:",
-      error,
-    );
-    responsibleDepartments = uniqueArray(responsibleDepartments);
-  }
+function getDeptCode(r) {
+  return normalizeDept(r.department_code || r.department || "");
 }
-
-function getAllowedDepartmentCodes() {
-  if (canSeeAllDepartments()) return [];
-
-  const depts = responsibleDepartments.length
-    ? responsibleDepartments
-    : [currentProfile?.department_code || currentProfile?.department_name];
-
-  return uniqueArray(depts.map(normalizeDepartmentCode).filter(Boolean));
+function getDeptName(code) {
+  return state.standards[normalizeDept(code)]?.name || code || "-";
 }
-
-function getCurrentDepartmentKey() {
-  return getAllowedDepartmentCodes()[0] || "";
+function normalizeDept(v) {
+  return window.EA_COMMON?.normalizeDepartmentCode
+    ? window.EA_COMMON.normalizeDepartmentCode(v)
+    : String(v || "")
+        .trim()
+        .toUpperCase()
+        .replace(/[\s-]+/g, "_");
 }
-
-// กลับมาใช้วิธี query กว้างก่อน แล้วค่อยกรองใน JS
-// เพื่อไม่ให้ข้อมูลหายจาก .in("department_code") หรือ policy/RLS
-function applyDepartmentFilter(query) {
-  return query;
+function normalizeText(v) {
+  return window.EA_COMMON?.normalizeText
+    ? window.EA_COMMON.normalizeText(v)
+    : String(v || "")
+        .trim()
+        .toLowerCase();
 }
-
-function normalizeDepartmentCode(value) {
-  const text = String(value || "").trim();
-  const key = text.toLowerCase();
-
-  const aliases = {
-    blow: "BLOW",
-    bag_blow: "BLOW",
-    เป่าถุง: "BLOW",
-
-    pipe: "PIPE",
-    ท่อ: "PIPE",
-
-    mono: "MONO",
-    โมโน: "MONO",
-
-    sheet: "SHEET_CUTTING",
-    sheet_cutting: "SHEET_CUTTING",
-    ตัดผืน: "SHEET_CUTTING",
-
-    cut_punch: "CUT_PUNCH",
-    cutting: "CUT_PUNCH",
-    ตัดเจาะ: "CUT_PUNCH",
-
-    garbage_bag_cut: "GARBAGE_BAG_CUT",
-    ตัดถุงขยะ: "GARBAGE_BAG_CUT",
-
-    rain_tape: "RAIN_TAPE",
-    เทปน้ำพุ่ง: "RAIN_TAPE",
-    เป่าเทปน้ำพุ่ง: "RAIN_TAPE",
-
-    rain_tape_cut_punch: "RAIN_TAPE_CUT_PUNCH",
-    ตัดเทปน้ำพุ่ง: "RAIN_TAPE_CUT_PUNCH",
-
-    shade_net: "SHADE_NET",
-    สแลน: "SHADE_NET",
-  };
-
-  return aliases[key] || text.toUpperCase().replace(/[\s-]+/g, "_");
+function todayString() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
 }
-
-function filterRecordsForCurrentDepartment(rows) {
-  if (!Array.isArray(rows)) return [];
-  if (canSeeAllDepartments()) return rows;
-
-  const allowedDepartments = getAllowedDepartmentCodes();
-
-  // ถ้าไม่มีข้อมูลแผนกเลย ไม่กรองทิ้ง เพื่อให้เห็นข้อมูลแทนที่จะหน้าว่าง
-  if (!allowedDepartments.length) return rows;
-
-  return rows.filter((row) => {
-    const rowDept = normalizeDepartmentCode(
-      row.department_code || row.department || "",
-    );
-    return allowedDepartments.includes(rowDept);
-  });
+function formatDateTime(v) {
+  if (!v) return "-";
+  const d = new Date(v);
+  return Number.isNaN(d.getTime())
+    ? String(v)
+    : d.toLocaleString("th-TH", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 }
-
-function renderLoginUserInfo() {
-  setText(
-    "userName",
-    currentProfile.display_name || currentProfile.username || "-",
-  );
-
-  const deptText = canSeeAllDepartments()
-    ? "รับผิดชอบ: ทุกแผนก"
-    : getAllowedDepartmentCodes().length
-      ? `รับผิดชอบ: ${getAllowedDepartmentCodes()
-          .map(getDepartmentLabelTH)
-          .join(", ")}`
-      : `รับผิดชอบ: ${getDepartmentLabelTH(
-          currentProfile.department_name || currentProfile.department_code,
-        )}`;
-
-  setText("userDept", deptText);
+function formatNumber(v) {
+  return window.EA_COMMON?.formatNumber
+    ? window.EA_COMMON.formatNumber(v, 2, 2)
+    : Number(v || 0).toLocaleString("th-TH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
 }
-
-function uniqueArray(values) {
-  return [...new Set((values || []).filter(Boolean))];
-}
-
-// ======================================================
-// LOAD RECORDS
-// รายการด้านบนใช้วันที่เดียว + สถานะเดียว
-// ======================================================
-
-async function loadRecords() {
-  const list = document.getElementById("recordList");
-  if (!list) return;
-
-  list.innerHTML = `<p class="empty">กำลังโหลดข้อมูล...</p>`;
-
-  const filterDate = getValue("filterDate");
-  const filterStatus = getValue("filterStatus") || STATUS.PENDING;
-
-  if (!filterDate) {
-    list.innerHTML = `<p class="empty">กรุณาเลือกวันที่</p>`;
-    return;
-  }
-
-  try {
-    await loadSummary(filterDate);
-
-    // สำคัญ: ไม่ .eq("status", pending) ตรงนี้
-    // เพราะข้อมูลเดิมบางรายการอาจเป็น submitted / draft / null
-    let query = supabaseClient
-      .from("daily_waste_reports")
-      .select("*")
-      .eq("report_date", filterDate)
-      .order("created_at", { ascending: false });
-
-    query = applyDepartmentFilter(query);
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    const rows = Array.isArray(data) ? data : [];
-    const deptRows = filterRecordsForCurrentDepartment(rows);
-    currentRecords = filterRecordsByStatus(deptRows, filterStatus);
-
-    console.info("[supervisor-daily-review] loadRecords", {
-      filterDate,
-      filterStatus,
-      totalFromDB: rows.length,
-      afterDeptFilter: deptRows.length,
-      afterStatusFilter: currentRecords.length,
-      currentProfile,
-    });
-
-    if (currentRecords.length === 0) {
-      list.innerHTML = renderEmptyRecordMessage(
-        rows.length,
-        deptRows.length,
-        filterStatus,
-      );
-    } else {
-      list.innerHTML = currentRecords.map(renderRecordCard).join("");
-    }
-
-    await loadHistory();
-  } catch (error) {
-    console.error("โหลดข้อมูลไม่สำเร็จ:", error);
-    list.innerHTML = `<p class="empty">โหลดข้อมูลไม่สำเร็จ: ${safeText(error.message)}</p>`;
-  }
-}
-
-function renderEmptyRecordMessage(totalFromDB, afterDeptFilter, filterStatus) {
-  if (totalFromDB > 0 && afterDeptFilter === 0 && !canSeeAllDepartments()) {
-    return `
-      <div class="empty">
-        <strong>พบข้อมูลในวันที่เลือก แต่ไม่ตรงกับแผนกของ User นี้</strong>
-        <br />
-        แผนกของคุณ: ${safeText(currentProfile.department_code || currentProfile.department_name || "-")}
-        <br />
-        กรุณาตรวจ activeDept / department_code ของ User ในหน้า Admin
-      </div>
-    `;
-  }
-
-  if (afterDeptFilter > 0 && filterStatus !== "all") {
-    return `
-      <div class="empty">
-        ไม่พบข้อมูลสถานะ “${safeText(getStatusLabel(filterStatus))}”
-        <br />
-        ลองเปลี่ยนสถานะเป็น “ทั้งหมด”
-      </div>
-    `;
-  }
-
-  return `<p class="empty">ไม่พบข้อมูลรายการของเสียในวันที่เลือก</p>`;
-}
-
-function filterRecordsByStatus(rows, filterStatus) {
-  if (!Array.isArray(rows)) return [];
-  if (filterStatus === "all") return rows;
-
-  return rows.filter((row) => {
-    const status = normalizeText(row.status);
-
-    if (filterStatus === STATUS.PENDING) {
-      return PENDING_STATUS_SET.has(status) || !RESOLVED_STATUS_SET.has(status);
-    }
-
-    if (filterStatus === STATUS.RESOLVED) {
-      return RESOLVED_STATUS_SET.has(status);
-    }
-
-    return status === normalizeText(filterStatus);
-  });
-}
-
-// ======================================================
-// SUMMARY KPI
-// KPI ยังอิงวันที่ด้านบน filterDate
-// ======================================================
-
-async function loadSummary(reportDate) {
-  try {
-    let query = supabaseClient
-      .from("daily_waste_reports")
-      .select(
-        "status, machine_no, waste_weight_kg, waste_qty, department_code, department",
-      )
-      .eq("report_date", reportDate);
-
-    query = applyDepartmentFilter(query);
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    const rows = filterRecordsForCurrentDepartment(
-      Array.isArray(data) ? data : [],
-    );
-
-    const pending = rows.filter((row) => {
-      const status = normalizeText(row.status);
-      return PENDING_STATUS_SET.has(status) || !RESOLVED_STATUS_SET.has(status);
-    }).length;
-
-    const totalWaste = rows.reduce((sum, row) => sum + getWasteValue(row), 0);
-
-    const machineWasteMap = {};
-
-    rows.forEach((row) => {
-      const machine = row.machine_no || "ไม่ระบุเครื่อง";
-      machineWasteMap[machine] =
-        (machineWasteMap[machine] || 0) + getWasteValue(row);
-    });
-
-    const topMachine = Object.entries(machineWasteMap).sort(
-      (a, b) => b[1] - a[1],
-    )[0];
-
-    setText("countPending", pending.toLocaleString("th-TH"));
-    setText("todayWaste", `${formatNumber(totalWaste)} kg`);
-
-    if (topMachine) {
-      setText("topMachineToday", topMachine[0]);
-      setText("topMachineTodaySub", `${formatNumber(topMachine[1])} kg`);
-    } else {
-      setText("topMachineToday", "-");
-      setText("topMachineTodaySub", "-");
-    }
-  } catch (error) {
-    console.error("โหลดสรุปไม่สำเร็จ:", error);
-  }
-}
-
-// ======================================================
-// HISTORY
-// ประวัติใช้ช่วงวันที่แยกจากรายการประจำวัน
-// ======================================================
-
-async function loadHistory() {
-  const tbody = document.getElementById("historyTableBody");
-  if (!tbody) return;
-
-  const startDate = getValue("historyStartDate");
-  const endDate = getValue("historyEndDate");
-
-  if (!startDate || !endDate) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="10" class="empty-cell">กรุณาเลือกช่วงวันที่ประวัติ</td>
-      </tr>
-    `;
-    setText("historySummary", "กรุณาเลือกช่วงวันที่ประวัติ");
-    return;
-  }
-
-  if (startDate > endDate) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="10" class="empty-cell">
-          วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด
-        </td>
-      </tr>
-    `;
-    setText("historySummary", "ช่วงวันที่ไม่ถูกต้อง");
-    return;
-  }
-
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="10" class="empty-cell">กำลังโหลดประวัติ...</td>
-    </tr>
-  `;
-
-  setText("historySummary", "กำลังโหลดสรุปประวัติ...");
-
-  try {
-    // ไม่ .eq("status", resolved) ตรงนี้ เพื่อรองรับ status เดิมหลายชื่อ
-    let query = supabaseClient
-      .from("daily_waste_reports")
-      .select("*")
-      .gte("report_date", startDate)
-      .lte("report_date", endDate)
-      .order("report_date", { ascending: false })
-      .order("checked_at", { ascending: false, nullsFirst: false });
-
-    query = applyDepartmentFilter(query);
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    const allRows = filterRecordsForCurrentDepartment(
-      Array.isArray(data) ? data : [],
-    );
-    const rows = filterRecordsByStatus(allRows, STATUS.RESOLVED);
-
-    renderHistorySummary(rows, startDate, endDate);
-    renderHistoryTable(rows);
-  } catch (error) {
-    console.error("โหลดประวัติไม่สำเร็จ:", error);
-
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="10" class="empty-cell">
-          โหลดประวัติไม่สำเร็จ: ${safeText(error.message)}
-        </td>
-      </tr>
-    `;
-
-    setText("historySummary", "โหลดประวัติไม่สำเร็จ");
-  }
-}
-
-function renderHistorySummary(rows, startDate, endDate) {
-  const totalWaste = rows.reduce((sum, row) => sum + getWasteValue(row), 0);
-  const totalRecords = rows.length;
-
-  const machineWasteMap = {};
-
-  rows.forEach((row) => {
-    const machine = row.machine_no || "ไม่ระบุเครื่อง";
-    machineWasteMap[machine] =
-      (machineWasteMap[machine] || 0) + getWasteValue(row);
-  });
-
-  const topMachine = Object.entries(machineWasteMap).sort(
-    (a, b) => b[1] - a[1],
-  )[0];
-
-  const topMachineText = topMachine
-    ? ` | เครื่องสูงสุด: ${topMachine[0]} (${formatNumber(topMachine[1])} kg)`
-    : "";
-
-  setText(
-    "historySummary",
-    `ช่วง ${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)} | ตรวจแล้ว ${formatNumber(totalRecords)} รายการ | ของเสีย ${formatNumber(totalWaste)} kg${topMachineText}`,
-  );
-}
-
-function renderHistoryTable(rows) {
-  const tbody = document.getElementById("historyTableBody");
-  if (!tbody) return;
-
-  if (!rows.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="10" class="empty-cell">
-          ยังไม่มีประวัติการตรวจสอบในช่วงวันที่เลือก
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = rows
-    .map((row) => {
-      return `
-        <tr>
-          <td>${safeText(formatDisplayDate(row.report_date || "-"))}</td>
-          <td>${safeText(getDepartmentText(row))}</td>
-          <td>${safeText(row.shift || row.work_shift || "-")}</td>
-          <td>${safeText(row.machine_no || "-")}</td>
-          <td>${safeText(row.problem_type || row.reason_detail || "-")}</td>
-          <td>${formatNumber(getWasteValue(row))} kg</td>
-          <td>${safeText(row.reported_by || row.created_by_name || "-")}</td>
-          <td>${safeText(row.checked_by_name || row.checked_by || "-")}</td>
-          <td>${safeText(formatDateTime(row.checked_at))}</td>
-          <td>${safeText(row.supervisor_note || "-")}</td>
-        </tr>
-      `;
-    })
-    .join("");
-}
-
-// ======================================================
-// RECORD CARD
-// ======================================================
-
-function renderRecordCard(record) {
-  const isResolved = RESOLVED_STATUS_SET.has(normalizeText(record.status));
-  const isPending = !isResolved;
-
-
-
-  return `
-    <article class="record-card">
-      <div class="record-top">
-        <div>
-          <div class="record-title">
-            แผนก: ${safeText(getDepartmentText(record))}
-          </div>
-
-          <div class="record-meta">
-            วันที่: ${safeText(record.report_date || "-")}
-            | กะ: ${safeText(record.shift || record.work_shift || "-")}
-            | เครื่องจักร: ${safeText(record.machine_no || "-")}
-          </div>
-        </div>
-
-        <div class="record-meta">
-          ผู้กรอก: ${safeText(record.reported_by || record.created_by_name || "-")}
-        </div>
-      </div>
-
-      <div class="record-detail">
-        <div class="detail-box">
-          <span>ปัญหา</span>
-          <strong>${safeText(record.problem_type || record.reason_detail || "-")}</strong>
-        </div>
-
-        <div class="detail-box">
-          <span>รายละเอียด</span>
-          <strong>${safeText(record.detail || record.note || "-")}</strong>
-        </div>
-
-        <div class="detail-box">
-          <span>น้ำหนักของเสีย</span>
-          <strong>${formatNumber(getWasteValue(record))} kg</strong>
-        </div>
-      
-
-        
-      </div>
-
-      <div class="note-box">
-        <label for="note-${safeAttr(record.id)}">หมายเหตุหัวหน้า</label>
-        <textarea
-          id="note-${safeAttr(record.id)}"
-          rows="2"
-          placeholder="ใส่หมายเหตุถ้ามี"
-          ${isResolved ? "disabled" : ""}
-        >${safeText(record.supervisor_note || "")}</textarea>
-      </div>
-
-      <div class="evidence-box">
-        <div class="evidence-title">หลักฐานรูปภาพ (ไม่บังคับ)</div>
-        <div class="evidence-actions">
-          <input
-            id="evidence-file-${safeAttr(record.id)}"
-            class="evidence-file-input"
-            type="file"
-            accept="image/*"
-          />
-          <button
-            class="btn secondary"
-            type="button"
-            onclick="uploadEvidenceForRecord('${safeAttr(record.id)}')"
-          >
-            📷 อัปโหลดรูปหลักฐาน
-          </button>
-        </div>
-        <div class="evidence-preview" id="evidence-preview-${safeAttr(record.id)}">
-          ${renderEvidencePreview(record)}
-        </div>
-        <div class="evidence-empty">รูปภาพจะถูกเก็บไว้กับรายการนี้เพื่อใช้เป็นหลักฐานประกอบการตรวจสอบ</div>
-      </div>
-
-      <div class="action-row">
-        ${
-          isPending
-            ? `
-              <button class="btn warning" type="button" onclick="openEditModal('${safeAttr(record.id)}')">
-                ✏️ แก้ไข
-              </button>
-
-              <button class="btn success" type="button" onclick="approveRecord('${safeAttr(record.id)}')">
-                ✅ ตรวจแล้ว / ส่งบัญชี
-              </button>
-
-              <button class="btn danger" type="button" onclick="deleteRecord('${safeAttr(record.id)}')">
-                🗑 ลบ
-              </button>
-            `
-            : `
-              <span class="record-meta">รายการนี้ส่งบัญชีแล้ว</span>
-
-              <button class="btn warning" type="button" onclick="openEditModal('${safeAttr(record.id)}')">
-                ✏️ แก้ไข
-              </button>
-
-              <button class="btn danger" type="button" onclick="deleteRecord('${safeAttr(record.id)}')">
-                🗑 ลบ
-              </button>
-            `
-        }
-      </div>
-    </article>
-  `;
-}
-
-// ======================================================
-// EVIDENCE IMAGE
-// ======================================================
-
-function renderEvidencePreview(record) {
-  const evidenceUrl = getEvidenceImageUrl(record);
-
-  if (!evidenceUrl) {
-    return `<div class="evidence-empty">ยังไม่มีรูปภาพหลักฐานในรายการนี้</div>`;
-  }
-
-  return `
-    <img src="${safeAttr(evidenceUrl)}" alt="หลักฐานของเสีย" />
-    <a class="evidence-link" href="${safeAttr(evidenceUrl)}" target="_blank" rel="noreferrer">
-      เปิดรูปภาพในแท็บใหม่
-    </a>
-  `;
-}
-
-function getEvidenceImageUrl(record) {
-  const directValue =
-    record?.evidence_image_url ||
-    record?.evidence_url ||
-    record?.image_url ||
-    record?.photo_url ||
-    record?.evidence_image ||
-    record?.photo ||
-    "";
-
-  if (directValue) return directValue;
-
-  const combinedText = [record?.detail, record?.note, record?.supervisor_note]
-    .filter(Boolean)
-    .join("\n");
-
-  if (!combinedText) return "";
-
-  const markerMatch = combinedText.match(/__evidence_image__:(.+)$/im);
-  if (markerMatch?.[1]) return markerMatch[1].trim();
-
-  const urlMatch = combinedText.match(
-    /(data:image\/[^\s]+|https?:\/\/[^\s]+)/i,
-  );
-  return urlMatch?.[1] || "";
-}
-
-async function uploadEvidenceForRecord(id) {
-  const input = document.getElementById(
-    `evidence-file-${CSS.escape(String(id))}`,
-  );
-  const file = input?.files?.[0];
-
-  if (!file) {
-    alert("กรุณาเลือกไฟล์รูปภาพก่อนอัปโหลด");
-    return;
-  }
-
-  if (!file.type.startsWith("image/")) {
-    alert("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
-    return;
-  }
-
-  const record = currentRecords.find((item) => String(item.id) === String(id));
-  if (!record) {
-    alert("ไม่พบรายการที่เลือก");
-    return;
-  }
-
-  const preview = document.getElementById(
-    `evidence-preview-${CSS.escape(String(id))}`,
-  );
-  if (preview) {
-    preview.innerHTML =
-      '<div class="evidence-empty">กำลังอัปโหลดรูปภาพหลักฐาน...</div>';
-  }
-
-  try {
-    let imageUrl = "";
-    let objectPath = "";
-
-    try {
-      const storagePath = `daily_waste_evidence/${currentProfile?.id || "unknown"}/${String(id)}/${Date.now()}-${String(file.name).replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-
-      const { data: uploadData, error: uploadError } =
-        await supabaseClient.storage
-          .from("daily-waste-evidence")
-          .upload(storagePath, file, {
-            cacheControl: "3600",
-            upsert: false,
-          });
-
-      if (!uploadError && uploadData) {
-        const { data: publicData } = supabaseClient.storage
-          .from("daily-waste-evidence")
-          .getPublicUrl(storagePath);
-
-        imageUrl = publicData?.publicUrl || "";
-        objectPath = storagePath;
-      } else {
-        console.warn("Upload evidence image to storage failed:", uploadError);
-      }
-    } catch (storageError) {
-      console.warn("Storage upload exception:", storageError);
-    }
-
-    if (!imageUrl) {
-      imageUrl = await readFileAsDataUrl(file);
-    }
-
-    const existingDetail = String(record.detail || "")
-      .replace(/__evidence_image__:.+/gim, "")
-      .trim();
-    const fallbackDetail = existingDetail
-      ? `${existingDetail}\n__evidence_image__:${imageUrl}`
-      : `__evidence_image__:${imageUrl}`;
-
-    const existingNote = String(record.note || "")
-      .replace(/__evidence_image__:.+/gim, "")
-      .trim();
-    const fallbackNote = existingNote
-      ? `${existingNote}\n__evidence_image__:${imageUrl}`
-      : `__evidence_image__:${imageUrl}`;
-
-    const updatePayload = {
-      detail: fallbackDetail,
-      note: fallbackNote,
-      evidence_image_url: imageUrl,
-      evidence_image_path: objectPath || null,
-    };
-
-    let query = supabaseClient
-      .from("daily_waste_reports")
-      .update(updatePayload)
-      .eq("id", id);
-
-    const { error } = await query;
-
-    if (error) {
-      const fallbackQuery = supabaseClient
-        .from("daily_waste_reports")
-        .update({
-          detail: fallbackDetail,
-          note: fallbackNote,
-        })
-        .eq("id", id);
-
-      const fallbackResponse = await fallbackQuery;
-      if (fallbackResponse.error) throw fallbackResponse.error;
-    }
-
-    alert("อัปโหลดรูปภาพหลักฐานเรียบร้อยแล้ว");
-    input.value = "";
-    await loadRecords();
-  } catch (error) {
-    console.error("อัปโหลดรูปภาพหลักฐานไม่สำเร็จ:", error);
-    alert("อัปโหลดรูปภาพหลักฐานไม่สำเร็จ: " + (error.message || error));
-  }
-}
-
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result || "");
-    reader.onerror = () => reject(new Error("อ่านไฟล์ไม่สำเร็จ"));
-    reader.readAsDataURL(file);
-  });
-}
-
-// ======================================================
-// EDIT RECORD
-// ======================================================
-
-function openEditModal(id) {
-  const record = currentRecords.find((item) => String(item.id) === String(id));
-
-  if (!record) {
-    alert("ไม่พบรายการที่ต้องการแก้ไข");
-    return;
-  }
-
-  setValue("editRecordId", record.id);
-  setValue("editShift", record.shift || record.work_shift || "");
-  setValue("editMachineNo", record.machine_no || "");
-  setValue(
-    "editProblemType",
-    record.problem_type || record.reason_detail || "",
-  );
-  setValue("editWasteWeight", getWasteValue(record));
-  setValue("editDetail", record.detail || record.note || "");
-  setValue("editSupervisorNote", record.supervisor_note || "");
-
-  const modal = document.getElementById("editRecordModal");
-  if (modal) modal.hidden = false;
-}
-
-function closeEditModal() {
-  const modal = document.getElementById("editRecordModal");
-  if (modal) modal.hidden = true;
-}
-
-async function saveEditRecord() {
-  const id = getValue("editRecordId");
-
-  if (!id) {
-    alert("ไม่พบรหัสรายการ");
-    return;
-  }
-
-  const shift = getValue("editShift");
-  const machineNo = getValue("editMachineNo");
-  const problemType = getValue("editProblemType");
-  const wasteWeight = Number(getValue("editWasteWeight") || 0);
-  const detail = getValue("editDetail");
-  const supervisorNote = getValue("editSupervisorNote");
-
-  if (!machineNo) {
-    alert("กรุณาระบุเครื่องจักร");
-    return;
-  }
-
-  if (!problemType) {
-    alert("กรุณาระบุปัญหา");
-    return;
-  }
-
-  if (!Number.isFinite(wasteWeight) || wasteWeight < 0) {
-    alert("กรุณาระบุน้ำหนักของเสียให้ถูกต้อง");
-    return;
-  }
-
-  try {
-    let query = supabaseClient
-      .from("daily_waste_reports")
-      .update({
-        shift,
-        work_shift: shift,
-        machine_no: machineNo,
-        problem_type: problemType,
-        reason_detail: problemType,
-        waste_weight_kg: wasteWeight,
-        waste_qty: wasteWeight,
-        detail,
-        note: detail,
-        supervisor_note: supervisorNote,
-        checked_by: currentProfile.id || null,
-        checked_by_name: currentProfile.display_name || currentProfile.username,
-        checked_at: new Date().toISOString(),
-      })
-      .eq("id", id);
-
-    query = applyDepartmentFilter(query);
-
-    const { error } = await query;
-
-    if (error) throw error;
-
-    closeEditModal();
-    alert("แก้ไขข้อมูลเรียบร้อยแล้ว");
-    await loadRecords();
-  } catch (error) {
-    console.error("แก้ไขไม่สำเร็จ:", error);
-    alert("แก้ไขไม่สำเร็จ: " + error.message);
-  }
-}
-
-// ======================================================
-// APPROVE / SEND ACCOUNTING
-// ======================================================
-
-async function approveRecord(id) {
-  const confirmApprove = confirm("ยืนยันตรวจแล้ว และส่งข้อมูลให้บัญชีใช่ไหม?");
-  if (!confirmApprove) return;
-
-  const note =
-    document.getElementById(`note-${CSS.escape(String(id))}`)?.value || "";
-
-  try {
-    let query = supabaseClient
-      .from("daily_waste_reports")
-      .update({
-        status: STATUS.RESOLVED,
-        checked_by: currentProfile.id || null,
-        checked_by_name: currentProfile.display_name || currentProfile.username,
-        checked_at: new Date().toISOString(),
-        supervisor_note: note,
-      })
-      .eq("id", id);
-
-    query = applyDepartmentFilter(query);
-
-    const { error } = await query;
-
-    if (error) throw error;
-
-    alert("ส่งข้อมูลให้บัญชีเรียบร้อยแล้ว");
-    await loadRecords();
-  } catch (error) {
-    console.error("ส่งบัญชีไม่สำเร็จ:", error);
-    alert("ส่งบัญชีไม่สำเร็จ: " + error.message);
-  }
-}
-
-// ======================================================
-// DELETE
-// ======================================================
-
-async function deleteRecord(id) {
-  const confirmDelete = confirm(
-    "ต้องการลบรายการนี้ใช่ไหม?\n\nใช้เฉพาะกรณีข้อมูลกรอกผิดจริง และไม่ต้องการส่งบัญชี",
-  );
-
-  if (!confirmDelete) return;
-
-  try {
-    let query = supabaseClient
-      .from("daily_waste_reports")
-      .delete()
-      .eq("id", id);
-
-    query = applyDepartmentFilter(query);
-
-    const { error } = await query;
-
-    if (error) throw error;
-
-    alert("ลบรายการเรียบร้อยแล้ว");
-    await loadRecords();
-  } catch (error) {
-    console.error("ลบรายการไม่สำเร็จ:", error);
-    alert("ลบรายการไม่สำเร็จ: " + error.message);
-  }
-}
-
-// ======================================================
-// HELPERS
-// ======================================================
-
-function getStatusLabel(status) {
-  const text = normalizeText(status);
-
-  if (PENDING_STATUS_SET.has(text)) return "รอตรวจสอบ";
-  if (RESOLVED_STATUS_SET.has(text)) return "ส่งบัญชีแล้ว";
-
-  return status || "รอตรวจสอบ";
-}
-
-function getWasteValue(row) {
-  return Number(row.waste_weight_kg || row.waste_qty || 0) || 0;
-}
-
-function getProductionValue(row) {
-  return (
-    Number(
-      row.production_weight_kg ||
-        row.total_qty ||
-        row.produced_weight_kg ||
-        row.production_qty ||
-        0,
-    ) || 0
-  );
-}
-
-function calcWastePercent(waste, production) {
-  if (!production) return null;
-  return (waste / production) * 100;
-}
-
-function getDepartmentInfo(row) {
-  const code = normalizeDepartmentCode(
-    row.department_code || row.department || "",
-  );
-  const master = departmentStandards[code];
-
-  return {
-    code,
-    name: master?.name || row.department || row.department_code || "-",
-    maxWastePercent: master?.maxWastePercent ?? null,
-    warningPercent: master?.warningPercent ?? null,
-  };
-}
-
-function getWasteResult(row) {
-  const waste = getWasteValue(row);
-  const production = getProductionValue(row);
-  const percent = calcWastePercent(waste, production);
-  const dept = getDepartmentInfo(row);
-
-  const status = normalizeText(row.status);
-  const isAccountingChecked = [
-    "checked",
-    "approved",
-    "done",
-    "completed",
-  ].includes(status);
-
-  if (!isAccountingChecked || !production) {
-    return {
-      percentText: "-",
-      standardText:
-        dept.maxWastePercent !== null
-          ? `${formatNumber(dept.maxWastePercent)}%`
-          : "-",
-      label: "รอบัญชีกรอกน้ำหนักผลิต",
-      className: "result-none",
-    };
-  }
-
-  if (dept.maxWastePercent === null) {
-    return {
-      percentText: `${formatNumber(percent)}%`,
-      standardText: "-",
-      label: "ไม่พบเกณฑ์",
-      className: "result-none",
-    };
-  }
-
-  if (percent > dept.maxWastePercent) {
-    return {
-      percentText: `${formatNumber(percent)}%`,
-      standardText: `${formatNumber(dept.maxWastePercent)}%`,
-      label: `เกิน ${formatNumber(percent - dept.maxWastePercent)}%`,
-      className: "result-danger",
-    };
-  }
-
-  if (dept.warningPercent > 0 && percent >= dept.warningPercent) {
-    return {
-      percentText: `${formatNumber(percent)}%`,
-      standardText: `${formatNumber(dept.maxWastePercent)}%`,
-      label: "เริ่มสูง",
-      className: "result-warning",
-    };
-  }
-
-  return {
-    percentText: `${formatNumber(percent)}%`,
-    standardText: `${formatNumber(dept.maxWastePercent)}%`,
-    label: "ปกติ",
-    className: "result-success",
-  };
-}
-
-function getDepartmentText(row) {
-  return getDepartmentInfo(row).name;
-}
-
-// function getDepartmentText(row) {
-//   return (
-//     row.department_name ||
-//     row.department_code ||
-//     row.department ||
-//     row.dept ||
-//     row.dept_code ||
-//     "-"
-//   );
-// }
-
-function normalizeText(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
-}
-
-function safeJsonParse(value) {
-  try {
-    return value ? JSON.parse(value) : null;
-  } catch (_) {
-    return null;
-  }
-}
-
-function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
-}
-
 function getValue(id) {
   return document.getElementById(id)?.value?.trim() || "";
 }
-
-function setValue(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.value = value;
+function setValue(id, v) {
+  const e = document.getElementById(id);
+  if (e) e.value = v;
 }
-
-function formatNumber(value) {
-  return Number(value || 0).toLocaleString("th-TH", {
-    maximumFractionDigits: 2,
-  });
+function setText(id, v) {
+  const e = document.getElementById(id);
+  if (e) e.textContent = v;
 }
-
-function formatDisplayDate(value) {
-  if (!value || value === "-") return "-";
-
-  const date = new Date(`${value}T00:00:00`);
-
-  if (Number.isNaN(date.getTime())) return value;
-
-  return date.toLocaleDateString("th-TH", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(value) {
-  if (!value) return "-";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return value;
-
-  return date.toLocaleString("th-TH");
-}
-
-function safeText(value) {
-  if (value === null || value === undefined) return "";
-
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function safeAttr(value) {
-  return safeText(value).replaceAll("`", "&#096;");
-}
-
-// ======================================================
-// DEBUG HELPER
-// ใช้ใน Console ได้: debugDailyWasteToday()
-// ======================================================
-
-async function debugDailyWasteToday() {
-  const date = getValue("filterDate") || getLocalDateString(new Date());
-
-  const { data, error } = await supabaseClient
-    .from("daily_waste_reports")
-    .select(
-      "id, report_date, status, department_code, department, machine_no, problem_type, waste_weight_kg, waste_qty, reported_by, created_at",
-    )
-    .eq("report_date", date)
-    .order("created_at", { ascending: false });
-
-  console.table(data || []);
-  if (error) console.error(error);
-
-  return { data, error };
-}
-
-window.debugDailyWasteToday = debugDailyWasteToday;
-
-async function debugMyDepartments() {
-  const profile = currentProfile || getLocalProfile();
-
-  console.log("currentProfile:", profile);
-  console.log("responsibleDepartments:", responsibleDepartments);
-  console.log("allowedDepartments:", getAllowedDepartmentCodes());
-
-  if (!profile?.id) {
-    console.warn("ไม่พบ activeUserId หรือ currentProfile.id");
-    return { data: [], error: "missing user id" };
+function safeJsonParse(v) {
+  try {
+    return v ? JSON.parse(v) : null;
+  } catch {
+    return null;
   }
-
-  const { data, error } = await supabaseClient
-    .from("user_departments")
-    .select("department_code")
-    .eq("user_id", profile.id);
-
-  console.table(data || []);
-  if (error) console.error(error);
-
-  return { data, error };
+}
+function safeText(v) {
+  return window.EA_COMMON?.safeText
+    ? window.EA_COMMON.safeText(v)
+    : String(v ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+function safeAttr(v) {
+  return window.EA_COMMON?.safeAttr
+    ? window.EA_COMMON.safeAttr(v)
+    : safeText(v).replaceAll("`", "&#096;");
 }
 
-window.debugMyDepartments = debugMyDepartments;
-
-// ======================================================
-// LOGOUT
-// ======================================================
-
-function logout() {
-  const confirmLogout = confirm("ต้องการออกจากระบบใช่ไหม?");
-  if (!confirmLogout) return;
-
-  localStorage.removeItem("loginType");
-  localStorage.removeItem("activeUserId");
-  localStorage.removeItem("activeUser");
-  localStorage.removeItem("activeName");
-  localStorage.removeItem("activeDept");
-  localStorage.removeItem("activeDeptName");
-  localStorage.removeItem("activeRole");
-
-  window.location.href = "/login.html";
+function showToast(msg, type = "") {
+  const t = document.getElementById("toast");
+  if (!t) return;
+  t.textContent = msg;
+  t.className = `toast ${type}`;
+  t.classList.remove("hidden");
+  setTimeout(() => t.classList.add("hidden"), 2600);
 }
 
+function openModal() {
+  const modal = document.getElementById("appModal");
+  if (!modal) return;
+  modal.hidden = false;
+  modal.classList.remove("hidden");
+}
 
+function closeModal() {
+  const modal = document.getElementById("appModal");
+  if (!modal) return;
+  modal.classList.add("hidden");
+  modal.hidden = true;
+}
 
-// ======================================================
-// GLOBAL EXPORT
-// ======================================================
-
-window.loadRecords = loadRecords;
-window.loadHistory = loadHistory;
-window.setHistoryRangeThisWeek = setHistoryRangeThisWeek;
-window.setHistoryRangeLast7Days = setHistoryRangeLast7Days;
-window.logout = logout;
-window.openEditModal = openEditModal;
-window.closeEditModal = closeEditModal;
-window.saveEditRecord = saveEditRecord;
-window.approveRecord = approveRecord;
-window.deleteRecord = deleteRecord;
-window.uploadEvidenceForRecord = uploadEvidenceForRecord;
-
-
-
+function askConfirm(title, msg) {
+  return new Promise((resolve) => {
+    setText("modalTitle", title);
+    document.getElementById("modalBody").innerHTML = `<p>${safeText(msg)}</p>`;
+    document.getElementById("modalActions").innerHTML =
+      `<button class="btn secondary" id="cancelAsk">ยกเลิก</button><button class="btn primary" id="okAsk">ยืนยัน</button>`;
+    openModal();
+    document.getElementById("cancelAsk").onclick = () => {
+      closeModal();
+      resolve(false);
+    };
+    document.getElementById("okAsk").onclick = () => {
+      closeModal();
+      resolve(true);
+    };
+  });
+}
+function logoutNow() {
+  [
+    "loginType",
+    "activeUserId",
+    "activeUser",
+    "activeName",
+    "activeDept",
+    "activeDeptName",
+    "activeRole",
+  ].forEach((k) => localStorage.removeItem(k));
+  location.href = "/login.html";
+}
+window.loadPageData = loadPageData;
+window.loadRecords = loadPageData;
+window.toggleDetail = toggleDetail;
+window.approveReport = approveReport;
+window.deleteReport = deleteReport;
+window.closeModal = closeModal;
+window.logoutNow = logoutNow;
+window.editReport = editReport;
+window.saveEditReport = saveEditReport;
+window.openModal = openModal;
+window.renderSentTable = renderSentTable;
+window.toggleSentDetail = toggleSentDetail;

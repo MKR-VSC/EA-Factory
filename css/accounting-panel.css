@@ -543,3 +543,157 @@ textarea:focus {
     min-width: 1300px;
   }
 }
+
+/* ======================================================
+   STRUCTURE ALIAS PATCH
+   ให้ HTML ชุด Go Live ใช้ class แนวเดียวกับหน้าอื่นได้
+   โดยไม่เปลี่ยน Theme เดิมของหน้าบัญชี
+====================================================== */
+.page {
+  width: min(1600px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0 40px;
+}
+
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px;
+  margin-bottom: 18px;
+  color: white;
+  background: linear-gradient(135deg, #047857, #065f46);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+}
+
+.topbar .title h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px;
+  font-size: clamp(22px, 3vw, 34px);
+  line-height: 1.25;
+}
+
+.topbar .title p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.btn.light {
+  color: #064e3b;
+  background: #ecfdf5;
+}
+
+.btn.primary {
+  background: var(--green);
+}
+
+.btn.secondary {
+  background: var(--dark);
+}
+
+.btn.success {
+  background: var(--green);
+}
+
+.btn.danger {
+  background: var(--red);
+}
+
+.table-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.table-head h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.table-head p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.empty {
+  padding: 26px !important;
+  color: var(--muted);
+  text-align: center !important;
+}
+
+.status-done {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.status-sent {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.problem-inline {
+  min-width: 220px;
+  line-height: 1.55;
+}
+
+.problem-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+}
+
+.problem-table th,
+.problem-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.detail-row.hidden {
+  display: none;
+}
+
+.expand-btn {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  color: #0f172a;
+  background: #e2e8f0;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.modal.hidden,
+.toast.hidden {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .page {
+    width: min(100% - 20px, 1600px);
+    padding-top: 12px;
+  }
+
+  .topbar,
+  .table-head {
+    flex-direction: column;
+  }
+
+  .actions {
+    width: 100%;
+  }
+}
