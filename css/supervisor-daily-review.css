@@ -1090,8 +1090,8 @@ textarea:focus {
 }
 
 .problem-table tfoot td {
-  color: #0f172a;
-  background: #fefce8;
+  color: var(--danger);
+  background: #475569;
   font-weight: 950;
   border-bottom: 0;
 }
@@ -1173,7 +1173,7 @@ textarea:focus {
 
 .problem-table th {
   color: #475569;
-  background: #f8fafc;
+  /* background: #f8fafc; */
   font-weight: 950;
 }
 
@@ -1182,8 +1182,8 @@ textarea:focus {
 }
 
 .problem-table tfoot td {
-  color: #0f172a;
-  background: #fffbea;
+  color: var(--danger);
+  background: #475569;
   font-weight: 950;
   border-bottom: 0;
 }
@@ -1236,7 +1236,7 @@ textarea:disabled {
   width: 100%;
   min-width: 1120px;
   border-collapse: collapse;
-  background: #ffffff;
+  /* background: #ffffff; */
 }
 
 .supervisor-data-table th,
@@ -1258,12 +1258,12 @@ textarea:disabled {
   color: #475569;
   font-weight: 950;
   white-space: nowrap;
-  background: #f8fafc;
+  background: #e2e8f0;
 }
 
 .supervisor-data-table tbody tr:hover td,
 .data-table tbody tr:hover td {
-  background: #f8fafc;
+  background: #bccbda;
 }
 
 .text-right {
@@ -1328,12 +1328,12 @@ textarea:disabled {
 .problem-inline strong {
   display: inline-block;
   min-width: 88px;
-  color: #1d4ed8;
+  color: #9b0404;
 }
 
-.detail-row td {
+/* .detail-row td {
   background: #fbfdff !important;
-}
+} */
 
 .problem-table {
   width: 100%;
@@ -1358,7 +1358,7 @@ textarea:disabled {
 
 .problem-table tfoot td {
   font-weight: 950;
-  background: #fffbeb;
+  background: #f7efe5;
 }
 
 .note-area,
