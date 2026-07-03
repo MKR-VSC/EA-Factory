@@ -191,7 +191,9 @@ function buildGroups(rows) {
       g.items.push(i);
       g.waste += Number(i.waste_weight_kg || 0);
     });
-    if (!g.production) g.production = getProduction(r);
+    if (g.production == null || g.production === 0) {
+  g.production = getProduction(r);
+}
   });
   return [...m.values()];
 }
@@ -285,8 +287,6 @@ function getResult(dept, percent, hasProd) {
   return { label: "ผ่าน", className: "result-success" };
 }
 function getProduction(r) {
-    // return Number(r.production_kg || 0);
-  function getProduction(r) {
   return Number(
     r.production_kg ||
       r.total_qty ||
@@ -294,7 +294,7 @@ function getProduction(r) {
   ) || 0;
 }
 
-}
+
 function getDeptName(c) {
   return state.standards[normalizeDept(c)]?.name || c || "-";
 }
