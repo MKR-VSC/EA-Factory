@@ -99,15 +99,13 @@ async function attachProblemItems(rows) {
   (data || []).forEach((i) => {
     const k = String(i.report_id);
     if (!map.has(k)) map.set(k, []);
-    map
-      .get(k)
-      .push({
-        id: i.id,
-        item_no: i.item_no,
-        problem_type: i.problem_type,
-        waste_weight_kg: Number(i.waste_weight_kg || 0),
-        detail: i.detail || "",
-      });
+    map.get(k).push({
+      id: i.id,
+      item_no: i.item_no,
+      problem_type: i.problem_type,
+      waste_weight_kg: Number(i.waste_weight_kg || 0),
+      detail: i.detail || "",
+    });
   });
   return rows.map((r) => ({
     ...r,
@@ -147,7 +145,7 @@ function applyFilters() {
     return (
       (!month || m === month) &&
       (dept === "all" || d === dept) &&
-      (status === "all" || normalizeText(r.status) === status) &&
+      (status === "all" || getAccountingStatus(r) === status) &&
       (!kw || text.includes(kw))
     );
   });
@@ -183,7 +181,7 @@ function buildGroups(rows) {
     g.ids.push(r.id);
     g.rows.push(r);
     g.status =
-      g.status === STATUS_DONE && normalizeText(r.status) === STATUS_DONE
+      g.status === STATUS_DONE && getAccountingStatus(r) === STATUS_DONE
         ? STATUS_DONE
         : STATUS_SENT;
     g.reporter.add(r.reported_by || r.created_by_name || "-");
@@ -192,8 +190,8 @@ function buildGroups(rows) {
       g.waste += Number(i.waste_weight_kg || 0);
     });
     if (g.production == null || g.production === 0) {
-  g.production = getProduction(r);
-}
+      g.production = getProduction(r);
+    }
   });
   return [...m.values()];
 }
@@ -220,8 +218,42 @@ function renderGroup(g, i) {
     normalizeText(g.status) === STATUS_DONE
       ? `<span class="status-pill status-done">บัญชีตรวจแล้ว</span>`
       : `<span class="status-pill status-sent">รอบัญชีตรวจ</span>`;
-  return `<tr><td><button class="expand-btn" onclick="toggleDetail(${i})">▼</button></td><td>${safeText(formatDate(g.date))}</td><td><strong>${safeText(g.dept)}</strong><br><small>${safeText(getDeptName(g.dept))}</small></td><td>${safeText(g.shift)}</td><td><strong>${safeText(g.machine)}</strong></td><td>${safeText([...g.reporter].join(", "))}</td><td class="text-right"><strong>${formatNumber(g.waste)}</strong></td><td>${renderProblemInline(g.items)}</td><td class="text-right"><input class="cell-input text-right" type="number" step="0.01" min="0" value="${safeAttr(g.production || "")}" data-prod="${safeAttr(g.key)}" placeholder="kg"></td><td class="text-right">${g.production ? formatPercent(percent) : "-"}</td><td><span class="result-pill ${result.className}">${safeText(result.label)}</span></td><td>${status}</td><td><button class="btn success" onclick="saveGroup('${safeAttr(g.key)}')">บันทึก</button></td></tr><tr id="detail-${i}" class="detail-row hidden"><td colspan="13">${renderProblemTable(g.items, g.waste)}</td></tr>`;
+  return `<tr><td><button class="expand-btn" onclick="toggleDetail(${i})">▼</button></td>
+  <td>${safeText(formatDate(g.date))}</td>
+  <td><strong>${safeText(g.dept)}</strong><br><small>${safeText(getDeptName(g.dept))}</small></td>
+  <td>${safeText(g.shift)}</td><td><strong>${safeText(g.machine)}</strong></td>
+  <td>${safeText([...g.reporter].join(", "))}</td>
+  <td class="text-right"><strong>${formatNumber(g.waste)}</strong></td>
+  <td>${renderProblemInline(g.items)}</td>
+  <td class="text-right"><input class="cell-input text-right" type="number" step="0.01" min="0" value="${safeAttr(g.production || "")}" data-prod="${safeAttr(g.key)}" placeholder="kg"></td>
+  <td class="text-right">${g.production ? formatPercent(percent) : "-"}</td>
+  <td><span class="result-pill ${result.className}">${safeText(result.label)}</span></td>
+  <td>${status}</td>
+ <td>
+  ${
+    normalizeText(g.status) === STATUS_DONE
+      ? `
+        <button class="btn warning" onclick="editGroup('${safeAttr(g.key)}')">แก้ไข</button>
+        <button class="btn success" onclick="saveGroup('${safeAttr(g.key)}')">บันทึก</button>
+      `
+      : `<button class="btn success" onclick="saveGroup('${safeAttr(g.key)}')">บันทึก</button>`
+  }
+</td>
+  </tr>
+  <tr id="detail-${i}" class="detail-row hidden"><td colspan="13">${renderProblemTable(g.items, g.waste)}</td></tr>`;
 }
+
+function editGroup(key) {
+  const input = document.querySelector(`[data-prod="${cssEscape(key)}"]`);
+  if (!input) return;
+
+  input.focus();
+  input.select();
+
+  showToast("แก้ไขน้ำหนักผลิต แล้วกดบันทึกอีกครั้ง", "success");
+}
+
+
 function renderProblemInline(items) {
   return `<div class="problem-inline">${items
     .slice(0, 3)
@@ -251,14 +283,14 @@ async function saveGroup(key) {
   const { error } = await state.supabase
     .from(REPORT_TABLE)
 
-   .update({
-  production_kg: prod,
-  status: STATUS_DONE,
-  accounting_status: STATUS_DONE,
-  accounting_checked_by: uid,
-  accounting_checked_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-})
+    .update({
+      production_kg: prod,
+      status: STATUS_DONE,
+      accounting_status: STATUS_DONE,
+      accounting_checked_by: uid,
+      accounting_checked_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
 
     // .update({
     //   total_qty: prod,
@@ -270,7 +302,7 @@ async function saveGroup(key) {
     // })
     .in("id", g.ids);
   if (error) return showToast(`บันทึกไม่สำเร็จ: ${error.message}`, "error");
-  showToast("บันทึกบัญชีเรียบร้อยแล้ว", "success");
+  showToast("บันทึกเรียบร้อยแล้ว", "success");
   await loadAccountingData();
 }
 function getResult(dept, percent, hasProd) {
@@ -286,14 +318,14 @@ function getResult(dept, percent, hasProd) {
     return { label: "เริ่มสูง", className: "result-warning" };
   return { label: "ผ่าน", className: "result-success" };
 }
+
 function getProduction(r) {
-  return Number(
-    r.production_kg ||
-      r.total_qty ||
-      0
-  ) || 0;
+  return Number(r.production_kg ?? r.total_qty ?? 0) || 0;
 }
 
+function getAccountingStatus(r) {
+  return normalizeText(r.accounting_status || r.status || "");
+}
 
 function getDeptName(c) {
   return state.standards[normalizeDept(c)]?.name || c || "-";
@@ -301,12 +333,17 @@ function getDeptName(c) {
 function normalizeDept(v) {
   return window.EA_COMMON?.normalizeDepartmentCode
     ? window.EA_COMMON.normalizeDepartmentCode(v)
-    : String(v || "").trim().toUpperCase().replace(/[\s-]+/g, "_");
+    : String(v || "")
+        .trim()
+        .toUpperCase()
+        .replace(/[\s-]+/g, "_");
 }
 function normalizeText(v) {
   return window.EA_COMMON?.normalizeText
     ? window.EA_COMMON.normalizeText(v)
-    : String(v || "").trim().toLowerCase();
+    : String(v || "")
+        .trim()
+        .toLowerCase();
 }
 function toMonth(v) {
   const d = new Date(v);
@@ -325,7 +362,10 @@ function formatDate(v) {
 function formatNumber(v) {
   return window.EA_COMMON?.formatNumber
     ? window.EA_COMMON.formatNumber(v, 2, 2)
-    : Number(v || 0).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    : Number(v || 0).toLocaleString("th-TH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
 }
 function formatPercent(v) {
   return `${formatNumber(v)}%`;
@@ -375,3 +415,4 @@ window.applyFilters = applyFilters;
 window.toggleDetail = toggleDetail;
 window.saveGroup = saveGroup;
 window.closeModal = closeModal;
+window.editGroup = editGroup;

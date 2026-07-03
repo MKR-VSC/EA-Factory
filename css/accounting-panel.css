@@ -658,7 +658,7 @@ textarea:focus {
 .problem-table td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--line);
-  text-align: left;
+  text-align: center;
   vertical-align: top;
 }
 
@@ -696,4 +696,138 @@ textarea:focus {
   .actions {
     width: 100%;
   }
+}
+
+
+/* ===== FIX Accounting table column width ===== */
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  min-width: 1180px !important;
+  table-layout: fixed !important;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 9px 10px !important;
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+}
+
+/* 1 ปุ่มเปิดรายละเอียด */
+.data-table th:nth-child(1),
+.data-table td:nth-child(1) {
+  width: 42px !important;
+}
+
+/* 2 วันที่ */
+.data-table th:nth-child(2),
+.data-table td:nth-child(2) {
+  width: 80px !important;
+}
+
+/* 3 แผนก */
+.data-table th:nth-child(3),
+.data-table td:nth-child(3) {
+  width: 75px !important;
+}
+
+/* 4 กะ */
+.data-table th:nth-child(4),
+.data-table td:nth-child(4) {
+  width: 65px !important;
+}
+
+/* 5 เครื่อง */
+.data-table th:nth-child(5),
+.data-table td:nth-child(5) {
+  width: 75px !important;
+}
+
+/* 6 ผู้บันทึก */
+.data-table th:nth-child(6),
+.data-table td:nth-child(6) {
+  width: 90px !important;
+}
+
+/* 7 ของเสีย kg */
+.data-table th:nth-child(7),
+.data-table td:nth-child(7) {
+  width: 90px !important;
+}
+
+/* 8 รายการปัญหา */
+.data-table th:nth-child(8),
+.data-table td:nth-child(8) {
+  width: 240px !important;
+}
+
+/* 9 ผลิต kg */
+.data-table th:nth-child(9),
+.data-table td:nth-child(9) {
+  width: 110px !important;
+}
+
+/* 10 % Waste */
+.data-table th:nth-child(10),
+.data-table td:nth-child(10) {
+  width: 80px !important;
+}
+
+/* 11 ผลประเมิน */
+.data-table th:nth-child(11),
+.data-table td:nth-child(11) {
+  width: 95px !important;
+}
+
+/* 12 สถานะ */
+.data-table th:nth-child(12),
+.data-table td:nth-child(12) {
+  width: 115px !important;
+}
+
+/* 13 จัดการ */
+.data-table th:nth-child(13),
+.data-table td:nth-child(13) {
+  width: 90px !important;
+}
+
+/* input ผลิต kg */
+.data-table td:nth-child(9) .cell-input {
+  width: 88px !important;
+  min-width: 0 !important;
+  max-width: 88px !important;
+  text-align: right;
+}
+
+/* รายการปัญหา */
+.problem-inline {
+  min-width: 0 !important;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* badge */
+.status-pill,
+.result-pill {
+  max-width: 100%;
+  padding: 5px 8px !important;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* ปุ่ม */
+.data-table td:nth-child(13) .btn {
+  width: 100%;
+  min-width: 0 !important;
+  min-height: 34px !important;
+  padding: 7px 8px !important;
+  font-size: 13px;
 }
