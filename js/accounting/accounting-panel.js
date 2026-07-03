@@ -248,21 +248,24 @@ async function saveGroup(key) {
   const uid = localStorage.getItem("activeUserId") || null;
   const { error } = await state.supabase
     .from(REPORT_TABLE)
-//     .update({
-//     production_kg: prod,
-//     status: STATUS_DONE,
-//     accounting_checked_by: uid,
-//     accounting_checked_at: new Date().toISOString(),
-//     updated_at: new Date().toISOString(),
-// })
-    .update({
-      total_qty: prod,
-      production_weight_kg: prod,
-      status: STATUS_DONE,
-      accounting_checked_by: uid,
-      accounting_checked_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
+
+   .update({
+  production_kg: prod,
+  status: STATUS_DONE,
+  accounting_status: STATUS_DONE,
+  accounting_checked_by: uid,
+  accounting_checked_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+})
+
+    // .update({
+    //   total_qty: prod,
+    //   production_weight_kg: prod,
+    //   status: STATUS_DONE,
+    //   accounting_checked_by: uid,
+    //   accounting_checked_at: new Date().toISOString(),
+    //   updated_at: new Date().toISOString(),
+    // })
     .in("id", g.ids);
   if (error) return showToast(`บันทึกไม่สำเร็จ: ${error.message}`, "error");
   showToast("บันทึกบัญชีเรียบร้อยแล้ว", "success");
@@ -283,15 +286,14 @@ function getResult(dept, percent, hasProd) {
 }
 function getProduction(r) {
     // return Number(r.production_kg || 0);
-  return (
-    Number(
-      r.production_weight_kg ||
-        r.total_qty ||
-        r.produced_weight_kg ||
-        r.production_qty ||
-        0,
-    ) || 0
-  );
+  function getProduction(r) {
+  return Number(
+    r.production_kg ||
+      r.total_qty ||
+      0
+  ) || 0;
+}
+
 }
 function getDeptName(c) {
   return state.standards[normalizeDept(c)]?.name || c || "-";
