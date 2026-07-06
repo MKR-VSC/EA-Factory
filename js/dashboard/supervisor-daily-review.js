@@ -27,8 +27,22 @@ let state = {
 document.addEventListener("DOMContentLoaded", async () => {
   state.supabase = window.supabaseClient || window.supabase;
   if (!state.supabase) return showToast("ไม่พบ Supabase Client", "error");
-  state.profile = getLocalProfile();
+
+  // ใช้ระบบ Auth กลางแทนการอ่าน localStorage ตรง ๆ
+  // หน้า Supervisor อนุญาตให้ supervisor / admin / management เข้าได้
+  if (window.AUTH_GUARD?.requireLogin) {
+    state.profile = await AUTH_GUARD.requireLogin([
+      "supervisor",
+      "admin",
+      "management",
+    ]);
+  } else {
+    // fallback เผื่อยังไม่ได้โหลด authGuard.js ในบางหน้า
+    state.profile = getLocalProfile();
+  }
+
   if (!state.profile?.role) return (location.href = "/login.html");
+
   setValue("filterDate", todayString());
   await loadDepartmentStandards();
   await loadAllowedDepartments();
@@ -734,7 +748,12 @@ function askConfirm(title, msg) {
     };
   });
 }
-function logoutNow() {
+async function logoutNow() {
+  if (window.AUTH_GUARD?.logoutAndRedirect) {
+    await AUTH_GUARD.logoutAndRedirect();
+    return;
+  }
+
   [
     "loginType",
     "activeUserId",

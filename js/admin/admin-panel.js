@@ -80,32 +80,16 @@ const state = {
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const authUser = await protectAdminPage();
-  if (!authUser) return;
+  const profile = await AUTH_GUARD.requireLogin(["admin"]);
 
-  initAdminPanel(authUser);
+  if (!profile?.is_system_owner) {
+    alert("คุณไม่มีสิทธิ์เข้าใช้งานหน้า Admin Panel");
+    window.location.href = LOGIN_PAGE;
+    return;
+  }
+
+  initAdminPanel(profile);
 });
-
-/* =========================================================
-   AUTH
-========================================================= */
-
-async function protectAdminPage() {
-  if (!window.supabaseClient?.auth) {
-    window.location.href = LOGIN_PAGE;
-    return null;
-  }
-
-  const { data, error } = await window.supabaseClient.auth.getUser();
-
-  if (error || !data?.user) {
-    clearLocalLogin();
-    window.location.href = LOGIN_PAGE;
-    return null;
-  }
-
-  return data.user;
-}
 
 function setButtonBusy(button, busy, loadingText = "กำลังบันทึก...") {
   if (!button) return;
@@ -159,16 +143,7 @@ async function logout() {
     }
 
     // ล้างข้อมูล Login
-    localStorage.removeItem("loginType");
-    localStorage.removeItem("activeUserId");
-    localStorage.removeItem("activeUser");
-    localStorage.removeItem("activeName");
-    localStorage.removeItem("activeRole");
-    localStorage.removeItem("activeDept");
-    localStorage.removeItem("activeDeptName");
-
-    sessionStorage.clear();
-
+    clearLocalLogin();
     // กลับหน้า Login
     window.location.href = LOGIN_PAGE;
 
@@ -185,7 +160,7 @@ async function logout() {
    INIT
 ========================================================= */
 
-async function initAdminPanel(authUser) {
+async function initAdminPanel(profile) {
   bindEvents();
 
   state.supabase = window.supabaseClient || window.supabase || null;
@@ -200,23 +175,13 @@ async function initAdminPanel(authUser) {
 
   await loadUsers();
 
-  const currentUserId = authUser.id;
-localStorage.setItem("activeUserId", authUser.id);
-
-  const currentUser = state.users.find((user) => {
-    return String(user.id) === String(currentUserId);
-  });
-
-  if (!currentUser?.is_system_owner) {
-    showAlert("คุณไม่มีสิทธิ์เข้าใช้งานหน้า Admin Panel");
-    window.location.href = LOGIN_PAGE;
-    return;
-  }
+  localStorage.setItem("activeUserId", profile.id);
 
   renderDepartmentQrList();
 
   await loadAll();
 }
+
 
 function bindEvents() {
   document.querySelectorAll(".sidebar-item").forEach((btn) => {

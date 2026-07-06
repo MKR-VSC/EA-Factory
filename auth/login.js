@@ -154,11 +154,11 @@ async function handlePasswordLogin(event) {
       throw new Error("ไม่พบข้อมูล Profile หรือบัญชีถูกปิดใช้งาน");
     }
 
-    const activeName =
-      profile.full_name ||
-      profile.display_name ||
-      profile.username ||
-      "พนักงาน PVT";
+    // const activeName =
+    //   profile.full_name ||
+    //   profile.display_name ||
+    //   profile.username ||
+    //   "พนักงาน PVT";
 
     if (rememberMeChecked) {
       localStorage.setItem("rememberedUser", usernameInput);
@@ -166,15 +166,7 @@ async function handlePasswordLogin(event) {
       localStorage.removeItem("rememberedUser");
     }
 
-    saveSession({
-      loginType: "supabase_auth",
-      userId: profile.id,
-      username: profile.username || usernameInput,
-      fullName: activeName,
-      department: (profile.department_code || profile.department || "").toLowerCase(),
-      departmentName: profile.department || profile.department_code || "",
-      role: profile.role || "staff",
-    });
+    AUTH_GUARD.saveProfileSession(profile, "supabase_auth");
 
     console.log("=== AUTH LOGIN SUCCESS ===");
     console.log("USER ID =", authData.user.id);
@@ -322,22 +314,25 @@ function handleQrLogin() {
   }
 
   const selected = select.options[select.selectedIndex];
-
   const userRole = selected.dataset.role || "staff";
 
-  saveSession({
-    loginType: "qr",
-    userId: select.value,
-    username: selected.dataset.username || "",
-    fullName: selected.dataset.fullName || "",
-    department:
-      selected.dataset.department || localStorage.getItem("qrDept") || "",
-    departmentName:
-      selected.dataset.departmentName ||
-      localStorage.getItem("qrDeptName") ||
-      "",
-    role: userRole,
-  });
+  AUTH_GUARD.saveProfileSession(
+    {
+      id: select.value,
+      username: selected.dataset.username || "",
+      full_name: selected.dataset.fullName || "",
+      display_name: selected.dataset.fullName || "",
+      department_code:
+        selected.dataset.department || localStorage.getItem("qrDept") || "",
+      department:
+        selected.dataset.departmentName ||
+        localStorage.getItem("qrDeptName") ||
+        "",
+      role: userRole,
+      status: "active",
+    },
+    "qr"
+  );
 
   redirectByRole(userRole || "staff");
 }
@@ -345,23 +340,6 @@ function handleQrLogin() {
 /* ======================================================
    SAVE SESSION
 ====================================================== */
-
-function saveSession(data) {
-  const role = window.ROLE_CONFIG
-    ? ROLE_CONFIG.normalizeRole(data.role)
-    : String(data.role || "staff").toLowerCase();
-
-  localStorage.setItem("loginType", data.loginType || "");
-  localStorage.setItem("activeUserId", data.userId || "");
-  localStorage.setItem("activeUser", data.username || "");
-  localStorage.setItem("activeName", data.fullName || data.username || "");
-  localStorage.setItem("activeDept", data.department || "");
-  localStorage.setItem(
-    "activeDeptName",
-    data.departmentName || data.department || "",
-  );
-  localStorage.setItem("activeRole", role);
-}
 
 /* ======================================================
    REDIRECT BY ROLE

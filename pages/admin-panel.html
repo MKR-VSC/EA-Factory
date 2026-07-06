@@ -93,7 +93,6 @@
         grid-column: 1 / -1;
       }
     </style>
-
   </head>
 
   <body>
@@ -146,7 +145,8 @@
           </button>
 
           <button class="sidebar-item" type="button" data-section="logs">
-            <span class="material-symbols-outlined">bug_report</span> System Logs
+            <span class="material-symbols-outlined">bug_report</span> System
+            Logs
           </button>
 
           <button
@@ -169,7 +169,8 @@
           </div>
 
           <button class="btn btn-secondary" type="button" id="btn-refresh">
-            <span class="material-symbols-outlined">refresh</span> โหลดข้อมูลใหม่
+            <span class="material-symbols-outlined">refresh</span>
+            โหลดข้อมูลใหม่
           </button>
         </header>
 
@@ -207,7 +208,10 @@
 
           <div class="panel">
             <div class="panel-head">
-              <h2><span class="material-symbols-outlined">list_alt</span> รายการของเสียล่าสุด</h2>
+              <h2>
+                <span class="material-symbols-outlined">list_alt</span>
+                รายการของเสียล่าสุด
+              </h2>
               <span id="last-update" class="muted">ยังไม่ได้โหลดข้อมูล</span>
             </div>
 
@@ -255,7 +259,10 @@
         ======================================================= -->
         <section id="section-masters" class="page-section">
           <div class="master-helper">
-            <h2><span class="material-symbols-outlined">settings</span> Master Data คืออะไร?</h2>
+            <h2>
+              <span class="material-symbols-outlined">settings</span> Master
+              Data คืออะไร?
+            </h2>
             <p>
               Master Data คือข้อมูลตั้งต้นสำหรับให้พนักงานเลือกในฟอร์ม เช่น แผนก
               เครื่องจักร อาการเสีย และกะการทำงาน
@@ -267,7 +274,10 @@
             <article class="panel">
               <div class="panel-head">
                 <div>
-                  <h2><span class="material-symbols-outlined">apartment</span> จัดการแผนก</h2>
+                  <h2>
+                    <span class="material-symbols-outlined">apartment</span>
+                    จัดการแผนก
+                  </h2>
                   <span class="muted"
                     >เพิ่มรหัสแผนกสำหรับใช้กับ QR และฟอร์ม</span
                   >
@@ -296,7 +306,10 @@
             <article class="panel">
               <div class="panel-head">
                 <div>
-                  <h2><span class="material-symbols-outlined">schedule</span> จัดการกะการทำงาน</h2>
+                  <h2>
+                    <span class="material-symbols-outlined">schedule</span>
+                    จัดการกะการทำงาน
+                  </h2>
                   <span class="muted">ใช้เป็นตัวเลือกกะในฟอร์มพนักงาน</span>
                 </div>
               </div>
@@ -346,7 +359,10 @@
             <article class="panel">
               <div class="panel-head">
                 <div>
-                  <h2><span class="material-symbols-outlined">settings</span> จัดการเครื่องจักรตามแผนก</h2>
+                  <h2>
+                    <span class="material-symbols-outlined">settings</span>
+                    จัดการเครื่องจักรตามแผนก
+                  </h2>
                   <span class="muted">
                     ตัวอย่าง BLOW: F1, F2 / PIPE: PIPE-01 — เพิ่มปุ่ม QR
                     ให้แต่ละเครื่องแล้ว
@@ -375,7 +391,10 @@
             <article class="panel">
               <div class="panel-head">
                 <div>
-                  <h2><span class="material-symbols-outlined">warning</span> จัดการหัวข้ออาการเสียตามแผนก</h2>
+                  <h2>
+                    <span class="material-symbols-outlined">warning</span>
+                    จัดการหัวข้ออาการเสียตามแผนก
+                  </h2>
                   <span class="muted"
                     >ตัวอย่าง ขอบเบี้ยว, รูรั่ว, ซีลไม่ติด</span
                   >
@@ -409,11 +428,23 @@
           <div class="users-hero-panel">
             <div>
               <span class="eyebrow">User Administration</span>
-              <h2><span class="material-symbols-outlined">admin_panel_settings</span> จัดการ User และ Role</h2>
-              <p>กำหนดสิทธิ์ผู้ใช้งาน แผนกหลัก และแผนกที่รับผิดชอบหลายแผนก สำหรับรองรับระบบจริง</p>
+              <h2>
+                <span class="material-symbols-outlined"
+                  >admin_panel_settings</span
+                >
+                จัดการ User และ Role
+              </h2>
+              <p>
+                กำหนดสิทธิ์ผู้ใช้งาน แผนกหลัก และแผนกที่รับผิดชอบหลายแผนก
+                สำหรับรองรับระบบจริง
+              </p>
             </div>
 
-            <button class="btn btn-primary btn-add-user-toggle" type="button" id="btn-toggle-user-form">
+            <button
+              class="btn btn-primary btn-add-user-toggle"
+              type="button"
+              id="btn-toggle-user-form"
+            >
               <span class="material-symbols-outlined">person_add</span>
               เพิ่ม User ใหม่
             </button>
@@ -445,13 +476,25 @@
             </article>
           </div>
 
-          <div class="panel user-create-panel is-collapsed" id="user-create-panel">
+          <div
+            class="panel user-create-panel is-collapsed"
+            id="user-create-panel"
+          >
             <div class="panel-head user-create-head">
               <div>
-                <h2><span class="material-symbols-outlined">person_add</span> เพิ่มผู้ใช้งานใหม่</h2>
-                <span class="muted">กรอกข้อมูลพื้นฐาน แล้วเลือกแผนกที่รับผิดชอบได้หลายแผนก</span>
+                <h2>
+                  <span class="material-symbols-outlined">person_add</span>
+                  เพิ่มผู้ใช้งานใหม่
+                </h2>
+                <span class="muted"
+                  >กรอกข้อมูลพื้นฐาน แล้วเลือกแผนกที่รับผิดชอบได้หลายแผนก</span
+                >
               </div>
-              <button class="btn btn-secondary btn-sm" type="button" id="btn-close-user-form">
+              <button
+                class="btn btn-secondary btn-sm"
+                type="button"
+                id="btn-close-user-form"
+              >
                 ปิดฟอร์ม
               </button>
             </div>
@@ -460,17 +503,29 @@
               <div class="user-form-grid">
                 <label>
                   Username
-                  <input type="text" id="user-username" placeholder="เช่น ADMIN01" />
+                  <input
+                    type="text"
+                    id="user-username"
+                    placeholder="เช่น ADMIN01"
+                  />
                 </label>
 
                 <label>
                   Password
-                  <input type="text" id="user-password" placeholder="รหัสผ่าน" />
+                  <input
+                    type="text"
+                    id="user-password"
+                    placeholder="รหัสผ่าน"
+                  />
                 </label>
 
                 <label>
                   ชื่อแสดงผล
-                  <input type="text" id="user-display-name" placeholder="ชื่อที่ต้องการให้แสดงในระบบ" />
+                  <input
+                    type="text"
+                    id="user-display-name"
+                    placeholder="ชื่อที่ต้องการให้แสดงในระบบ"
+                  />
                 </label>
 
                 <label>
@@ -496,18 +551,30 @@
                 <div class="permission-head">
                   <div>
                     <strong>แผนกที่รับผิดชอบ</strong>
-                    <span class="muted">ใช้สำหรับ Supervisor ที่ดูแลหลายแผนก เลือกได้มากกว่า 1 แผนก</span>
+                    <span class="muted"
+                      >ใช้สำหรับ Supervisor ที่ดูแลหลายแผนก เลือกได้มากกว่า 1
+                      แผนก</span
+                    >
                   </div>
-                  <span class="permission-count" id="user-create-dept-count">0 แผนก</span>
+                  <span class="permission-count" id="user-create-dept-count"
+                    >0 แผนก</span
+                  >
                 </div>
 
-                <div id="user-department-permissions" class="dept-checkbox-grid dept-card-grid">
+                <div
+                  id="user-department-permissions"
+                  class="dept-checkbox-grid dept-card-grid"
+                >
                   <span class="muted">กำลังโหลดรายชื่อแผนก...</span>
                 </div>
               </div>
 
               <div class="user-create-actions">
-                <button class="btn btn-secondary" type="button" id="btn-clear-user-form">
+                <button
+                  class="btn btn-secondary"
+                  type="button"
+                  id="btn-clear-user-form"
+                >
                   ล้างข้อมูล
                 </button>
                 <button class="btn btn-primary" type="button" id="btn-add-user">
@@ -521,8 +588,13 @@
           <div class="panel user-list-panel">
             <div class="panel-head user-list-head">
               <div>
-                <h2><span class="material-symbols-outlined">manage_accounts</span> รายการผู้ใช้งาน</h2>
-                <span class="muted">ค้นหา เปลี่ยน Role/Status หรือแก้ไขข้อมูลผู้ใช้งาน</span>
+                <h2>
+                  <span class="material-symbols-outlined">manage_accounts</span>
+                  รายการผู้ใช้งาน
+                </h2>
+                <span class="muted"
+                  >ค้นหา เปลี่ยน Role/Status หรือแก้ไขข้อมูลผู้ใช้งาน</span
+                >
               </div>
             </div>
 
@@ -566,7 +638,10 @@
           <div class="panel">
             <div class="panel-head">
               <div>
-                <h2><span class="material-symbols-outlined">qr_code</span> จัดการ QR แผนก</h2>
+                <h2>
+                  <span class="material-symbols-outlined">qr_code</span> จัดการ
+                  QR แผนก
+                </h2>
                 <span class="muted">
                   สำหรับสร้างลิงก์ / QR Code ไปติดที่บั๊กเกตของเสียแต่ละแผนก
                 </span>
@@ -588,7 +663,10 @@
           <div class="panel">
             <div class="panel-head">
               <div>
-                <h2><span class="material-symbols-outlined">qr_code</span> จัดการ QR รายเครื่อง</h2>
+                <h2>
+                  <span class="material-symbols-outlined">qr_code</span> จัดการ
+                  QR รายเครื่อง
+                </h2>
                 <span class="muted">
                   เลือกแผนก แล้วระบบจะดึงเครื่องจักรจาก Master Data มาสร้าง QR
                   ให้ทีละเครื่อง
@@ -612,7 +690,8 @@
                 type="button"
                 id="btn-refresh-machine-qr"
               >
-                <span class="material-symbols-outlined">refresh</span> รีเฟรชรายการ
+                <span class="material-symbols-outlined">refresh</span>
+                รีเฟรชรายการ
               </button>
 
               <button
@@ -620,7 +699,8 @@
                 type="button"
                 id="btn-print-machine-qr"
               >
-                <span class="material-symbols-outlined">print</span> พิมพ์ QR ทั้งแผนก
+                <span class="material-symbols-outlined">print</span> พิมพ์ QR
+                ทั้งแผนก
               </button>
             </div>
 
@@ -637,7 +717,12 @@
         ======================================================= -->
         <section id="section-logs" class="page-section">
           <div class="panel">
-            <div class="panel-head"><h2><span class="material-symbols-outlined">bug_report</span> System Logs</h2></div>
+            <div class="panel-head">
+              <h2>
+                <span class="material-symbols-outlined">bug_report</span> System
+                Logs
+              </h2>
+            </div>
 
             <div class="table-scroll">
               <table>
@@ -666,7 +751,10 @@
           <div class="panel">
             <div class="panel-head">
               <div>
-                <h2><span class="material-symbols-outlined">history</span> ประวัติการใช้งานระบบ</h2>
+                <h2>
+                  <span class="material-symbols-outlined">history</span>
+                  ประวัติการใช้งานระบบ
+                </h2>
                 <span class="muted">
                   ดูว่าใครเข้าใช้งาน ทำอะไร เวลาไหน ใช้อุปกรณ์อะไร
                 </span>
@@ -714,7 +802,9 @@
       <div class="modal-card">
         <div class="modal-head">
           <div>
-            <h2><span class="material-symbols-outlined">edit</span> แก้ไข User</h2>
+            <h2>
+              <span class="material-symbols-outlined">edit</span> แก้ไข User
+            </h2>
             <p>แก้ไขข้อมูลผู้ใช้งานและสิทธิ์การเข้าใช้งาน</p>
           </div>
 
@@ -775,11 +865,19 @@
             <div class="permission-head">
               <div>
                 <strong>แผนกที่รับผิดชอบ</strong>
-                <span class="muted">เลือกได้หลายแผนก เหมาะสำหรับ Supervisor ที่ดูแลมากกว่า 1 แผนก</span>
+                <span class="muted"
+                  >เลือกได้หลายแผนก เหมาะสำหรับ Supervisor ที่ดูแลมากกว่า 1
+                  แผนก</span
+                >
               </div>
-              <span class="permission-count" id="edit-user-dept-count">0 แผนก</span>
+              <span class="permission-count" id="edit-user-dept-count"
+                >0 แผนก</span
+              >
             </div>
-            <div id="edit-user-department-permissions" class="dept-checkbox-grid dept-card-grid">
+            <div
+              id="edit-user-department-permissions"
+              class="dept-checkbox-grid dept-card-grid"
+            >
               <span class="muted">กำลังโหลดรายชื่อแผนก...</span>
             </div>
           </div>
@@ -801,53 +899,45 @@
       </div>
     </div>
 
-     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Core -->
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/roleConfig.js"></script>
     <script src="/core/departmentConfig.js"></script>
-    <!-- <script src="/core/shiftConfig.js"></script> -->
-     <script src="/services/popupService.js"></script>
+    <script src="/auth/authGuard.js"></script>
+
+    <!-- Services -->
+    <script src="/services/popupService.js"></script>
     <script src="/services/loadingService.js"></script>
+
+    <!-- Page -->
     <script src="/js/admin/admin-panel.js"></script>
 
     <!-- =====================================================
      CONFIRM POPUP
 ===================================================== -->
 
-<div id="app-confirm" class="app-confirm hidden">
-  <div class="app-confirm-box">
+    <div id="app-confirm" class="app-confirm hidden">
+      <div class="app-confirm-box">
+        <h3 id="app-confirm-title">ยืนยันการทำรายการ</h3>
 
-    <h3 id="app-confirm-title">
-      ยืนยันการทำรายการ
-    </h3>
+        <p id="app-confirm-message">ต้องการดำเนินการใช่ไหม?</p>
 
-    <p id="app-confirm-message">
-      ต้องการดำเนินการใช่ไหม?
-    </p>
+        <div class="app-confirm-actions">
+          <button
+            type="button"
+            id="app-confirm-cancel"
+            class="btn btn-secondary"
+          >
+            ยกเลิก
+          </button>
 
-    <div class="app-confirm-actions">
-
-      <button
-        type="button"
-        id="app-confirm-cancel"
-        class="btn btn-secondary"
-      >
-        ยกเลิก
-      </button>
-
-      <button
-        type="button"
-        id="app-confirm-ok"
-        class="btn btn-danger"
-      >
-        ตกลง
-      </button>
-
+          <button type="button" id="app-confirm-ok" class="btn btn-danger">
+            ตกลง
+          </button>
+        </div>
+      </div>
     </div>
-
-  </div>
-</div>
-
-   
   </body>
 </html>
