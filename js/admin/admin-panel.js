@@ -79,24 +79,32 @@ const state = {
   shifts: [],
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-  if (!protectAdminPage()) return;
-  initAdminPanel();
+document.addEventListener("DOMContentLoaded", async () => {
+  const authUser = await protectAdminPage();
+  if (!authUser) return;
+
+  initAdminPanel(authUser);
 });
 
 /* =========================================================
    AUTH
 ========================================================= */
 
-function protectAdminPage() {
-  const activeUserId = localStorage.getItem("activeUserId");
-
-  if (!activeUserId) {
+async function protectAdminPage() {
+  if (!window.supabaseClient?.auth) {
     window.location.href = LOGIN_PAGE;
-    return false;
+    return null;
   }
 
-  return true;
+  const { data, error } = await window.supabaseClient.auth.getUser();
+
+  if (error || !data?.user) {
+    clearLocalLogin();
+    window.location.href = LOGIN_PAGE;
+    return null;
+  }
+
+  return data.user;
 }
 
 function setButtonBusy(button, busy, loadingText = "กำลังบันทึก...") {
@@ -114,6 +122,19 @@ function setButtonBusy(button, busy, loadingText = "กำลังบันท�
   const originalHtml = button.dataset.originalHtml || button.innerHTML;
   button.innerHTML = originalHtml;
 }
+
+function clearLocalLogin() {
+  localStorage.removeItem("loginType");
+  localStorage.removeItem("activeUserId");
+  localStorage.removeItem("activeUser");
+  localStorage.removeItem("activeName");
+  localStorage.removeItem("activeRole");
+  localStorage.removeItem("activeDept");
+  localStorage.removeItem("activeDeptName");
+  sessionStorage.clear();
+}
+
+
 
 // =========================================================
 // LOGOUT
@@ -164,7 +185,7 @@ async function logout() {
    INIT
 ========================================================= */
 
-async function initAdminPanel() {
+async function initAdminPanel(authUser) {
   bindEvents();
 
   state.supabase = window.supabaseClient || window.supabase || null;
@@ -179,7 +200,8 @@ async function initAdminPanel() {
 
   await loadUsers();
 
-  const currentUserId = localStorage.getItem("activeUserId");
+  const currentUserId = authUser.id;
+localStorage.setItem("activeUserId", authUser.id);
 
   const currentUser = state.users.find((user) => {
     return String(user.id) === String(currentUserId);
@@ -1011,8 +1033,11 @@ async function saveUserDepartments(userId, departmentCodes = []) {
     }));
 
     const { error: insertError } = await state.supabase
-      .from(USER_DEPARTMENT_TABLE)
-      .insert(rows);
+  .from(USER_DEPARTMENT_TABLE)
+  .upsert(rows, {
+    onConflict: "user_id,department_code",
+    ignoreDuplicates: true,
+  });
 
     if (insertError) throw insertError;
   } catch (err) {
