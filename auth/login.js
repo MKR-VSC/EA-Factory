@@ -117,32 +117,41 @@ async function handlePasswordLogin(event) {
 
     showLoginOverlay();
 
+    const loginEmail = `${usernameInput.toLowerCase()}@pvt.local`;
+
+    const { data: authData, error: authError } =
+      await sb.auth.signInWithPassword({
+        email: loginEmail,
+        password: passwordInput,
+      });
+
+    if (authError || !authData?.user) {
+      throw authError || new Error("Auth login failed");
+    }
+
     const { data: profile, error } = await sb
       .from("profiles")
-      .select(
-        `
-    id,
-    email,
-    username,
-    full_name,
-    display_name,
-    department,
-    department_code,
-    role,
-    status
-  `,
-      )
-      .ilike("username", usernameInput)
-      .eq("password", passwordInput)
+      .select(`
+        id,
+        email,
+        username,
+        full_name,
+        display_name,
+        department,
+        department_code,
+        role,
+        status,
+        is_system_owner
+      `)
+      .eq("id", authData.user.id)
       .in("status", ["active", "Active", "ACTIVE"])
       .maybeSingle();
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     if (!profile) {
-      throw new Error("Invalid login");
+      await sb.auth.signOut();
+      throw new Error("ไม่พบข้อมูล Profile หรือบัญชีถูกปิดใช้งาน");
     }
 
     const activeName =
@@ -151,24 +160,26 @@ async function handlePasswordLogin(event) {
       profile.username ||
       "พนักงาน PVT";
 
+    if (rememberMeChecked) {
+      localStorage.setItem("rememberedUser", usernameInput);
+    } else {
+      localStorage.removeItem("rememberedUser");
+    }
+
     saveSession({
-      loginType: "password",
+      loginType: "supabase_auth",
       userId: profile.id,
       username: profile.username || usernameInput,
       fullName: activeName,
-      department:
-  (profile.department_code || profile.department || "").toLowerCase(),
+      department: (profile.department_code || profile.department || "").toLowerCase(),
       departmentName: profile.department || profile.department_code || "",
       role: profile.role || "staff",
     });
 
-    console.log("=== LOGIN SUCCESS ===");
+    console.log("=== AUTH LOGIN SUCCESS ===");
+    console.log("USER ID =", authData.user.id);
     console.log("ROLE =", profile.role);
     console.log("DEPT =", profile.department_code);
-    console.log(
-      "TARGET =",
-      ROLE_CONFIG.getDefaultPage(profile.role || "staff"),
-    );
 
     redirectByRole(profile.role || "staff");
   } catch (err) {
