@@ -46,7 +46,14 @@ if (typeof supabase === 'undefined') {
 }
 
 // สร้าง client
-const supabaseClient = supabase.createClient(config.url, config.anonKey);
+const supabaseClient = supabase.createClient(config.url, config.anonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage,
+  },
+});
 
 // ===== 4. LOG และ BADGE =====
 const envEmoji = ENV === 'production' ? '🏪' : '🧪';
