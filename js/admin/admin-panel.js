@@ -1970,6 +1970,7 @@ function closeEditUserModal() {
 
 async function saveEditUser() {
   hideAlert();
+
   const userId = getValue("edit-user-id");
   const username = getValue("edit-username").toUpperCase();
   const displayName = getValue("edit-display-name");
@@ -1977,9 +1978,11 @@ async function saveEditUser() {
   const role = getValue("edit-role") || "staff";
   const status = getValue("edit-status") || "active";
   const password = getValue("edit-password");
+
   const selectedDepartments = getCheckedDepartmentCodes(
     "edit_user_dept_permissions",
   );
+
   const finalDepartments = selectedDepartments.length
     ? selectedDepartments
     : department
@@ -1996,65 +1999,69 @@ async function saveEditUser() {
     return;
   }
 
-  const duplicate = state.users.some((user) => {
-    return (
-      String(user.id) !== String(userId) &&
-      String(user.username || "").toUpperCase() === username
-    );
-  });
-
-  if (duplicate) {
-    showAlert(`Username ${username} มีอยู่แล้ว`);
-    return;
-  }
-
   const primaryDepartment = department || finalDepartments[0] || "";
-
-  const payload = {
-    username,
-    display_name: displayName || username,
-    full_name: displayName || username,
-    department: primaryDepartment,
-    department_code: primaryDepartment,
-    role,
-    status,
-    email: `${username.toLowerCase()}@pvt.local`,
-  };
-
-  if (password) {
-    payload.password = password;
-  }
-
   const btn = document.getElementById("btn-save-edit-user");
+
   setButtonBusy(btn, true);
 
-  const { error } = await state.supabase
-    .from(PROFILE_TABLE)
-    .update(payload)
-    .eq("id", userId);
-
-  if (error) {
-    setButtonBusy(btn, false);
-    showAlert(`แก้ไข User ไม่สำเร็จ: ${error.message}`);
-    addLog("ERROR", error.message);
-    return;
-  }
-
   try {
+    const body = {
+      user_id: userId,
+      username,
+      display_name: displayName || username,
+      full_name: displayName || username,
+      department: primaryDepartment,
+      department_code: primaryDepartment,
+      role,
+      status,
+      email: `${username.toLowerCase()}@pvt.local`,
+    };
+
+    if (password) {
+      body.password = password;
+    }
+
+    const { data, error } = await state.supabase.functions.invoke(
+      "admin-update-user",
+      { body },
+    );
+
+    if (error) {
+      console.error("Edge Function raw error:", error);
+
+      let detail = error.message || "เรียก Edge Function ไม่สำเร็จ";
+
+      try {
+        if (error.context) {
+          const text = await error.context.text();
+          console.error("Edge Function response:", text);
+          detail = text;
+        }
+      } catch (e) {
+        console.warn("อ่าน error response ไม่ได้:", e);
+      }
+
+      throw new Error(detail);
+    }
+
+    if (!data?.ok) {
+      throw new Error(data?.message || "แก้ไข User ไม่สำเร็จ");
+    }
+
     await saveUserDepartments(userId, finalDepartments);
+
+    closeEditUserModal();
+    addLog("INFO", `แก้ไข User สำเร็จ: ${username}`);
+    await loadUsers();
+
+    showAlert(`บันทึกข้อมูล User ${username} สำเร็จ`);
   } catch (err) {
-    setButtonBusy(btn, false);
-    showAlert(err.message || String(err));
+    console.error("Save Edit User Error:", err);
+    showAlert(err.message || "แก้ไข User ไม่สำเร็จ");
     addLog("ERROR", err.message || String(err));
-    return;
+  } finally {
+    setButtonBusy(btn, false);
   }
-
-  setButtonBusy(btn, false);
-
-  closeEditUserModal();
-  addLog("INFO", `แก้ไข User สำเร็จ: ${username}`);
-  await loadUsers();
-  showAlert(`บันทึกข้อมูล User ${username} สำเร็จ`);
 }
 
 function clearUserForm() {

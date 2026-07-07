@@ -36,8 +36,8 @@ serve(async (req) => {
 
     if (!username) return fail("กรุณาระบุ Username", 400);
     if (!password) return fail("กรุณาระบุ Password", 400);
-    if (password.length < 4) {
-      return fail("Password ต้องมีอย่างน้อย 4 ตัวอักษร", 400);
+    if (password.length < 6) {
+      return fail("Password ต้องมีอย่างน้อย 6 ตัวอักษร", 400);
     }
 
     const { data: existingProfile, error: existingProfileError } = await admin
