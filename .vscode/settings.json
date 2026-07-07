@@ -1,13 +1,33 @@
 {
   "folder-color.pathColors": [],
   "liveServer.settings.port": 5501,
-
   "[markdown]": {
     "editor.spellCheck": false
   },
-
   "cSpell.enabled": false,
   "errorLens.enabled": false,
   "cSpell.diagnosticLevel": "Hint",
-"cSpell.enableFiletypes": []
+  "cSpell.enableFiletypes": [],
+  "deno.enablePaths": [
+    "supabase/functions"
+  ],
+  "deno.lint": true,
+  "deno.unstable": [
+    "bare-node-builtins",
+    "byonm",
+    "sloppy-imports",
+    "unsafe-proto",
+    "webgpu",
+    "broadcast-channel",
+    "worker-options",
+    "cron",
+    "kv",
+    "ffi",
+    "fs",
+    "http",
+    "net"
+  ],
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  }
 }

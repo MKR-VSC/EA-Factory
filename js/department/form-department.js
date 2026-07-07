@@ -63,10 +63,10 @@ const machineFromUrl = urlParams.get("machine");
 const QR_DEPT = deptFromUrl;
 const QR_MACHINE = normalizeMachineNo(machineFromUrl);
 
-const activeRoleRaw = localStorage.getItem("activeRole") || "staff";
-const activeUserId = localStorage.getItem("activeUserId") || "";
+let activeRoleRaw = localStorage.getItem("activeRole") || "staff";
+let activeUserId = localStorage.getItem("activeUserId") || "";
 
-const currentDeptRaw = QR_DEPT || localStorage.getItem("activeDept") || "";
+let currentDeptRaw = QR_DEPT || localStorage.getItem("activeDept") || "";
 
 let currentDept = normalizeDept(currentDeptRaw);
 let appSelectedMachine = QR_MACHINE || "";
@@ -315,11 +315,72 @@ async function forceLogoutByIdle() {
     console.warn(err);
   }
 
-  localStorage.clear();
+  clearAuthLocalSession();
 
   alert("ไม่มีการใช้งานเกิน 5 นาที ระบบออกจากระบบอัตโนมัติ");
 
   window.location.href = "/login.html";
+}
+
+// =========================================================
+// AUTH CONTEXT
+// ---------------------------------------------------------
+// รองรับทั้ง Supabase Auth ปกติ และ QR Mode ที่บันทึก session แบบ local
+// =========================================================
+
+function isQrLocalLogin() {
+  return localStorage.getItem("loginType") === "qr";
+}
+
+function clearAuthLocalSession() {
+  [
+    "loginType",
+    "activeUserId",
+    "activeUser",
+    "activeName",
+    "activeRole",
+    "activeDept",
+    "activeDeptName",
+    "ea_profile",
+  ].forEach((key) => localStorage.removeItem(key));
+}
+
+function refreshLocalAuthContext(profile = null) {
+  if (profile) {
+    activeRoleRaw = profile.role || localStorage.getItem("activeRole") || "staff";
+    activeUserId = profile.id || localStorage.getItem("activeUserId") || "";
+  } else {
+    activeRoleRaw = localStorage.getItem("activeRole") || "staff";
+    activeUserId = localStorage.getItem("activeUserId") || "";
+  }
+
+  currentDeptRaw = QR_DEPT || localStorage.getItem("activeDept") || currentDeptRaw || "";
+  currentDept = normalizeDept(currentDeptRaw);
+}
+
+async function prepareFormAuthContext() {
+  // QR Login ไม่มี Supabase session จึงใช้ localStorage session ที่ login.js สร้างไว้
+  if (isQrLocalLogin()) {
+    refreshLocalAuthContext();
+    return true;
+  }
+
+  if (window.AUTH_GUARD?.requireLogin) {
+    const profile = await AUTH_GUARD.requireLogin([
+      "admin",
+      "supervisor",
+      "staff",
+    ]);
+
+    if (!profile) return false;
+
+    refreshLocalAuthContext(profile);
+    return true;
+  }
+
+  // fallback สำหรับกรณีโหลด authGuard.js ไม่ทันหรือยังไม่ได้ผูกใน HTML
+  refreshLocalAuthContext();
+  return Boolean(activeUserId || getActiveUserName() || QR_DEPT);
 }
 
 // =========================================================
@@ -328,13 +389,8 @@ async function forceLogoutByIdle() {
 
 window.addEventListener("DOMContentLoaded", async () => {
   try {
-    if (
-      typeof window.protectPage === "function" &&
-      localStorage.getItem("activeUserId")
-    ) {
-      const canContinue = window.protectPage();
-      if (!canContinue) return;
-    }
+    const canContinue = await prepareFormAuthContext();
+    if (!canContinue) return;
 
     // logout auto
     startAutoLogoutTimer();
@@ -1719,11 +1775,7 @@ function isQrMode() {
 
 // กลับหน้า Login และล้างข้อมูลคนกรอก
 function goBackToLogin() {
-  localStorage.removeItem("activeUser");
-  localStorage.removeItem("activeName");
-  localStorage.removeItem("activeRole");
-  localStorage.removeItem("activeUserId");
-  localStorage.removeItem("activeDept");
+  clearAuthLocalSession();
 
   window.location.href = "/login.html";
 }
@@ -1733,11 +1785,7 @@ function goBackToLogin() {
 // 1) สแกน QR ใหม่
 // 2) กลับหน้า Login
 function goToQrSuccessPage() {
-  localStorage.removeItem("activeUser");
-  localStorage.removeItem("activeName");
-  localStorage.removeItem("activeRole");
-  localStorage.removeItem("activeUserId");
-  localStorage.removeItem("activeDept");
+  clearAuthLocalSession();
 
   window.location.href = "/pages/qr-success.html";
 }
@@ -1783,11 +1831,7 @@ async function handleLogout() {
     console.warn("Supabase signOut error:", err);
   }
 
-  localStorage.removeItem("activeUser");
-  localStorage.removeItem("activeName");
-  localStorage.removeItem("activeRole");
-  localStorage.removeItem("activeUserId");
-  // localStorage.removeItem("activeDept");
+  clearAuthLocalSession();
 
   window.location.href = "/login.html";
 }

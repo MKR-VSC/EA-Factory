@@ -1,19 +1,42 @@
-﻿/* ======================================================
+/* ======================================================
    accounting-panel.js - GO LIVE v1.0
 ====================================================== */
 const REPORT_TABLE = "daily_waste_reports";
 const ITEM_TABLE = "daily_waste_report_items";
 const STATUS_SENT = "sent_accounting";
 const STATUS_DONE = "accounting_checked";
-let state = { supabase: null, reports: [], groups: [], standards: {} };
+let state = {
+  supabase: null,
+  currentUser: null,
+  reports: [],
+  groups: [],
+  standards: {},
+};
+
+
 document.addEventListener("DOMContentLoaded", async () => {
+  const profile = await AUTH_GUARD.requireLogin([
+    "accounting",
+    "admin",
+    "management"
+  ]);
+
+  if (!profile) return;
+
+  state.currentUser = profile;
   state.supabase = window.supabaseClient || window.supabase;
-  if (!state.supabase) return showToast("ไม่พบ Supabase Client", "error");
+
+  if (!state.supabase) {
+    return showToast("ไม่พบ Supabase Client", "error");
+  }
+
   setDefaultMonth();
   bindEvents();
   await loadStandards();
   await loadAccountingData();
 });
+
+
 function bindEvents() {
   ["filterMonth", "filterDept", "filterStatus", "searchInput"].forEach((id) =>
     document
