@@ -78,12 +78,15 @@ b4cfe83d-03e0-491d-8819-d49ac964a316
 # ขั้นตอนที่ 3 ดูข้อมูลใน Profiles
 
 ```sql
-select
-    id,
-    username,
-    email
+
+select id as old_profile_id, username, email
 from profiles
-where username='ADMINACC';
+where username = 'ADMINACC';
+
+select id as new_auth_id, email
+from auth.users
+where email = 'adminacc@pvt.local';
+
 ```
 
 จำ id เดิมไว้
@@ -93,9 +96,11 @@ where username='ADMINACC';
 # ขั้นตอนที่ 4 ลบข้อมูล user_departments ของ id เดิม
 
 ```sql
+
 delete
 from user_departments
 where user_id='OLD_PROFILE_ID';
+
 ```
 
 เช่น
@@ -111,6 +116,8 @@ where user_id='xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
 # ขั้นตอนที่ 5 เปลี่ยน Profiles ให้ตรงกับ Auth
 
 ```sql
+
+
 update profiles
 set
 
@@ -123,6 +130,8 @@ set
     status='active'
 
 where username='ADMINACC';
+
+
 ```
 
 ---
@@ -132,6 +141,8 @@ where username='ADMINACC';
 ตัวอย่าง
 
 ```sql
+
+
 insert into user_departments
 (
     user_id,
@@ -142,6 +153,9 @@ values
     'NEW_AUTH_UID',
     'ACCOUNTING'
 );
+
+
+
 ```
 
 ถ้ามีหลายแผนก
@@ -357,3 +371,33 @@ Redirect ตาม Role
 □ Add User อัตโนมัติ (สร้าง Auth + Profiles + User Departments)
 
 เมื่อเสร็จ ผู้ดูแลระบบจะไม่ต้องเข้า Supabase Dashboard อีกต่อไป
+
+
+```sql
+
+-- 1) ลบสิทธิ์แผนกของ id เก่าก่อน
+delete from user_departments
+where user_id = '8bee3b61-88ea-4953-bb71-7c7e703d6c19';
+
+-- 2) เปลี่ยน profiles.id ให้ตรงกับ Auth UID
+update profiles
+set
+  id = '3129c8ed-5d6f-400a-927a-7c2b1d07f401',
+  email = 'h_blow@pvt.local',
+  role = 'supervisor',
+  status = 'active'
+where username = 'HBLOW';
+
+-- 3) เช็คผล
+select
+  p.id as profile_id,
+  p.username,
+  p.email,
+  u.id as auth_id,
+  u.email as auth_email
+from profiles p
+join auth.users u
+  on p.id = u.id
+where p.username = 'HBLOW';
+
+```

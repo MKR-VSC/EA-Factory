@@ -117,7 +117,19 @@ async function handlePasswordLogin(event) {
 
     showLoginOverlay();
 
-    const loginEmail = `${usernameInput.toLowerCase()}@pvt.local`;
+    const { data: userProfile, error: profileError } = await sb
+      .from("profiles")
+      .select("email")
+      .eq("username", usernameInput)
+      .maybeSingle();
+
+    if (profileError) throw profileError;
+
+    if (!userProfile) {
+      throw new Error("ไม่พบ Username");
+    }
+
+    const loginEmail = userProfile.email;
 
     const { data: authData, error: authError } =
       await sb.auth.signInWithPassword({
@@ -131,7 +143,8 @@ async function handlePasswordLogin(event) {
 
     const { data: profile, error } = await sb
       .from("profiles")
-      .select(`
+      .select(
+        `
         id,
         email,
         username,
@@ -142,7 +155,8 @@ async function handlePasswordLogin(event) {
         role,
         status,
         is_system_owner
-      `)
+      `,
+      )
       .eq("id", authData.user.id)
       .in("status", ["active", "Active", "ACTIVE"])
       .maybeSingle();
@@ -331,7 +345,7 @@ function handleQrLogin() {
       role: userRole,
       status: "active",
     },
-    "qr"
+    "qr",
   );
 
   redirectByRole(userRole || "staff");
@@ -383,7 +397,8 @@ function openQrScanner() {
 
   // ถ้าต้องการให้ไปหน้าสแกน QR แยก
   // window.location.href = "/html/qr-scanner.html";
-  window.location.href = "https://ea-factory-2sx.pages.dev/pages/form-department.html?dept=SHEET";
+  window.location.href =
+    "https://ea-factory-2sx.pages.dev/pages/form-department.html?dept=SHEET";
 }
 
 let qrScanner = null;
@@ -442,7 +457,6 @@ function onQrScanSuccess(decodedText) {
   if (qrScanner) {
     qrScanner.stop();
   }
-  
 
   /*
     ตัวอย่าง QR

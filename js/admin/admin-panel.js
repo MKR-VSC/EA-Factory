@@ -118,25 +118,18 @@ function clearLocalLogin() {
   sessionStorage.clear();
 }
 
-
-
 // =========================================================
 // LOGOUT
 // =========================================================
 
 async function logout() {
-
   // แสดง Popup ยืนยัน
-  const ok = await showConfirm(
-    "ต้องการออกจากระบบใช่ไหม?",
-    "ออกจากระบบ"
-  );
+  const ok = await showConfirm("ต้องการออกจากระบบใช่ไหม?", "ออกจากระบบ");
 
   // ถ้ากดยกเลิก
   if (!ok) return;
 
   try {
-
     // Logout Supabase
     if (window.supabaseClient?.auth) {
       await window.supabaseClient.auth.signOut();
@@ -146,14 +139,10 @@ async function logout() {
     clearLocalLogin();
     // กลับหน้า Login
     window.location.href = LOGIN_PAGE;
-
   } catch (err) {
-
     console.error(err);
 
-    showAlert(
-      "ออกจากระบบไม่สำเร็จ"
-    );
+    showAlert("ออกจากระบบไม่สำเร็จ");
   }
 }
 /* =========================================================
@@ -181,7 +170,6 @@ async function initAdminPanel(profile) {
 
   await loadAll();
 }
-
 
 function bindEvents() {
   document.querySelectorAll(".sidebar-item").forEach((btn) => {
@@ -316,8 +304,8 @@ function showSection(section, activeBtn) {
 
   document.getElementById(`section-${section}`)?.classList.add("active");
   if (section === "activity-logs") {
-  loadActivityLogs();
-}
+    loadActivityLogs();
+  }
 }
 
 /* =========================================================
@@ -327,10 +315,7 @@ function showSection(section, activeBtn) {
 async function loadAll() {
   hideAlert();
 
-  LoadingService?.show(
-    "กำลังโหลดข้อมูล",
-    "ระบบกำลังดึงข้อมูลล่าสุด"
-  );
+  LoadingService?.show("กำลังโหลดข้อมูล", "ระบบกำลังดึงข้อมูลล่าสุด");
 
   const btn = document.getElementById("btn-refresh");
   if (btn) btn.disabled = true;
@@ -443,7 +428,8 @@ async function loadMasters() {
 async function loadUsers() {
   const { data, error } = await state.supabase
     .from(PROFILE_TABLE)
-    .select(`
+    .select(
+      `
   id,
   username,
   password,
@@ -456,7 +442,8 @@ async function loadUsers() {
   status,
   is_system_owner,
   created_at
-`)
+`,
+    )
     .order("username", { ascending: true });
 
   if (error) {
@@ -711,8 +698,7 @@ function renderDepartments() {
   if (!list) return;
 
   if (!state.departments.length) {
-    list.innerHTML =
-      `<li><span class="muted">ยังไม่มีข้อมูลแผนก</span></li>`;
+    list.innerHTML = `<li><span class="muted">ยังไม่มีข้อมูลแผนก</span></li>`;
     return;
   }
 
@@ -819,19 +805,27 @@ function renderUserDepartmentOptions() {
 }
 
 function renderUserDepartmentPermissionBoxes() {
-  renderDepartmentCheckboxGroup("user-department-permissions", "user_dept_permissions");
-  renderDepartmentCheckboxGroup("edit-user-department-permissions", "edit_user_dept_permissions");
+  renderDepartmentCheckboxGroup(
+    "user-department-permissions",
+    "user_dept_permissions",
+  );
+  renderDepartmentCheckboxGroup(
+    "edit-user-department-permissions",
+    "edit_user_dept_permissions",
+  );
 }
 
-function renderDepartmentCheckboxGroup(containerId, inputName, selectedCodes = []) {
+function renderDepartmentCheckboxGroup(
+  containerId,
+  inputName,
+  selectedCodes = [],
+) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
   const departments = getQrDepartments();
   const selectedSet = new Set(
-    (selectedCodes || [])
-      .map((code) => normalizeDept(code))
-      .filter(Boolean),
+    (selectedCodes || []).map((code) => normalizeDept(code)).filter(Boolean),
   );
 
   if (!departments.length) {
@@ -886,22 +880,27 @@ function closeUserCreatePanel() {
 
 function updatePermissionCounterByInput(inputName) {
   const count = getCheckedDepartmentCodes(inputName).length;
-  const targetId = inputName === "edit_user_dept_permissions"
-    ? "edit-user-dept-count"
-    : "user-create-dept-count";
+  const targetId =
+    inputName === "edit_user_dept_permissions"
+      ? "edit-user-dept-count"
+      : "user-create-dept-count";
   setText(targetId, `${count} แผนก`);
 }
 
 function bindDepartmentPermissionCounters() {
-  ["user_dept_permissions", "edit_user_dept_permissions"].forEach((inputName) => {
-    document
-      .querySelectorAll(`input[name="${inputName}"]`)
-      .forEach((input) => {
-        input.addEventListener("change", () => updatePermissionCounterByInput(inputName));
-      });
+  ["user_dept_permissions", "edit_user_dept_permissions"].forEach(
+    (inputName) => {
+      document
+        .querySelectorAll(`input[name="${inputName}"]`)
+        .forEach((input) => {
+          input.addEventListener("change", () =>
+            updatePermissionCounterByInput(inputName),
+          );
+        });
 
-    updatePermissionCounterByInput(inputName);
-  });
+      updatePermissionCounterByInput(inputName);
+    },
+  );
 }
 
 function getRoleLabel(role) {
@@ -923,8 +922,12 @@ function getUserInitials(user) {
 
 function renderUserStats() {
   const rows = state.users || [];
-  const active = rows.filter((user) => String(user.status || "active").toLowerCase() === "active").length;
-  const supervisor = rows.filter((user) => String(user.role || "").toLowerCase() === "supervisor").length;
+  const active = rows.filter(
+    (user) => String(user.status || "active").toLowerCase() === "active",
+  ).length;
+  const supervisor = rows.filter(
+    (user) => String(user.role || "").toLowerCase() === "supervisor",
+  ).length;
   const departments = getQrDepartments().length;
 
   setText("user-stat-total", rows.length.toLocaleString("th-TH"));
@@ -932,7 +935,6 @@ function renderUserStats() {
   setText("user-stat-active", active.toLocaleString("th-TH"));
   setText("user-stat-dept", departments.toLocaleString("th-TH"));
 }
-
 
 function getUserDepartmentCodes(userId) {
   return (state.userDepartments || [])
@@ -971,11 +973,13 @@ function getUserDepartmentTagsHtml(userId, fallbackDepartment = "") {
 async function saveUserDepartments(userId, departmentCodes = []) {
   if (!userId) return;
 
-  const cleanCodes = [...new Set(
-    (departmentCodes || [])
-      .map((code) => normalizeDept(code))
-      .filter(Boolean),
-  )];
+  const cleanCodes = [
+    ...new Set(
+      (departmentCodes || [])
+        .map((code) => normalizeDept(code))
+        .filter(Boolean),
+    ),
+  ];
 
   try {
     const { error: deleteError } = await state.supabase
@@ -998,17 +1002,15 @@ async function saveUserDepartments(userId, departmentCodes = []) {
     }));
 
     const { error: insertError } = await state.supabase
-  .from(USER_DEPARTMENT_TABLE)
-  .upsert(rows, {
-    onConflict: "user_id,department_code",
-    ignoreDuplicates: true,
-  });
+      .from(USER_DEPARTMENT_TABLE)
+      .upsert(rows, {
+        onConflict: "user_id,department_code",
+        ignoreDuplicates: true,
+      });
 
     if (insertError) throw insertError;
   } catch (err) {
-    throw new Error(
-      `บันทึกแผนกที่รับผิดชอบไม่สำเร็จ: ${err.message || err}`,
-    );
+    throw new Error(`บันทึกแผนกที่รับผิดชอบไม่สำเร็จ: ${err.message || err}`);
   }
 }
 
@@ -1016,29 +1018,19 @@ async function deleteDepartment(id) {
   await deleteMasterItem(state.departmentTable, id, loadMasters);
 }
 
-
-
 async function editDepartment(id) {
-  const row = state.departments.find(
-    (item) => String(item.id) === String(id)
-  );
+  const row = state.departments.find((item) => String(item.id) === String(id));
 
   if (!row) return;
 
   const currentCode = getDeptCode(row);
   const currentName = getDeptName(row);
 
-  const newCode = prompt(
-    "รหัสแผนก",
-    currentCode
-  );
+  const newCode = prompt("รหัสแผนก", currentCode);
 
   if (newCode === null) return;
 
-  const newName = prompt(
-    "ชื่อแผนก",
-    currentName
-  );
+  const newName = prompt("ชื่อแผนก", currentName);
 
   if (newName === null) return;
 
@@ -1058,14 +1050,8 @@ async function editDepartment(id) {
   await loadMasters();
 }
 
-async function editDepartmentOrder(
-  id,
-  currentOrder
-) {
-  const value = prompt(
-    "ลำดับการแสดงผล",
-    currentOrder || 0
-  );
+async function editDepartmentOrder(id, currentOrder) {
+  const value = prompt("ลำดับการแสดงผล", currentOrder || 0);
 
   if (value === null) return;
 
@@ -1401,7 +1387,8 @@ function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
     li.className = "master-item";
 
     const name = getMasterItemName(row, type);
-    const department = row.department_code || row.department || row.dept || selectedDept;
+    const department =
+      row.department_code || row.department || row.dept || selectedDept;
     const sortOrder = row.sort_order || 0;
 
     const info = document.createElement("span");
@@ -1431,7 +1418,8 @@ function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
     const deleteBtn = document.createElement("button");
     deleteBtn.type = "button";
     deleteBtn.className = "btn btn-danger";
-    deleteBtn.innerHTML = '<span class="material-symbols-outlined">delete</span>';
+    deleteBtn.innerHTML =
+      '<span class="material-symbols-outlined">delete</span>';
     deleteBtn.title = "ลบ";
     deleteBtn.addEventListener("click", () => onDelete(row.id));
 
@@ -1446,7 +1434,8 @@ function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
       const qrBtn = document.createElement("button");
       qrBtn.type = "button";
       qrBtn.className = "btn btn-primary";
-      qrBtn.innerHTML = '<span class="material-symbols-outlined">qr_code</span> QR';
+      qrBtn.innerHTML =
+        '<span class="material-symbols-outlined">qr_code</span> QR';
       qrBtn.title = "สร้าง QR เครื่องนี้";
       qrBtn.addEventListener("click", () => {
         openMachineQrByRow(row);
@@ -1468,7 +1457,9 @@ function getMasterItemName(row, type) {
   }
 
   if (type === "problem") {
-    return row.problem_type || row.problem_name || row.reason_name || row.name || "-";
+    return (
+      row.problem_type || row.problem_name || row.reason_name || row.name || "-"
+    );
   }
 
   return row.name || "-";
@@ -1510,7 +1501,12 @@ async function editMasterName(row, type) {
     return;
   }
 
-  await updateMasterItem(table, row.id, { [column]: newName.trim() }, loadMasters);
+  await updateMasterItem(
+    table,
+    row.id,
+    { [column]: newName.trim() },
+    loadMasters,
+  );
 }
 
 async function editMasterOrder(row, type) {
@@ -1532,14 +1528,9 @@ async function deleteProblem(id) {
 async function deleteMasterItem(table, id, reloadFn) {
   if (!table || !id) return;
 
- 
+  const ok = await showConfirm("ต้องการลบรายการนี้ใช่ไหม?", "ลบข้อมูล");
 
-  const ok = await showConfirm(
-  "ต้องการลบรายการนี้ใช่ไหม?",
-  "ลบข้อมูล"
-);
-
-if (!ok) return;
+  if (!ok) return;
 
   const { error } = await state.supabase.from(table).delete().eq("id", id);
 
@@ -1612,9 +1603,16 @@ function renderUsers() {
       .map((user) => {
         const userId = escapeHtml(user.id);
         const username = escapeHtml(user.username || "-");
-        const displayName = escapeHtml(user.display_name || user.full_name || "-");
-        const department = escapeHtml(getDepartmentName(user.department || user.department_code));
-        const responsibleDepartments = getUserDepartmentTagsHtml(user.id, user.department || user.department_code);
+        const displayName = escapeHtml(
+          user.display_name || user.full_name || "-",
+        );
+        const department = escapeHtml(
+          getDepartmentName(user.department || user.department_code),
+        );
+        const responsibleDepartments = getUserDepartmentTagsHtml(
+          user.id,
+          user.department || user.department_code,
+        );
         const role = String(user.role || "staff").toLowerCase();
         const status = String(user.status || "active").toLowerCase();
         return `
@@ -1639,13 +1637,25 @@ function renderUsers() {
     .map((user) => {
       const userId = escapeHtml(user.id);
       const username = escapeHtml(user.username || "-");
-      const displayName = escapeHtml(user.display_name || user.full_name || "-");
-      const email = escapeHtml(user.email || `${String(user.username || "user").toLowerCase()}@pvt.local`);
-      const department = escapeHtml(getDepartmentName(user.department || user.department_code) || "-");
-      const responsibleDepartments = getUserDepartmentTagsHtml(user.id, user.department || user.department_code);
+      const displayName = escapeHtml(
+        user.display_name || user.full_name || "-",
+      );
+      const email = escapeHtml(
+        user.email ||
+          `${String(user.username || "user").toLowerCase()}@pvt.local`,
+      );
+      const department = escapeHtml(
+        getDepartmentName(user.department || user.department_code) || "-",
+      );
+      const responsibleDepartments = getUserDepartmentTagsHtml(
+        user.id,
+        user.department || user.department_code,
+      );
       const role = String(user.role || "staff").toLowerCase();
       const status = String(user.status || "active").toLowerCase();
-      const deptCount = getUserDepartmentCodes(user.id).length || (user.department || user.department_code ? 1 : 0);
+      const deptCount =
+        getUserDepartmentCodes(user.id).length ||
+        (user.department || user.department_code ? 1 : 0);
 
       return `
         <article class="user-card role-${escapeAttr(role)} status-${escapeAttr(status)}">
@@ -1696,9 +1706,11 @@ function renderUsers() {
 function getRoleSelectHtml(userId, role) {
   return `
     <select class="mini-select" data-user-role="${escapeAttr(userId)}" onchange="updateUserRole('${escapeAttr(userId)}', this.value)">
-      ${ROLE_OPTIONS.map((r) => `
+      ${ROLE_OPTIONS.map(
+        (r) => `
         <option value="${escapeAttr(r)}" ${r === role ? "selected" : ""}>${escapeHtml(r)}</option>
-      `).join("")}
+      `,
+      ).join("")}
     </select>
   `;
 }
@@ -1706,9 +1718,11 @@ function getRoleSelectHtml(userId, role) {
 function getStatusSelectHtml(userId, status) {
   return `
     <select class="mini-select" data-user-status="${escapeAttr(userId)}" onchange="updateUserStatus('${escapeAttr(userId)}', this.value)">
-      ${STATUS_OPTIONS.map((s) => `
+      ${STATUS_OPTIONS.map(
+        (s) => `
         <option value="${escapeAttr(s)}" ${s === status ? "selected" : ""}>${escapeHtml(s)}</option>
-      `).join("")}
+      `,
+      ).join("")}
     </select>
   `;
 }
@@ -1723,7 +1737,10 @@ async function addUser() {
   const displayName = getValue("user-display-name");
   const department = getValue("user-department").toUpperCase();
   const role = getValue("user-role") || "staff";
-  const selectedDepartments = getCheckedDepartmentCodes("user_dept_permissions");
+
+  const selectedDepartments = getCheckedDepartmentCodes(
+    "user_dept_permissions",
+  );
   const finalDepartments = selectedDepartments.length
     ? selectedDepartments
     : department
@@ -1736,64 +1753,48 @@ async function addUser() {
     return;
   }
 
-  const { data: duplicateUsers, error: duplicateError } = await state.supabase
-    .from(PROFILE_TABLE)
-    .select("id")
-    .ilike("username", username)
-    .limit(1);
-
-  if (duplicateError) {
-    setButtonBusy(btn, false);
-    showAlert(`ตรวจสอบ Username ไม่สำเร็จ: ${duplicateError.message}`);
-    addLog("ERROR", duplicateError.message);
-    return;
-  }
-
-  if (duplicateUsers?.length) {
-    setButtonBusy(btn, false);
-    showAlert(`Username ${username} มีอยู่แล้ว`);
-    return;
-  }
-
   const primaryDepartment = department || finalDepartments[0] || "";
-  const userId = createUuid();
-
-  const payload = {
-    id: userId,
-    username,
-    password,
-    role,
-    status: "active",
-    display_name: displayName || username,
-    full_name: displayName || username,
-    department: primaryDepartment,
-    department_code: primaryDepartment,
-    email: `${username.toLowerCase()}@pvt.local`,
-  };
-
-  const { error } = await state.supabase.from(PROFILE_TABLE).insert(payload);
-
-  if (error) {
-    setButtonBusy(btn, false);
-    showAlert(`เพิ่ม User ไม่สำเร็จ: ${error.message}`);
-    addLog("ERROR", error.message);
-    return;
-  }
 
   try {
-    await saveUserDepartments(userId, finalDepartments);
-  } catch (err) {
-    setButtonBusy(btn, false);
-    showAlert(err.message || String(err));
-    addLog("ERROR", err.message || String(err));
-    return;
-  }
+    const { data, error } = await state.supabase.functions.invoke(
+      "admin-create-user",
+      {
+        body: {
+          username,
+          password,
+          role,
+          department: primaryDepartment,
+          department_code: primaryDepartment,
+          display_name: displayName || username,
+          full_name: displayName || username,
+          email: `${username.toLowerCase()}@pvt.local`,
+          status: "active",
+        },
+      },
+    );
 
-  clearUserForm();
-  addLog("INFO", `เพิ่ม User: ${username}`);
-  await loadUsers();
-  showAlert(`เพิ่ม User ${username} สำเร็จ`);
-  setButtonBusy(btn, false);
+    if (error) {
+      throw new Error(error.message || "เรียก Edge Function ไม่สำเร็จ");
+    }
+
+    if (!data?.ok) {
+      throw new Error(data?.message || "สร้าง User ไม่สำเร็จ");
+    }
+
+    await saveUserDepartments(data.user.id, finalDepartments);
+
+    clearUserForm();
+    addLog("INFO", `เพิ่ม User: ${username}`);
+    await loadUsers();
+
+    showAlert(`สร้าง User ${username} สำเร็จ`);
+  } catch (err) {
+    console.error("Add User Error:", err);
+    showAlert(err.message || "เพิ่ม User ไม่สำเร็จ");
+    addLog("ERROR", err.message || String(err));
+  } finally {
+    setButtonBusy(btn, false);
+  }
 }
 
 async function updateUserRole(userId, role) {
@@ -1839,38 +1840,45 @@ async function deleteUser(userId) {
 
   const currentUserId = localStorage.getItem("activeUserId");
 
-  if (userId === currentUserId) {
+  if (String(userId) === String(currentUserId)) {
     showAlert("ไม่สามารถลบ User ที่กำลัง Login อยู่ได้");
     return;
   }
 
   const ok = await showConfirm(
-  "ต้องการลบ User นี้ใช่ไหม?",
-  "ลบผู้ใช้งาน"
-);
+    "ต้องการลบ User นี้ใช่ไหม? ระบบจะลบทั้ง Authentication และ profiles",
+    "ลบผู้ใช้งาน",
+  );
 
-if (!ok) return;
+  if (!ok) return;
 
-  await state.supabase
-    .from(USER_DEPARTMENT_TABLE)
-    .delete()
-    .eq("user_id", userId);
+  try {
+    const { data, error } = await state.supabase.functions.invoke(
+      "admin-delete-user",
+      {
+        body: {
+          user_id: userId,
+        },
+      },
+    );
 
-  const { error } = await state.supabase
-    .from(PROFILE_TABLE)
-    .delete()
-    .eq("id", userId);
+    if (error) {
+      throw new Error(error.message || "เรียก Edge Function ไม่สำเร็จ");
+    }
 
-  if (error) {
-    showAlert(`ลบ User ไม่สำเร็จ: ${error.message}`);
-    addLog("ERROR", error.message);
-    return;
+    if (!data?.ok) {
+      throw new Error(data?.message || "ลบ User ไม่สำเร็จ");
+    }
+
+    addLog("INFO", "ลบ User สำเร็จ");
+    await loadUsers();
+    showAlert("ลบ User สำเร็จ");
+  } catch (err) {
+    console.error("Delete User Error:", err);
+    showAlert(err.message || "ลบ User ไม่สำเร็จ");
+    addLog("ERROR", err.message || String(err));
   }
-
-  addLog("INFO", "ลบ User สำเร็จ");
-  await loadUsers();
 }
-
 async function editUser(userId) {
   const user = state.users.find((u) => u.id === userId);
 
@@ -1969,7 +1977,9 @@ async function saveEditUser() {
   const role = getValue("edit-role") || "staff";
   const status = getValue("edit-status") || "active";
   const password = getValue("edit-password");
-  const selectedDepartments = getCheckedDepartmentCodes("edit_user_dept_permissions");
+  const selectedDepartments = getCheckedDepartmentCodes(
+    "edit_user_dept_permissions",
+  );
   const finalDepartments = selectedDepartments.length
     ? selectedDepartments
     : department
@@ -2082,7 +2092,9 @@ const FORM_DEPARTMENT_PATH = "/pages/form-department.html";
   ถ้าฐานข้อมูลยังว่าง จะใช้ DEFAULT_DEPARTMENTS แทน
 */
 function getQrDepartments() {
-  const rows = state.departments?.length ? state.departments : DEFAULT_DEPARTMENTS;
+  const rows = state.departments?.length
+    ? state.departments
+    : DEFAULT_DEPARTMENTS;
 
   return rows
     .map((row) => {
@@ -2108,7 +2120,9 @@ function getQrDepartments() {
 */
 function buildDepartmentFormUrl(deptCode, machineName = "") {
   const origin = window.location.origin;
-  const dept = String(deptCode || "").trim().toLowerCase();
+  const dept = String(deptCode || "")
+    .trim()
+    .toLowerCase();
   const machine = String(machineName || "").trim();
 
   const url = new URL(`${origin}${FORM_DEPARTMENT_PATH}`);
@@ -2221,7 +2235,9 @@ function getMachinesByDepartment(deptCode) {
 
   return sortRowsByOrder(
     (state.machines || []).filter((row) => {
-      const rowDept = normalizeDept(row.department_code || row.department || row.dept || "");
+      const rowDept = normalizeDept(
+        row.department_code || row.department || row.dept || "",
+      );
       return rowDept === dept;
     }),
   );
@@ -2318,7 +2334,12 @@ function renderMachineQrList() {
 function openMachineQrByRow(row) {
   if (!row) return;
 
-  const dept = normalizeDept(row.department_code || row.department || row.dept || getValue("master-dept-filter"));
+  const dept = normalizeDept(
+    row.department_code ||
+      row.department ||
+      row.dept ||
+      getValue("master-dept-filter"),
+  );
   const machineName = getMasterItemName(row, "machine");
 
   if (!dept || !machineName) {
@@ -2536,7 +2557,6 @@ function getDeptName(row) {
   return row.department_name || row.dept_name || row.name || getDeptCode(row);
 }
 
-
 function getDepartmentName(value) {
   const code = normalizeDept(value);
 
@@ -2752,9 +2772,6 @@ function createUuid() {
   });
 }
 
-
-
-
 function getNextSortOrder(rows) {
   const maxOrder = rows.reduce((max, row) => {
     const value = Number(row.sort_order || 0);
@@ -2782,7 +2799,6 @@ async function updateMasterItem(table, id, payload, reloadFn) {
   await reloadFn();
 }
 
-
 async function editSortOrder(table, id, currentSort, reloadFn) {
   const value = prompt("ใส่ลำดับใหม่ เช่น 1, 2, 3", currentSort || 0);
   if (value === null) return;
@@ -2796,10 +2812,6 @@ async function editSortOrder(table, id, currentSort, reloadFn) {
 
   await updateMasterItem(table, id, { sort_order: sortOrder }, reloadFn);
 }
-
-
-
-
 
 async function loadActivityLogs() {
   const tbody = document.getElementById("activity-log-body");
@@ -2858,8 +2870,6 @@ async function loadActivityLogs() {
     `;
   }
 }
-
-
 
 /* =========================================================
    GLOBAL
