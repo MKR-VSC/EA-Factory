@@ -1774,7 +1774,21 @@ async function addUser() {
     );
 
     if (error) {
-      throw new Error(error.message || "เรียก Edge Function ไม่สำเร็จ");
+      console.error("Edge Function raw error:", error);
+
+      let detail = error.message || "เรียก Edge Function ไม่สำเร็จ";
+
+      try {
+        if (error.context) {
+          const text = await error.context.text();
+
+          console.error("Edge Function response:", text);
+
+          detail = text;
+        }
+      } catch {}
+
+      throw new Error(detail);
     }
 
     if (!data?.ok) {

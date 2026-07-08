@@ -88,9 +88,7 @@ serve(async (req) => {
       
     };
 
-    if (password) {
-      
-    }
+   
 
     const { error: profileError } = await admin
       .from("profiles")
