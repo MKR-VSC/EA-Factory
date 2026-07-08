@@ -79,7 +79,7 @@ serve(async (req) => {
       id: userId,
       email,
       username,
-      password,
+      
       role,
       department,
       department_code,

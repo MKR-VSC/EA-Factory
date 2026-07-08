@@ -85,11 +85,11 @@ serve(async (req) => {
       department_code,
       role,
       status,
-      updated_at: new Date().toISOString(),
+      
     };
 
     if (password) {
-      profilePayload.password = password;
+      
     }
 
     const { error: profileError } = await admin
