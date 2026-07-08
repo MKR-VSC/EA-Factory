@@ -212,11 +212,7 @@ function bindEvents() {
       event.stopPropagation();
       addUser();
     });
-    addUserBtn.onclick = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      addUser();
-    };
+   
   }
   document
     .getElementById("user-search-input")
