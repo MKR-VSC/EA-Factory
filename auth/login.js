@@ -120,7 +120,7 @@ async function handlePasswordLogin(event) {
     const { data: userProfile, error: profileError } = await sb
       .from("profiles")
       .select("email")
-      .eq("username", usernameInput)
+      .ilike("username", usernameInput)
       .maybeSingle();
 
     if (profileError) throw profileError;
