@@ -1745,7 +1745,7 @@ async function addUser() {
 
   if (!username || !password) {
     setButtonBusy(btn, false);
-    showAlert("กรุณากรอก Username และ Password");
+    showAlert("กรุณากรอก Username และ Password", "warning");
     return;
   }
 
@@ -1797,7 +1797,7 @@ async function addUser() {
     addLog("INFO", `เพิ่ม User: ${username}`);
     await loadUsers();
 
-    showAlert(`สร้าง User ${username} สำเร็จ`);
+    showAlert(`สร้าง User ${username} สำเร็จ`, "success");
   } catch (err) {
     console.error("Add User Error:", err);
     showAlert(err.message || "เพิ่ม User ไม่สำเร็จ");
@@ -1882,7 +1882,7 @@ async function deleteUser(userId) {
 
     addLog("INFO", "ลบ User สำเร็จ");
     await loadUsers();
-    showAlert("ลบ User สำเร็จ");
+    showAlert("ลบ User สำเร็จ", "success");
   } catch (err) {
     console.error("Delete User Error:", err);
     showAlert(err.message || "ลบ User ไม่สำเร็จ");
@@ -1948,7 +1948,7 @@ function openEditUserModal(userId) {
   const user = state.users.find((item) => String(item.id) === String(userId));
 
   if (!user) {
-    showAlert("ไม่พบข้อมูลผู้ใช้งาน");
+    showAlert("ไม่พบข้อมูลผู้ใช้งาน", "warning");
     return;
   }
 
@@ -2000,12 +2000,12 @@ async function saveEditUser() {
       : [];
 
   if (!userId) {
-    showAlert("ไม่พบรหัส User");
+    showAlert("ไม่พบรหัส User", "warning");
     return;
   }
 
   if (!username) {
-    showAlert("กรุณากรอก Username");
+    showAlert("กรุณากรอก Username", "warning");
     return;
   }
 
@@ -2064,7 +2064,7 @@ async function saveEditUser() {
     addLog("INFO", `แก้ไข User สำเร็จ: ${username}`);
     await loadUsers();
 
-    showAlert(`บันทึกข้อมูล User ${username} สำเร็จ`);
+    showAlert(`บันทึกข้อมูล User ${username} สำเร็จ`, "success");
   } catch (err) {
     console.error("Save Edit User Error:", err);
     showAlert(err.message || "แก้ไข User ไม่สำเร็จ");
@@ -2731,17 +2731,43 @@ function setValue(id, value) {
   if (el) el.value = value;
 }
 
-function showAlert(message) {
+let alertTimer = null;
+
+function showAlert(message, type = "error") {
   const box = document.getElementById("alert-box");
   if (!box) return;
 
-  box.textContent = message;
+  clearTimeout(alertTimer);
   box.hidden = false;
+  box.textContent = message;
+  box.className = "alert";
+
+  switch (type) {
+    case "success":
+      box.classList.add("alert-success");
+      break;
+    case "warning":
+      box.classList.add("alert-warning");
+      break;
+    case "info":
+      box.classList.add("alert-info");
+      break;
+    default:
+      box.classList.add("alert-error");
+      break;
+  }
+
+  alertTimer = setTimeout(hideAlert, 4000);
 }
 
 function hideAlert() {
   const box = document.getElementById("alert-box");
-  if (box) box.hidden = true;
+  if (!box) return;
+
+  clearTimeout(alertTimer);
+  box.hidden = true;
+  box.textContent = "";
+  box.className = "alert";
 }
 
 function toNumber(value) {
