@@ -312,8 +312,10 @@ select {
   padding: 18px;
   color: #064e3b;
   line-height: 1.75;
-  background: #ecfdf5;
-  border: 1px solid #bbf7d0;
+  background: #fdfdec;
+  border: 1px solid #f7ecbb;
+  /* background: #ecfdf5;
+  border: 1px solid #bbf7d0; */
   border-radius: 18px;
 }
 
@@ -558,4 +560,83 @@ select {
     min-width: 0;
     text-align: left;
   }
+}
+
+
+/* ================= DEPARTMENT SUMMARY HIGHLIGHT ================= */
+
+.table-card.department-summary-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(120, 60, 4, 0.18);
+  background:  #fdfdec;
+  /* background: */
+    /* linear-gradient(135deg, rgba(236, 253, 245, 0.98), rgba(255, 255, 255, 0.92)); */
+}
+
+.table-card.department-summary-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 6px;
+  background: linear-gradient(90deg, #ecb706, #ee6c22, #eed66c);
+}
+
+.department-summary-card .section-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #064e3b;
+}
+
+.department-summary-card .section-head h2::before {
+  content: "analytics";
+  font-family: "Material Symbols Outlined";
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, #047857, #16a34a);
+  border-radius: 14px;
+  font-size: 25px;
+}
+
+.department-summary-card .data-table {
+  border-collapse: separate;
+  border-spacing: 0 10px;
+}
+
+.department-summary-card .data-table thead th {
+  color: #064e3b;
+  background: #d1fae5;
+  border-bottom: 0;
+  font-size: 14px;
+}
+
+.department-summary-card .data-table tbody tr {
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.department-summary-card .data-table tbody td {
+  border-bottom: 0;
+  padding: 16px 14px;
+}
+
+.department-summary-card .data-table tbody td:first-child {
+  border-radius: 16px 0 0 16px;
+}
+
+.department-summary-card .data-table tbody td:last-child {
+  border-radius: 0 16px 16px 0;
+}
+
+.department-summary-card .data-table tbody td:nth-child(1) strong {
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.department-summary-card .data-table tbody td:nth-child(4) strong {
+  font-size: 18px;
 }

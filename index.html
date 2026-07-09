@@ -12,10 +12,16 @@
     <title>Dashboard | EA Factory Waste Management</title>
 
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
     <!-- Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+      rel="stylesheet"
+    />
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/BG1.png" />
@@ -26,7 +32,6 @@
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#047857" />
 
-    
     <link rel="stylesheet" href="/css/index.css" />
   </head>
 
@@ -51,12 +56,20 @@
             <strong id="lbl-active-user">-</strong>
           </div>
 
-          <button class="btn btn-dark" type="button" onclick="loadAndProcessDashboardData()">
+          <button
+            class="btn btn-dark"
+            type="button"
+            onclick="loadAndProcessDashboardData()"
+          >
             <span class="material-symbols-outlined">refresh</span>
             โหลดใหม่
           </button>
 
-          <button class="btn btn-danger" type="button" onclick="handleDashboardLogout()">
+          <button
+            class="btn btn-danger"
+            type="button"
+            onclick="handleDashboardLogout()"
+          >
             <span class="material-symbols-outlined">logout</span>
             ออกจากระบบ
           </button>
@@ -77,81 +90,27 @@
           </select>
         </div>
 
-        <button class="btn btn-primary" type="button" onclick="loadAndProcessDashboardData()">
+        <button
+          class="btn btn-primary"
+          type="button"
+          onclick="loadAndProcessDashboardData()"
+        >
           <span class="material-symbols-outlined">search</span>
           ค้นหา
         </button>
 
-        <button class="btn btn-light" type="button" onclick="exportToDataExcelCSV()">
+        <button
+          class="btn btn-light"
+          type="button"
+          onclick="exportToDataExcelCSV()"
+        >
           <span class="material-symbols-outlined">download</span>
           Export CSV
         </button>
       </section>
 
-      <!-- ================= KPI ================= -->
-      <section class="metric-grid">
-        <article class="metric-card">
-          <span>รายการวันนี้</span>
-          <strong id="cnt-today">0</strong>
-          <small>เฉพาะข้อมูลที่บัญชีตรวจแล้ว</small>
-        </article>
-
-        <article class="metric-card success">
-          <span>% Waste เดือนนี้</span>
-          <strong id="cnt-waste-percent">0%</strong>
-          <small id="cnt-waste-percent-sub">ผลิต 0 kg / เสีย 0 kg</small>
-        </article>
-
-        <article class="metric-card warning">
-          <span>เครื่องใกล้ / เกินเกณฑ์</span>
-          <strong id="cnt-machine-risk">0</strong>
-          <small>เกณฑ์หลัก 1% ต่อเดือน / เครื่อง</small>
-        </article>
-
-        <article class="metric-card danger">
-          <span>เครื่องที่ควรตรวจสอบด่วน</span>
-          <strong id="cnt-top-machine">-</strong>
-          <small id="cnt-top-machine-sub">-</small>
-        </article>
-      </section>
-
-      <!-- ================= EXEC SUMMARY ================= -->
-      <section class="summary-card">
-        <div class="section-head">
-          <div>
-            <h2>สรุปภาพรวมเดือนนี้</h2>
-            <p>อ่านเร็วสำหรับผู้บริหาร: โรงงานอยู่ในเกณฑ์หรือมีจุดที่ควรติดตาม</p>
-          </div>
-          <span id="overall-result-pill" class="result-pill result-none">รอข้อมูล</span>
-        </div>
-        <div id="exec-insight-box" class="exec-insight-box">กำลังวิเคราะห์ข้อมูล...</div>
-      </section>
-
-      <!-- ================= CHARTS ================= -->
-      <section class="chart-grid">
-        <article class="chart-card">
-          <h2>แนวโน้มของเสียรายวัน</h2>
-          <canvas id="chart-daily-waste-percent"></canvas>
-        </article>
-
-        <article class="chart-card">
-          <h2>Top 10 เครื่องตาม % Waste</h2>
-          <canvas id="chart-machine-risk"></canvas>
-        </article>
-
-        <article class="chart-card">
-          <h2>Top 10 สาเหตุ / อาการ</h2>
-          <canvas id="chart-problem-count-bar"></canvas>
-        </article>
-
-        <article class="chart-card">
-          <h2>สัดส่วนของเสียตามแผนก</h2>
-          <canvas id="chart-dept-donut"></canvas>
-        </article>
-      </section>
-
       <!-- ================= DEPARTMENT SUMMARY ================= -->
-      <section class="table-card">
+      <section class="table-card department-summary-card">
         <div class="section-head">
           <div>
             <h2>สรุปรายเดือนตามแผนก</h2>
@@ -179,15 +138,88 @@
         </div>
       </section>
 
+      <!-- ================= KPI ================= -->
+      <section class="metric-grid">
+        <article class="metric-card">
+          <span>รวมผลิตเดือนนี้(รวม)</span>
+          <strong id="cnt-today">0</strong>
+          <small>จำนวน kg.</small>
+        </article>
+
+        <article class="metric-card warning">
+          <span>จำนวนของเสียเดือนนี้(รวม)</span>
+          <strong id="cnt-machine-risk">0</strong>
+          <small>จำนวน kg.</small>
+        </article>
+
+        <article class="metric-card success">
+          <span>% ของเสียเดือนนี้(รวม)</span>
+          <strong id="cnt-waste-percent">0%</strong>
+          <small id="cnt-waste-percent-sub">ผลิต 0 kg / เสีย 0 kg</small>
+        </article>
+
+        <article class="metric-card danger">
+          <span>แผนกที่มีของเสียสูงสุด</span>
+          <strong id="cnt-top-machine">-</strong>
+          <small id="cnt-top-machine-sub">-</small>
+        </article>
+      </section>
+
+      <!-- ================= EXEC SUMMARY ================= -->
+      <section class="summary-card">
+        <div class="section-head">
+          <div>
+            <h2>สรุปภาพรวมเดือนนี้</h2>
+            <p>
+              อ่านเร็วสำหรับผู้บริหาร: โรงงานอยู่ในเกณฑ์หรือมีจุดที่ควรติดตาม
+            </p>
+          </div>
+          <span id="overall-result-pill" class="result-pill result-none"
+            >รอข้อมูล</span
+          >
+        </div>
+        <div id="exec-insight-box" class="exec-insight-box">
+          กำลังวิเคราะห์ข้อมูล...
+        </div>
+      </section>
+
+      <!-- ================= CHARTS ================= -->
+      <section class="chart-grid">
+        <article class="chart-card">
+          <h2>แนวโน้มของเสียรายวัน</h2>
+          <canvas id="chart-daily-waste-percent"></canvas>
+        </article>
+
+        <article class="chart-card">
+          <h2>Top 10 เครื่องตาม % Waste</h2>
+          <canvas id="chart-machine-risk"></canvas>
+        </article>
+
+        <article class="chart-card">
+          <h2>Top 10 สาเหตุ / อาการ</h2>
+          <canvas id="chart-problem-count-bar"></canvas>
+        </article>
+
+        <article class="chart-card">
+          <h2>สัดส่วนของเสียตามแผนก</h2>
+          <canvas id="chart-dept-donut"></canvas>
+        </article>
+      </section>
+
       <!-- ================= MACHINE SUMMARY ================= -->
       <section class="table-card">
         <div class="section-head">
           <div>
             <h2>สถิติของเสียรายเดือนแยกตามเครื่อง</h2>
-            <p>แสดงทุกเครื่องที่มีข้อมูลในเดือนนี้ เรียงตามแผนกและเครื่อง สีแดงคือเกิน 1%</p>
+            <p>
+              แสดงทุกเครื่องที่มีข้อมูลในเดือนนี้ เรียงตามแผนกและเครื่อง
+              สีแดงคือเกิน 1%
+            </p>
           </div>
         </div>
-        <div id="machine-summary-list" class="machine-summary-list">กำลังโหลดข้อมูล...</div>
+        <div id="machine-summary-list" class="machine-summary-list">
+          กำลังโหลดข้อมูล...
+        </div>
       </section>
     </main>
 

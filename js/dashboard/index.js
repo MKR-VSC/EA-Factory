@@ -42,6 +42,92 @@ const CANCELLED_STATUS = [
   "ยกเลิกแล้ว",
 ];
 
+
+/* =========================================================
+   CHART THEME / COLORS
+   กำหนดสีกราฟให้ชัด และแยกสีตามประเภทของเสีย
+========================================================= */
+
+const CHART_COLORS = {
+  green: "#16a34a",
+  greenSoft: "rgba(22, 163, 74, 0.16)",
+  blue: "#2563eb",
+  blueSoft: "rgba(37, 99, 235, 0.18)",
+  cyan: "#06b6d4",
+  amber: "#f59e0b",
+  orange: "#f97316",
+  red: "#dc2626",
+  purple: "#7c3aed",
+  pink: "#e11d48",
+  slate: "#64748b",
+  gray: "#94a3b8",
+};
+
+const DEPARTMENT_COLORS = [
+  "#047857",
+  "#2563eb",
+  "#f59e0b",
+  "#dc2626",
+  "#7c3aed",
+  "#06b6d4",
+  "#e11d48",
+  "#14b8a6",
+  "#84cc16",
+  "#f97316",
+  "#475569",
+];
+
+// สีประจำแผนก ใช้กับกราฟภาพรวม/เครื่องจักร เพื่อให้ผู้บริหารจำสีได้ง่าย
+const DEPARTMENT_COLOR_MAP = {
+  BLOW: "#047857",
+  PIPE: "#2563eb",
+  MONO: "#7c3aed",
+  BLOWN_FILM: "#06b6d4",
+  SHEET_CUTTING: "#f59e0b",
+  CUT_PUNCH: "#dc2626",
+  GARBAGE_BAG_CUT: "#f97316",
+  RAIN_TAPE: "#14b8a6",
+  RAIN_TAPE_CUT_PUNCH: "#e11d48",
+  SHADE_NET: "#84cc16",
+  UNKNOWN: "#94a3b8",
+};
+
+const PROBLEM_COLOR_PALETTE = [
+  "#ef4444",
+  "#f97316",
+  "#f59e0b",
+  "#2563eb",
+  "#06b6d4",
+  "#7c3aed",
+  "#e11d48",
+  "#14b8a6",
+  "#84cc16",
+  "#64748b",
+  "#0f766e",
+  "#9333ea",
+];
+
+const PROBLEM_COLOR_MAP = {
+  "เศษเจาะ": "#ef4444",
+  "เศษตัด": "#dc2626",
+  "เศษขอบ": "#f97316",
+  "รอยต่อม้วน": "#f97316",
+  "เม็ดดำ": "#0ea5e9",
+  "จุดดำ": "#0ea5e9",
+  "รอยย่น": "#8b5cf6",
+  "รูเข็ม": "#e11d48",
+  "ฟิล์มบาง": "#06b6d4",
+  "ฟิล์มหนา": "#2563eb",
+  "สีผิด": "#84cc16",
+  "สีเพี้ยน": "#84cc16",
+  "ขาด": "#dc2626",
+  "ขาดง่าย": "#dc2626",
+  "ตัน": "#7c3aed",
+  "อื่นๆ": "#94a3b8",
+  "ไม่ระบุปัญหา": "#94a3b8",
+  "ไม่ระบุ": "#94a3b8",
+};
+
 const EXCLUDE_DEPARTMENT_CODES = [
   "IT_SUPPORT",
   "IT_SUPORT",
@@ -293,7 +379,7 @@ function renderAllDashboard(records, range) {
   const problemSummary = summarizeByProblem(records);
   const dailySummary = summarizeByDate(records, range);
 
-  updateMetricCards(records, machineSummary, range);
+  updateMetricCards(records, machineSummary, deptSummary, range);
   renderExecutiveInsight(records, machineSummary);
   renderDepartmentSummaryTable(deptSummary);
   renderMachineSummaryList(machineSummary);
@@ -308,25 +394,29 @@ function renderAllDashboard(records, range) {
    KPI CARDS
 ========================================================= */
 
-function updateMetricCards(records, machineSummary, range) {
-  const todayText = toDateInputValue(new Date());
-  const todayCount = records.filter((row) => row.report_date === todayText).length;
-
+function updateMetricCards(records, machineSummary, deptSummary, range) {
   const totalWaste = sumWaste(records);
   const totalProduction = sumProductionUnique(records);
   const wastePercent = calcWastePercent(totalWaste, totalProduction);
-  const riskyMachines = machineSummary.filter((item) => item.percent >= MACHINE_WARNING_PERCENT);
-  const topMachine = [...machineSummary].sort((a, b) => b.percent - a.percent || b.waste - a.waste)[0];
 
-  setText("cnt-today", todayCount.toLocaleString("th-TH"));
+  // KPI ช่องที่ 4: แผนกที่มี "น้ำหนักของเสียรวม" สูงสุดในเดือนที่เลือก
+  // ใช้ตามชื่อการ์ดใหม่: แผนกที่มีของเสียสูงสุด
+  const topDepartment = [...(deptSummary || [])].sort(
+    (a, b) => b.waste - a.waste || b.percent - a.percent || b.production - a.production
+  )[0];
+
+  // id เดิมใน HTML ยังใช้ชื่อ cnt-today / cnt-machine-risk อยู่
+  // แต่ค่าที่แสดงถูกเปลี่ยนให้ตรงกับ KPI ใหม่แล้ว
+  setText("cnt-today", `${formatNumber(totalProduction)}`);
+  setText("cnt-machine-risk", `${formatNumber(totalWaste)}`);
   setText("cnt-waste-percent", `${formatNumber(wastePercent)}%`);
   setText("cnt-waste-percent-sub", `ผลิต ${formatNumber(totalProduction)} kg / เสีย ${formatNumber(totalWaste)} kg`);
-  setText("cnt-machine-risk", riskyMachines.length.toLocaleString("th-TH"));
-  setText("cnt-top-machine", topMachine ? topMachine.machine : "-");
+
+  setText("cnt-top-machine", topDepartment ? topDepartment.department : "-");
   setText(
     "cnt-top-machine-sub",
-    topMachine
-      ? `${topMachine.department} | ${formatNumber(topMachine.percent)}% | เสีย ${formatNumber(topMachine.waste)} kg`
+    topDepartment
+      ? `เสีย ${formatNumber(topDepartment.waste)} kg | ผลิต ${formatNumber(topDepartment.production)} kg | ${formatNumber(topDepartment.percent)}%`
       : "-"
   );
 
@@ -537,7 +627,12 @@ function renderDepartmentSummaryTable(rows) {
 
       return `
         <tr>
-          <td><strong>${escapeHTML(item.department)}</strong></td>
+          <td>
+            <span style="display:inline-flex;align-items:center;gap:8px;">
+              <span style="width:12px;height:12px;border-radius:999px;background:${getDepartmentColor(item.code)};display:inline-block;box-shadow:0 0 0 3px rgba(15,23,42,.06);"></span>
+              <strong>${escapeHTML(item.department)}</strong>
+            </span>
+          </td>
           <td class="text-right">${formatNumber(item.production)}</td>
           <td class="text-right">${formatNumber(item.waste)}</td>
           <td class="text-right"><strong>${formatNumber(item.percent)}%</strong></td>
@@ -572,7 +667,7 @@ function renderMachineSummaryList(rows) {
           const rowClass = getMachineRowClass(item.percent);
 
           return `
-            <div class="machine-item ${rowClass}">
+            <div class="machine-item ${rowClass}" style="border-left: 8px solid ${getDepartmentColor(item.departmentCode)};">
               <div>
                 <strong>เครื่อง ${escapeHTML(item.machine)}</strong>
                 <small>
@@ -617,6 +712,14 @@ function renderDailyWastePercentChart(rows) {
         {
           label: "% Waste รายวัน",
           data: rows.map((item) => item.percent),
+          borderColor: CHART_COLORS.blue,
+          backgroundColor: CHART_COLORS.blueSoft,
+          pointBackgroundColor: rows.map((item) => getRiskColor(item.percent)),
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          borderWidth: 3,
           tension: 0.35,
           fill: true,
         },
@@ -627,17 +730,25 @@ function renderDailyWastePercentChart(rows) {
 
 function renderMachineRiskChart(rows) {
   const top = [...rows].sort((a, b) => b.percent - a.percent || b.waste - a.waste).slice(0, 10);
+  const labels = top.map((item) => `${item.departmentCode || ""} ${item.machine}`.trim());
+  const deptCodes = uniqueArray(top.map((item) => item.departmentCode || "UNKNOWN"));
+
+  // แยก dataset ตามแผนก เพื่อให้ Legend แสดงสีประจำแผนกได้จริง
+  const datasets = deptCodes.map((deptCode, deptIndex) => ({
+    label: getDepartmentDisplayName(deptCode),
+    data: top.map((item) => (item.departmentCode === deptCode ? item.percent : null)),
+    backgroundColor: getDepartmentColor(deptCode, deptIndex),
+    borderColor: getDepartmentColor(deptCode, deptIndex),
+    borderWidth: 1,
+    borderRadius: 10,
+    borderSkipped: false,
+  }));
 
   chartMachineRisk = replaceChart(chartMachineRisk, "chart-machine-risk", {
     type: "bar",
     data: {
-      labels: top.map((item) => item.machine),
-      datasets: [
-        {
-          label: "% Waste",
-          data: top.map((item) => item.percent),
-        },
-      ],
+      labels,
+      datasets,
     },
   });
 }
@@ -651,6 +762,11 @@ function renderProblemChart(rows) {
         {
           label: "น้ำหนักของเสีย (kg)",
           data: rows.map((item) => item.waste),
+          backgroundColor: rows.map((item, index) => getProblemColor(item.problem, index)),
+          borderColor: rows.map((item, index) => getProblemColor(item.problem, index)),
+          borderWidth: 1,
+          borderRadius: 10,
+          borderSkipped: false,
         },
       ],
     },
@@ -666,6 +782,10 @@ function renderDepartmentDonutChart(rows) {
         {
           label: "ของเสีย kg",
           data: rows.map((item) => item.waste),
+          backgroundColor: rows.map((item, index) => getDepartmentColor(item.code, index)),
+          borderColor: "#ffffff",
+          borderWidth: 3,
+          hoverOffset: 10,
         },
       ],
     },
@@ -683,13 +803,43 @@ function replaceChart(oldChart, canvasId, config) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: {
+        duration: 850,
+        easing: "easeOutQuart",
+      },
+      interaction: {
+        intersect: false,
+        mode: "index",
+      },
       plugins: {
-        legend: { display: true },
+        legend: {
+          display: true,
+          labels: {
+            usePointStyle: true,
+            pointStyle: "circle",
+            padding: 18,
+            color: "#334155",
+            font: {
+              family: "Kanit, Noto Sans Thai, sans-serif",
+              size: 12,
+              weight: "700",
+            },
+          },
+        },
         tooltip: {
+          backgroundColor: "rgba(15, 23, 42, 0.92)",
+          titleColor: "#ffffff",
+          bodyColor: "#e2e8f0",
+          borderColor: "rgba(255, 255, 255, 0.16)",
+          borderWidth: 1,
+          padding: 12,
+          displayColors: true,
           callbacks: {
             label(context) {
               const label = context.dataset.label || "";
-              return `${label}: ${formatNumber(context.raw)}`;
+              const value = context.raw || 0;
+              const suffix = label.includes("%") ? "%" : label.includes("kg") ? " kg" : "";
+              return `${label}: ${formatNumber(value)}${suffix}`;
             },
           },
         },
@@ -698,9 +848,31 @@ function replaceChart(oldChart, canvasId, config) {
         config.type === "doughnut"
           ? {}
           : {
+              x: {
+                grid: {
+                  display: false,
+                },
+                ticks: {
+                  color: "#475569",
+                  font: {
+                    family: "Kanit, Noto Sans Thai, sans-serif",
+                    size: 11,
+                    weight: "700",
+                  },
+                },
+              },
               y: {
                 beginAtZero: true,
+                grid: {
+                  color: "rgba(148, 163, 184, 0.22)",
+                },
                 ticks: {
+                  color: "#64748b",
+                  font: {
+                    family: "Kanit, Noto Sans Thai, sans-serif",
+                    size: 11,
+                    weight: "700",
+                  },
                   callback(value) {
                     return formatNumber(value);
                   },
@@ -709,6 +881,35 @@ function replaceChart(oldChart, canvasId, config) {
             },
     },
   });
+}
+
+function getRiskColor(percent) {
+  const value = toNumber(percent);
+  if (value >= MACHINE_LIMIT_PERCENT) return CHART_COLORS.red;
+  if (value >= MACHINE_WARNING_PERCENT) return CHART_COLORS.amber;
+  return CHART_COLORS.green;
+}
+
+function getRiskBorderColor(percent) {
+  const value = toNumber(percent);
+  if (value >= MACHINE_LIMIT_PERCENT) return "#991b1b";
+  if (value >= MACHINE_WARNING_PERCENT) return "#92400e";
+  return "#166534";
+}
+
+function getProblemColor(problem, index = 0) {
+  const key = String(problem || "").trim();
+  return PROBLEM_COLOR_MAP[key] || PROBLEM_COLOR_PALETTE[index % PROBLEM_COLOR_PALETTE.length];
+}
+
+function getDepartmentColor(code, index = 0) {
+  const normalized = normalizeDepartmentCode(code || "UNKNOWN");
+  return DEPARTMENT_COLOR_MAP[normalized] || DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length];
+}
+
+function getDepartmentDisplayName(code) {
+  const normalized = normalizeDepartmentCode(code || "UNKNOWN");
+  return departmentMasters[normalized]?.name || normalized || "ไม่ระบุแผนก";
 }
 
 /* =========================================================
@@ -990,6 +1191,10 @@ function sortByDepartmentAndMachine(a, b) {
 
 function normalizeText(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function uniqueArray(values) {
+  return [...new Set((values || []).filter(Boolean))];
 }
 
 function toNumber(value) {
