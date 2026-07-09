@@ -38,6 +38,9 @@ const STATUS_LABELS = {
   checked: "บัญชีตรวจแล้ว",
   approved: "ตรวจสอบแล้ว",
   rejected: "ไม่ผ่าน",
+  accounting_checked: "บัญชีตรวจแล้ว",
+  cancelled: "ยกเลิก",
+  canceled: "ยกเลิก",
 };
 
 /* ======================================================
@@ -364,7 +367,10 @@ async function loadDashboard() {
     if (error) throw error;
 
     const rawRows = Array.isArray(data) ? data : [];
-    const visibleRows = filterRowsForCurrentUser(rawRows).filter(isAccountingChecked);
+
+    // แสดงเฉพาะรายการที่บัญชีตรวจแล้ว
+    // แต่ตัดรายการที่ยกเลิกออกจากการคำนวณ Dashboard
+    const visibleRows = filterRowsForCurrentUser(rawRows).filter(isValidForDashboardCalculation);
     const rows = await attachProblemItemsToReports(visibleRows);
 
     renderDashboard(rows, { rawCount: rawRows.length, startDate, endDate });
@@ -404,7 +410,7 @@ function renderDashboard(rows, meta = {}) {
   const wastePercent = calcWastePercent(totalWaste, totalProduction);
 
   const problemCountMap = groupProblemCount(rows);
-  const statusMap = groupCount(rows, "status");
+  const statusMap = groupStatusCount(rows);
   const dailyWasteMap = fillDateRangeMap(groupWasteByDate(rows), meta.startDate, meta.endDate);
   const machineWasteMap = groupWaste(rows, "machine_no");
 
@@ -515,10 +521,12 @@ function getWasteValue(row) {
 
 function getProductionWeight(row) {
   return toNumber(
-    row.production_weight_kg ||
+    row.production_kg ||
+      row.production_weight_kg ||
       row.total_qty ||
       row.produced_weight_kg ||
       row.production_qty ||
+      row.produced_qty ||
       0
   );
 }
@@ -544,6 +552,14 @@ function calcWastePercent(waste, production) {
 function groupCount(rows, key) {
   return rows.reduce((map, row) => {
     const name = row[key] || "ไม่ระบุ";
+    map[name] = (map[name] || 0) + 1;
+    return map;
+  }, {});
+}
+
+function groupStatusCount(rows) {
+  return rows.reduce((map, row) => {
+    const name = getAccountingStatus(row) || getReportStatus(row) || "ไม่ระบุ";
     map[name] = (map[name] || 0) + 1;
     return map;
   }, {});
@@ -904,9 +920,51 @@ function getStatusLabel(status) {
   return STATUS_LABELS[key] || status || "-";
 }
 
+function getReportStatus(row) {
+  return normalizeText(row?.status || row?.report_status || "");
+}
+
+function getAccountingStatus(row) {
+  return normalizeText(row?.accounting_status || row?.account_status || "");
+}
+
+function isCancelledRow(row) {
+  const status = getReportStatus(row);
+  const accountingStatus = getAccountingStatus(row);
+
+  return [
+    status,
+    accountingStatus,
+    normalizeText(row?.is_cancelled ? "cancelled" : ""),
+  ].some((value) =>
+    ["cancelled", "canceled", "cancel", "void", "ยกเลิก"].includes(value)
+  );
+}
+
 function isAccountingChecked(row) {
-  const status = normalizeText(row.status);
-  return ["accounting_checked", "checked", "approved", "done", "completed", "ตรวจสอบแล้ว"].includes(status);
+  const accountingStatus = getAccountingStatus(row);
+  const status = getReportStatus(row);
+
+  // ระบบเดิมบางหน้าเก็บสถานะบัญชีไว้ที่ accounting_status
+  // แต่บางข้อมูลเก่าอาจยังเก็บไว้ที่ status จึงเช็กทั้ง 2 ช่อง
+  return [
+    accountingStatus,
+    status,
+  ].some((value) =>
+    [
+      "accounting_checked",
+      "checked",
+      "approved",
+      "done",
+      "completed",
+      "ตรวจสอบแล้ว",
+      "บัญชีตรวจแล้ว",
+    ].includes(value)
+  );
+}
+
+function isValidForDashboardCalculation(row) {
+  return isAccountingChecked(row) && !isCancelledRow(row);
 }
 
 /* ======================================================
@@ -1011,7 +1069,7 @@ async function debugSupervisorDashboard() {
 
   const reportsResult = await supabaseClient
     .from(REPORT_TABLE)
-    .select("id, report_date, status, department_code, department, machine_no, problem_type, waste_weight_kg, waste_qty, total_qty, production_weight_kg, reported_by, created_at")
+    .select("id, report_date, status, accounting_status, is_cancelled, department_code, department, machine_no, problem_type, waste_weight_kg, waste_qty, production_kg, total_qty, production_weight_kg, reported_by, created_at")
     .gte("report_date", startDate)
     .lte("report_date", endDate)
     .order("report_date", { ascending: true });

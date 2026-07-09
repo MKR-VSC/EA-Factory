@@ -212,7 +212,6 @@ function bindEvents() {
       event.stopPropagation();
       addUser();
     });
-   
   }
   document
     .getElementById("user-search-input")
@@ -722,7 +721,7 @@ function renderDepartments() {
 
                   <button
                     type="button"
-                    class="btn btn-secondary"
+                    class="btn btn-icon btn-edit"
                     onclick="editDepartment('${escapeAttr(id)}')"
                   >
                     <span class="material-symbols-outlined">edit</span>
@@ -730,15 +729,26 @@ function renderDepartments() {
 
                   <button
                     type="button"
-                    class="btn btn-warning"
+                    class="btn btn-icon btn-sort"
                     onclick="editDepartmentOrder('${escapeAttr(id)}', ${sortOrder})"
                   >
                     <span class="material-symbols-outlined">sort</span>
                   </button>
 
                   <button
+  type="button"
+  class="btn btn-toggle ${row.is_active === false ? "btn-enable" : "btn-disable"}"
+  onclick="toggleDepartmentActive('${escapeAttr(id)}', ${row.is_active !== false})"
+>
+  <span class="material-symbols-outlined">
+    ${row.is_active === false ? "toggle_on" : "toggle_off"}
+  </span>
+  ${row.is_active === false ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+</button>
+
+                  <button
                     type="button"
-                    class="btn btn-danger"
+                    class="btn btn-icon btn-delete"
                     onclick="deleteDepartment('${escapeAttr(id)}')"
                   >
                     <span class="material-symbols-outlined">delete</span>
@@ -753,6 +763,12 @@ function renderDepartments() {
     })
     .join("");
 }
+
+
+async function toggleDepartmentActive(id, currentActive) {
+  await toggleMasterActive(state.departmentTable, id, currentActive, loadMasters);
+}
+
 
 function renderDepartmentFilter() {
   const select = document.getElementById("master-dept-filter");
@@ -1155,13 +1171,13 @@ function renderShifts() {
             id && state.shiftTable
               ? `
                 <div class="master-actions">
-                  <button type="button" class="btn btn-secondary" onclick="editShift('${escapeAttr(id)}')">
+                  <button type="button" class="btn btn-icon btn-edit" onclick="editShift('${escapeAttr(id)}')">
                     <span class="material-symbols-outlined">edit</span>
                   </button>
-                  <button type="button" class="btn btn-warning" onclick="editShiftOrder('${escapeAttr(id)}', ${sortOrder})">
+                  <button type="button" class="btn btn-icon btn-sort" onclick="editShiftOrder('${escapeAttr(id)}', ${sortOrder})">
                     <span class="material-symbols-outlined">sort</span>
                   </button>
-                  <button type="button" class="btn btn-danger" onclick="deleteShift('${escapeAttr(id)}')">
+                  <button type="button" class="btn btn-icon btn-delete" onclick="deleteShift('${escapeAttr(id)}')">
                     <span class="material-symbols-outlined">delete</span>
                   </button>
                 </div>
@@ -1399,21 +1415,21 @@ function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
 
     const editBtn = document.createElement("button");
     editBtn.type = "button";
-    editBtn.className = "btn btn-secondary";
+    editBtn.className = "btn btn-icon btn-edit";
     editBtn.innerHTML = '<span class="material-symbols-outlined">edit</span>';
     editBtn.title = "แก้ไขชื่อ";
     editBtn.addEventListener("click", () => editMasterName(row, type));
 
     const orderBtn = document.createElement("button");
     orderBtn.type = "button";
-    orderBtn.className = "btn btn-warning";
+    orderBtn.className = "btn btn-icon btn-sort";
     orderBtn.innerHTML = '<span class="material-symbols-outlined">sort</span>';
     orderBtn.title = "แก้ไขลำดับ";
     orderBtn.addEventListener("click", () => editMasterOrder(row, type));
 
     const deleteBtn = document.createElement("button");
     deleteBtn.type = "button";
-    deleteBtn.className = "btn btn-danger";
+    deleteBtn.className = "btn btn-icon btn-delete";
     deleteBtn.innerHTML =
       '<span class="material-symbols-outlined">delete</span>';
     deleteBtn.title = "ลบ";
@@ -1429,7 +1445,7 @@ function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
     if (type === "machine") {
       const qrBtn = document.createElement("button");
       qrBtn.type = "button";
-      qrBtn.className = "btn btn-primary";
+      qrBtn.className = "btn btn-toggle btn-qr";
       qrBtn.innerHTML =
         '<span class="material-symbols-outlined">qr_code</span> QR';
       qrBtn.title = "สร้าง QR เครื่องนี้";
@@ -1540,6 +1556,29 @@ async function deleteMasterItem(table, id, reloadFn) {
   await reloadFn();
 }
 
+async function toggleMasterActive(table, id, currentActive, reloadFn) {
+  if (!table || !id) return;
+
+  const nextActive = !currentActive;
+  const text = nextActive ? "เปิดใช้งาน" : "ปิดใช้งาน";
+
+  const ok = await showConfirm(`ต้องการ${text}รายการนี้ใช่ไหม?`, text);
+
+  if (!ok) return;
+
+  const { error } = await state.supabase
+    .from(table)
+    .update({ is_active: nextActive })
+    .eq("id", id);
+
+  if (error) {
+    showAlert(`${text}ไม่สำเร็จ: ${error.message}`);
+    return;
+  }
+
+  showAlert(`${text}สำเร็จ`, "success");
+  await reloadFn();
+}
 /* =========================================================
    USER / ROLE MANAGEMENT
 ========================================================= */
@@ -2950,3 +2989,5 @@ window.editMasterOrder = editMasterOrder;
 window.editShift = editShift;
 window.editShiftOrder = editShiftOrder;
 window.loadActivityLogs = loadActivityLogs;
+window.toggleMasterActive = toggleMasterActive;
+window.toggleDepartmentActive = toggleDepartmentActive;

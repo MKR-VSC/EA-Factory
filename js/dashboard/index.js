@@ -17,6 +17,7 @@
 const LOGIN_PAGE = "/login.html";
 const REPORT_TABLE = "daily_waste_reports";
 const MASTER_DEPARTMENT_TABLE = "master_departments";
+const ITEM_TABLE = "daily_waste_report_items";
 const MACHINE_LIMIT_PERCENT = 1;
 const MACHINE_WARNING_PERCENT = 0.7;
 const FACTORY_LIMIT_PERCENT = 1;
@@ -24,11 +25,21 @@ const FACTORY_WARNING_PERCENT = 0.7;
 
 const ALLOWED_ROLES = ["admin", "management", "manager", "executive"];
 const ACCOUNTING_CHECKED_STATUS = [
+  "accounting_checked",
   "checked",
   "approved",
   "done",
   "completed",
   "ตรวจสอบแล้ว",
+];
+
+const CANCELLED_STATUS = [
+  "cancelled",
+  "canceled",
+  "cancel",
+  "void",
+  "ยกเลิก",
+  "ยกเลิกแล้ว",
 ];
 
 const EXCLUDE_DEPARTMENT_CODES = [
@@ -234,13 +245,17 @@ async function loadAndProcessDashboardData() {
 
     if (error) throw error;
 
-    const checkedRows = (data || []).filter(isAccountingChecked);
+    const checkedRows = (data || [])
+      .filter(isAccountingChecked)
+      .filter((row) => !isCancelledRow(row));
 
-    dashboardDataCache = checkedRows;
+    const rowsWithItems = await attachProblemItemsToReports(checkedRows);
+
+    dashboardDataCache = rowsWithItems;
     filteredDataCache =
       selectedDept === "all"
-        ? checkedRows
-        : checkedRows.filter((row) => getDepartmentInfo(row).code === selectedDept);
+        ? rowsWithItems
+        : rowsWithItems.filter((row) => getDepartmentInfo(row).code === selectedDept);
 
     window.pvtDashboardRawCache = dashboardDataCache;
     window.pvtExecutiveFilteredCache = filteredDataCache;
@@ -391,7 +406,6 @@ function summarizeByMachine(records) {
   records.forEach((row) => {
     const dept = getDepartmentInfo(row);
     const machine = row.machine_no || "ไม่ระบุเครื่อง";
-    const problem = getProblem(row);
     const key = `${dept.code}|${machine}`;
 
     if (!map[key]) {
@@ -411,7 +425,10 @@ function summarizeByMachine(records) {
     map[key].waste += getWasteWeight(row);
     addProductionOnce(map[key], row);
 
-    map[key].problems[problem] = (map[key].problems[problem] || 0) + getWasteWeight(row);
+    getProblemItems(row).forEach((item) => {
+      const problem = item.problem_type || "ไม่ระบุปัญหา";
+      map[key].problems[problem] = (map[key].problems[problem] || 0) + toNumber(item.waste_weight_kg);
+    });
   });
 
   return Object.values(map)
@@ -432,18 +449,20 @@ function summarizeByProblem(records) {
   const map = {};
 
   records.forEach((row) => {
-    const problem = getProblem(row);
+    getProblemItems(row).forEach((item) => {
+      const problem = item.problem_type || "ไม่ระบุปัญหา";
 
-    if (!map[problem]) {
-      map[problem] = {
-        problem,
-        count: 0,
-        waste: 0,
-      };
-    }
+      if (!map[problem]) {
+        map[problem] = {
+          problem,
+          count: 0,
+          waste: 0,
+        };
+      }
 
-    map[problem].count += 1;
-    map[problem].waste += getWasteWeight(row);
+      map[problem].count += 1;
+      map[problem].waste += toNumber(item.waste_weight_kg);
+    });
   });
 
   return Object.values(map).sort((a, b) => b.waste - a.waste).slice(0, 10);
@@ -744,6 +763,84 @@ function csvCell(value) {
   return `"${String(value ?? "").replaceAll('"', '""')}"`;
 }
 
+
+/* =========================================================
+   DETAIL ITEMS
+   ดึงรายการปัญหาย่อย เพื่อคำนวณของเสีย/สาเหตุจาก daily_waste_report_items
+========================================================= */
+
+async function attachProblemItemsToReports(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return rows || [];
+
+  const ids = rows.map((row) => row.id).filter(Boolean);
+  if (!ids.length) return rows.map(normalizeReportItemsFallback);
+
+  const client = getSupabaseClient();
+  if (!client) return rows.map(normalizeReportItemsFallback);
+
+  try {
+    const { data, error } = await client
+      .from(ITEM_TABLE)
+      .select("id, report_id, item_no, problem_type, waste_weight_kg, detail, created_at")
+      .in("report_id", ids)
+      .order("item_no", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.warn("โหลด daily_waste_report_items ไม่สำเร็จ ใช้ข้อมูลหัวรายงานแทน:", error);
+      return rows.map(normalizeReportItemsFallback);
+    }
+
+    const itemMap = new Map();
+
+    (data || []).forEach((item) => {
+      const key = String(item.report_id);
+      if (!itemMap.has(key)) itemMap.set(key, []);
+
+      itemMap.get(key).push({
+        id: item.id,
+        item_no: item.item_no,
+        problem_type: item.problem_type || "ไม่ระบุปัญหา",
+        waste_weight_kg: toNumber(item.waste_weight_kg),
+        detail: item.detail || "",
+      });
+    });
+
+    return rows.map((row) => ({
+      ...row,
+      problem_items: itemMap.get(String(row.id)) || getFallbackProblemItems(row),
+    }));
+  } catch (error) {
+    console.warn("โหลดรายการปัญหาย่อยไม่สำเร็จ ใช้ข้อมูลหัวรายงานแทน:", error);
+    return rows.map(normalizeReportItemsFallback);
+  }
+}
+
+function normalizeReportItemsFallback(row) {
+  return {
+    ...row,
+    problem_items: getFallbackProblemItems(row),
+  };
+}
+
+function getFallbackProblemItems(row) {
+  return [
+    {
+      id: `${row.id || "report"}-fallback`,
+      item_no: 1,
+      problem_type: getProblemFromHeader(row),
+      waste_weight_kg: toNumber(row.waste_weight_kg || row.waste_qty || row.total_waste_kg || 0),
+      detail: row.detail || row.note || "",
+    },
+  ];
+}
+
+function getProblemItems(row) {
+  return Array.isArray(row.problem_items) && row.problem_items.length
+    ? row.problem_items
+    : getFallbackProblemItems(row);
+}
+
 /* =========================================================
    DATA HELPERS
 ========================================================= */
@@ -801,19 +898,43 @@ function normalizeDepartmentCode(value) {
 }
 
 function isAccountingChecked(row) {
-  return ACCOUNTING_CHECKED_STATUS.includes(normalizeText(row.status));
+  const accountingStatus = normalizeText(row.accounting_status);
+  const status = normalizeText(row.status);
+
+  return ACCOUNTING_CHECKED_STATUS.includes(accountingStatus) || ACCOUNTING_CHECKED_STATUS.includes(status);
+}
+
+function isCancelledRow(row) {
+  const accountingStatus = normalizeText(row.accounting_status);
+  const status = normalizeText(row.status);
+
+  return CANCELLED_STATUS.includes(accountingStatus) || CANCELLED_STATUS.includes(status);
 }
 
 function getWasteWeight(row) {
-  return toNumber(row.waste_weight_kg || row.waste_qty || 0);
+  const itemWaste = getProblemItems(row).reduce((sum, item) => sum + toNumber(item.waste_weight_kg), 0);
+  return itemWaste || toNumber(row.waste_weight_kg || row.waste_qty || row.total_waste_kg || 0);
 }
 
 function getProductionWeight(row) {
-  return toNumber(row.production_weight_kg || row.total_qty || row.produced_weight_kg || row.production_qty || 0);
+  return toNumber(
+    row.production_kg ||
+      row.production_weight_kg ||
+      row.total_qty ||
+      row.produced_weight_kg ||
+      row.production_qty ||
+      0
+  );
+}
+
+function getProblemFromHeader(row) {
+  return row.problem_type || row.reason_detail || row.detail || "ไม่ระบุปัญหา";
 }
 
 function getProblem(row) {
-  return row.problem_type || row.reason_detail || row.detail || "ไม่ระบุปัญหา";
+  const items = getProblemItems(row);
+  const topItem = [...items].sort((a, b) => toNumber(b.waste_weight_kg) - toNumber(a.waste_weight_kg))[0];
+  return topItem?.problem_type || getProblemFromHeader(row);
 }
 
 function getRowDate(row) {

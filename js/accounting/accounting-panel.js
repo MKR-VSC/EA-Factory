@@ -5,6 +5,7 @@ const REPORT_TABLE = "daily_waste_reports";
 const ITEM_TABLE = "daily_waste_report_items";
 const STATUS_SENT = "sent_accounting";
 const STATUS_DONE = "accounting_checked";
+const STATUS_CANCELLED = "accounting_cancelled";
 let state = {
   supabase: null,
   currentUser: null,
@@ -91,7 +92,7 @@ async function loadAccountingData() {
     const { data, error } = await state.supabase
       .from(REPORT_TABLE)
       .select("*")
-      .in("status", [STATUS_SENT, STATUS_DONE])
+      .in("status", [STATUS_SENT, STATUS_DONE, STATUS_CANCELLED])
       .order("report_date", { ascending: false })
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -179,11 +180,13 @@ function applyFilters() {
 function buildGroups(rows) {
   const m = new Map();
   rows.forEach((r) => {
+    const rowStatus = getAccountingStatus(r);
     const key = [
       r.report_date || dateKey(r.created_at),
       normalizeDept(r.department_code || r.department),
       r.shift || r.work_shift || "",
       r.machine_no || "",
+      rowStatus || STATUS_SENT,
     ].join("|");
     if (!m.has(key))
       m.set(key, {
@@ -198,15 +201,22 @@ function buildGroups(rows) {
         items: [],
         waste: 0,
         production: getProduction(r),
-        status: STATUS_DONE,
+        status: rowStatus || STATUS_SENT,
       });
     const g = m.get(key);
     g.ids.push(r.id);
     g.rows.push(r);
-    g.status =
-      g.status === STATUS_DONE && getAccountingStatus(r) === STATUS_DONE
-        ? STATUS_DONE
-        : STATUS_SENT;
+    const currentStatus = getAccountingStatus(r);
+    if (g.status !== STATUS_CANCELLED) {
+      if (currentStatus === STATUS_CANCELLED) {
+        g.status = STATUS_CANCELLED;
+      } else {
+        g.status =
+          g.status === STATUS_DONE && currentStatus === STATUS_DONE
+            ? STATUS_DONE
+            : STATUS_SENT;
+      }
+    }
     g.reporter.add(r.reported_by || r.created_by_name || "-");
     (r.problem_items || []).forEach((i) => {
       g.items.push(i);
@@ -219,9 +229,11 @@ function buildGroups(rows) {
   return [...m.values()];
 }
 function renderSummary(groups) {
-  const waste = groups.reduce((s, g) => s + g.waste, 0),
-    prod = groups.reduce((s, g) => s + (g.production || 0), 0);
-  setText("sumCount", groups.length.toLocaleString("th-TH"));
+  // ไม่นับรายการที่ยกเลิกในยอดสรุป เพื่อไม่ให้ตัวเลขบัญชีเพี้ยน
+  const activeGroups = groups.filter((g) => normalizeText(g.status) !== STATUS_CANCELLED);
+  const waste = activeGroups.reduce((s, g) => s + g.waste, 0),
+    prod = activeGroups.reduce((s, g) => s + (g.production || 0), 0);
+  setText("sumCount", activeGroups.length.toLocaleString("th-TH"));
   setText("sumWaste", formatNumber(waste));
   setText("sumProduction", formatNumber(prod));
 }
@@ -235,35 +247,42 @@ function renderTable(groups) {
   body.innerHTML = groups.map((g, i) => renderGroup(g, i)).join("");
 }
 function renderGroup(g, i) {
-  const percent = g.production ? (g.waste / g.production) * 100 : 0;
-  const result = getResult(g.dept, percent, !!g.production);
-  const status =
-    normalizeText(g.status) === STATUS_DONE
+  const isCancelled = normalizeText(g.status) === STATUS_CANCELLED;
+  const isDone = normalizeText(g.status) === STATUS_DONE;
+  const percent = !isCancelled && g.production ? (g.waste / g.production) * 100 : 0;
+  const result = isCancelled
+    ? { label: "ยกเลิก", className: "result-none" }
+    : getResult(g.dept, percent, !!g.production);
+
+  const status = isCancelled
+    ? `<span class="status-pill status-cancelled">ยกเลิกรายการ</span>`
+    : isDone
       ? `<span class="status-pill status-done">บัญชีตรวจแล้ว</span>`
       : `<span class="status-pill status-sent">รอบัญชีตรวจ</span>`;
-  return `<tr><td><button class="expand-btn" onclick="toggleDetail(${i})">▼</button></td>
+
+  const disabledAttr = isCancelled ? "disabled" : "";
+  const rowClass = isCancelled ? ` class="row-cancelled"` : "";
+
+  return `<tr${rowClass}><td><button class="expand-btn" onclick="toggleDetail(${i})">▼</button></td>
   <td>${safeText(formatDate(g.date))}</td>
   <td><strong>${safeText(g.dept)}</strong><br><small>${safeText(getDeptName(g.dept))}</small></td>
   <td>${safeText(g.shift)}</td><td><strong>${safeText(g.machine)}</strong></td>
   <td>${safeText([...g.reporter].join(", "))}</td>
   <td class="text-right"><strong>${formatNumber(g.waste)}</strong></td>
   <td>${renderProblemInline(g.items)}</td>
-  <td class="text-right"><input class="cell-input text-right" type="number" step="0.01" min="0" value="${safeAttr(g.production || "")}" data-prod="${safeAttr(g.key)}" placeholder="kg"></td>
-  <td class="text-right">${g.production ? formatPercent(percent) : "-"}</td>
+  <td class="text-right"><input class="cell-input text-right" type="number" step="0.01" min="0" value="${safeAttr(g.production || "")}" data-prod="${safeAttr(g.key)}" placeholder="kg" ${disabledAttr}></td>
+  <td class="text-right">${isCancelled ? "-" : g.production ? formatPercent(percent) : "-"}</td>
   <td><span class="result-pill ${result.className}">${safeText(result.label)}</span></td>
   <td>${status}</td>
- <td>
-  ${
-    normalizeText(g.status) === STATUS_DONE
-      ? `
-        <button class="btn warning" onclick="editGroup('${safeAttr(g.key)}')">แก้ไข</button>
-        <button class="btn success" onclick="saveGroup('${safeAttr(g.key)}')">บันทึก</button>
-      `
-      : `<button class="btn success" onclick="saveGroup('${safeAttr(g.key)}')">บันทึก</button>`
-  }
-</td>
+  <td>
+    <div class="action-stack">
+      <button class="btn warning" onclick="editGroup('${safeAttr(g.key)}')" ${disabledAttr}>แก้ไข</button>
+      <button class="btn danger" onclick="cancelGroup('${safeAttr(g.key)}')" ${disabledAttr}>ยกเลิก</button>
+      <button class="btn success" onclick="saveGroup('${safeAttr(g.key)}')" ${disabledAttr}>บันทึก</button>
+    </div>
+  </td>
   </tr>
-  <tr id="detail-${i}" class="detail-row hidden"><td colspan="13">${renderProblemTable(g.items, g.waste)}</td></tr>`;
+  <tr id="detail-${i}" class="detail-row hidden${isCancelled ? " row-cancelled" : ""}"><td colspan="13">${renderProblemTable(g.items, g.waste)}</td></tr>`;
 }
 
 function editGroup(key) {
@@ -328,6 +347,64 @@ async function saveGroup(key) {
   showToast("บันทึกเรียบร้อยแล้ว", "success");
   await loadAccountingData();
 }
+async function cancelGroup(key) {
+  const g = state.groups.find((x) => x.key === key);
+  if (!g) return;
+
+  const ok = await askCancelConfirm(g);
+  if (!ok) return;
+
+  const { error } = await state.supabase
+    .from(REPORT_TABLE)
+    .update({
+      status: STATUS_CANCELLED,
+      accounting_status: STATUS_CANCELLED,
+      updated_at: new Date().toISOString(),
+    })
+    .in("id", g.ids);
+
+  if (error) return showToast(`ยกเลิกไม่สำเร็จ: ${error.message}`, "error");
+  showToast("ยกเลิกรายการแล้ว รายการเดิมจะแสดงเป็นสีเทา", "success");
+  await loadAccountingData();
+}
+
+function askCancelConfirm(g) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("appModal");
+    const title = document.getElementById("modalTitle");
+    const body = document.getElementById("modalBody");
+    const actions = document.getElementById("modalActions");
+
+    if (!modal || !title || !body || !actions) {
+      resolve(confirm("ยืนยันยกเลิกรายการนี้ใช่ไหม?"));
+      return;
+    }
+
+    title.textContent = "ยืนยันยกเลิกรายการ";
+    body.innerHTML = `
+      <p>ต้องการยกเลิกรายการนี้ใช่ไหม?</p>
+      <p class="muted">ระบบจะไม่ลบข้อมูลออก แต่จะเปลี่ยนรายการเป็นสีเทา เพื่อให้รู้ว่าเป็นรายการที่ยกเลิกแล้ว</p>
+      <p><strong>${safeText(formatDate(g.date))}</strong> / ${safeText(g.dept)} / ${safeText(g.shift)} / ${safeText(g.machine)}</p>
+    `;
+    actions.innerHTML = `
+      <button class="btn light" id="cancelNoBtn">ไม่ยกเลิก</button>
+      <button class="btn danger" id="cancelYesBtn">ยืนยันยกเลิก</button>
+    `;
+
+    modal.classList.remove("hidden");
+
+    document.getElementById("cancelNoBtn")?.addEventListener("click", () => {
+      modal.classList.add("hidden");
+      resolve(false);
+    }, { once: true });
+
+    document.getElementById("cancelYesBtn")?.addEventListener("click", () => {
+      modal.classList.add("hidden");
+      resolve(true);
+    }, { once: true });
+  });
+}
+
 function getResult(dept, percent, hasProd) {
   if (!hasProd) return { label: "รอน้ำหนักผลิต", className: "result-none" };
   const s = state.standards[dept];
@@ -433,9 +510,26 @@ function showToast(msg, type = "") {
 function closeModal() {
   document.getElementById("appModal")?.classList.add("hidden");
 }
+
+async function logoutAccounting() {
+  try {
+    const client = state.supabase || window.supabaseClient || window.supabase;
+    if (client?.auth?.signOut) {
+      await client.auth.signOut();
+    }
+  } catch (e) {
+    console.warn("ออกจากระบบไม่สมบูรณ์:", e);
+  } finally {
+    localStorage.removeItem("activeUserId");
+    window.location.href = "/login.html";
+  }
+}
+
 window.loadAccountingData = loadAccountingData;
 window.applyFilters = applyFilters;
 window.toggleDetail = toggleDetail;
 window.saveGroup = saveGroup;
 window.closeModal = closeModal;
 window.editGroup = editGroup;
+window.cancelGroup = cancelGroup;
+window.logoutAccounting = logoutAccounting;

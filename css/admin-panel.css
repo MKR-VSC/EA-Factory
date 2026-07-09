@@ -1878,3 +1878,155 @@ td select {
   margin-top: 18px;
   border-top: 1px solid #f1f5f9;
 }
+
+/* ===== FIX MASTER ACTION BUTTONS ===== */
+
+.master-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+/* ปุ่ม icon สั้น */
+.master-actions .btn-icon {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+/* ปุ่มมีข้อความ เช่น เปิด/ปิดใช้งาน */
+.master-actions .btn-toggle {
+  width: auto;
+  min-width: 112px;
+  height: 42px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.master-actions .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.btn-edit {
+  background: #2563eb;
+  color: #fff;
+}
+
+.btn-sort {
+  background: #7c3aed;
+  color: #fff;
+}
+
+.btn-qr {
+  background: #0891b2;
+  color: #fff;
+}
+
+.btn-disable {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.btn-enable {
+  background: #16a34a;
+  color: #fff;
+}
+
+.btn-delete {
+  background: #dc2626;
+  color: #fff;
+}
+
+.btn-edit:hover { background: #1d4ed8; }
+.btn-sort:hover { background: #6d28d9; }
+.btn-qr:hover { background: #0e7490; }
+.btn-disable:hover { background: #d97706; }
+.btn-enable:hover { background: #15803d; }
+.btn-delete:hover { background: #b91c1c; }
+
+
+/* ===== FIX BUTTON COLOR OVERRIDE ===== */
+
+.data-list .master-actions .btn-edit {
+  background: #2563eb !important;
+}
+
+.data-list .master-actions .btn-sort {
+  background: #7c3aed !important;
+}
+
+.data-list .master-actions .btn-qr {
+  background: #0891b2 !important;
+}
+
+.data-list .master-actions .btn-enable {
+  background: #16a34a !important;
+}
+
+.data-list .master-actions .btn-disable {
+  background: #f59e0b !important;
+}
+
+.data-list .master-actions .btn-delete {
+  background: #dc2626 !important;
+}
+
+.data-list .master-actions .btn-edit:hover {
+  background: #1d4ed8 !important;
+}
+
+.data-list .master-actions .btn-sort:hover {
+  background: #6d28d9 !important;
+}
+
+.data-list .master-actions .btn-qr:hover {
+  background: #0e7490 !important;
+}
+
+.data-list .master-actions .btn-enable:hover {
+  background: #15803d !important;
+}
+
+.data-list .master-actions .btn-disable:hover {
+  background: #d97706 !important;
+}
+
+.data-list .master-actions .btn-delete:hover {
+  background: #b91c1c !important;
+}
+
+/* ===== FIX SIDEBAR MENU ALIGNMENT ===== */
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 13px 16px;
+}
+
+.sidebar-item .material-symbols-outlined {
+  width: 24px;
+  min-width: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.sidebar-item {
+  line-height: 1;
+}

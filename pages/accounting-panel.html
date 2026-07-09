@@ -4,17 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>บัญชีตรวจสอบของเสีย | EA Factory</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-      rel="stylesheet"
-    />
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/BG1.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/BG1.png" />
+    <link rel="apple-touch-icon" href="/icons/Ea_Factory_512.png" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#047857" />
+
     <link rel="stylesheet" href="/css/ea-go-live.css" />
     <link rel="stylesheet" href="/css/accounting-panel.css" />
   </head>
+
   <body>
     <main class="page">
       <header class="topbar">
@@ -25,58 +34,66 @@
           </h1>
           <p>รับเฉพาะรายการที่หัวหน้างานส่งบัญชีแล้ว</p>
         </div>
+
         <div class="actions">
-          <a class="btn light" href="/pages/factory-settings.html">ตั้งค่า</a
-          ><a class="btn light" href="/index.html">ย้อนกลับ</a
-          ><button class="btn secondary" onclick="loadAccountingData()">
-            โหลดใหม่
-          </button>
+          <a class="btn light" href="/pages/factory-settings.html">ตั้งค่า</a>
+          <a class="btn light" href="/index.html">ย้อนกลับ</a>
+          <button class="btn secondary" type="button" onclick="loadAccountingData()">โหลดใหม่</button>
+          <button class="btn logout" type="button" onclick="logoutAccounting()">Logout</button>
         </div>
       </header>
+
       <section class="panel">
         <div class="filter-grid">
           <div class="form-group">
-            <label>เดือน</label><input type="month" id="filterMonth" />
+            <label for="filterMonth">เดือน</label>
+            <input type="month" id="filterMonth" />
           </div>
+
           <div class="form-group">
-            <label>แผนก</label
-            ><select id="filterDept">
+            <label for="filterDept">แผนก</label>
+            <select id="filterDept">
               <option value="all">ทุกแผนก</option>
             </select>
           </div>
+
           <div class="form-group">
-            <label>สถานะ</label
-            ><select id="filterStatus">
+            <label for="filterStatus">สถานะ</label>
+            <select id="filterStatus">
               <option value="all">ทั้งหมด</option>
               <option value="sent_accounting">รอบัญชีตรวจ</option>
               <option value="accounting_checked">บัญชีตรวจแล้ว</option>
+              <option value="accounting_cancelled">ยกเลิกรายการ</option>
             </select>
           </div>
+
           <div class="form-group">
-            <label>ค้นหา</label
-            ><input
-              type="search"
-              id="searchInput"
-              placeholder="เครื่อง / ปัญหา / ผู้บันทึก"
-            />
+            <label for="searchInput">ค้นหา</label>
+            <input type="search" id="searchInput" placeholder="เครื่อง / ปัญหา / ผู้บันทึก" />
           </div>
+
           <div class="form-group">
-            <label>&nbsp;</label
-            ><button class="btn primary" onclick="applyFilters()">ค้นหา</button>
+            <label>&nbsp;</label>
+            <button class="btn primary" type="button" onclick="applyFilters()">ค้นหา</button>
           </div>
         </div>
       </section>
+
       <section class="summary-grid">
         <div class="summary-card">
-          <span>จำนวนรายการ</span><strong id="sumCount">0</strong>
+          <span>จำนวนรายการ</span>
+          <strong id="sumCount">0</strong>
         </div>
         <div class="summary-card danger">
-          <span>น้ำหนักสูญเสียรวม</span><strong id="sumWaste">0.00</strong>
+          <span>น้ำหนักสูญเสียรวม</span>
+          <strong id="sumWaste">0.00</strong>
         </div>
         <div class="summary-card success">
-          <span>น้ำหนักผลิตรวม</span><strong id="sumProduction">0.00</strong>
+          <span>น้ำหนักผลิตรวม</span>
+          <strong id="sumProduction">0.00</strong>
         </div>
       </section>
+
       <section class="panel">
         <div class="table-head">
           <div>
@@ -85,6 +102,7 @@
           </div>
           <span id="lastUpdate" class="muted">-</span>
         </div>
+
         <div class="table-scroll">
           <table class="data-table">
             <thead>
@@ -113,17 +131,20 @@
         </div>
       </section>
     </main>
+
     <div id="appModal" class="modal hidden">
       <div class="modal-card">
         <div class="modal-head">
           <h3 id="modalTitle">แจ้งเตือน</h3>
-          <button class="modal-close" onclick="closeModal()">×</button>
+          <button class="modal-close" type="button" onclick="closeModal()">×</button>
         </div>
         <div id="modalBody"></div>
         <div id="modalActions" class="modal-actions"></div>
       </div>
     </div>
+
     <div id="toast" class="toast hidden"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/activityLogger.js"></script>

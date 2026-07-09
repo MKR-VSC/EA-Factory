@@ -1,80 +1,131 @@
 <!doctype html>
 <html lang="th">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>ตั้งค่าโรงงาน | EA Factory</title>
+    <title>ตั้งค่าเปอร์เซ็นต์ของเสีย | EA Factory</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/factory-settings.css" />
-  <link rel="icon" href="data:," />
-</head>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 
-<body>
-  <main class="settings-shell">
-    <header class="settings-header">
-      <div>
-        <h1>ตั้งค่าโรงงาน</h1>
-        <p>กำหนดเกณฑ์ % Waste รายแผนก สำหรับใช้ในหน้าบัญชีและหัวหน้างาน</p>
-      </div>
+    <link rel="stylesheet" href="/css/factory-settings.css" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/BG1.png" />
+    <link rel="apple-touch-icon" href="/icons/Ea_Factory_512.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#047857" />
+  </head>
 
-      <div class="header-actions">
-        <a href="/pages/accounting-panel.html" class="btn btn-light">
-          <span class="material-symbols-outlined">arrow_back</span>
-          กลับหน้าบัญชี
-        </a>
-
-        <button id="btn-refresh" class="btn btn-dark" type="button">
-          <span class="material-symbols-outlined">refresh</span>
-          โหลดใหม่
-        </button>
-      </div>
-    </header>
-
-    <div id="alert-box" class="alert-box" hidden></div>
-
-    <section class="panel">
-      <div class="panel-head">
-        <div>
-          <h2>เกณฑ์ของเสียรายแผนก</h2>
-          <p>บัญชีแก้ได้เฉพาะค่าเกณฑ์และค่าเตือน ส่วนการเพิ่ม/ปิดแผนกให้ Admin จัดการ</p>
+  <body>
+    <main class="settings-shell">
+      <header class="settings-header">
+        <div class="header-left">
+          <div class="header-icon">
+            <span class="material-symbols-outlined">manufacturing</span>
+          </div>
+          <div>
+            <div class="eyebrow">EA Factory Settings</div>
+            <h1>ตั้งค่าเปอร์เซ็นต์ของเสีย</h1>
+            <p>กำหนดเกณฑ์ % ของเสีย รายแผนก สำหรับใช้ในหน้าเจ้าหน้าที่</p>
+          </div>
         </div>
+
+        <div class="header-actions">
+          <a href="/pages/accounting-panel.html" class="btn btn-light">
+            <span class="material-symbols-outlined">arrow_back</span>
+            กลับ
+          </a>
+
+          <button id="btn-refresh" class="btn btn-dark" type="button">
+            <span class="material-symbols-outlined">refresh</span>
+            โหลดใหม่
+          </button>
+
+          <button id="btn-logout" class="btn btn-red" type="button">
+            <span class="material-symbols-outlined">logout</span>
+            Logout
+          </button>
+        </div>
+      </header>
+
+      <div class="info-grid">
+        <article class="info-card">
+          <span class="material-symbols-outlined">rule</span>
+          <div>
+            <strong>เกณฑ์ไม่เกิน (%)</strong>
+            <p>ใช้ตัดสินว่าของเสียผ่านหรือเกินมาตรฐาน</p>
+          </div>
+        </article>
+
+        <article class="info-card warning">
+          <span class="material-symbols-outlined">warning</span>
+          <div>
+            <strong>ค่าเตือน (%)</strong>
+            <p>ใช้แจ้งเตือนเมื่อเริ่มเข้าใกล้เกณฑ์สูงสุด</p>
+          </div>
+        </article>
+
+        <article class="info-card lock">
+          <span class="material-symbols-outlined">admin_panel_settings</span>
+          <div>
+            <strong>สิทธิ์แก้ไข</strong>
+            <p>บัญชีแก้ได้เฉพาะค่าเกณฑ์ ส่วนแผนกให้ Admin จัดการ</p>
+          </div>
+        </article>
       </div>
 
-      <div class="table-scroll">
-        <table class="settings-table">
-          <thead>
-            <tr>
-              <th>ลำดับ</th>
-              <th>แผนก</th>
-              <th class="text-right">เกณฑ์ไม่เกิน (%)</th>
-              <th class="text-right">ค่าเตือน (%)</th>
-              <th>สถานะ</th>
-            </tr>
-          </thead>
+      <div id="alert-box" class="alert-box" hidden></div>
 
-          <tbody id="settings-table-body">
-            <tr>
-              <td colspan="5" class="tb-empty">กำลังโหลดข้อมูล...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>เกณฑ์ของเสียรายแผนก</h2>
+            <p>ปรับตัวเลขให้ตรงกับมาตรฐานโรงงาน แล้วกดบันทึกด้านล่าง</p>
+          </div>
 
-      <div class="save-row">
-        <button id="btn-save" class="btn btn-green" type="button">
-          <span class="material-symbols-outlined">save</span>
-          บันทึกการตั้งค่า
-        </button>
-      </div>
-    </section>
-  </main>
+          <span class="panel-badge">
+            <span class="material-symbols-outlined">verified</span>
+            Master Departments
+          </span>
+        </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/core/supabaseClient.js"></script>
-  <script src="/core/roleConfig.js"></script>
-  <script src="/js/accounting/factory-settings.js"></script>
-</body>
+        <div class="table-scroll">
+          <table class="settings-table">
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>แผนก</th>
+                <th class="text-right">เกณฑ์ไม่เกิน (%)</th>
+                <th class="text-right">ค่าเตือน (%)</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+
+            <tbody id="settings-table-body">
+              <tr>
+                <td colspan="5" class="tb-empty">กำลังโหลดข้อมูล...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="save-row">
+          <div class="save-note">
+            <span class="material-symbols-outlined">info</span>
+            ค่าเตือนต้องไม่มากกว่าเกณฑ์สูงสุด
+          </div>
+
+          <button id="btn-save" class="btn btn-green" type="button">
+            <span class="material-symbols-outlined">save</span>
+            บันทึกการตั้งค่า
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/core/supabaseClient.js"></script>
+    <script src="/core/roleConfig.js"></script>
+    <script src="/js/accounting/factory-settings.js"></script>
+  </body>
 </html>

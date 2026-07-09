@@ -1,14 +1,7 @@
 /* ======================================================
-   FACTORY SETTINGS
+   FACTORY SETTINGS - GO LIVE UI
    ใช้สำหรับบัญชีตั้งค่าเกณฑ์ % Waste รายแผนก
    Admin / Accounting เท่านั้น
-
-   ใช้ Master หลัก:
-   - master_departments
-
-   ไม่ใช้:
-   - departments
-   - waste_standards
 ====================================================== */
 
 const DEPARTMENT_TABLE = "master_departments";
@@ -60,6 +53,7 @@ function protectSettingsPage() {
 function bindEvents() {
   document.getElementById("btn-refresh")?.addEventListener("click", loadDepartments);
   document.getElementById("btn-save")?.addEventListener("click", saveSettings);
+  document.getElementById("btn-logout")?.addEventListener("click", logoutSettings);
 }
 
 async function loadDepartments() {
@@ -118,10 +112,12 @@ function renderTable(rows) {
 
       return `
         <tr data-code="${escapeAttr(code)}">
-          <td>${index + 1}</td>
+          <td class="order-cell">${index + 1}</td>
           <td>
-            <strong>${escapeHtml(name)}</strong>
-            <div class="muted">${escapeHtml(code)}</div>
+            <div class="dept-cell">
+              <strong>${escapeHtml(name)}</strong>
+              <span>${escapeHtml(code)}</span>
+            </div>
           </td>
           <td class="text-right">
             <input
@@ -206,6 +202,27 @@ async function saveSettings() {
   }
 }
 
+async function logoutSettings() {
+  try {
+    if (state.supabase?.auth?.signOut) {
+      await state.supabase.auth.signOut();
+    }
+  } catch (err) {
+    console.warn("Supabase signOut warning:", err);
+  }
+
+  [
+    "activeUser",
+    "activeUserId",
+    "activeUsername",
+    "activeRole",
+    "activeDisplayName",
+    "activeDepartment",
+  ].forEach((key) => localStorage.removeItem(key));
+
+  window.location.href = "/login.html";
+}
+
 function normalizeCode(value) {
   return String(value || "").trim().toUpperCase();
 }
@@ -249,3 +266,7 @@ function escapeAttr(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
+window.loadDepartments = loadDepartments;
+window.saveSettings = saveSettings;
+window.logoutSettings = logoutSettings;
