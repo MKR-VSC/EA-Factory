@@ -66,7 +66,19 @@ select {
   margin-bottom: 20px;
   padding: 24px;
   color: #ffffff;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  /* background: linear-gradient(135deg, var(--primary), var(--primary-dark)); */
+  /* background: linear-gradient(
+  135deg,
+  #0b3a6e 0%,
+  #075985 55%,
+  #087ea4 100%
+); */
+background: linear-gradient(
+  135deg,
+  #071f4d 0%,
+  #0b3b78 55%,
+  #075e8f 100%
+);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow);
 }

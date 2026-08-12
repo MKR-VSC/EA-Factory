@@ -215,8 +215,8 @@ body::before {
 }
 
 .logo img {
-  width: 96px;
-  height: 96px;
+  width: 260px;
+  height: 160px;
   object-fit: contain;
   filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.16));
 }
@@ -722,8 +722,8 @@ label {
   }
 
   .logo img {
-    width: 88px;
-    height: 88px;
+    width: 512px;
+    height: 512px;
   }
 
   .pvt-top-header h1 {
@@ -799,8 +799,8 @@ label {
 
 @media (max-width: 480px) {
   .splash-logo img {
-    width: 120px;
-    height: 120px;
+    width: 512px;
+    height: 512px;
   }
 
   .splash-title {
@@ -816,8 +816,8 @@ label {
   }
 
   .logo img {
-    width: 96px;
-    height: 96px;
+    width: 162px;
+    height: 162px;
   }
 
   .pvt-top-header h1 {
@@ -932,8 +932,8 @@ label {
   }
 
   .logo img {
-    width: 94px;
-    height: 94px;
+    width: 162px;
+    height: 162px;
   }
 
   .pvt-top-header h1 {

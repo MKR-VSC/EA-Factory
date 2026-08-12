@@ -204,7 +204,7 @@ async function handlePasswordLogin(event) {
 /* ======================================================
    QR MODE
    URL ตัวอย่าง:
-   /login.html?dept=blow&token=BLOW001
+   /login.html?dept=blow&token=BLOW001 
 ====================================================== */
 
 async function checkQrMode() {
