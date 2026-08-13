@@ -1,28 +1,41 @@
 /* ======================================================
    EA FACTORY - EXECUTIVE DASHBOARD CSS v1.0
+   PVTT FACTORY - Navy / Blue Corporate Theme
 ====================================================== */
 
 :root {
-  --primary: #047857;
-  --primary-dark: #065f46;
-  --primary-soft: #d1fae5;
+  /* ================= PVTT BRAND ================= */
+  --primary: #0b4f9c;
+  --primary-dark: #071f4d;
+  --primary-deep: #061a3a;
+  --primary-soft: #e8f1ff;
+  --primary-soft-2: #f3f7fd;
+
   --blue: #2563eb;
+  --cyan: #0891b2;
+
+  /* ================= STATUS COLORS ================= */
   --warning: #f59e0b;
   --danger: #dc2626;
   --success: #16a34a;
 
+  /* ================= TEXT ================= */
   --ink: #0f172a;
   --muted: #64748b;
   --soft: #94a3b8;
-  --bg: #eef7f2;
-  --panel: rgba(255, 255, 255, 0.92);
-  --line: rgba(148, 163, 184, 0.28);
 
+  /* ================= SURFACE ================= */
+  --bg: #eef4f8;
+  --panel: rgba(255, 255, 255, 0.94);
+  --line: rgba(148, 163, 184, 0.26);
+
+  /* ================= RADIUS ================= */
   --radius-xl: 28px;
   --radius-lg: 22px;
   --radius-md: 16px;
 
-  --shadow: 0 18px 45px rgba(15, 23, 42, 0.09);
+  /* ================= SHADOW ================= */
+  --shadow: 0 16px 40px rgba(7, 31, 77, 0.09);
 }
 
 * {
@@ -39,9 +52,9 @@ body {
   font-family: "Kanit", "Noto Sans Thai", system-ui, sans-serif;
   color: var(--ink);
   background:
-    radial-gradient(circle at 10% 0%, rgba(4, 120, 87, 0.18), transparent 28%),
-    radial-gradient(circle at 90% 6%, rgba(37, 99, 235, 0.12), transparent 28%),
-    linear-gradient(135deg, #f8fafc 0%, #eef7f2 55%, #ecfeff 100%);
+    radial-gradient(circle at 8% 0%, rgba(37, 99, 235, 0.10), transparent 30%),
+    radial-gradient(circle at 92% 5%, rgba(8, 145, 178, 0.08), transparent 28%),
+    linear-gradient(135deg, #f7f9fc 0%, #eef4f8 55%, #edf5fa 100%);
 }
 
 button,
@@ -66,21 +79,47 @@ select {
   margin-bottom: 20px;
   padding: 24px;
   color: #ffffff;
-  /* background: linear-gradient(135deg, var(--primary), var(--primary-dark)); */
-  /* background: linear-gradient(
-  135deg,
-  #0b3a6e 0%,
-  #075985 55%,
-  #087ea4 100%
-); */
-background: linear-gradient(
-  135deg,
-  #071f4d 0%,
-  #0b3b78 55%,
-  #075e8f 100%
-);
+ /* background:
+  radial-gradient(
+    circle at 12% 10%,
+    rgba(255, 255, 255, 0.14),
+    transparent 34%
+  ),
+  linear-gradient(
+    135deg,
+    #2f86c4 0%,
+    #176aa5 50%,
+    #0d3b78 100%
+  ); */
+  background:     radial-gradient(circle at 12% 10%, 
+  rgba(255, 255, 255, 0.08), transparent 34%),     
+  linear-gradient(135deg, #012c64 0%, #0b5d95 55%, #087ea4 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow);
+  box-shadow:
+    0 18px 45px rgba(7, 31, 77, 0.16),f
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+
+/* Logo badge - ช่วยให้โลโก้ PVTT อ่านชัดบน Header สีน้ำเงิน */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.logo img {
+  width: 190px;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  padding: 8px 10px;
+  /* background: rgba(255, 255, 255, 0.94); */
+  /* border: 1px solid rgba(255, 255, 255, 0.72); */
+  border-radius: 16px;
+  /* box-shadow: 0 8px 20px rgba(2, 22, 52, 0.16); */
 }
 
 .brand-block {
@@ -129,9 +168,12 @@ background: linear-gradient(
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 10px 13px;
+  padding: 10px 14px;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
   white-space: nowrap;
 }
 
@@ -150,26 +192,53 @@ background: linear-gradient(
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
 }
 
 .btn-primary {
-  color: white;
-  background: var(--primary);
+  color: #ffffff;
+  background: linear-gradient(135deg, #0b4f9c, #075e8f);
+  box-shadow: 0 6px 16px rgba(11, 79, 156, 0.20);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #083f80, #064e78);
 }
 
 .btn-dark {
-  color: white;
-  background: #334155;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.btn-dark:hover {
+  background: rgba(255, 255, 255, 0.20);
 }
 
 .btn-danger {
-  color: white;
+  color: #ffffff;
   background: var(--danger);
 }
 
+.btn-danger:hover {
+  background: #b91c1c;
+}
+
 .btn-light {
-  color: var(--primary-dark);
-  background: #ecfdf5;
+  color: #0b4f9c;
+  background: #edf5ff;
+  border: 1px solid #d7e7fb;
+}
+
+.btn-light:hover {
+  background: #dfeeff;
 }
 
 /* ================= FILTER ================= */
@@ -220,8 +289,8 @@ background: linear-gradient(
 
 .form-group input:focus,
 .form-group select:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(4, 120, 87, 0.12);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 
 /* ================= KPI ================= */
@@ -322,12 +391,10 @@ background: linear-gradient(
 
 .exec-insight-box {
   padding: 18px;
-  color: #064e3b;
+  color: #17335c;
   line-height: 1.75;
-  background: #fdfdec;
-  border: 1px solid #f7ecbb;
-  /* background: #ecfdf5;
-  border: 1px solid #bbf7d0; */
+  background: linear-gradient(135deg, #f2f7ff, #f8fbff);
+  border: 1px solid #dce9f8;
   border-radius: 18px;
 }
 
@@ -378,6 +445,7 @@ background: linear-gradient(
 
 .chart-card h2 {
   margin-bottom: 14px;
+  color: #17335c;
 }
 
 .chart-card canvas {
@@ -437,9 +505,9 @@ background: linear-gradient(
 
 .dept-machine-title {
   padding: 10px 14px;
-  color: #0f172a;
-  background: #e0f2fe;
-  border: 1px solid #bae6fd;
+  color: #17335c;
+  background: #eaf2ff;
+  border: 1px solid #d6e6fb;
   border-radius: 16px;
   font-size: 18px;
   font-weight: 950;
@@ -502,6 +570,108 @@ background: linear-gradient(
   color: var(--success);
 }
 
+/* ================= DEPARTMENT SUMMARY HIGHLIGHT ================= */
+
+.table-card.department-summary-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(37, 99, 235, 0.14);
+  background: linear-gradient(
+    135deg,
+    rgba(243, 247, 253, 0.98),
+    rgba(255, 255, 255, 0.96)
+  );
+}
+
+.table-card.department-summary-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+  background: linear-gradient(90deg, #071f4d, #2563eb, #0891b2);
+}
+
+.department-summary-card .section-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #071f4d;
+}
+
+.department-summary-card .section-head h2::before {
+  content: "analytics";
+  font-family: "Material Symbols Outlined";
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0b4f9c, #2563eb);
+  border-radius: 14px;
+  font-size: 25px;
+  box-shadow: 0 7px 16px rgba(37, 99, 235, 0.20);
+}
+
+.department-summary-card .data-table {
+  border-collapse: separate;
+  border-spacing: 0 10px;
+}
+
+.department-summary-card .data-table thead th {
+  color: #17335c;
+  background: #e7f0fd;
+  border-bottom: 0;
+  font-size: 14px;
+}
+
+.department-summary-card .data-table tbody tr {
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.department-summary-card .data-table tbody td {
+  border-bottom: 0;
+  padding: 16px 14px;
+}
+
+.department-summary-card .data-table tbody td:first-child {
+  border-radius: 16px 0 0 16px;
+}
+
+.department-summary-card .data-table tbody td:last-child {
+  border-radius: 0 16px 16px 0;
+}
+
+.department-summary-card .data-table tbody td:nth-child(1) strong {
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.department-summary-card .data-table tbody td:nth-child(4) strong {
+  font-size: 18px;
+}
+
+/* ================= DASHBOARD UPDATE ================= */
+
+.dashboard-update {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.update-status {
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.update-date {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+}
+
 /* ================= RESPONSIVE ================= */
 
 @media (max-width: 1100px) {
@@ -535,6 +705,13 @@ background: linear-gradient(
 
   .brand-block {
     align-items: flex-start;
+  }
+
+
+  .logo img {
+    width: 132px;
+    padding: 7px 9px;
+    border-radius: 14px;
   }
 
   .brand-icon {
@@ -572,103 +749,8 @@ background: linear-gradient(
     min-width: 0;
     text-align: left;
   }
-}
 
-
-/* ================= DEPARTMENT SUMMARY HIGHLIGHT ================= */
-
-.table-card.department-summary-card {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(120, 60, 4, 0.18);
-  background:  #fdfdec;
-  /* background: */
-    /* linear-gradient(135deg, rgba(236, 253, 245, 0.98), rgba(255, 255, 255, 0.92)); */
-}
-
-.table-card.department-summary-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 6px;
-  background: linear-gradient(90deg, #ecb706, #ee6c22, #eed66c);
-}
-
-.department-summary-card .section-head h2 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #064e3b;
-}
-
-.department-summary-card .section-head h2::before {
-  content: "analytics";
-  font-family: "Material Symbols Outlined";
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  color: #ffffff;
-  background: linear-gradient(135deg, #047857, #16a34a);
-  border-radius: 14px;
-  font-size: 25px;
-}
-
-.department-summary-card .data-table {
-  border-collapse: separate;
-  border-spacing: 0 10px;
-}
-
-.department-summary-card .data-table thead th {
-  color: #064e3b;
-  background: #d1fae5;
-  border-bottom: 0;
-  font-size: 14px;
-}
-
-.department-summary-card .data-table tbody tr {
-  background: #ffffff;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-}
-
-.department-summary-card .data-table tbody td {
-  border-bottom: 0;
-  padding: 16px 14px;
-}
-
-.department-summary-card .data-table tbody td:first-child {
-  border-radius: 16px 0 0 16px;
-}
-
-.department-summary-card .data-table tbody td:last-child {
-  border-radius: 0 16px 16px 0;
-}
-
-.department-summary-card .data-table tbody td:nth-child(1) strong {
-  color: #0f172a;
-  font-size: 16px;
-}
-
-.department-summary-card .data-table tbody td:nth-child(4) strong {
-  font-size: 18px;
-}
-
-
-.dashboard-update{
-    display:flex;
-    flex-direction:column;
-    align-items:flex-end;
-    margin-top:8px;
-    font-size:13px;
-    line-height:1.45;
-}
-
-.update-status{
-    font-weight:800;
-    color:#ffffff;
-}
-
-.update-date{
-    color:rgba(255,255,255,.82);
-    font-size:12px;
+  .dashboard-update {
+    align-items: flex-start;
+  }
 }
