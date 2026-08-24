@@ -79,21 +79,9 @@ select {
   margin-bottom: 20px;
   padding: 24px;
   color: #ffffff;
- /* background:
-  radial-gradient(
-    circle at 12% 10%,
-    rgba(255, 255, 255, 0.14),
-    transparent 34%
-  ),
-  linear-gradient(
-    135deg,
-    #2f86c4 0%,
-    #176aa5 50%,
-    #0d3b78 100%
-  ); */
-  background:     radial-gradient(circle at 12% 10%, 
-  rgba(255, 255, 255, 0.08), transparent 34%),     
-  linear-gradient(135deg, #012c64 0%, #0b5d95 55%, #087ea4 100%);
+ 
+  background:     
+  linear-gradient(135deg, #012c64 100%, #0b5d95 100%, #087ea4 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-xl);
   box-shadow:
@@ -111,7 +99,7 @@ select {
 }
 
 .logo img {
-  width: 190px;
+  width: 210px;
   height: auto;
   display: block;
   object-fit: contain;
@@ -145,7 +133,7 @@ select {
 
 .exec-header h1 {
   margin: 0;
-  font-size: clamp(26px, 3vw, 42px);
+  font-size: clamp(16px, 3vw, 29px);
   line-height: 1.1;
   font-weight: 950;
 }
