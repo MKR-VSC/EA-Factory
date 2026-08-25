@@ -121,7 +121,7 @@ img {
   padding: 22px 24px;
   border-radius: 24px;
   display: grid;
-  grid-template-columns: 120px 1fr;
+  grid-template-columns: 10px 1fr;
   align-items: center;
   gap: 20px;
   background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 48%, #0ea5e9 100%);
@@ -144,6 +144,12 @@ img {
 .dev-badge {
   position: relative;
   z-index: 1;
+}
+.brand-text img {
+  width: 200px;
+  height: 100px;
+  object-fit: contain;
+  border-radius: 20px;
 }
 
 .logo {
@@ -860,7 +866,7 @@ img {
   }
 
   .brand-text p {
-    font-size: 10px;
+    font-size: 15px;
     line-height: 1.25;
     margin-top: 2px;
   }
@@ -1025,7 +1031,7 @@ img {
   }
 
   .pvt-top-header p {
-    font-size: 11px;
+    font-size: 15px;
   }
 
   .dev-badge {
@@ -1124,8 +1130,8 @@ img {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  background: #ecfdf5;
-  color: #15803d;
+  background: #ffa0a0;
+  color: #5e0606;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -1213,9 +1219,9 @@ img {
   grid-template-columns: 34px 1fr auto;
   align-items: center;
   gap: 10px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  color: #1e40af;
+  background: #ffefef;
+  border: 1px solid #e2a4a4;
+  color: #af1e1e;
 }
 
 .problem-total-box .material-symbols-outlined {
@@ -1224,7 +1230,7 @@ img {
 
 .problem-total-box strong {
   font-size: 22px;
-  color: #1d4ed8;
+  color: #ee5700;
   white-space: nowrap;
 }
 
