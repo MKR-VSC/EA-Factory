@@ -30,21 +30,53 @@
   <body>
     <main class="page">
       <header class="topbar">
-        <div class="title">
-          <h1>
-            <span class="material-symbols-outlined">account_balance</span>
-            แผงควบคุมข้อมูลของเสีย - บัญชี
-          </h1>
-          <p>รับเฉพาะรายการที่หัวหน้างานส่งบัญชีแล้ว</p>
-        </div>
 
-        <div class="actions">
-          <a class="btn light" href="/pages/factory-settings.html">ตั้งค่า</a>
-          <a class="btn light" href="/index.html">ย้อนกลับ</a>
-          <button class="btn secondary" type="button" onclick="loadAccountingData()">โหลดใหม่</button>
-          <button class="btn logout" type="button" onclick="logoutAccounting()">Logout</button>
-        </div>
-      </header>
+  <div class="header-brand">
+
+    <div class="logo-icon">
+      <img src="/icons/Logo_W_512.png" alt="EA Factory Logo" />
+    </div>
+
+    <div class="title">
+      <h1>แผงควบคุมข้อมูลของเสีย - บัญชี</h1>
+      <p>รับเฉพาะรายการที่หัวหน้างานส่งบัญชีแล้ว</p>
+    </div>
+
+  </div>
+
+  <div class="actions">
+
+    <a class="btn light" href="/pages/factory-settings.html">
+      <span class="material-symbols-outlined">settings</span>
+      ตั้งค่า
+    </a>
+
+    <a class="btn light" href="/index.html">
+      <span class="material-symbols-outlined">arrow_back</span>
+      ย้อนกลับ
+    </a>
+
+    <button
+      class="btn secondary"
+      type="button"
+      onclick="loadAccountingData()"
+    >
+      <span class="material-symbols-outlined">refresh</span>
+      โหลดใหม่
+    </button>
+
+    <button
+      class="btn logout"
+      type="button"
+      onclick="logoutAccounting()"
+    >
+      <span class="material-symbols-outlined">logout</span>
+      Logout
+    </button>
+
+  </div>
+
+</header>
 
       <section class="panel">
         <div class="filter-grid">
