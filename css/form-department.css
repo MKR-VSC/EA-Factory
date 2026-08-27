@@ -1258,3 +1258,318 @@ img {
     font-size: 24px;
   }
 }
+
+/* ======================================================
+   HEADER V2 - COMPACT FACTORY DASHBOARD
+   ปรับส่วนหัวให้กระชับ สถานะ/ผู้ใช้รวมอยู่ใน Header เดียว
+====================================================== */
+.app-hero {
+  margin-bottom: 20px;
+  padding: 14px;
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 1));
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 0 20px 46px rgba(15, 23, 42, 0.20);
+}
+
+.pvt-top-header {
+  min-height: 0;
+  padding: 16px 18px;
+  border-radius: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  align-items: center;
+  gap: 18px;
+  background: linear-gradient(120deg, #1e3a8a 0%, #2563eb 48%, #0ea5e9 100%);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.22);
+}
+
+.pvt-top-header::before {
+  background-size: 28px 28px;
+  opacity: 0.28;
+}
+
+.pvt-top-header::after {
+  content: "";
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  right: -100px;
+  top: -150px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.09);
+  pointer-events: none;
+}
+
+.brand-text,
+.user-profile-box {
+  position: relative;
+  z-index: 1;
+}
+
+.brand-text {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.brand-text img {
+  width: 158px;
+  height: 70px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  border-radius: 0;
+}
+
+.pvt-top-header p {
+  margin: 0;
+  padding-left: 18px;
+  border-left: 1px solid rgba(255, 255, 255, 0.32);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.pvt-top-header .user-profile-box {
+  min-height: 0;
+  padding: 11px 14px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.26);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.pvt-top-header .user-info {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.pvt-top-header .user-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(74, 222, 128, 0.12);
+  color: #86efac;
+  font-size: 24px;
+}
+
+.user-copy {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.user-copy > span {
+  color: rgba(226, 232, 240, 0.82);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+#display-username {
+  display: block;
+  max-width: 100%;
+  text-align: left;
+  color: #ffffff;
+  font-size: 15px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hero-panel {
+  display: block;
+  margin-top: 10px;
+}
+
+.hero-actions {
+  width: 100%;
+  margin-top: 0 !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(260px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-back,
+.btn-logout {
+  min-height: 42px;
+  border-radius: 13px;
+  padding: 9px 14px;
+  font-size: 14px;
+  box-shadow: none;
+  transition: transform 0.18s ease, filter 0.18s ease, background 0.18s ease;
+}
+
+.btn-back {
+  margin-right: 0 !important;
+  background: rgba(51, 65, 85, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.btn-logout {
+  margin-left: 0 !important;
+  background: linear-gradient(135deg, #ef4444, #f43f5e);
+}
+
+.btn-back:hover,
+.btn-logout:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.header-status-buttons {
+  width: 100%;
+  max-width: 430px;
+  justify-self: center;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.header-status-buttons .status-btn {
+  height: 42px;
+  min-width: 0;
+  border-radius: 13px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.header-status-buttons .dept-btn {
+  background: rgba(219, 234, 254, 0.97);
+  color: #1d4ed8;
+}
+
+.header-status-buttons .online-btn {
+  background: rgba(220, 252, 231, 0.97);
+  color: #15803d;
+}
+
+/* หลังย้ายสถานะขึ้น Header ให้หัวฟอร์มสั้นลง */
+.content-header {
+  gap: 0;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .app-hero {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 9px;
+    border-radius: 0 0 22px 22px;
+  }
+
+  .pvt-top-header {
+    min-height: 0;
+    padding: 11px 12px;
+    border-radius: 16px;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .brand-text {
+    gap: 12px;
+  }
+
+  .brand-text img {
+    width: 112px;
+    height: 50px;
+  }
+
+  .pvt-top-header p {
+    padding-left: 12px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .pvt-top-header .user-profile-box {
+    padding: 9px 10px;
+    border-radius: 13px;
+  }
+
+  .pvt-top-header .user-info {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .pvt-top-header .user-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: 22px;
+  }
+
+  .user-copy > span {
+    font-size: 11px;
+  }
+
+  #display-username {
+    font-size: 13px;
+  }
+
+  .hero-panel {
+    margin-top: 8px;
+  }
+
+  .hero-actions {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px;
+  }
+
+  .header-status-buttons {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    max-width: none;
+    gap: 8px;
+  }
+
+  .header-status-buttons .status-btn {
+    height: 38px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  .btn-back,
+  .btn-logout {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 430px) {
+  .pvt-top-header {
+    grid-template-columns: 1fr !important;
+    padding: 10px 11px;
+  }
+
+  .brand-text img {
+    width: 104px;
+    height: 46px;
+  }
+
+  .pvt-top-header p {
+    font-size: 11px;
+  }
+
+  .header-status-buttons .status-btn {
+    padding: 0 8px;
+    font-size: 11px;
+  }
+}
+

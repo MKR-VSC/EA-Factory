@@ -20,7 +20,7 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/BG1.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/BG1.png" />
-    <link rel="apple-touch-icon" href="/icons/Ea_Factory_512.png" />
+    <link rel="apple-touch-icon" href="/icons/Logo_W_512.png" />
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
@@ -84,45 +84,43 @@
     <!-- MAIN APP: JS จะเติม class แผนกลงที่ div นี้ -->
     <div class="dept-default" id="dept-body">
       <div class="app-shell">
-        <!-- ส่วนหัวมือถือ -->
+        <!-- ส่วนหัวระบบ -->
         <aside class="sidebar app-hero">
           <div class="pvt-top-header">
-            <div class="logo">
-              
-            </div>
             <div class="brand-text">
               <img src="/icons/Logo_W_512.png" alt="EA Factory Logo" />
-              <!-- <h3>PVT &amp; T.PLAS</h3> -->
               <p>ระบบบันทึกของเสียจากการผลิต</p>
             </div>
-          </div>
 
-          <nav class="sidebar-menu hero-panel">
-            <div class="menu-group user-group">
-              <span class="menu-label">ข้อมูลผู้ใช้งาน</span>
-              <div class="user-profile-box">
-                <div class="user-info">
-                  <span class="material-symbols-outlined user-icon"
-                    >account_circle</span
-                  >
+            <div class="user-profile-box">
+              <div class="user-info">
+                <span class="material-symbols-outlined user-icon">account_circle</span>
+                <div class="user-copy">
                   <span>ผู้บันทึกข้อมูล</span>
                   <strong id="display-username">ยังไม่ได้ระบุชื่อ</strong>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div class="menu-group dashboard-group">
-              <a href="/index.html" class="menu-link" id="nav-dashboard-link">
-                <span class="material-symbols-outlined">bar_chart</span>
-                แดชบอร์ดผู้บริหาร
-              </a>
-            </div>
-
+          <nav class="sidebar-menu hero-panel">
             <div class="hero-actions">
               <button type="button" class="btn-back" onclick="history.back()">
                 <span class="material-symbols-outlined">arrow_back</span>
                 ย้อนกลับ
               </button>
+
+              <div class="status-buttons header-status-buttons">
+                <button type="button" class="status-btn dept-btn">
+                  <span class="material-symbols-outlined">my_location</span>
+                  <span id="dept-badge-text">: MONO</span>
+                </button>
+
+                <button type="button" class="status-btn online-btn">
+                  <span class="material-symbols-outlined">wifi</span>
+                  <span id="network-status-text">: ONLINE</span>
+                </button>
+              </div>
 
               <button type="button" class="btn-logout" onclick="handleLogout()">
                 <span class="material-symbols-outlined">logout</span>
@@ -147,18 +145,6 @@
                     เพื่อความถูกต้องในการส่ง
                   </p>
                 </div>
-              </div>
-
-              <div class="status-buttons">
-                <button class="status-btn dept-btn">
-                  <span class="material-symbols-outlined">my_location</span>
-                  <span id="dept-badge-text">: MONO</span>
-                </button>
-
-                <button class="status-btn online-btn">
-                  <span class="material-symbols-outlined">wifi</span>
-                  <span id="network-status-text">: ONLINE</span>
-                </button>
               </div>
             </header>
 

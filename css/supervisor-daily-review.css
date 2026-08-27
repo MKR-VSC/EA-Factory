@@ -1425,3 +1425,400 @@ textarea:disabled {
   }
 }
 
+
+/* ======================================================
+   HEADER V2 - PVT FACTORY / SUPERVISOR DAILY REVIEW
+   กระชับขึ้น + ใช้ Logo แทน icon เดิม
+====================================================== */
+
+.page-header.supervisor-hero {
+  position: relative;
+  isolation: isolate;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding: 18px;
+  overflow: hidden;
+  color: #ffffff;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(17, 48, 102, 0.98) 46%, rgba(14, 116, 144, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  box-shadow: 0 22px 54px rgba(15, 23, 42, 0.2);
+}
+
+.page-header.supervisor-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+.page-header.supervisor-hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 330px;
+  height: 330px;
+  right: -120px;
+  top: -180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.25), transparent 68%);
+}
+
+.supervisor-hero .header-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+}
+
+.supervisor-hero .title-area {
+  min-width: 0;
+}
+
+.supervisor-hero .header-brand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 16px;
+}
+
+.supervisor-hero .header-logo {
+  width: 168px;
+  height: 76px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 8px 10px;
+  overflow: hidden;
+  /* background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 20px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); */
+}
+
+.supervisor-hero .header-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.14));
+}
+
+.supervisor-hero .header-copy {
+  min-width: 0;
+}
+
+.supervisor-hero .header-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  margin-bottom: 3px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: #bfdbfe;
+  background: rgba(37, 99, 235, 0.2);
+  border: 1px solid rgba(147, 197, 253, 0.18);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.supervisor-hero .title-area h1 {
+  display: block;
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(26px, 3vw, 38px);
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+
+.supervisor-hero .title-area h1 .material-symbols-outlined {
+  display: none !important;
+}
+
+.supervisor-hero .title-area p {
+  max-width: none;
+  margin: 5px 0 0;
+  color: rgba(226, 232, 240, 0.82);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.supervisor-hero .header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.supervisor-hero .header-actions .btn {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.supervisor-hero .header-actions .btn .material-symbols-outlined {
+  font-size: 19px;
+}
+
+.supervisor-hero .header-actions .btn.primary {
+  background: rgba(37, 99, 235, 0.88);
+}
+
+.supervisor-hero .header-actions .btn.secondary {
+  background: rgba(51, 65, 85, 0.82);
+}
+
+.supervisor-hero .header-actions .btn.danger {
+  background: rgba(239, 68, 68, 0.92);
+}
+
+.supervisor-hero .header-actions .btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 10px 20px rgba(2, 6, 23, 0.16);
+}
+
+.supervisor-hero .header-user-row {
+  width: 100%;
+}
+
+.supervisor-hero .user-info-card {
+  width: 100%;
+  min-height: 66px;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  overflow: hidden;
+  color: #e2e8f0;
+  background: rgba(15, 23, 42, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  box-shadow: none;
+  backdrop-filter: blur(10px);
+}
+
+.supervisor-hero .user-info-card::after {
+  display: none;
+}
+
+.supervisor-hero .user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  color: #67e8f9;
+  background: rgba(8, 145, 178, 0.18);
+  border: 1px solid rgba(103, 232, 249, 0.18);
+  box-shadow: none;
+}
+
+.supervisor-hero .user-avatar .material-symbols-outlined {
+  font-size: 27px;
+}
+
+.supervisor-hero .user-copy {
+  min-width: 0;
+}
+
+.supervisor-hero .user-label {
+  display: block;
+  margin-bottom: 1px;
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.supervisor-hero #userName {
+  display: block;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 850;
+  line-height: 1.25;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.supervisor-hero #userDept {
+  margin-top: 2px;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.supervisor-hero .review-ready {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  color: #bbf7d0;
+  background: rgba(22, 163, 74, 0.14);
+  border: 1px solid rgba(74, 222, 128, 0.18);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.supervisor-hero .ready-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #4ade80;
+  box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.12);
+}
+
+@media (max-width: 1040px) {
+  .supervisor-hero .header-top {
+    grid-template-columns: 1fr;
+  }
+
+  .supervisor-hero .header-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .supervisor-hero .header-actions .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .page-header.supervisor-hero {
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 12px;
+    border-radius: 22px;
+  }
+
+  .supervisor-hero .header-brand {
+    gap: 10px;
+  }
+
+  .supervisor-hero .header-logo {
+    width: 82px;
+    height: 58px;
+    padding: 6px 8px;
+    border-radius: 16px;
+  }
+
+  .supervisor-hero .header-kicker {
+    display: none;
+  }
+
+  .supervisor-hero .title-area h1 {
+    font-size: clamp(21px, 6.3vw, 27px);
+    letter-spacing: -0.025em;
+  }
+
+  .supervisor-hero .title-area p {
+    margin-top: 3px;
+    font-size: 11.5px;
+    line-height: 1.35;
+  }
+
+  .supervisor-hero .header-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .supervisor-hero .header-actions .btn {
+    min-height: 42px;
+    padding: 8px 6px;
+    border-radius: 13px;
+    font-size: 11.5px;
+  }
+
+  .supervisor-hero .header-actions .btn .material-symbols-outlined {
+    font-size: 17px;
+  }
+
+  .supervisor-hero .user-info-card {
+    min-height: 60px;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 9px;
+    padding: 9px 10px;
+    border-radius: 15px;
+  }
+
+  .supervisor-hero .user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+  }
+
+  .supervisor-hero .user-avatar .material-symbols-outlined {
+    font-size: 24px;
+  }
+
+  .supervisor-hero .user-label {
+    font-size: 10px;
+  }
+
+  .supervisor-hero #userName {
+    font-size: 14px;
+  }
+
+  .supervisor-hero #userDept {
+    font-size: 11px;
+  }
+
+  .supervisor-hero .review-ready {
+    min-height: 30px;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 430px) {
+  .supervisor-hero .header-logo {
+    width: 74px;
+    height: 52px;
+  }
+
+  .supervisor-hero .title-area h1 {
+    font-size: 20px;
+  }
+
+  .supervisor-hero .title-area p {
+    font-size: 10.5px;
+  }
+
+  .supervisor-hero .header-actions .btn {
+    font-size: 10.5px;
+  }
+
+  .supervisor-hero .header-actions .btn .material-symbols-outlined {
+    font-size: 16px;
+  }
+
+  .supervisor-hero .review-ready span:last-child {
+    display: none;
+  }
+
+  .supervisor-hero .review-ready {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+}

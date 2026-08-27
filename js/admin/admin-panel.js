@@ -123,13 +123,21 @@ function clearLocalLogin() {
 // =========================================================
 
 async function logout() {
-  // แสดง Popup ยืนยัน
-  const ok = await showConfirm("ต้องการออกจากระบบใช่ไหม?", "ออกจากระบบ");
+  const ok = await showConfirm(
+    "ต้องการออกจากระบบใช่ไหม?",
+    "ออกจากระบบ"
+  );
 
-  // ถ้ากดยกเลิก
   if (!ok) return;
 
   try {
+
+    // แสดง Loading ตอนออกจากระบบ
+    window.LoadingService?.show(
+      "กำลังออกจากระบบ",
+      "กรุณารอสักครู่..."
+    );
+
     // Logout Supabase
     if (window.supabaseClient?.auth) {
       await window.supabaseClient.auth.signOut();
@@ -137,10 +145,18 @@ async function logout() {
 
     // ล้างข้อมูล Login
     clearLocalLogin();
-    // กลับหน้า Login
-    window.location.href = LOGIN_PAGE;
+
+    // บอกหน้า Login ว่ามาจาก Logout
+    sessionStorage.setItem("skipLoginSplash", "1");
+
+    // ไปหน้า Login
+    window.location.replace(LOGIN_PAGE);
+
   } catch (err) {
+
     console.error(err);
+
+    window.LoadingService?.hide();
 
     showAlert("ออกจากระบบไม่สำเร็จ");
   }
@@ -162,13 +178,13 @@ async function initAdminPanel(profile) {
     return;
   }
 
-  await loadUsers();
-
   localStorage.setItem("activeUserId", profile.id);
 
-  renderDepartmentQrList();
+  // โหลดครั้งแรกใช้ Splash อยู่แล้ว
+  // ไม่ต้องเปิด Loading Overlay ซ้ำ
+  await loadAll(false);
 
-  await loadAll();
+  renderDepartmentQrList();
 }
 
 function bindEvents() {
@@ -179,7 +195,9 @@ function bindEvents() {
     });
   });
 
-  document.getElementById("btn-refresh")?.addEventListener("click", loadAll);
+  document
+  .getElementById("btn-refresh")
+  ?.addEventListener("click", () => loadAll(true));
 
   document
     .getElementById("search-input")
@@ -307,17 +325,26 @@ function showSection(section, activeBtn) {
    LOAD DATA
 ========================================================= */
 
-async function loadAll() {
+async function loadAll(showLoading = true) {
   hideAlert();
 
-  LoadingService?.show("กำลังโหลดข้อมูล", "ระบบกำลังดึงข้อมูลล่าสุด");
+  if (showLoading) {
+    window.LoadingService?.show(
+      "กำลังโหลดข้อมูล",
+      "ระบบกำลังดึงข้อมูลล่าสุด"
+    );
+  }
 
   const btn = document.getElementById("btn-refresh");
-  if (btn) btn.disabled = true;
+
+  if (btn) {
+    btn.disabled = true;
+  }
 
   const start = performance.now();
 
   try {
+
     await loadReports();
     await loadMasters();
     await loadUsers();
@@ -326,22 +353,33 @@ async function loadAll() {
 
     setText("status-api", "เชื่อมต่อได้");
     setText("status-latency", `${latency} ms`);
+
     setText(
       "last-update",
-      `อัปเดตล่าสุด: ${new Date().toLocaleString("th-TH")}`,
+      `อัปเดตล่าสุด: ${new Date().toLocaleString("th-TH")}`
     );
 
     addLog("INFO", "โหลดข้อมูลสำเร็จ");
+
   } catch (err) {
+
     console.error(err);
+
     setText("status-api", "พบข้อผิดพลาด");
     setText("status-latency", "-- ms");
+
     showAlert(err.message || String(err));
     addLog("ERROR", err.message || String(err));
-  } finally {
-    LoadingService?.hide();
 
-    if (btn) btn.disabled = false;
+  } finally {
+
+    if (showLoading) {
+      window.LoadingService?.hide();
+    }
+
+    if (btn) {
+      btn.disabled = false;
+    }
   }
 }
 

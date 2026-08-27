@@ -5,16 +5,13 @@
       SUPERVISOR DASHBOARD
       ไฟล์: pages/supervisor-dashboard.html
       หน้าที่: Dashboard ให้หัวหน้างานดูสถิติของเสีย
-
       ปรับรอบนี้:
       - Admin / Management / Executive เห็นทุกแผนก
       - Supervisor / Manager เห็นตาม user_departments
       - ใช้ข้อมูลจาก daily_waste_reports
     ======================================================= -->
-
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
     <title>สรุปของเสีย - หัวหน้างาน</title>
 
     <!-- Fonts -->
@@ -26,7 +23,7 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/BG1.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/BG1.png" />
-    <link rel="apple-touch-icon" href="/icons/Ea_Factory_512.png" />
+    <link rel="apple-touch-icon" href="/icons/Logo_B_512.png" />
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
@@ -37,21 +34,35 @@
 
   <body>
     <main class="page">
-      <header class="page-header">
+      <!-- HEADER: PVT Factory style -->
+      <header class="page-header dashboard-hero">
         <div class="header-top">
           <div class="title-area">
-            <h1>
-              <span class="material-symbols-outlined">monitoring</span>
-              Dashboard สถิติของเสีย
-            </h1>
-            <p>ดูแนวโน้มของเสีย เพื่อแก้ปัญหาหน้างาน</p>
+            <div class="dashboard-brand">
+              <div class="dashboard-logo-wrap">
+                <img
+                  class="dashboard-logo"
+                  src="/icons/Logo_W_512.png"
+                  alt="PVT Factory Logo"
+                />
+              </div>
+
+              <div class="dashboard-title-copy">
+                <span class="dashboard-eyebrow">SUPERVISOR DASHBOARD</span>
+                <h1>Dashboard สถิติของเสีย</h1>
+                <p>ดูแนวโน้มของเสีย เพื่อแก้ปัญหาหน้างาน</p>
+              </div>
+            </div>
           </div>
 
           <div class="header-actions">
             <a href="/pages/supervisor-daily-review.html" class="btn secondary">
+              <span class="material-symbols-outlined">fact_check</span>
               กลับหน้าตรวจสอบ
             </a>
+
             <button class="btn danger" type="button" onclick="logout()">
+              <span class="material-symbols-outlined">logout</span>
               ออกจากระบบ
             </button>
           </div>
@@ -59,10 +70,19 @@
 
         <div class="header-user-row">
           <div class="user-info-card">
-            <div class="user-avatar"> <span class="material-symbols-outlined">person</span></div>
-            <div>
+            <div class="user-avatar">
+              <span class="material-symbols-outlined">person</span>
+            </div>
+
+            <div class="user-detail">
+              <span class="user-label">ผู้ใช้งานปัจจุบัน</span>
               <strong id="userName">หัวหน้างาน แผนกที่รับผิดชอบ</strong>
               <div id="userDept">-</div>
+            </div>
+
+            <div class="dashboard-status">
+              <span class="status-dot"></span>
+              พร้อมใช้งาน
             </div>
           </div>
         </div>
@@ -121,11 +141,6 @@
           <small>ของเสียรวมเดือนนี้</small>
         </article>
       </section>
-
-      <!-- <section class="priority-card">
-        <h2>⚠ จุดที่ควรแก้ไขเร่งด่วน</h2>
-        <div id="priorityArea">กำลังวิเคราะห์ข้อมูล...</div>
-      </section> -->
 
       <section class="chart-grid">
         <article class="chart-card">

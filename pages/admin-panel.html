@@ -33,8 +33,87 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/Logo_W_192.png" />
 
 
-    <link rel="stylesheet" href="/css/loadingService.css" />
+    <!-- admin-panel.css เวอร์ชันปรับ Layout / UI แล้ว -->
     <link rel="stylesheet" href="/css/admin-panel.css" />
+    <link rel="stylesheet" href="/css/loadingService.css" />
+
+    <!-- บังคับ Layout โลโก้ Sidebar: โลโก้อยู่ด้านบน, กระชับขึ้น และเอา EA Factory ออก -->
+    <style id="sidebar-logo-force-layout">
+      @media (min-width: 981px) {
+        body.admin-ui-v2 .app-shell {
+          grid-template-columns: 228px minmax(0, 1fr) !important;
+        }
+
+        body.admin-ui-v2 .sidebar {
+          padding: 14px 12px 16px !important;
+        }
+
+        body.admin-ui-v2 .sidebar-logo {
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          justify-content: flex-start !important;
+          gap: 8px !important;
+          padding: 8px 6px 14px !important;
+          margin: 0 0 10px !important;
+          text-align: center !important;
+          min-height: auto !important;
+        }
+
+        body.admin-ui-v2 .logo-icon {
+          width: 108px !important;
+          height: 108px !important;
+          flex: 0 0 108px !important;
+          margin: 0 auto !important;
+          border-radius: 22px !important;
+        }
+
+        body.admin-ui-v2 .logo-icon img {
+          width: 114px !important;
+          height: 114px !important;
+          max-width: none !important;
+          object-fit: contain !important;
+        }
+
+        body.admin-ui-v2 .logo-text {
+          width: 100% !important;
+          text-align: center !important;
+        }
+
+        body.admin-ui-v2 .logo-text strong {
+          display: none !important;
+        }
+
+        body.admin-ui-v2 .logo-text small {
+          display: block !important;
+          margin-top: 0 !important;
+          font-size: 0.80rem !important;
+          font-weight: 700 !important;
+          letter-spacing: 0.02em !important;
+          color: rgba(226, 232, 240, 0.84) !important;
+        }
+
+        body.admin-ui-v2 .sidebar-menu {
+          gap: 4px !important;
+        }
+
+        body.admin-ui-v2 .sidebar-section-label {
+          margin: 10px 8px 4px !important;
+          font-size: 9px !important;
+        }
+
+        body.admin-ui-v2 .sidebar-item {
+          min-height: 42px !important;
+          padding: 8px 10px !important;
+        }
+
+        body.admin-ui-v2 .sidebar-footer {
+          padding-top: 10px !important;
+          margin-top: 10px !important;
+        }
+      }
+    </style>
+
     <link rel="icon" href="data:," />
     <style>
       .user-dept-permission-panel {
@@ -106,7 +185,7 @@
     </style>
   </head>
 
-  <body>
+  <body class="admin-ui-v2">
     <div class="app-shell">
       <!-- ======================================================
         SIDEBAR MENU
@@ -121,68 +200,87 @@
           </div>
 
           <div class="logo-text">
-            <strong>Admin Panel</strong>
-            <small>Daily Defect System</small>
+            <small>Admin Console</small>
           </div>
         </div>
 
         <nav class="sidebar-menu" aria-label="เมนูหลัก">
+          <span class="sidebar-section-label">ภาพรวม</span>
           <button
             class="sidebar-item active"
             type="button"
             data-section="dashboard"
+            title="Dashboard"
           >
-            <span class="material-symbols-outlined">bar_chart</span> Dashboard
+            <span class="material-symbols-outlined">dashboard</span>
+            <span class="sidebar-item-text">Dashboard</span>
           </button>
 
-          <button class="sidebar-item" type="button" data-section="masters">
-            <span class="material-symbols-outlined">settings</span> Master Data
+          <span class="sidebar-section-label">จัดการข้อมูล</span>
+          <button class="sidebar-item" type="button" data-section="masters" title="Master Data">
+            <span class="material-symbols-outlined">database</span>
+            <span class="sidebar-item-text">Master Data</span>
           </button>
 
-          <button class="sidebar-item" type="button" data-section="users">
-            <span class="material-symbols-outlined">groups</span> Users / Roles
+          <button class="sidebar-item" type="button" data-section="users" title="Users / Roles">
+            <span class="material-symbols-outlined">manage_accounts</span>
+            <span class="sidebar-item-text">Users / Roles</span>
           </button>
 
           <button
             class="sidebar-item"
             type="button"
             data-section="department-qr"
+            title="QR แผนก"
           >
-            <span class="material-symbols-outlined">qr_code</span> QR แผนก
+            <span class="material-symbols-outlined">qr_code_2</span>
+            <span class="sidebar-item-text">QR แผนก</span>
           </button>
 
-          <button class="sidebar-item" type="button" data-section="machine-qr">
-            <span class="material-symbols-outlined">qr_code</span> QR รายเครื่อง
+          <button class="sidebar-item" type="button" data-section="machine-qr" title="QR รายเครื่อง">
+            <span class="material-symbols-outlined">precision_manufacturing</span>
+            <span class="sidebar-item-text">QR รายเครื่อง</span>
           </button>
 
-          <button class="sidebar-item" type="button" data-section="logs">
-            <span class="material-symbols-outlined">bug_report</span> System
-            Logs
+          <span class="sidebar-section-label">ตรวจสอบระบบ</span>
+          <button class="sidebar-item" type="button" data-section="logs" title="System Logs">
+            <span class="material-symbols-outlined">terminal</span>
+            <span class="sidebar-item-text">System Logs</span>
           </button>
 
           <button
             class="sidebar-item"
             type="button"
             data-section="activity-logs"
+            title="ประวัติการใช้งานระบบ"
           >
-            <span class="material-symbols-outlined">history</span> การใช้งานระบบ
+            <span class="material-symbols-outlined">history</span>
+            <span class="sidebar-item-text">การใช้งานระบบ</span>
           </button>
         </nav>
 
-        <button id="btnLogout" class="btn-red" type="button">ออกจากระบบ</button>
+        <div class="sidebar-footer">
+          <button id="btnLogout" class="btn-red" type="button">
+            <span class="material-symbols-outlined">logout</span>
+            <span>ออกจากระบบ</span>
+          </button>
+        </div>
       </aside>
 
       <main class="main-workspace">
         <header class="workspace-header">
-          <div>
+          <div class="workspace-heading">
+            <span class="workspace-eyebrow">ADMINISTRATION</span>
             <h1>แผงควบคุมระบบของเสียรายวัน</h1>
-            <p>ตรวจสอบรายการ จัดการข้อมูลพื้นฐาน และกำหนดสิทธิ์ผู้ใช้งาน</p>
+            <p>ภาพรวมรายการของเสีย ข้อมูลพื้นฐาน ผู้ใช้งาน และ QR ในจุดเดียว</p>
           </div>
 
-          <button class="btn btn-secondary" type="button" id="btn-refresh">
-            <span class="material-symbols-outlined">refresh</span>
-            โหลดข้อมูลใหม่
-          </button>
+          <div class="workspace-actions">
+            <button class="btn btn-secondary" type="button" id="btn-refresh">
+              <span class="material-symbols-outlined">refresh</span>
+              โหลดข้อมูลใหม่
+            </button>
+          </div>
         </header>
 
         <div id="alert-box" class="alert" hidden></div>
@@ -192,28 +290,40 @@
         ======================================================= -->
         <section id="section-dashboard" class="page-section active">
           <div class="metrics-grid">
-            <article class="metric-card">
-              <span class="metric-label">การเชื่อมต่อ Supabase</span>
-              <strong id="status-api">กำลังตรวจสอบ...</strong>
-              <small id="status-latency">-- ms</small>
+            <article class="metric-card metric-api">
+              <span class="metric-icon material-symbols-outlined">cloud_done</span>
+              <div class="metric-content">
+                <span class="metric-label">การเชื่อมต่อ Supabase</span>
+                <strong id="status-api">กำลังตรวจสอบ...</strong>
+                <small id="status-latency">-- ms</small>
+              </div>
             </article>
 
-            <article class="metric-card">
-              <span class="metric-label">รายการทั้งหมด</span>
-              <strong id="dash-total-count">0</strong>
-              <small>รายการในระบบ</small>
+            <article class="metric-card metric-total">
+              <span class="metric-icon material-symbols-outlined">inventory_2</span>
+              <div class="metric-content">
+                <span class="metric-label">รายการทั้งหมด</span>
+                <strong id="dash-total-count">0</strong>
+                <small>รายการในระบบ</small>
+              </div>
             </article>
 
             <article class="metric-card warning">
-              <span class="metric-label">รอตรวจสอบ</span>
-              <strong id="dash-pending-count">0</strong>
-              <small>เคส</small>
+              <span class="metric-icon material-symbols-outlined">pending_actions</span>
+              <div class="metric-content">
+                <span class="metric-label">รอตรวจสอบ</span>
+                <strong id="dash-pending-count">0</strong>
+                <small>รายการที่ต้องดำเนินการ</small>
+              </div>
             </article>
 
             <article class="metric-card success">
-              <span class="metric-label">น้ำหนักของเสียรวม</span>
-              <strong id="dash-total-weight">0.00</strong>
-              <small>กิโลกรัม</small>
+              <span class="metric-icon material-symbols-outlined">scale</span>
+              <div class="metric-content">
+                <span class="metric-label">น้ำหนักของเสียรวม</span>
+                <strong id="dash-total-weight">0.00</strong>
+                <small>กิโลกรัม</small>
+              </div>
             </article>
           </div>
 
@@ -226,14 +336,17 @@
               <span id="last-update" class="muted">ยังไม่ได้โหลดข้อมูล</span>
             </div>
 
-            <div class="filter-row">
-              <input
-                id="search-input"
-                type="search"
-                placeholder="ค้นหาแผนก / เครื่องจักร / อาการเสีย / ผู้แจ้ง..."
-              />
+            <div class="filter-row dashboard-filter-row">
+              <div class="search-field">
+                <span class="material-symbols-outlined">search</span>
+                <input
+                  id="search-input"
+                  type="search"
+                  placeholder="ค้นหาแผนก / เครื่องจักร / อาการเสีย / ผู้แจ้ง..."
+                />
+              </div>
 
-              <select id="status-filter">
+              <select id="status-filter" aria-label="กรองตามสถานะ">
                 <option value="all">ทุกสถานะ</option>
                 <option value="pending">รอตรวจสอบ</option>
                 <option value="approved">ตรวจสอบแล้ว</option>

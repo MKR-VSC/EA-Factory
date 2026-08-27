@@ -5,18 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ตรวจสอบข้อมูลรายวัน | SUPERVISOR</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+      rel="stylesheet"
+    />
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/Logo_W_192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/Logo_W_512.png" />
     <link rel="apple-touch-icon" href="/icons/Logo_W_512.png" />
-
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#4caf8a" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/Logo_W_192.png" />
-    
+    <meta name="theme-color" content="#0f172a" />
 
     <!-- ใช้หัว/ธีมเดิม -->
     <link rel="stylesheet" href="/css/supervisor-daily-review.css" />
@@ -26,21 +29,36 @@
 
   <body>
     <main class="page">
-      <!-- HEADER เดิม -->
-      <header class="page-header">
+      <!-- HEADER ใหม่: กระชับ + Logo แทน icon -->
+      <header class="page-header supervisor-hero">
         <div class="header-top">
           <div class="title-area">
-            <h1>
-              <span class="material-symbols-outlined">fact_check</span>
-              ตรวจสอบข้อมูลรายวัน
-            </h1>
-            <p>ตรวจสอบข้อมูลของเสียก่อนส่งเข้าฐานข้อมูล</p>
+            <div class="header-brand">
+              <div class="header-logo" aria-hidden="true">
+                <img src="/icons/Logo_W_512.png" alt="PVT Factory" />
+              </div>
+
+              <div class="header-copy">
+                <span class="header-kicker">SUPERVISOR DAILY REVIEW</span>
+                <h1>ตรวจสอบข้อมูลรายวัน</h1>
+                <p>ตรวจสอบข้อมูลของเสียก่อนส่งเข้าฐานข้อมูล</p>
+              </div>
+            </div>
           </div>
 
           <div class="header-actions">
-            <a href="/pages/supervisor-dashboard.html" class="btn primary">Dashboard</a>
-            <button class="btn secondary" type="button" onclick="loadRecords()">รีเฟรช</button>
-            <button class="btn danger" type="button" onclick="logoutNow()">ออกระบบ</button>
+            <a href="/pages/supervisor-dashboard.html" class="btn primary">
+              <span class="material-symbols-outlined">dashboard</span>
+              <span>Dashboard</span>
+            </a>
+            <button class="btn secondary" type="button" onclick="loadRecords()">
+              <span class="material-symbols-outlined">refresh</span>
+              <span>รีเฟรช</span>
+            </button>
+            <button class="btn danger" type="button" onclick="logoutNow()">
+              <span class="material-symbols-outlined">logout</span>
+              <span>ออกระบบ</span>
+            </button>
           </div>
         </div>
 
@@ -50,9 +68,15 @@
               <span class="material-symbols-outlined">person</span>
             </div>
 
-            <div>
+            <div class="user-copy">
+              <span class="user-label">ผู้ตรวจสอบข้อมูล</span>
               <strong id="userName">-</strong>
               <div id="userDept">-</div>
+            </div>
+
+            <div class="review-ready" aria-label="สถานะพร้อมตรวจสอบ">
+              <span class="ready-dot"></span>
+              <span>พร้อมตรวจสอบ</span>
             </div>
           </div>
         </div>
@@ -64,7 +88,6 @@
           <label for="filterDate">วันที่</label>
           <input type="date" id="filterDate" />
         </div>
-
         <div class="form-group">
           <label for="filterStatus">สถานะ</label>
           <select id="filterStatus">
@@ -74,7 +97,6 @@
             <option value="accounting_checked">บัญชีตรวจแล้ว</option>
           </select>
         </div>
-
         <button class="btn primary" type="button" onclick="loadRecords()">ค้นหา</button>
       </section>
 
@@ -85,13 +107,11 @@
           <strong id="countPending">0</strong>
           <small>กดตรวจแล้วจะหายจากรายการนี้</small>
         </div>
-
         <div class="summary-card success">
           <span>จำนวนของเสียวันนี้ทั้งหมด</span>
           <strong id="todayWaste">0 kg</strong>
           <small>รวมทุกสถานะของวันที่เลือก</small>
         </div>
-
         <div class="summary-card danger">
           <span>เครื่องที่เสียเยอะสุดวันนี้</span>
           <strong id="topMachineToday">-</strong>
@@ -131,39 +151,36 @@
         </div>
       </section>
 
-
-
       <section class="table-card supervisor-table-card">
-  <div class="table-header">
-    <div>
-      <h2>รายการที่ส่งบัญชีแล้ว</h2>
-      <p class="muted">ดูย้อนหลังเท่านั้น ไม่สามารถแก้ไขหรือลบได้</p>
-    </div>
-    <span id="sentRowCount" class="muted">-</span>
-  </div>
+        <div class="table-header">
+          <div>
+            <h2>รายการที่ส่งบัญชีแล้ว</h2>
+            <p class="muted">ดูย้อนหลังเท่านั้น ไม่สามารถแก้ไขหรือลบได้</p>
+          </div>
+          <span id="sentRowCount" class="muted">-</span>
+        </div>
 
-  <div class="table-scroll supervisor-table-scroll">
-    <table class="data-table supervisor-data-table">
-      <thead>
-        <tr>
-          <th></th>
-          <th>วันที่/เวลา</th>
-          <th>แผนก</th>
-          <th>เครื่องจักร</th>
-          <th>ผู้บันทึก</th>
-          <th class="text-right">น้ำหนักของเสีย</th>
-          <th>รายการปัญหา</th>
-          <th>สถานะ</th>
-          <th>จัดการ</th>
-        </tr>
-      </thead>
-      <tbody id="sentReportBody">
-        <tr><td colspan="9" class="empty-cell">กำลังโหลดข้อมูล...</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
+        <div class="table-scroll supervisor-table-scroll">
+          <table class="data-table supervisor-data-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>วันที่/เวลา</th>
+                <th>แผนก</th>
+                <th>เครื่องจักร</th>
+                <th>ผู้บันทึก</th>
+                <th class="text-right">น้ำหนักของเสีย</th>
+                <th>รายการปัญหา</th>
+                <th>สถานะ</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="sentReportBody">
+              <tr><td colspan="9" class="empty-cell">กำลังโหลดข้อมูล...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
 
     <!-- Popup กลางระบบ แทน alert/confirm -->
