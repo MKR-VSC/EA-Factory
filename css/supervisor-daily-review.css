@@ -1822,3 +1822,60 @@ textarea:disabled {
     justify-content: center;
   }
 }
+/* ======================================================
+   EA FACTORY UNIFIED THEME
+   Supervisor Daily Review = Indigo Accent
+====================================================== */
+:root {
+  --ea-navy: #123b73;
+  --ea-navy-2: #1d4f91;
+  --ea-bg: #f4f8fc;
+  --ea-text: #16324f;
+  --ea-muted: #6b7a90;
+  --ea-line: #dbe5f0;
+
+  --ea-accent: #5b5fc7;
+  --ea-accent-2: #7478d8;
+  --ea-accent-soft: #ececff;
+}
+
+body {
+  color: var(--ea-text);
+  background:
+    radial-gradient(circle at 7% 5%, rgba(91, 95, 199, 0.09), transparent 28%),
+    radial-gradient(circle at 86% 8%, rgba(37, 99, 235, 0.06), transparent 28%),
+    linear-gradient(135deg, #f9fbfd 0%, var(--ea-bg) 100%);
+}
+
+.page-header::after {
+  background: linear-gradient(90deg, transparent, rgba(91, 95, 199, 0.28), transparent);
+}
+
+.title-area h1 .material-symbols-outlined,
+.user-avatar {
+  background: linear-gradient(135deg, var(--ea-navy), var(--ea-accent));
+  box-shadow: 0 14px 26px rgba(18, 59, 115, 0.18);
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, var(--ea-navy-2), var(--ea-accent));
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(91, 95, 199, 0.76);
+  box-shadow: 0 0 0 5px rgba(91, 95, 199, 0.11);
+}
+
+.summary-card::after {
+  background: var(--ea-accent);
+}
+
+.summary-card::before {
+  background:
+    linear-gradient(135deg, rgba(91, 95, 199, 0.10), transparent 44%),
+    radial-gradient(circle at 90% 20%, rgba(91, 95, 199, 0.16), transparent 34%);
+}
+
+

@@ -1572,4 +1572,130 @@ img {
     font-size: 11px;
   }
 }
+/* ======================================================
+   EA FACTORY UNIFIED THEME
+   Form Department = สีประจำแผนก
+   ใช้ class .dept-* ที่ระบบมีอยู่แล้ว
+====================================================== */
+:root {
+  --ea-navy: #123b73;
+  --ea-navy-2: #1d4f91;
+  --ea-bg: #f4f8fc;
+  --ea-surface: #ffffff;
+  --ea-text: #16324f;
+  --ea-muted: #6b7a90;
+  --ea-line: #dbe5f0;
 
+  --dept-accent: #2563eb;
+  --dept-accent-2: #0ea5e9;
+  --dept-soft: #e7f0ff;
+}
+
+/* กลุ่มน้ำเงิน: BLOW / BLOWN FILM / MONO */
+body.dept-blow,
+body.dept-blown-film,
+body.dept-mono,
+.dept-blow,
+.dept-blown-film,
+.dept-mono {
+  --dept-accent: #2563eb;
+  --dept-accent-2: #0ea5e9;
+  --dept-soft: #e8f1ff;
+}
+
+/* กลุ่มเขียวอมฟ้า: PIPE / SHADE NET */
+body.dept-pipe,
+body.dept-shade-net,
+.dept-pipe,
+.dept-shade-net {
+  --dept-accent: #0f8a83;
+  --dept-accent-2: #18a999;
+  --dept-soft: #e0f6f3;
+}
+
+/* กลุ่มม่วง: SHEET / CUT PUNCH / RAIN TAPE CUT PUNCH */
+body.dept-sheet-cutting,
+body.dept-cut-punch,
+body.dept-rain-tape-cut-punch,
+.dept-sheet-cutting,
+.dept-cut-punch,
+.dept-rain-tape-cut-punch {
+  --dept-accent: #6750c9;
+  --dept-accent-2: #7c65d9;
+  --dept-soft: #eeeafd;
+}
+
+/* กลุ่มส้ม: RAIN TAPE / GARBAGE BAG CUT */
+body.dept-rain-tape,
+body.dept-garbage-bag-cut,
+.dept-rain-tape,
+.dept-garbage-bag-cut {
+  --dept-accent: #d97706;
+  --dept-accent-2: #f59e0b;
+  --dept-soft: #fff2d8;
+}
+
+body {
+  color: var(--ea-text);
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--dept-accent) 7%, transparent), transparent 34%),
+    linear-gradient(180deg, #f9fbfd 0%, var(--ea-bg) 100%);
+}
+
+.app-hero {
+  background: #102f59;
+}
+
+.pvt-top-header,
+.dept-blow .pvt-top-header,
+.dept-blown-film .pvt-top-header,
+.dept-mono .pvt-top-header,
+.dept-pipe .pvt-top-header,
+.dept-shade-net .pvt-top-header,
+.dept-sheet-cutting .pvt-top-header,
+.dept-cut-punch .pvt-top-header,
+.dept-rain-tape-cut-punch .pvt-top-header,
+.dept-rain-tape .pvt-top-header,
+.dept-garbage-bag-cut .pvt-top-header {
+  background:
+    linear-gradient(135deg, var(--ea-navy) 0%, #174a82 58%, var(--dept-accent) 100%);
+  box-shadow: 0 16px 34px color-mix(in srgb, var(--dept-accent) 20%, transparent);
+}
+
+.badge-dept,
+.title-icon,
+.label-icon.blue {
+  color: var(--dept-accent);
+  background: var(--dept-soft);
+}
+
+.current-dept-box .material-symbols-outlined,
+#current-dept-label {
+  color: var(--dept-accent);
+}
+
+.btn-start-form,
+.btn-other-save {
+  background: linear-gradient(135deg, var(--dept-accent), var(--dept-accent-2));
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--dept-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--dept-accent) 12%, transparent);
+}
+
+/* แถบสีเล็ก ๆ ช่วยบอกแผนก โดยไม่ทำทั้งหน้าหลุดธีม */
+.form-page-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.form-page-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--dept-accent), var(--dept-accent-2));
+}

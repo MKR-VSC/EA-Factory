@@ -742,3 +742,276 @@ select {
     align-items: flex-start;
   }
 }
+
+/* ======================================================
+   EA FACTORY - EXECUTIVE HEADER TALL
+   ปรับหัวให้สูง/เต็มระดับเดียวกับ Accounting ที่แก้แล้ว
+====================================================== */
+
+.exec-header {
+  box-sizing: border-box !important;
+
+  width: 100% !important;
+
+  min-height: 180px !important;
+  height: auto !important;
+
+  padding: 34px 34px !important;
+  margin-bottom: 22px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+
+  gap: 28px !important;
+
+  color: #ffffff !important;
+
+  background:
+    linear-gradient(
+      135deg,
+      #123b73 0%,
+      #174f8f 58%,
+      #0d8796 100%
+    ) !important;
+
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 30px !important;
+
+  box-shadow:
+    0 20px 48px rgba(18, 59, 115, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+
+/* ================= BRAND ================= */
+
+.exec-header .brand-block {
+  min-width: 0 !important;
+
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 24px !important;
+}
+
+
+/* ================= LOGO ================= */
+
+.exec-header .logo {
+  flex: 0 0 auto !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  margin: 0 !important;
+}
+
+.exec-header .logo img {
+  display: block !important;
+
+  width: 145px !important;
+  height: auto !important;
+
+  max-width: 145px !important;
+  max-height: 105px !important;
+
+  object-fit: contain !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  border-radius: 0 !important;
+}
+
+
+/* ================= BRAND ICON ================= */
+
+.exec-header .brand-icon {
+  width: 68px !important;
+  height: 68px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  flex: 0 0 auto !important;
+
+  border-radius: 22px !important;
+
+  background: rgba(255, 255, 255, 0.14) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.exec-header .brand-icon .material-symbols-outlined {
+  font-size: 38px !important;
+  color: #ffffff !important;
+}
+
+
+/* ================= TITLE ================= */
+
+.exec-header h1 {
+  margin: 0 !important;
+
+  color: #ffffff !important;
+
+  font-size: clamp(34px, 3vw, 42px) !important;
+  font-weight: 800 !important;
+
+  line-height: 1.15 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.exec-header p {
+  margin: 10px 0 0 !important;
+
+  color: rgba(255, 255, 255, 0.78) !important;
+
+  font-size: 15px !important;
+  line-height: 1.5 !important;
+}
+
+
+/* ================= ACTIONS ================= */
+
+.exec-header .header-actions {
+  flex: 0 0 auto !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+
+  flex-wrap: wrap !important;
+
+  gap: 10px !important;
+
+  margin-left: auto !important;
+  align-self: flex-start !important;
+  margin-top: 2px !important;
+}
+
+.exec-header .header-actions .btn,
+.exec-header .user-chip {
+  min-height: 48px !important;
+
+  padding: 11px 17px !important;
+
+  border-radius: 14px !important;
+
+  font-size: 14px !important;
+  font-weight: 800 !important;
+}
+
+
+/* ================= UPDATE STATUS ================= */
+
+.exec-header .dashboard-update {
+  margin-top: 8px !important;
+}
+
+.exec-header .update-status {
+  color: #ffffff !important;
+}
+
+.exec-header .update-date {
+  color: rgba(255, 255, 255, 0.78) !important;
+}
+
+
+/* ======================================================
+   SMALL LAPTOP / TABLET
+====================================================== */
+
+@media (max-width: 1100px) {
+
+  .exec-header {
+    min-height: 164px !important;
+
+    padding: 28px !important;
+
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+
+  .exec-header .logo img {
+    width: 125px !important;
+    max-width: 125px !important;
+  }
+
+  .exec-header h1 {
+    font-size: 32px !important;
+  }
+
+}
+
+
+/* ======================================================
+   MOBILE
+====================================================== */
+
+@media (max-width: 720px) {
+
+  .exec-header {
+    min-height: 0 !important;
+
+    padding: 22px !important;
+
+    flex-direction: column !important;
+    align-items: stretch !important;
+
+    border-radius: 22px !important;
+  }
+
+  .exec-header .brand-block {
+    width: 100% !important;
+  }
+
+  .exec-header .logo img {
+    width: 92px !important;
+    max-width: 92px !important;
+  }
+
+  .exec-header h1 {
+    font-size: 24px !important;
+  }
+
+  .exec-header .header-actions {
+    width: 100% !important;
+
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+
+    margin-left: 0 !important;
+    align-self: stretch !important;
+    margin-top: 6px !important;
+  }
+
+  .exec-header .header-actions .btn,
+  .exec-header .user-chip {
+    width: 100% !important;
+  }
+
+  .exec-header .dashboard-update {
+    align-items: flex-start !important;
+  }
+
+}
+
+
+@media (max-width: 480px) {
+
+  .exec-header {
+    padding: 18px !important;
+  }
+
+  .exec-header .logo img {
+    width: 80px !important;
+    max-width: 80px !important;
+  }
+
+  .exec-header h1 {
+    font-size: 21px !important;
+  }
+
+}

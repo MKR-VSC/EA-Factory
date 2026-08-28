@@ -11,7 +11,26 @@ const sb = window.supabaseClient;
 ====================================================== */
 
 window.addEventListener("DOMContentLoaded", async () => {
-  hideSplash();
+
+  const skipSplash =
+    sessionStorage.getItem("skipLoginSplash") === "1";
+
+  if (skipSplash) {
+
+    sessionStorage.removeItem("skipLoginSplash");
+
+    const splash = document.getElementById("splash-screen");
+
+    if (splash) {
+      splash.style.display = "none";
+    }
+
+  } else {
+
+    hideSplash();
+
+  }
+
   loadRememberedUser();
 
   if (!sb) {

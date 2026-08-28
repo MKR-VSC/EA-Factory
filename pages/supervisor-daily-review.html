@@ -93,8 +93,8 @@
           <select id="filterStatus">
             <option value="all">ทั้งหมด</option>
             <option value="pending_supervisor">รอตรวจสอบ</option>
-            <option value="sent_accounting">ส่งบัญชีแล้ว</option>
-            <option value="accounting_checked">บัญชีตรวจแล้ว</option>
+            <option value="sent_accounting">บันทึกลงระบบแล้ว</option>
+            <option value="accounting_checked">ผ่านการตรวจสอบแล้ว</option>
           </select>
         </div>
         <button class="btn primary" type="button" onclick="loadRecords()">ค้นหา</button>
@@ -154,7 +154,7 @@
       <section class="table-card supervisor-table-card">
         <div class="table-header">
           <div>
-            <h2>รายการที่ส่งบัญชีแล้ว</h2>
+            <h2>รายการที่บันทึกลงระบบแล้ว</h2>
             <p class="muted">ดูย้อนหลังเท่านั้น ไม่สามารถแก้ไขหรือลบได้</p>
           </div>
           <span id="sentRowCount" class="muted">-</span>

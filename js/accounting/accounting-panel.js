@@ -3,13 +3,21 @@
 ====================================================== */
 const REPORT_TABLE = "daily_waste_reports";
 const ITEM_TABLE = "daily_waste_report_items";
+const MACHINE_STATUS_TABLE = "daily_machine_status";
+
 const STATUS_SENT = "sent_accounting";
 const STATUS_DONE = "accounting_checked";
 const STATUS_CANCELLED = "accounting_cancelled";
+
+const MACHINE_STATUS_HAS_WASTE = "has_waste";
+const MACHINE_STATUS_NO_WASTE = "no_waste";
+const MACHINE_STATUS_NOT_RUNNING = "not_running";
+
 let state = {
   supabase: null,
   currentUser: null,
   reports: [],
+  machineStatuses: [],
   groups: [],
   standards: {},
 };
@@ -88,16 +96,45 @@ async function loadAccountingData() {
   const body = document.getElementById("accountingBody");
   if (body)
     body.innerHTML = `<tr><td colspan="13" class="empty">กำลังโหลดข้อมูล...</td></tr>`;
+
   try {
-    const { data, error } = await state.supabase
-      .from(REPORT_TABLE)
-      .select("*")
-      .in("status", [STATUS_SENT, STATUS_DONE, STATUS_CANCELLED])
-      .order("report_date", { ascending: false })
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    state.reports = await attachProblemItems(Array.isArray(data) ? data : []);
-    setText("lastUpdate", `อัปเดตล่าสุด ${new Date().toLocaleString("th-TH")}`);
+    // โหลดทั้ง "รายการของเสีย" และ "สถานะเครื่องประจำวัน" ที่หัวหน้าส่งบัญชีแล้ว
+    const [reportResult, machineResult] = await Promise.all([
+      state.supabase
+        .from(REPORT_TABLE)
+        .select("*")
+        .in("status", [STATUS_SENT, STATUS_DONE, STATUS_CANCELLED])
+        .order("report_date", { ascending: false })
+        .order("created_at", { ascending: false }),
+
+      state.supabase
+        .from(MACHINE_STATUS_TABLE)
+        .select("*")
+        .eq("sent_accounting", true)
+        .in("operation_status", [
+          MACHINE_STATUS_NO_WASTE,
+          MACHINE_STATUS_NOT_RUNNING,
+        ])
+        .order("work_date", { ascending: false }),
+    ]);
+
+    if (reportResult.error) throw reportResult.error;
+    if (machineResult.error) throw machineResult.error;
+
+    state.reports = await attachProblemItems(
+      Array.isArray(reportResult.data) ? reportResult.data : [],
+    );
+
+    // ไม่โหลด has_waste ซ้ำ เพราะรายการที่มีของเสียมาจาก daily_waste_reports อยู่แล้ว
+    state.machineStatuses = Array.isArray(machineResult.data)
+      ? machineResult.data
+      : [];
+
+    setText(
+      "lastUpdate",
+      `อัปเดตล่าสุด ${new Date().toLocaleString("th-TH")}`,
+    );
+
     applyFilters();
   } catch (e) {
     console.error(e);
@@ -105,6 +142,7 @@ async function loadAccountingData() {
       body.innerHTML = `<tr><td colspan="13" class="empty">โหลดข้อมูลไม่สำเร็จ: ${safeText(e.message || e)}</td></tr>`;
   }
 }
+
 async function attachProblemItems(rows) {
   if (!rows.length) return [];
   const ids = rows.map((r) => r.id).filter(Boolean);
@@ -152,7 +190,11 @@ function applyFilters() {
     dept = getValue("filterDept"),
     status = getValue("filterStatus"),
     kw = getValue("searchInput").toLowerCase();
-  let rows = state.reports.filter((r) => {
+
+  // -------------------------
+  // 1) รายการที่ "มีของเสีย"
+  // -------------------------
+  const reportRows = state.reports.filter((r) => {
     const m = toMonth(r.report_date || r.incident_datetime || r.created_at);
     const d = normalizeDept(r.department_code || r.department);
     const text = [
@@ -166,6 +208,7 @@ function applyFilters() {
     ]
       .join(" ")
       .toLowerCase();
+
     return (
       (!month || m === month) &&
       (dept === "all" || d === dept) &&
@@ -173,10 +216,49 @@ function applyFilters() {
       (!kw || text.includes(kw))
     );
   });
-  state.groups = buildGroups(rows);
+
+  // ---------------------------------------------
+  // 2) เครื่องที่ "ไม่มีของเสีย / ไม่ได้เดินเครื่อง"
+  // ---------------------------------------------
+  const machineRows = state.machineStatuses.filter((r) => {
+    const m = toMonth(r.work_date || r.created_at);
+    const d = normalizeDept(r.department_code);
+    const op = normalizeText(r.operation_status || "");
+    const accountingStatus = getMachineAccountingStatus(r);
+
+    const text = [
+      d,
+      getDeptName(d),
+      r.machine_no,
+      r.supervisor_name,
+      op === MACHINE_STATUS_NO_WASTE ? "ไม่มีของเสีย เดินเครื่อง" : "",
+      op === MACHINE_STATUS_NOT_RUNNING ? "ไม่ได้เดินเครื่อง หยุดเครื่อง" : "",
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    // "ไม่ได้เดินเครื่อง" ไม่มีงานให้บัญชีตรวจ จึงแสดงเฉพาะเมื่อเลือกสถานะ "ทั้งหมด"
+    const statusMatched =
+      status === "all" ||
+      (op === MACHINE_STATUS_NO_WASTE && accountingStatus === status);
+
+    return (
+      (!month || m === month) &&
+      (dept === "all" || d === dept) &&
+      statusMatched &&
+      (!kw || text.includes(kw))
+    );
+  });
+
+  const reportGroups = buildGroups(reportRows);
+  const machineGroups = buildMachineStatusGroups(machineRows);
+
+  state.groups = [...reportGroups, ...machineGroups].sort(sortAccountingGroups);
+
   renderSummary(state.groups);
   renderTable(state.groups);
 }
+
 function buildGroups(rows) {
   const m = new Map();
   rows.forEach((r) => {
@@ -200,7 +282,9 @@ function buildGroups(rows) {
         reporter: new Set(),
         items: [],
         waste: 0,
-        production: getProduction(r),
+        // รายการที่เพิ่งส่งมาบัญชี ให้ช่อง "ผลิต kg" ว่างก่อน
+        // จะแสดงน้ำหนักผลิตเดิมเฉพาะรายการที่บัญชีบันทึกแล้วเท่านั้น
+        production: rowStatus === STATUS_DONE ? getProduction(r) : 0,
         status: rowStatus || STATUS_SENT,
       });
     const g = m.get(key);
@@ -222,12 +306,78 @@ function buildGroups(rows) {
       g.items.push(i);
       g.waste += Number(i.waste_weight_kg || 0);
     });
-    if (g.production == null || g.production === 0) {
+    // ป้องกันค่าจากหน้างาน/ฟิลด์เก่าไหลมาแสดงในช่องผลิต kg
+    // ก่อนที่บัญชีจะเป็นผู้กรอกและบันทึกเอง
+    if (g.status === STATUS_DONE && (g.production == null || g.production === 0)) {
       g.production = getProduction(r);
     }
   });
   return [...m.values()];
 }
+
+function buildMachineStatusGroups(rows) {
+  return rows
+    .filter((r) => {
+      const op = normalizeText(r.operation_status || "");
+      return [MACHINE_STATUS_NO_WASTE, MACHINE_STATUS_NOT_RUNNING].includes(op);
+    })
+    .map((r) => {
+      const op = normalizeText(r.operation_status || "");
+      const accountingStatus = getMachineAccountingStatus(r);
+      const isDone = accountingStatus === STATUS_DONE;
+
+      return {
+        key: `machine-status|${r.id}`,
+        ids: [],
+        rows: [],
+        machineStatusId: r.id,
+        sourceType: "machine_status",
+        date: r.work_date || dateKey(r.created_at),
+        dept: normalizeDept(r.department_code),
+        shift: "ทั้งวัน",
+        machine: r.machine_no || "-",
+        reporter: new Set([r.supervisor_name || "หัวหน้างาน"]),
+        items: [],
+        waste: 0,
+        operationStatus: op,
+
+        // เครื่อง "ไม่มีของเสีย" ให้ช่องผลิตว่างจนกว่าบัญชีจะบันทึกเอง
+        production:
+          op === MACHINE_STATUS_NO_WASTE && isDone
+            ? Number(r.production_kg || 0)
+            : 0,
+
+        // not_running เป็นข้อมูลประกอบ ไม่ใช่รายการรอบัญชี
+        status:
+          op === MACHINE_STATUS_NOT_RUNNING
+            ? MACHINE_STATUS_NOT_RUNNING
+            : accountingStatus,
+      };
+    });
+}
+
+function sortAccountingGroups(a, b) {
+  const dateA = String(a.date || "");
+  const dateB = String(b.date || "");
+
+  if (dateA !== dateB) return dateB.localeCompare(dateA);
+
+  const deptCompare = String(a.dept || "").localeCompare(
+    String(b.dept || ""),
+    "th",
+  );
+  if (deptCompare !== 0) return deptCompare;
+
+  const machineCompare = String(a.machine || "").localeCompare(
+    String(b.machine || ""),
+    "th",
+    { numeric: true },
+  );
+  if (machineCompare !== 0) return machineCompare;
+
+  return String(a.shift || "").localeCompare(String(b.shift || ""), "th");
+}
+
 function renderSummary(groups) {
   // ไม่นับรายการที่ยกเลิกในยอดสรุป เพื่อไม่ให้ตัวเลขบัญชีเพี้ยน
   const activeGroups = groups.filter((g) => normalizeText(g.status) !== STATUS_CANCELLED);
@@ -247,47 +397,165 @@ function renderTable(groups) {
   body.innerHTML = groups.map((g, i) => renderGroup(g, i)).join("");
 }
 function renderGroup(g, i) {
+  const isMachineStatus = g.sourceType === "machine_status";
+  const isNoWaste =
+    isMachineStatus &&
+    normalizeText(g.operationStatus) === MACHINE_STATUS_NO_WASTE;
+  const isNotRunning =
+    isMachineStatus &&
+    normalizeText(g.operationStatus) === MACHINE_STATUS_NOT_RUNNING;
+
   const isCancelled = normalizeText(g.status) === STATUS_CANCELLED;
   const isDone = normalizeText(g.status) === STATUS_DONE;
-  const percent = !isCancelled && g.production ? (g.waste / g.production) * 100 : 0;
-  const result = isCancelled
-    ? { label: "ยกเลิก", className: "result-none" }
-    : getResult(g.dept, percent, !!g.production);
 
-  const status = isCancelled
-    ? `<span class="status-pill status-cancelled">ยกเลิกรายการ</span>`
-    : isDone
-      ? `<span class="status-pill status-done">บัญชีตรวจแล้ว</span>`
-      : `<span class="status-pill status-sent">รอบัญชีตรวจ</span>`;
+  const percent =
+    !isCancelled && !isNotRunning && g.production
+      ? (g.waste / g.production) * 100
+      : 0;
 
-  const disabledAttr = isCancelled ? "disabled" : "";
+  let result;
+  if (isCancelled) {
+    result = { label: "ยกเลิก", className: "result-none" };
+  } else if (isNotRunning) {
+    result = { label: "ไม่ได้เดินเครื่อง", className: "result-none" };
+  } else if (isNoWaste && g.production) {
+    result = { label: "ไม่มีของเสีย", className: "result-success" };
+  } else {
+    result = getResult(g.dept, percent, !!g.production);
+  }
+
+  let status;
+  if (isCancelled) {
+    status = `<span class="status-pill status-cancelled">ยกเลิกรายการ</span>`;
+  } else if (isNotRunning) {
+    status = `<span class="status-pill" style="background:#e2e8f0;color:#475569;">ไม่ได้เดินเครื่อง</span>`;
+  } else if (isDone) {
+    status = `<span class="status-pill status-done">บัญชีตรวจแล้ว</span>`;
+  } else if (isNoWaste) {
+    status = `<span class="status-pill status-sent">รอบัญชีกรอกผลิต</span>`;
+  } else {
+    status = `<span class="status-pill status-sent">รอบัญชีตรวจ</span>`;
+  }
+
+  const productionInputAttr = isCancelled
+    ? "disabled"
+    : isNotRunning
+      ? "disabled"
+      : isDone
+        ? "readonly"
+        : "";
+
   const rowClass = isCancelled ? ` class="row-cancelled"` : "";
 
-  return `<tr${rowClass}><td><button class="expand-btn" onclick="toggleDetail(${i})">▼</button></td>
-  <td>${safeText(formatDate(g.date))}</td>
-  <td><strong>${safeText(g.dept)}</strong><br><small>${safeText(getDeptName(g.dept))}</small></td>
-  <td>${safeText(g.shift)}</td><td><strong>${safeText(g.machine)}</strong></td>
-  <td>${safeText([...g.reporter].join(", "))}</td>
-  <td class="text-right"><strong>${formatNumber(g.waste)}</strong></td>
-  <td>${renderProblemInline(g.items)}</td>
-  <td class="text-right"><input class="cell-input text-right" type="number" step="0.01" min="0" value="${safeAttr(g.production || "")}" data-prod="${safeAttr(g.key)}" placeholder="kg" ${disabledAttr}></td>
-  <td class="text-right">${isCancelled ? "-" : g.production ? formatPercent(percent) : "-"}</td>
-  <td><span class="result-pill ${result.className}">${safeText(result.label)}</span></td>
-  <td>${status}</td>
-  <td>
-    <div class="action-stack">
-      <button class="btn warning" onclick="editGroup('${safeAttr(g.key)}')" ${disabledAttr}>แก้ไข</button>
-      <button class="btn danger" onclick="cancelGroup('${safeAttr(g.key)}')" ${disabledAttr}>ยกเลิก</button>
-      <button class="btn success" onclick="saveGroup('${safeAttr(g.key)}')" ${disabledAttr}>บันทึก</button>
-    </div>
-  </td>
-  </tr>
-  <tr id="detail-${i}" class="detail-row hidden${isCancelled ? " row-cancelled" : ""}"><td colspan="13">${renderProblemTable(g.items, g.waste)}</td></tr>`;
+  const expandCell = isMachineStatus
+    ? `<span class="muted">—</span>`
+    : `<button class="expand-btn" onclick="toggleDetail(${i})">▼</button>`;
+
+  const wasteCell = isNotRunning ? "-" : formatNumber(g.waste);
+
+  const problemCell = isNoWaste
+    ? `<span class="status-pill status-done">ไม่มีของเสีย</span>`
+    : isNotRunning
+      ? `<span class="muted">ไม่ได้เดินเครื่อง</span>`
+      : renderProblemInline(g.items);
+
+  const productionCell = isNotRunning
+    ? `<span class="muted">-</span>`
+    : `<input class="cell-input text-right" type="number" step="0.01" min="0"
+        value="${safeAttr(g.production || "")}"
+        data-prod="${safeAttr(g.key)}"
+        placeholder="kg"
+        ${productionInputAttr}>`;
+
+  const percentCell =
+    isCancelled || isNotRunning
+      ? "-"
+      : g.production
+        ? formatPercent(percent)
+        : "-";
+
+  let actions;
+  if (isNotRunning) {
+    actions = `<span class="muted">-</span>`;
+  } else if (isMachineStatus) {
+    actions = `
+      <div class="action-stack">
+        <button
+          class="btn warning"
+          onclick="editGroup('${safeAttr(g.key)}')"
+        >แก้ไข</button>
+
+        <button
+          class="btn success${isDone ? " hidden" : ""}"
+          data-save="${safeAttr(g.key)}"
+          onclick="saveGroup('${safeAttr(g.key)}')"
+        >บันทึก</button>
+      </div>`;
+  } else {
+    const disabledAttr = isCancelled ? "disabled" : "";
+    actions = `
+      <div class="action-stack">
+        <button
+          class="btn warning"
+          onclick="editGroup('${safeAttr(g.key)}')"
+          ${disabledAttr}
+        >แก้ไข</button>
+
+        <button
+          class="btn danger"
+          onclick="cancelGroup('${safeAttr(g.key)}')"
+          ${disabledAttr}
+        >ยกเลิก</button>
+
+        <button
+          class="btn success${isDone ? " hidden" : ""}"
+          data-save="${safeAttr(g.key)}"
+          onclick="saveGroup('${safeAttr(g.key)}')"
+          ${disabledAttr}
+        >บันทึก</button>
+      </div>`;
+  }
+
+  const mainRow = `<tr${rowClass}>
+    <td>${expandCell}</td>
+    <td>${safeText(formatDate(g.date))}</td>
+    <td>
+      <strong>${safeText(g.dept)}</strong><br>
+      <small>${safeText(getDeptName(g.dept))}</small>
+    </td>
+    <td>${safeText(g.shift)}</td>
+    <td><strong>${safeText(g.machine)}</strong></td>
+    <td>${safeText([...g.reporter].join(", "))}</td>
+    <td class="text-right"><strong>${wasteCell}</strong></td>
+    <td>${problemCell}</td>
+    <td class="text-right">${productionCell}</td>
+    <td class="text-right">${percentCell}</td>
+    <td><span class="result-pill ${result.className}">${safeText(result.label)}</span></td>
+    <td>${status}</td>
+    <td>${actions}</td>
+  </tr>`;
+
+  if (isMachineStatus) return mainRow;
+
+  return `${mainRow}
+  <tr
+    id="detail-${i}"
+    class="detail-row hidden${isCancelled ? " row-cancelled" : ""}"
+  >
+    <td colspan="13">${renderProblemTable(g.items, g.waste)}</td>
+  </tr>`;
 }
 
 function editGroup(key) {
   const input = document.querySelector(`[data-prod="${cssEscape(key)}"]`);
   if (!input) return;
+
+  // รายการที่บันทึกแล้วจะล็อกช่องไว้
+  // เมื่อกด "แก้ไข" จึงเปิดให้แก้และแสดงปุ่ม "บันทึก" กลับมา
+  input.readOnly = false;
+  document
+    .querySelector(`[data-save="${cssEscape(key)}"]`)
+    ?.classList.remove("hidden");
 
   input.focus();
   input.select();
@@ -316,40 +584,80 @@ function toggleDetail(i) {
 async function saveGroup(key) {
   const g = state.groups.find((x) => x.key === key);
   if (!g) return;
+
+  if (
+    g.sourceType === "machine_status" &&
+    normalizeText(g.operationStatus) === MACHINE_STATUS_NOT_RUNNING
+  ) {
+    return showToast("เครื่องนี้ไม่ได้เดินเครื่อง ไม่ต้องกรอกน้ำหนักผลิต", "error");
+  }
+
   const prod = Number(
     document.querySelector(`[data-prod="${cssEscape(key)}"]`)?.value || 0,
   );
-  if (!prod || prod <= 0)
+
+  if (!prod || prod <= 0) {
     return showToast("กรุณากรอกน้ำหนักผลิตให้ถูกต้อง", "error");
-  const uid = localStorage.getItem("activeUserId") || null;
+  }
+
+  const uid =
+    state.currentUser?.id || localStorage.getItem("activeUserId") || null;
+  const now = new Date().toISOString();
+
+  // ---------------------------------------------------------
+  // เครื่อง "เดินเครื่อง / ไม่มีของเสีย"
+  // เก็บน้ำหนักผลิตไว้ใน daily_machine_status
+  // ---------------------------------------------------------
+  if (g.sourceType === "machine_status") {
+    const { error } = await state.supabase
+      .from(MACHINE_STATUS_TABLE)
+      .update({
+        production_kg: prod,
+        accounting_checked_by: uid,
+        accounting_checked_at: now,
+        updated_at: now,
+      })
+      .eq("id", g.machineStatusId);
+
+    if (error) {
+      return showToast(`บันทึกไม่สำเร็จ: ${error.message}`, "error");
+    }
+
+    showToast("บันทึกน้ำหนักผลิตเรียบร้อยแล้ว", "success");
+    await loadAccountingData();
+    return;
+  }
+
+  // ---------------------------------------------------------
+  // รายการที่มีของเสีย ใช้ daily_waste_reports ตามระบบเดิม
+  // ---------------------------------------------------------
   const { error } = await state.supabase
     .from(REPORT_TABLE)
-
     .update({
       production_kg: prod,
       status: STATUS_DONE,
       accounting_status: STATUS_DONE,
       accounting_checked_by: uid,
-      accounting_checked_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      accounting_checked_at: now,
+      updated_at: now,
     })
-
-    // .update({
-    //   total_qty: prod,
-    //   production_weight_kg: prod,
-    //   status: STATUS_DONE,
-    //   accounting_checked_by: uid,
-    //   accounting_checked_at: new Date().toISOString(),
-    //   updated_at: new Date().toISOString(),
-    // })
     .in("id", g.ids);
-  if (error) return showToast(`บันทึกไม่สำเร็จ: ${error.message}`, "error");
+
+  if (error) {
+    return showToast(`บันทึกไม่สำเร็จ: ${error.message}`, "error");
+  }
+
   showToast("บันทึกเรียบร้อยแล้ว", "success");
   await loadAccountingData();
 }
+
 async function cancelGroup(key) {
   const g = state.groups.find((x) => x.key === key);
   if (!g) return;
+
+  if (g.sourceType === "machine_status") {
+    return showToast("สถานะเครื่องจากหัวหน้างานไม่สามารถยกเลิกจากหน้าบัญชีได้", "error");
+  }
 
   const ok = await askCancelConfirm(g);
   if (!ok) return;
@@ -425,6 +733,19 @@ function getProduction(r) {
 
 function getAccountingStatus(r) {
   return normalizeText(r.accounting_status || r.status || "");
+}
+
+
+function getMachineAccountingStatus(r) {
+  const op = normalizeText(r.operation_status || "");
+
+  if (op === MACHINE_STATUS_NOT_RUNNING) {
+    return MACHINE_STATUS_NOT_RUNNING;
+  }
+
+  // ถ้าบัญชีเคยบันทึกแล้ว จะมี accounting_checked_at
+  // ไม่ต้องสร้าง status ซ้ำในตาราง daily_machine_status
+  return r.accounting_checked_at ? STATUS_DONE : STATUS_SENT;
 }
 
 function getDeptName(c) {
