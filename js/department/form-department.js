@@ -987,19 +987,34 @@ function addProblemItem(
   setActiveProblemRow(row);
 
   // สำคัญสำหรับมือถือ:
-  // เพิ่มรายการแล้วเลื่อนการ์ดใหม่เข้าหน้าจอและโฟกัสช่องแรกทันที
+  // รายการใหม่ต้องเด่นและเลื่อนมาอยู่กลางหน้าจอจริง ๆ
   if (autoScroll) {
+    row.classList.add("is-new-item");
+
     requestAnimationFrame(() => {
       row.scrollIntoView({
         behavior: "smooth",
         block: "center",
+        inline: "nearest",
       });
 
       if (autoFocus && select) {
         setTimeout(() => {
           select.focus({ preventScroll: true });
-        }, 380);
+        }, 360);
       }
+
+      // มือถือบางรุ่นจะขยับ viewport หลัง focus
+      // เลื่อนซ้ำอีกรอบเพื่อให้การ์ดใหม่กลับมาอยู่กลางจอ
+      setTimeout(() => {
+        row.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+          inline: "nearest",
+        });
+      }, 620);
+
+      setTimeout(() => row.classList.remove("is-new-item"), 1200);
     });
   }
 }
