@@ -1699,3 +1699,263 @@ body {
   height: 5px;
   background: linear-gradient(90deg, var(--dept-accent), var(--dept-accent-2));
 }
+
+/* ======================================================
+   MULTI PROBLEM UX V2
+   - แยกสถานะ กำลังกรอก / กรอกแล้ว / ยังไม่ครบ
+   - เน้นการใช้งานบนมือถือ
+   - ใช้ร่วมกับ JS auto-scroll ไปปัญหาใหม่
+====================================================== */
+
+.problem-item {
+  position: relative;
+  overflow: hidden;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.problem-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: #cbd5e1;
+  transition: background 0.18s ease;
+}
+
+/* รายการที่กำลังกรอก: ฟ้าเด่น */
+.problem-item.is-active {
+  border-color: #60a5fa;
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.10),
+    0 12px 28px rgba(37, 99, 235, 0.12);
+}
+
+.problem-item.is-active::before {
+  background: #2563eb;
+}
+
+/* รายการที่กรอกครบแล้ว: เขียว อ่านออกทันทีว่าเสร็จแล้ว */
+.problem-item.is-complete:not(.is-active) {
+  border-color: #bbf7d0;
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+  box-shadow: 0 7px 16px rgba(22, 163, 74, 0.07);
+}
+
+.problem-item.is-complete:not(.is-active)::before {
+  background: #22c55e;
+}
+
+/* รายการที่ยังไม่ครบแต่ไม่ได้กำลังกรอก */
+.problem-item.is-incomplete:not(.is-active) {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+
+.problem-item-head-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.problem-item-status {
+  min-height: 32px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.problem-item-status .material-symbols-outlined {
+  font-size: 17px;
+}
+
+.problem-item.is-active .problem-item-status {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.problem-item.is-complete .problem-item-status {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* ถ้ากดเพิ่มทั้งที่รายการล่าสุดยังไม่ครบ ให้สะดุดตาแบบสั้น ๆ */
+.problem-item.needs-attention {
+  border-color: #f97316 !important;
+  box-shadow:
+    0 0 0 4px rgba(249, 115, 22, 0.14),
+    0 12px 26px rgba(249, 115, 22, 0.12) !important;
+  animation: problemAttention 0.42s ease 2;
+}
+
+.problem-item.needs-attention::before {
+  background: #f97316 !important;
+}
+
+@keyframes problemAttention {
+  0%, 100% { transform: translateX(0); }
+  35% { transform: translateX(-3px); }
+  70% { transform: translateX(3px); }
+}
+
+.problem-item-inline-message {
+  margin-top: 10px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.problem-item-inline-message[hidden] {
+  display: none !important;
+}
+
+/* เมื่อกรอกครบ ให้ช่องต่าง ๆ ดูสงบลง แต่ยังแก้ไขได้ */
+.problem-item.is-complete:not(.is-active) .problem-type-select,
+.problem-item.is-complete:not(.is-active) .problem-weight-input,
+.problem-item.is-complete:not(.is-active) .problem-detail-input {
+  border-color: #bbf7d0;
+  background: #f7fff9;
+}
+
+/* ปุ่มเพิ่มปัญหาให้สื่อว่าเป็น "ขั้นตอนถัดไป" */
+.btn-add-problem {
+  margin-top: 14px !important;
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px dashed #fda4af;
+  box-shadow: none;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.12s ease;
+}
+
+.btn-add-problem:hover {
+  background: #ffe4e6;
+  border-color: #fb7185;
+}
+
+.btn-add-problem:active {
+  transform: scale(0.99);
+}
+
+@media (max-width: 900px) {
+  .problem-items-card {
+    padding: 12px !important;
+  }
+
+  .problem-items-list {
+    gap: 11px;
+  }
+
+  .problem-item {
+    padding: 13px 12px 14px 15px;
+    border-radius: 15px;
+    scroll-margin-top: 12px;
+  }
+
+  .problem-item-head {
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .problem-item-head strong {
+    font-size: 15px;
+  }
+
+  .problem-item-head-actions {
+    gap: 6px;
+  }
+
+  .problem-item-status {
+    min-height: 29px;
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .problem-item-status .material-symbols-outlined {
+    font-size: 15px;
+  }
+
+  .btn-remove-problem {
+    min-height: 32px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+  }
+
+  .btn-remove-problem .material-symbols-outlined {
+    font-size: 16px;
+  }
+
+  .problem-item-grid {
+    gap: 9px;
+  }
+
+  .problem-mini-label {
+    margin-bottom: 5px !important;
+    font-size: 13px !important;
+  }
+
+  .problem-detail-wrap {
+    margin-top: 9px;
+  }
+
+  .problem-detail-wrap textarea {
+    min-height: 72px;
+  }
+
+  .btn-add-problem {
+    min-height: 48px;
+    border-radius: 13px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 430px) {
+  .problem-item-head {
+    gap: 6px;
+  }
+
+  .problem-item-head-actions {
+    flex: 0 0 auto;
+  }
+
+  .problem-item-status {
+    max-width: 96px;
+  }
+
+  .problem-item-status-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .problem-item .form-group input,
+  .problem-item .form-group select,
+  .problem-item .form-group textarea,
+  .problem-item input,
+  .problem-item select,
+  .problem-item textarea {
+    font-size: 16px; /* ป้องกัน iPhone zoom ตอน focus */
+  }
+}

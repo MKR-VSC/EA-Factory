@@ -795,7 +795,9 @@ function setupProblemItemsEvents() {
   const addButton = document.getElementById("btn-add-problem");
 
   if (addButton) {
-    addButton.addEventListener("click", () => addProblemItem());
+    // เวลากดเพิ่มจากผู้ใช้ ให้ตรวจรายการล่าสุดก่อน
+    // ถ้ายังกรอกไม่ครบ จะพาไปยังช่องที่ขาดแทนการสร้างการ์ดใหม่
+    addButton.addEventListener("click", requestAddProblemItem);
   }
 }
 
@@ -805,10 +807,57 @@ function renderProblemItemsInitial() {
 
   list.innerHTML = "";
   problemItemIndex = 0;
-  addProblemItem();
+
+  // รายการแรกไม่ต้อง auto scroll ตอนเปิดหน้า
+  addProblemItem({}, { autoScroll: false, autoFocus: false });
 }
 
-function addProblemItem(defaultValue = {}) {
+function requestAddProblemItem() {
+  const rows = Array.from(document.querySelectorAll(".problem-item"));
+  const lastRow = rows[rows.length - 1];
+
+  // ก่อนเพิ่มรายการใหม่ ต้องกรอกรายการล่าสุดให้ครบก่อน
+  if (lastRow) {
+    const missingField = getProblemItemMissingField(lastRow);
+
+    if (missingField) {
+      setActiveProblemRow(lastRow);
+      lastRow.classList.add("needs-attention");
+
+      setTimeout(() => {
+        lastRow.classList.remove("needs-attention");
+      }, 900);
+
+      lastRow.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+
+      setTimeout(() => {
+        missingField.focus({ preventScroll: true });
+      }, 350);
+
+      showProblemInlineMessage(
+        lastRow,
+        missingField.classList.contains("problem-type-select")
+          ? "เลือกประเภทปัญหาก่อนเพิ่มรายการใหม่"
+          : missingField.classList.contains("problem-weight-input")
+            ? "กรอกน้ำหนักของเสียก่อนเพิ่มรายการใหม่"
+            : "กรอกรายละเอียดปัญหานี้ก่อนเพิ่มรายการใหม่",
+      );
+      return;
+    }
+
+    updateProblemItemState(lastRow);
+  }
+
+  addProblemItem({}, { autoScroll: true, autoFocus: true });
+}
+
+function addProblemItem(
+  defaultValue = {},
+  { autoScroll = true, autoFocus = true } = {},
+) {
   const list = document.getElementById("problem-items");
   if (!list) return;
 
@@ -821,10 +870,18 @@ function addProblemItem(defaultValue = {}) {
   row.innerHTML = `
     <div class="problem-item-head">
       <strong>ปัญหาที่ ${problemItemIndex}</strong>
-      <button type="button" class="btn-remove-problem" title="ลบปัญหานี้">
-        <span class="material-symbols-outlined">delete</span>
-        ลบ
-      </button>
+
+      <div class="problem-item-head-actions">
+        <span class="problem-item-status" aria-live="polite">
+          <span class="material-symbols-outlined">edit</span>
+          <span class="problem-item-status-text">กำลังกรอก</span>
+        </span>
+
+        <button type="button" class="btn-remove-problem" title="ลบปัญหานี้">
+          <span class="material-symbols-outlined">delete</span>
+          ลบ
+        </button>
+      </div>
     </div>
 
     <div class="problem-item-grid">
@@ -843,6 +900,7 @@ function addProblemItem(defaultValue = {}) {
           class="problem-weight-input"
           min="0"
           step="0.01"
+          inputmode="decimal"
           placeholder="0.00"
           value="${defaultValue.waste_weight_kg || ""}"
           required
@@ -858,20 +916,47 @@ function addProblemItem(defaultValue = {}) {
         placeholder="เช่น เริ่มเสียช่วงต้นม้วน / พบตอนเปลี่ยนงาน / ถ้าเลือกอื่นๆ ให้ระบุสาเหตุจริง"
       >${defaultValue.detail || ""}</textarea>
     </div>
+
+    <div class="problem-item-inline-message" hidden></div>
   `;
 
   list.appendChild(row);
 
   const select = row.querySelector(".problem-type-select");
   const weightInput = row.querySelector(".problem-weight-input");
+  const detailInput = row.querySelector(".problem-detail-input");
   const removeButton = row.querySelector(".btn-remove-problem");
+
+  // คลิก/แตะช่องไหน การ์ดนั้นจะเด่นขึ้นทันที
+  row.addEventListener("focusin", () => {
+    setActiveProblemRow(row);
+  });
+
+  row.addEventListener("click", (event) => {
+    if (!event.target.closest(".btn-remove-problem")) {
+      setActiveProblemRow(row);
+    }
+  });
 
   select?.addEventListener("change", () => {
     updateProblemItemOtherHint(row);
+    updateProblemItemState(row);
+    updateTotalWasteKg();
+
+    // เลือกประเภทแล้ว พาไปช่องน้ำหนักต่อทันที
+    if (select.value && weightInput && !weightInput.value) {
+      setTimeout(() => weightInput.focus(), 80);
+    }
+  });
+
+  weightInput?.addEventListener("input", () => {
+    updateProblemItemState(row);
     updateTotalWasteKg();
   });
 
-  weightInput?.addEventListener("input", updateTotalWasteKg);
+  detailInput?.addEventListener("input", () => {
+    updateProblemItemState(row);
+  });
 
   removeButton?.addEventListener("click", () => {
     const rows = document.querySelectorAll(".problem-item");
@@ -881,13 +966,109 @@ function addProblemItem(defaultValue = {}) {
       return;
     }
 
+    const wasActive = row.classList.contains("is-active");
     row.remove();
+
     renumberProblemItems();
     updateTotalWasteKg();
+
+    const remainingRows = Array.from(document.querySelectorAll(".problem-item"));
+    remainingRows.forEach(updateProblemItemState);
+
+    if (wasActive && remainingRows.length) {
+      const nextRow = remainingRows[remainingRows.length - 1];
+      setActiveProblemRow(nextRow);
+    }
   });
 
   updateProblemItemOtherHint(row);
+  updateProblemItemState(row);
   updateTotalWasteKg();
+  setActiveProblemRow(row);
+
+  // สำคัญสำหรับมือถือ:
+  // เพิ่มรายการแล้วเลื่อนการ์ดใหม่เข้าหน้าจอและโฟกัสช่องแรกทันที
+  if (autoScroll) {
+    requestAnimationFrame(() => {
+      row.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+
+      if (autoFocus && select) {
+        setTimeout(() => {
+          select.focus({ preventScroll: true });
+        }, 380);
+      }
+    });
+  }
+}
+
+function setActiveProblemRow(activeRow) {
+  document.querySelectorAll(".problem-item").forEach((row) => {
+    row.classList.toggle("is-active", row === activeRow);
+  });
+
+  if (activeRow) updateProblemItemState(activeRow);
+}
+
+function getProblemItemMissingField(row) {
+  if (!row) return null;
+
+  const select = row.querySelector(".problem-type-select");
+  const weightInput = row.querySelector(".problem-weight-input");
+  const detailInput = row.querySelector(".problem-detail-input");
+
+  const problemType = (select?.value || "").trim();
+  const weight = Number(weightInput?.value || 0);
+  const detail = (detailInput?.value || "").trim();
+
+  if (!problemType) return select;
+  if (!Number.isFinite(weight) || weight <= 0) return weightInput;
+  if (isOtherProblem(problemType) && !detail) return detailInput;
+
+  return null;
+}
+
+function isProblemItemComplete(row) {
+  return !getProblemItemMissingField(row);
+}
+
+function updateProblemItemState(row) {
+  if (!row) return;
+
+  const isActive = row.classList.contains("is-active");
+  const complete = isProblemItemComplete(row);
+  const status = row.querySelector(".problem-item-status");
+  const statusIcon = status?.querySelector(".material-symbols-outlined");
+  const statusText = row.querySelector(".problem-item-status-text");
+
+  row.classList.toggle("is-complete", complete);
+  row.classList.toggle("is-incomplete", !complete);
+
+  if (complete) {
+    if (statusIcon) statusIcon.textContent = "check_circle";
+    if (statusText) statusText.textContent = "กรอกแล้ว";
+  } else if (isActive) {
+    if (statusIcon) statusIcon.textContent = "edit";
+    if (statusText) statusText.textContent = "กำลังกรอก";
+  } else {
+    if (statusIcon) statusIcon.textContent = "pending";
+    if (statusText) statusText.textContent = "ยังไม่ครบ";
+  }
+}
+
+function showProblemInlineMessage(row, message) {
+  const box = row?.querySelector(".problem-item-inline-message");
+  if (!box) return;
+
+  box.textContent = message;
+  box.hidden = false;
+
+  clearTimeout(row._problemMessageTimer);
+  row._problemMessageTimer = setTimeout(() => {
+    box.hidden = true;
+  }, 2600);
 }
 
 function buildProblemOptionsHtml(selectedValue = "") {
