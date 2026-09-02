@@ -7,8 +7,8 @@
 ====================================================== */
 
 :root {
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
+  --primary: #1E3A8A;
+  --primary-dark: #0F2847;
   --primary-soft: #dbeafe;
   --sky: #0ea5e9;
 
@@ -124,8 +124,8 @@ img {
   grid-template-columns: 10px 1fr;
   align-items: center;
   gap: 20px;
-  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 48%, #0ea5e9 100%);
-  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.28);
+  background: linear-gradient(135deg, #f0f4f8 0%, #e8f1ff 48%, #f0f4f8 100%);
+  box-shadow: 0 8px 20px rgba(30, 58, 138, 0.12);
 }
 
 .pvt-top-header::before {
@@ -172,6 +172,7 @@ img {
 
 .pvt-top-header h3 {
   margin: 0;
+  color: #0f172a;
   font-size: 24px;
   line-height: 1.15;
   letter-spacing: -0.02em;
@@ -179,6 +180,7 @@ img {
 
 .pvt-top-header p {
   margin: 8px 0 0;
+  color: #64748b;
   font-size: 15px;
   opacity: 0.92;
 }
@@ -589,7 +591,7 @@ img {
 }
 
 .btn-submit {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background: linear-gradient(135deg, #1E3A8A, #0F2847);
   color: #ffffff;
   box-shadow: 0 14px 28px rgba(37, 99, 235, 0.26);
 }
@@ -800,18 +802,18 @@ img {
 .dept-blow .pvt-top-header,
 .dept-blown-film .pvt-top-header,
 .dept-mono .pvt-top-header {
-  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 48%, #0ea5e9 100%);
+  background: linear-gradient(135deg, #1E3A8A 0%, #1E3A8A 48%, #0ea5e9 100%);
 }
 
 .dept-pipe .pvt-top-header,
 .dept-shade-net .pvt-top-header {
-  background: linear-gradient(135deg, #0f766e 0%, #14b8a6 55%, #22c55e 100%);
+  background: linear-gradient(135deg, #EA580C 0%, #F97316 55%, #FBBF24 100%);
 }
 
 .dept-sheet-cutting .pvt-top-header,
 .dept-cut-punch .pvt-top-header,
 .dept-rain-tape-cut-punch .pvt-top-header {
-  background: linear-gradient(135deg, #4338ca 0%, #7c3aed 55%, #2563eb 100%);
+  background: linear-gradient(135deg, #4338ca 0%, #7c3aed 55%, #1E3A8A 100%);
 }
 
 .dept-rain-tape .pvt-top-header,
@@ -1281,7 +1283,7 @@ img {
   grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
   align-items: center;
   gap: 18px;
-  background: linear-gradient(120deg, #1e3a8a 0%, #2563eb 48%, #0ea5e9 100%);
+  background: linear-gradient(120deg, #1E3A8A 0%, #1E3A8A 48%, #0ea5e9 100%);
   box-shadow: 0 12px 28px rgba(37, 99, 235, 0.22);
 }
 
@@ -1586,7 +1588,7 @@ img {
   --ea-muted: #6b7a90;
   --ea-line: #dbe5f0;
 
-  --dept-accent: #2563eb;
+  --dept-accent: #1E3A8A;
   --dept-accent-2: #0ea5e9;
   --dept-soft: #e7f0ff;
 }
@@ -1598,7 +1600,7 @@ body.dept-mono,
 .dept-blow,
 .dept-blown-film,
 .dept-mono {
-  --dept-accent: #2563eb;
+  --dept-accent: #1E3A8A;
   --dept-accent-2: #0ea5e9;
   --dept-soft: #e8f1ff;
 }
@@ -1738,7 +1740,7 @@ body {
 }
 
 .problem-item.is-active::before {
-  background: #2563eb;
+  background: #1E3A8A;
 }
 
 /* รายการที่กรอกครบแล้ว: เขียว อ่านออกทันทีว่าเสร็จแล้ว */

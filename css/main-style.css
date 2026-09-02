@@ -314,7 +314,7 @@ body {
 .dept-sheet .sidebar-header { background: #1e40af; }
 .dept-sheet .sidebar-menu a.active { color: #1e40af; }
 .dept-sheet .btn-submit { background: #3b82f6; }
-.dept-sheet .btn-submit:hover { background: #2563eb; }
+.dept-sheet .btn-submit:hover { background: #1E3A8A; }
 
 /* 🎞️ แผนกเทปพัน - TAPE (เขียว) */
 .dept-tape .sidebar { background: #065f46; }
@@ -349,7 +349,7 @@ body {
 .dept-mono .sidebar-header { background: #0e7490; }
 .dept-mono .sidebar-menu a.active { color: #0e7490; }
 .dept-mono .btn-submit { background: #06b6d4; }
-.dept-mono .btn-submit:hover { background: #0891b2; }
+.dept-mono .btn-submit:hover { background: #EA580C; }
 
 /* Responsive สำหรับมือถือ */
 @media (max-width: 768px) {

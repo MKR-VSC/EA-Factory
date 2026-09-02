@@ -72,18 +72,18 @@
  =========================================================== */
 
  :root {
-  --primary: #0284c7;
+  --primary: #1E3A8A;
 
-  --production: #0f766e;
-  --warehouse: #1d4ed8;
+  --production: #EA580C;
+  --warehouse: #1E3A8A;
   --quality: #ea580c;
   --maintenance: #7c3aed;
 
   --success: #16a34a;
-  --warning: #d97706;
+  --warning: #EA580C;
   --danger: #dc2626;
 
-  --sidebar: #0f172a;
+  --sidebar: #0F2847;
 
   --bg: #f8fafc;
   --card: #ffffff;
@@ -108,15 +108,13 @@
 
 :root {
   /* Primary */
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
+  --primary: #1E3A8A;
+  --primary-hover: #0F2847;
 
   /* Sidebar */
   --sidebar-bg: #0f172a;
   --sidebar-hover: #1e293b;
-  --sidebar-active: #2563eb;
-
-  /* Layout */
+  --sidebar-active: #1E3A8A;
   --body-bg: #f8fafc;
   --card-bg: #ffffff;
 
@@ -168,13 +166,13 @@
 
  :root {
   /* Brand */
-  --primary: #0284c7;
-  --primary-hover: #0369a1;
+  --primary: #1E3A8A;
+  --primary-hover: #0F2847;
 
   /* Sidebar */
   --sidebar-bg: #0f172a;
   --sidebar-hover: #1e293b;
-  --sidebar-active: #0284c7;
+  --sidebar-active: #1E3A8A;
 
   /* Background */
   --body-bg: #f1f5f9;
@@ -199,7 +197,7 @@
   --danger: #dc2626;
   --danger-bg: #fee2e2;
 
-  --info: #0284c7;
+  --info: #1E3A8A;
   --info-bg: #e0f2fe;
 }
 
@@ -210,10 +208,10 @@
 
 
  :root {
-  --primary: #0284c7;
+  --primary: #1E3A8A;
 
   --sidebar-bg: #0f172a;
-  --sidebar-active: #0284c7;
+  --sidebar-active: #1E3A8A;
 
   --body-bg: #f8fafc;
   --card-bg: #ffffff;

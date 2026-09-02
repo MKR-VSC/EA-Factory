@@ -141,7 +141,7 @@
 
   border-radius: 50%;
 
-  background: #2563eb;
+  background: #1E3A8A;
 
   animation: eaDotBounce 1s infinite ease-in-out;
 }
@@ -225,7 +225,7 @@
   margin: 0 auto 16px;
 
   border: 5px solid #dbeafe;
-  border-top-color: #2563eb;
+  border-top-color: #1E3A8A;
 
   border-radius: 50%;
 

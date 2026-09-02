@@ -201,7 +201,7 @@
 
         border-radius: 50% !important;
 
-        background: #2563eb !important;
+        background: #1E3A8A !important;
 
         animation:
           eaLoadingDot 1s infinite ease-in-out;
@@ -296,7 +296,7 @@
           5px solid #dbeafe !important;
 
         border-top-color:
-          #2563eb !important;
+          #1E3A8A !important;
 
         border-radius:
           50% !important;
@@ -414,7 +414,7 @@ if (
             <div class="ea-splash-card">
 
               <img
-                src="/icons/Logo_B_512.png"
+                src="/icons/LOGOWPA.png"
                 class="ea-splash-logo"
                 alt="EA Factory Logo"
               />

@@ -5,18 +5,18 @@
 
 :root {
   /* ================= PVTT BRAND ================= */
-  --primary: #0b4f9c;
-  --primary-dark: #071f4d;
+  --primary: #1E3A8A;
+  --primary-dark: #0F2847;
   --primary-deep: #061a3a;
   --primary-soft: #e8f1ff;
   --primary-soft-2: #f3f7fd;
 
-  --blue: #2563eb;
-  --cyan: #0891b2;
+  --blue: #1E3A8A;
+  --cyan: #EA580C;
 
   /* ================= STATUS COLORS ================= */
-  --warning: #f59e0b;
-  --danger: #dc2626;
+  --warning: #EA580C;
+  --danger: #DC2626;
   --success: #16a34a;
 
   /* ================= TEXT ================= */
@@ -78,11 +78,11 @@ select {
   gap: 18px;
   margin-bottom: 20px;
   padding: 24px;
-  color: #ffffff;
+  color: #0f172a;
  
   background:     
-  linear-gradient(135deg, #012c64 100%, #0b5d95 100%, #087ea4 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  linear-gradient(135deg, #f0f4f8, #e8f1ff);
+  border: 1px solid rgba(30, 58, 138, 0.12);
   border-radius: var(--radius-xl);
   box-shadow:
     0 18px 45px rgba(7, 31, 77, 0.16),f
@@ -277,7 +277,7 @@ select {
 
 .form-group input:focus,
 .form-group select:focus {
-  border-color: #2563eb;
+  border-color: #1E3A8A;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 
@@ -576,7 +576,7 @@ select {
   position: absolute;
   inset: 0 0 auto 0;
   height: 5px;
-  background: linear-gradient(90deg, #071f4d, #2563eb, #0891b2);
+  background: linear-gradient(90deg, #0F2847, #1E3A8A, #EA580C);
 }
 
 .department-summary-card .section-head h2 {
@@ -594,7 +594,7 @@ select {
   display: grid;
   place-items: center;
   color: #ffffff;
-  background: linear-gradient(135deg, #0b4f9c, #2563eb);
+  background: linear-gradient(135deg, #0b4f9c, #1E3A8A);
   border-radius: 14px;
   font-size: 25px;
   box-shadow: 0 7px 16px rgba(37, 99, 235, 0.20);

@@ -9,8 +9,8 @@
 }
 
 :root {
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
+  --primary: #1E3A8A;
+  --primary-dark: #0F2847;
   --primary-soft: #dbeafe;
 
   --success: #10b981;
@@ -442,7 +442,7 @@ label {
 
 .btn-login {
   color: #ffffff;
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  background: linear-gradient(135deg, #1E3A8A, #0F2847);
   box-shadow: 0 12px 22px rgba(37, 99, 235, 0.28);
 }
 

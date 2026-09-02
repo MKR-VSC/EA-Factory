@@ -7,9 +7,9 @@
 ====================================================== */
 
 :root {
-  --primary: #2563eb;
-  --primary-2: #06b6d4;
-  --primary-dark: #1d4ed8;
+  --primary: #1E3A8A;
+  --primary-2: #EA580C;
+  --primary-dark: #0F2847;
   --success: #16a34a;
   --warning: #f59e0b;
   --danger: #dc2626;
@@ -829,13 +829,11 @@ button {
   margin-bottom: 22px;
   padding: 18px;
   border-radius: 30px;
-  color: #ffffff;
+  color: #0f172a;
   background:
-    linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px),
-    linear-gradient(135deg, #0f172a 0%, #132a55 38%, #1457b9 72%, #0ea5e9 100%);
-  background-size: 30px 30px, 30px 30px, auto;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+    linear-gradient(135deg, #f0f4f8 0%, #e8f1ff 38%, #e8f1ff 72%, #f0f4f8 100%);
+  border: 1px solid rgba(30, 58, 138, 0.12);
+  box-shadow: 0 8px 20px rgba(30, 58, 138, 0.12);
 }
 
 .dashboard-hero::before {
@@ -912,7 +910,7 @@ button {
 .dashboard-hero .title-area h1 {
   display: block;
   margin: 0;
-  color: #ffffff;
+  color: #0f172a;
   font-size: clamp(27px, 3vw, 40px);
   font-weight: 900;
   line-height: 1.12;
@@ -921,7 +919,7 @@ button {
 
 .dashboard-hero .title-area p {
   margin: 7px 0 0;
-  color: rgba(226, 232, 240, 0.86);
+  color: #64748b;
   font-size: 14px;
   line-height: 1.5;
 }
@@ -938,7 +936,8 @@ button {
   padding: 10px 15px;
   border-radius: 14px;
   box-shadow: none;
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  border: 1px solid #e2e8f0;
+  color: #ffffff;
 }
 
 .dashboard-hero .header-actions .btn .material-symbols-outlined {
@@ -948,8 +947,8 @@ button {
 
 .dashboard-hero .btn.secondary {
   color: #ffffff;
-  background: rgba(51, 65, 85, 0.78);
-  backdrop-filter: blur(8px);
+  background: #1E3A8A;
+  border: 1px solid #1E3A8A;
 }
 
 .dashboard-hero .btn.danger {
@@ -1340,7 +1339,7 @@ body {
 }
 
 .header-actions .btn.primary {
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  background: linear-gradient(135deg, #1E3A8A, #0F2847);
   color: #ffffff;
 }
 

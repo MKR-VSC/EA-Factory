@@ -4,12 +4,12 @@
 ========================================================= */
 
 :root {
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
+  --primary: #1E3A8A;
+  --primary-hover: #0F2847;
 
   --sidebar-bg: #0f172a;
   --sidebar-hover: #1e293b;
-  --sidebar-active: #2563eb;
+  --sidebar-active: #1E3A8A;
 
   --body-bg: #f1f5f9;
   --card-bg: #ffffff;
@@ -1293,7 +1293,7 @@ td select {
 .users-hero-panel .eyebrow {
   display: inline-flex;
   margin-bottom: 6px;
-  color: #2563eb;
+  color: #1E3A8A;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -1362,7 +1362,7 @@ td select {
 
 .user-stat-card.supervisor strong { color: #d97706; }
 .user-stat-card.active strong { color: #16a34a; }
-.user-stat-card.dept strong { color: #2563eb; }
+.user-stat-card.dept strong { color: #1E3A8A; }
 
 .user-create-panel {
   margin-bottom: 16px;
@@ -1444,7 +1444,7 @@ td select {
 
 .user-card.role-admin { border-left-color: #dc2626; }
 .user-card.role-management { border-left-color: #7c3aed; }
-.user-card.role-accounting { border-left-color: #0891b2; }
+.user-card.role-accounting { border-left-color: #EA580C; }
 .user-card.role-supervisor { border-left-color: #f59e0b; }
 .user-card.role-staff { border-left-color: #16a34a; }
 
@@ -1463,7 +1463,7 @@ td select {
   flex: 0 0 auto;
   color: #ffffff;
   font-weight: 900;
-  background: linear-gradient(135deg, #2563eb, #16a34a);
+  background: linear-gradient(135deg, #1E3A8A, #16a34a);
   border-radius: 16px;
   box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
 }
@@ -1696,8 +1696,8 @@ td select {
 }
 
 .dept-card-option input:checked + .dept-card-tick {
-  border-color: #2563eb;
-  background: #2563eb;
+  border-color: #1E3A8A;
+  background: #1E3A8A;
 }
 
 .dept-card-option input:checked + .dept-card-tick::after {
@@ -1708,7 +1708,7 @@ td select {
 }
 
 .dept-card-option:has(input:checked) {
-  border-color: #2563eb;
+  border-color: #1E3A8A;
   background: #eff6ff;
 }
 
@@ -1921,7 +1921,7 @@ td select {
 }
 
 .btn-edit {
-  background: #2563eb;
+  background: #1E3A8A;
   color: #fff;
 }
 
@@ -1931,7 +1931,7 @@ td select {
 }
 
 .btn-qr {
-  background: #0891b2;
+  background: #EA580C;
   color: #fff;
 }
 
@@ -1961,7 +1961,7 @@ td select {
 /* ===== FIX BUTTON COLOR OVERRIDE ===== */
 
 .data-list .master-actions .btn-edit {
-  background: #2563eb !important;
+  background: #1E3A8A !important;
 }
 
 .data-list .master-actions .btn-sort {
@@ -1969,7 +1969,7 @@ td select {
 }
 
 .data-list .master-actions .btn-qr {
-  background: #0891b2 !important;
+  background: #EA580C !important;
 }
 
 .data-list .master-actions .btn-enable {
@@ -2038,14 +2038,14 @@ td select {
 ========================================================= */
 
 .admin-ui-v2 {
-  --ux-primary: #2563eb;
+  --ux-primary: #1E3A8A;
   --ux-primary-soft: #eff6ff;
   --ux-sidebar: #0b1220;
   --ux-sidebar-2: #111c31;
   --ux-canvas: #f5f7fb;
   --ux-card: #ffffff;
-  --ux-ink: #162033;
-  --ux-muted: #6b778c;
+  --ux-ink: #0f172a;
+  --ux-muted: #64748b;
   --ux-line: #e6ebf2;
   --ux-radius: 16px;
   --ux-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
@@ -2176,7 +2176,7 @@ td select {
 
 .admin-ui-v2 .sidebar-item.active {
   color: #ffffff;
-  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, #1E3A8A 0%, #3b82f6 100%);
   border-color: rgba(147, 197, 253, 0.35);
   box-shadow: 0 8px 20px rgba(37, 99, 235, 0.24);
 }
@@ -2397,7 +2397,7 @@ td select {
   width: 46px;
   height: 46px;
   flex: 0 0 46px;
-  color: #2563eb;
+  color: #1E3A8A;
   background: #eff6ff;
   border-radius: 13px;
   font-size: 24px;

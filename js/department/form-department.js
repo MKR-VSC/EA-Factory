@@ -661,7 +661,7 @@ function ensureQrContextStyleExists() {
     }
 
     .qr-context-help {
-      color: #047857;
+      color: #EA580C;
       font-size: 14px;
       line-height: 1.5;
     }
@@ -1372,7 +1372,7 @@ function ensureOtherProblemStyleExists() {
     }
 
     .other-problem-box textarea:focus {
-      border-color: #2563eb;
+      border-color: #1E3A8A;
       box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
     }
 
@@ -1399,7 +1399,7 @@ function ensureOtherProblemStyleExists() {
     }
 
     .btn-other-save {
-      background: #2563eb;
+      background: #1E3A8A;
       color: #ffffff;
     }
 

@@ -51,7 +51,7 @@ const CANCELLED_STATUS = [
 const CHART_COLORS = {
   green: "#16a34a",
   greenSoft: "rgba(22, 163, 74, 0.16)",
-  blue: "#2563eb",
+  blue: "#1E3A8A",
   blueSoft: "rgba(37, 99, 235, 0.18)",
   cyan: "#06b6d4",
   amber: "#f59e0b",
@@ -64,8 +64,8 @@ const CHART_COLORS = {
 };
 
 const DEPARTMENT_COLORS = [
-  "#047857",
-  "#2563eb",
+  "#EA580C",
+  "#1E3A8A",
   "#f59e0b",
   "#dc2626",
   "#7c3aed",
@@ -79,8 +79,8 @@ const DEPARTMENT_COLORS = [
 
 // สีประจำแผนก ใช้กับกราฟภาพรวม/เครื่องจักร เพื่อให้ผู้บริหารจำสีได้ง่าย
 const DEPARTMENT_COLOR_MAP = {
-  BLOW: "#047857",
-  PIPE: "#2563eb",
+  BLOW: "#EA580C",
+  PIPE: "#1E3A8A",
   MONO: "#7c3aed",
   BLOWN_FILM: "#06b6d4",
   SHEET_CUTTING: "#f59e0b",
@@ -96,14 +96,14 @@ const PROBLEM_COLOR_PALETTE = [
   "#ef4444",
   "#f97316",
   "#f59e0b",
-  "#2563eb",
+  "#1E3A8A",
   "#06b6d4",
   "#7c3aed",
   "#e11d48",
   "#14b8a6",
   "#84cc16",
   "#64748b",
-  "#0f766e",
+  "#EA580C",
   "#9333ea",
 ];
 
@@ -117,7 +117,7 @@ const PROBLEM_COLOR_MAP = {
   "รอยย่น": "#8b5cf6",
   "รูเข็ม": "#e11d48",
   "ฟิล์มบาง": "#06b6d4",
-  "ฟิล์มหนา": "#2563eb",
+  "ฟิล์มหนา": "#1E3A8A",
   "สีผิด": "#84cc16",
   "สีเพี้ยน": "#84cc16",
   "ขาด": "#dc2626",

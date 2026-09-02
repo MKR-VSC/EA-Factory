@@ -11,10 +11,10 @@
   --muted: #64748b;
   --line: #dbe5ee;
 
-  --green: #047857;
+  --green: #EA580C;
   --green-2: #059669;
   --green-soft: #d1fae5;
-  --blue: #2563eb;
+  --blue: #1E3A8A;
   --blue-soft: #dbeafe;
   --amber: #f59e0b;
   --amber-soft: #fef3c7;
@@ -61,8 +61,8 @@ textarea { font: inherit; }
 
   gap: 24px;
 
-  min-height: 104px;
-  padding: 18px 24px;
+  min-height: 120px;
+  padding: 20px 24px;
   margin-bottom: 18px;
 
   color: #ffffff;
@@ -124,7 +124,7 @@ textarea { font: inherit; }
 .topbar .title h1 {
   margin: 0;
 
-  color: #ffffff;
+  color: #0f172a;
 
   font-size: clamp(24px, 2.2vw, 32px);
   font-weight: 700;
@@ -136,7 +136,7 @@ textarea { font: inherit; }
 .topbar .title p {
   margin: 6px 0 0;
 
-  color: rgba(255, 255, 255, 0.78);
+  color: #64748b;
 
   font-size: 14px;
   font-weight: 400;
@@ -283,9 +283,9 @@ textarea { font: inherit; }
 }
 
 .btn.light { color: #065f46; background: #ecfdf5; }
-.btn.primary { background: linear-gradient(135deg, #047857, #059669); }
+.btn.primary { background: linear-gradient(135deg, #EA580C, #F97316); }
 .btn.secondary { background: linear-gradient(135deg, #334155, #1e293b); }
-.btn.success { background: linear-gradient(135deg, #047857, #059669); }
+.btn.success { background: linear-gradient(135deg, #EA580C, #F97316); }
 .btn.warning { background: linear-gradient(135deg, #f59e0b, #f97316); }
 .btn.danger { background: linear-gradient(135deg, #64748b, #475569); }
 .btn.logout { background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; }

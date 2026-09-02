@@ -7,9 +7,9 @@
 ====================================================== */
 
 :root {
-  --primary: #2563eb;
-  --primary-2: #06b6d4;
-  --primary-dark: #1d4ed8;
+  --primary: #1E3A8A;
+  --primary-2: #EA580C;
+  --primary-dark: #0F2847;
 
   --success: #16a34a;
   --warning: #f59e0b;
@@ -1138,7 +1138,7 @@ textarea:focus {
 }
 
 .problem-section-title .material-symbols-outlined {
-  color: #2563eb;
+  color: #1E3A8A;
   font-size: 22px;
 }
 
@@ -1438,12 +1438,12 @@ textarea:disabled {
   margin-bottom: 20px;
   padding: 18px;
   overflow: hidden;
-  color: #ffffff;
+  color: #0f172a;
   background:
-    linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(17, 48, 102, 0.98) 46%, rgba(14, 116, 144, 0.95) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+    linear-gradient(135deg, #f0f4f8 0%, #e8f1ff 46%, #f0f4f8 100%);
+  border: 1px solid rgba(30, 58, 138, 0.12);
   border-radius: 28px;
-  box-shadow: 0 22px 54px rgba(15, 23, 42, 0.2);
+  box-shadow: 0 8px 20px rgba(30, 58, 138, 0.12);
 }
 
 .page-header.supervisor-hero::before {
@@ -1521,9 +1521,9 @@ textarea:disabled {
   margin-bottom: 3px;
   padding: 4px 9px;
   border-radius: 999px;
-  color: #bfdbfe;
-  background: rgba(37, 99, 235, 0.2);
-  border: 1px solid rgba(147, 197, 253, 0.18);
+  color: #1E3A8A;
+  background: rgba(30, 58, 138, 0.1);
+  border: 1px solid rgba(30, 58, 138, 0.18);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -1532,7 +1532,7 @@ textarea:disabled {
 .supervisor-hero .title-area h1 {
   display: block;
   margin: 0;
-  color: #ffffff;
+  color: #0f172a;
   font-size: clamp(26px, 3vw, 38px);
   font-weight: 900;
   line-height: 1.12;
@@ -1561,9 +1561,10 @@ textarea:disabled {
 .supervisor-hero .header-actions .btn {
   min-height: 44px;
   padding: 10px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
   box-shadow: none;
+  color: #ffffff;
   font-size: 13px;
   font-weight: 800;
 }
@@ -1573,15 +1574,18 @@ textarea:disabled {
 }
 
 .supervisor-hero .header-actions .btn.primary {
-  background: rgba(37, 99, 235, 0.88);
+  background: #1E3A8A;
+  border-color: #1E3A8A;
 }
 
 .supervisor-hero .header-actions .btn.secondary {
-  background: rgba(51, 65, 85, 0.82);
+  background: #0f172a;
+  border-color: #0f172a;
 }
 
 .supervisor-hero .header-actions .btn.danger {
-  background: rgba(239, 68, 68, 0.92);
+  background: #dc2626;
+  border-color: #dc2626;
 }
 
 .supervisor-hero .header-actions .btn:hover {
