@@ -80,26 +80,18 @@ select {
 .exec-header {
   box-sizing: border-box;
   width: 100%;
-  min-height: 130px;
+  min-height: 120px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 20px;
-  padding: 22px 28px;
-  color: #ffffff;
-  background:
-    linear-gradient(
-      135deg,
-      #0f2847 0%,
-      #1e3a8a 52%,
-      #0284c7 100%
-    );
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius-xl);
-  box-shadow:
-    0 16px 40px rgba(15, 40, 71, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  padding: 18px 24px;
+  color: #0f172a;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e8f1ff 46%, #f0f4f8 100%);
+  border: 1px solid rgba(30, 58, 138, 0.12);
+  border-radius: 28px;
+  box-shadow: 0 8px 20px rgba(30, 58, 138, 0.12);
 }
 
 .exec-header .brand-block {
@@ -115,16 +107,17 @@ select {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 16px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .exec-header .logo img {
-  width: auto;
-  height: 52px;
-  max-width: 130px;
+  width: 74px;
+  height: 74px;
+  max-width: 74px;
+  max-height: 74px;
   display: block;
   object-fit: contain;
 }
@@ -147,7 +140,7 @@ select {
 
 .exec-header h1 {
   margin: 0;
-  color: #ffffff;
+  color: #0f172a;
   font-size: clamp(22px, 2.5vw, 32px);
   line-height: 1.15;
   font-weight: 800;
@@ -156,7 +149,7 @@ select {
 
 .exec-header p {
   margin: 6px 0 0;
-  color: rgba(255, 255, 255, 0.82);
+  color: #64748b;
   font-size: 14px;
 }
 
@@ -174,11 +167,11 @@ select {
   align-items: center;
   gap: 7px;
   padding: 8px 14px;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #0f172a;
+  border: 1px solid rgba(30, 58, 138, 0.15);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(8px);
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(30, 58, 138, 0.08);
   white-space: nowrap;
   font-size: 14px;
   font-weight: 600;
@@ -223,12 +216,13 @@ select {
 
 .btn-dark {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.20);
+  background: #1e293b;
+  border: 1px solid #0f172a;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
 }
 
 .btn-dark:hover {
-  background: rgba(255, 255, 255, 0.24);
+  background: #334155;
 }
 
 .btn-danger {
@@ -266,12 +260,66 @@ select {
 }
 
 .filter-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  margin-bottom: 22px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(30, 58, 138, 0.12);
+  border-radius: 24px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+}
+
+.filter-inputs {
   display: grid;
-  grid-template-columns: minmax(180px, 260px) minmax(220px, 1fr) auto auto;
-  gap: 14px;
-  align-items: end;
-  padding: 18px 22px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.filter-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.quick-dates {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quick-month-btn {
+  padding: 8px 16px;
+  background: rgba(241, 245, 249, 0.9);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 12px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-month-btn:hover {
+  background: rgba(226, 232, 240, 1);
+  color: #0f172a;
+}
+
+.quick-month-btn.active {
+  background: rgba(30, 58, 138, 0.12);
+  border-color: rgba(30, 58, 138, 0.3);
+  color: #1e3a8a;
+  font-weight: 800;
+}
+
+.filter-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .form-group {
@@ -380,6 +428,48 @@ select {
 
 .metric-card.danger strong {
   color: var(--danger);
+}
+
+/* KPI Compare Badges */
+.kpi-compare-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.kpi-compare-badge:empty {
+  display: none !important;
+}
+
+.kpi-compare-badge.better {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.kpi-compare-badge.worse {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.kpi-compare-badge.neutral {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.kpi-compare-badge .material-symbols-outlined {
+  font-size: 15px;
 }
 
 /* ================= SUMMARY & CHARTS ================= */
@@ -501,7 +591,11 @@ select {
   background: #f8fafc;
   font-size: 13px;
   font-weight: 700;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+  hyphens: auto;
 }
 
 .data-table tbody tr {
@@ -695,12 +789,17 @@ select {
 
 .update-status {
   font-weight: 700;
-  color: #ffffff;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(22, 163, 74, 0.2);
 }
 
 .update-date {
-  color: rgba(255, 255, 255, 0.78);
+  color: #64748b;
   font-size: 11px;
+  margin-top: 3px;
 }
 
 /* ================= RESPONSIVE ================= */
@@ -788,5 +887,39 @@ select {
   .dashboard-update {
     align-items: flex-start;
   }
+
+  .data-table th,
+  .data-table td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .data-table th {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.3;
+  }
 }
+
+main:nth-of-type(1) > section:nth-of-type(1) {
+  padding: 16px !important;
+  margin-bottom: 14px !important;
+  border-radius: 20px !important;
+}
+
+@media (max-width: 768px) {
+  main:nth-of-type(1) > section:nth-of-type(1) {
+    padding: 12px !important;
+    margin-bottom: 10px !important;
+    border-radius: 14px !important;
+  }
+}
+
+main:nth-of-type(1) > header:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > img:nth-of-type(1) {
+  width: 74px;
+  height: 74px;
+}
+
+
 

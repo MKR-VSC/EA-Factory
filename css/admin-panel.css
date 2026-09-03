@@ -62,8 +62,8 @@ body {
   font-family: "Noto Sans Thai", "Kanit", system-ui, sans-serif;
   color: var(--text-main);
   background:
-    radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 32%),
-    radial-gradient(circle at top right, rgba(22, 163, 74, 0.08), transparent 30%),
+    radial-gradient(circle at top left, rgba(30, 58, 138, 0.08), transparent 32%),
+    radial-gradient(circle at top right, rgba(234, 88, 12, 0.06), transparent 30%),
     var(--body-bg);
 }
 
@@ -457,6 +457,11 @@ th {
   background: #f8fafc;
   font-size: 13px;
   font-weight: 800;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+  hyphens: auto;
 }
 
 td {
@@ -2235,18 +2240,18 @@ td select {
 }
 
 .admin-ui-v2 .workspace-header {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  margin: -24px -28px 22px;
-  padding: 20px 28px 16px;
-  background: rgba(245, 247, 251, 0.9);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.86);
-  backdrop-filter: blur(14px);
+  margin-bottom: 22px;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e8f1ff 46%, #f0f4f8 100%);
+  border: 1px solid rgba(30, 58, 138, 0.12);
+  border-radius: 28px;
+  box-shadow: 0 8px 20px rgba(30, 58, 138, 0.12);
 }
 
 .admin-ui-v2 .workspace-heading {
@@ -2527,6 +2532,11 @@ td select {
   border-bottom: 1px solid #dfe6ee;
   font-size: 11.5px;
   letter-spacing: 0.01em;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+  hyphens: auto;
 }
 
 .admin-ui-v2 td {

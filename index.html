@@ -32,6 +32,7 @@
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#1E3A8A" />
 
+    <link rel="stylesheet" href="/css/loadingService.css" />
     <link rel="stylesheet" href="/css/index.css" />
   </head>
 
@@ -95,35 +96,46 @@
 
       <!-- ================= FILTER ================= -->
       <section class="filter-card">
-        <div class="form-group">
-          <label for="filter-month">เดือนที่ต้องการดู</label>
-          <input id="filter-month" type="month" />
+        <div class="filter-inputs">
+          <div class="form-group">
+            <label for="filter-month">เดือนที่ต้องการดู</label>
+            <input id="filter-month" type="month" />
+          </div>
+
+          <div class="form-group">
+            <label for="sel-dept-filter">แผนก</label>
+            <select id="sel-dept-filter">
+              <option value="all">ทุกแผนกผลิต</option>
+            </select>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="sel-dept-filter">แผนก</label>
-          <select id="sel-dept-filter">
-            <option value="all">ทุกแผนกผลิต</option>
-          </select>
+        <div class="filter-actions-row">
+          <div class="quick-dates">
+            <button type="button" class="quick-month-btn active" onclick="setQuickMonth('thisMonth')">เดือนนี้</button>
+            <button type="button" class="quick-month-btn" onclick="setQuickMonth('lastMonth')">เดือนที่แล้ว</button>
+          </div>
+
+          <div class="filter-btn-group">
+            <button
+              class="btn btn-primary btn-search"
+              type="button"
+              onclick="loadAndProcessDashboardData()"
+            >
+              <span class="material-symbols-outlined">search</span>
+              ค้นหา
+            </button>
+
+            <button
+              class="btn btn-light"
+              type="button"
+              onclick="exportToDataExcelCSV()"
+            >
+              <span class="material-symbols-outlined">download</span>
+              Export CSV
+            </button>
+          </div>
         </div>
-
-        <button
-          class="btn btn-primary"
-          type="button"
-          onclick="loadAndProcessDashboardData()"
-        >
-          <span class="material-symbols-outlined">search</span>
-          ค้นหา
-        </button>
-
-        <button
-          class="btn btn-light"
-          type="button"
-          onclick="exportToDataExcelCSV()"
-        >
-          <span class="material-symbols-outlined">download</span>
-          Export CSV
-        </button>
       </section>
 
       <!-- ================= DEPARTMENT SUMMARY ================= -->
@@ -161,24 +173,28 @@
           <span>รวมผลิตเดือนนี้(รวม)</span>
           <strong id="cnt-today">0</strong>
           <small>จำนวน kg.</small>
+          <div id="cnt-today-cmp" class="kpi-compare-badge"></div>
         </article>
 
         <article class="metric-card warning">
           <span>จำนวนของเสียเดือนนี้(รวม)</span>
           <strong id="cnt-machine-risk">0</strong>
           <small>จำนวน kg.</small>
+          <div id="cnt-machine-risk-cmp" class="kpi-compare-badge"></div>
         </article>
 
         <article class="metric-card success">
           <span>% ของเสียเดือนนี้(รวม)</span>
           <strong id="cnt-waste-percent">0%</strong>
           <small id="cnt-waste-percent-sub">ผลิต 0 kg / เสีย 0 kg</small>
+          <div id="cnt-waste-percent-cmp" class="kpi-compare-badge"></div>
         </article>
 
         <article class="metric-card danger">
           <span>แผนกที่มีของเสียสูงสุด</span>
           <strong id="cnt-top-machine">-</strong>
           <small id="cnt-top-machine-sub">-</small>
+          <div id="cnt-top-machine-cmp" class="kpi-compare-badge"></div>
         </article>
       </section>
 
@@ -243,6 +259,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/core/supabaseClient.js"></script>
+    <script src="/core/tableSwipeDetector.js"></script>
+    <script src="/core/counterAnimation.js"></script>
+    <script src="/core/autoRefresh.js"></script>
+    <script src="/services/loadingService.js"></script>
     <script src="/js/dashboard/index.js"></script>
   </body>
 </html>

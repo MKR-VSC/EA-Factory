@@ -80,12 +80,19 @@ function clearLocalLogin() {
 }
 
 async function logoutAndRedirect() {
-  if (window.supabaseClient?.auth) {
-    await window.supabaseClient.auth.signOut();
+  try {
+    if (window.supabaseClient?.auth) {
+      await Promise.race([
+        window.supabaseClient.auth.signOut(),
+        new Promise((res) => setTimeout(res, 800)),
+      ]);
+    }
+  } catch (e) {
+    console.warn("Supabase signOut error:", e);
+  } finally {
+    clearLocalLogin();
+    window.location.href = AUTH_LOGIN_PAGE;
   }
-
-  clearLocalLogin();
-  window.location.href = AUTH_LOGIN_PAGE;
 }
 
 

@@ -1,11 +1,10 @@
 {
-  "name": "PVT&T Factory",
-  "short_name": "PVT&T Factory",
+  "name": "EA Factory",
+  "short_name": "EA Factory",
   "start_url": "/login.html",
-  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#4caf8a",
+  "theme_color": "#1E3A8A",
   "icons": [
     {
       "src": "/icons/LOGOWPA.png",

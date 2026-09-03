@@ -2795,8 +2795,12 @@ function renderEmptyTable(tbodyId, colspan, message) {
 }
 
 function setText(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = text;
+  if (window.setTextAnimated) {
+    window.setTextAnimated(id, text);
+  } else {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
 }
 
 function getValue(id) {

@@ -119,7 +119,15 @@ async function loadAccountingData() {
     ]);
 
     if (reportResult.error) throw reportResult.error;
-    if (machineResult.error) throw machineResult.error;
+    if (machineResult.error) {
+      const msg = String(machineResult.error.message || "");
+      if (machineResult.error.code === "PGRST205" || msg.toLowerCase().includes("daily_machine_status")) {
+        console.warn("Table daily_machine_status not found, fallback to empty.");
+        machineResult.data = [];
+      } else {
+        throw machineResult.error;
+      }
+    }
 
     state.reports = await attachProblemItems(
       Array.isArray(reportResult.data) ? reportResult.data : [],
@@ -799,8 +807,12 @@ function setValue(id, v) {
   if (e) e.value = v;
 }
 function setText(id, v) {
-  const e = document.getElementById(id);
-  if (e) e.textContent = v;
+  if (window.setTextAnimated) {
+    window.setTextAnimated(id, v);
+  } else {
+    const e = document.getElementById(id);
+    if (e) e.textContent = v;
+  }
 }
 function safeText(v) {
   return window.EA_COMMON?.safeText
@@ -836,12 +848,16 @@ async function logoutAccounting() {
   try {
     const client = state.supabase || window.supabaseClient || window.supabase;
     if (client?.auth?.signOut) {
-      await client.auth.signOut();
+      await Promise.race([
+        client.auth.signOut(),
+        new Promise((res) => setTimeout(res, 800)),
+      ]);
     }
   } catch (e) {
     console.warn("ออกจากระบบไม่สมบูรณ์:", e);
   } finally {
-    localStorage.removeItem("activeUserId");
+    localStorage.clear();
+    sessionStorage.clear();
     window.location.href = "/login.html";
   }
 }

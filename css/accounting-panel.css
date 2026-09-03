@@ -1,33 +1,42 @@
 /* ======================================================
-   ACCOUNTING PANEL CSS - Clean Layout v2
-   ปรับเลย์เอ้าท์ / สีปุ่ม / ตาราง / สถานะ / Responsive
-====================================================== */
+   ACCOUNTING PANEL CSS - EA Factory Theme v2.0
+   Unified Industrial Brand:
+   - Deep Navy: #0F2847 / #1E3A8A
+   - EA Electric Cyan / Sky Blue: #0284C7
+   - EA Accent Orange: #EA580C / #F97316
+   ====================================================== */
 
 :root {
-  --bg: #eef4f8;
+  --bg: #f8fafc;
   --panel: #ffffff;
   --panel-soft: #f8fafc;
   --text: #0f172a;
   --muted: #64748b;
-  --line: #dbe5ee;
+  --line: #e2e8f0;
 
-  --green: #EA580C;
+  --primary: #1E3A8A;
+  --primary-dark: #0F2847;
+  --ea-blue: #0284c7;
+  --ea-blue-hover: #0369a1;
+  --ea-orange: #ea580c;
+
+  --green: #10b981;
   --green-2: #059669;
   --green-soft: #d1fae5;
-  --blue: #1E3A8A;
-  --blue-soft: #dbeafe;
+  --blue: #0284c7;
+  --blue-soft: #e0f2fe;
   --amber: #f59e0b;
   --amber-soft: #fef3c7;
-  --red: #dc2626;
+  --red: #ef4444;
   --red-soft: #fee2e2;
   --gray: #64748b;
-  --gray-soft: #e5e7eb;
-  --dark: #334155;
+  --gray-soft: #e2e8f0;
+  --dark: #1e293b;
 
-  --radius: 18px;
-  --radius-sm: 12px;
-  --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
-  --shadow-soft: 0 10px 26px rgba(15, 23, 42, 0.06);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  --shadow-soft: 0 6px 20px rgba(15, 23, 42, 0.05);
 }
 
 * { box-sizing: border-box; }
@@ -37,8 +46,9 @@ body {
   font-family: "Kanit", "Noto Sans Thai", system-ui, sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(4, 120, 87, 0.14), transparent 28%),
-    linear-gradient(180deg, #f8fbfd 0%, var(--bg) 100%);
+    radial-gradient(circle at top left, rgba(2, 132, 199, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(234, 88, 12, 0.05), transparent 28%),
+    linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
 }
 
 button,
@@ -58,31 +68,16 @@ textarea { font: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   gap: 24px;
-
   min-height: 120px;
-  padding: 20px 24px;
-  margin-bottom: 18px;
-
-  color: #ffffff;
-
-  background:
-    linear-gradient(
-      135deg,
-      rgba(4, 120, 87, 0.98),
-      rgba(6, 95, 70, 0.98)
-    ),
-    radial-gradient(
-      circle at top right,
-      rgba(255, 255, 255, 0.18),
-      transparent 35%
-    );
-
-  border-radius: 24px;
-  box-shadow: var(--shadow);
+  padding: 18px 24px;
+  margin-bottom: 20px;
+  color: #0f172a;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e8f1ff 46%, #f0f4f8 100%);
+  border: 1px solid rgba(30, 58, 138, 0.12);
+  border-radius: 28px;
+  box-shadow: 0 8px 20px rgba(30, 58, 138, 0.12);
 }
-
 
 /* ================= BRAND ================= */
 
@@ -90,30 +85,30 @@ textarea { font: inherit; }
   display: flex;
   align-items: center;
   gap: 20px;
-
   min-width: 0;
 }
-
 
 /* LOGO */
 
 .logo-icon {
   flex: 0 0 auto;
-
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .logo-icon img {
   display: block;
-
-  width: 105px;
-  height: 70px;
-
+  width: 74px;
+  height: 74px;
+  max-width: 74px;
+  max-height: 74px;
   object-fit: contain;
 }
-
 
 /* ================= TITLE ================= */
 
@@ -123,113 +118,90 @@ textarea { font: inherit; }
 
 .topbar .title h1 {
   margin: 0;
-
   color: #0f172a;
-
-  font-size: clamp(24px, 2.2vw, 32px);
-  font-weight: 700;
-
-  line-height: 1.25;
+  font-size: clamp(22px, 2.4vw, 32px);
+  font-weight: 800;
+  line-height: 1.15;
   letter-spacing: -0.02em;
 }
 
 .topbar .title p {
   margin: 6px 0 0;
-
   color: #64748b;
-
   font-size: 14px;
   font-weight: 400;
 }
-
 
 /* ================= ACTIONS ================= */
 
 .actions {
   flex: 0 0 auto;
-
   display: flex;
   align-items: center;
   justify-content: flex-end;
-
   gap: 10px;
-
   margin-left: auto;
 }
 
 .actions .btn {
-  min-height: 42px;
-
-  padding: 9px 15px;
-
+  min-height: 44px;
+  padding: 9px 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
   gap: 6px;
-
   border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .actions .material-symbols-outlined {
-  font-size: 19px;
+  font-size: 20px;
 }
 
-
-/* ================= RESPONSIVE ================= */
+/* ================= RESPONSIVE HEADER ================= */
 
 @media (max-width: 1000px) {
-
   .topbar {
     align-items: flex-start;
     flex-direction: column;
+    padding: 20px;
   }
 
   .actions {
     width: 100%;
     margin-left: 0;
-
     justify-content: flex-start;
     flex-wrap: wrap;
   }
-
 }
 
-
 @media (max-width: 760px) {
-
   .topbar {
-    padding: 18px;
-    border-radius: 20px;
+    padding: 16px;
+    border-radius: 18px;
   }
 
   .header-brand {
-    gap: 14px;
-  }
-
-  .logo-icon img {
-    width: 82px;
-    height: 58px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 
   .topbar .title h1 {
     font-size: 22px;
   }
 
-  .topbar .title p {
-    font-size: 13px;
-  }
-
   .actions {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .actions .btn {
     width: 100%;
   }
-
 }
+
 
 
 @media (max-width: 480px) {
@@ -282,13 +254,20 @@ textarea { font: inherit; }
   box-shadow: none;
 }
 
-.btn.light { color: #065f46; background: #ecfdf5; }
-.btn.primary { background: linear-gradient(135deg, #EA580C, #F97316); }
+.btn.light { color: #0369a1; background: #f0f9ff; border: 1px solid #bae6fd; }
+.btn.light:hover { background: #e0f2fe; }
+.btn.primary { background: linear-gradient(135deg, #0284c7, #0369a1); box-shadow: 0 4px 14px rgba(2, 132, 199, 0.28); }
+.btn.primary:hover { background: linear-gradient(135deg, #0369a1, #075985); }
 .btn.secondary { background: linear-gradient(135deg, #334155, #1e293b); }
-.btn.success { background: linear-gradient(135deg, #EA580C, #F97316); }
-.btn.warning { background: linear-gradient(135deg, #f59e0b, #f97316); }
-.btn.danger { background: linear-gradient(135deg, #64748b, #475569); }
-.btn.logout { background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; }
+.btn.secondary:hover { background: linear-gradient(135deg, #1e293b, #0f172a); }
+.btn.success { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25); }
+.btn.success:hover { background: linear-gradient(135deg, #059669, #047857); }
+.btn.warning { background: linear-gradient(135deg, #ea580c, #f97316); box-shadow: 0 4px 14px rgba(234, 88, 12, 0.25); }
+.btn.warning:hover { background: linear-gradient(135deg, #c2410c, #ea580c); }
+.btn.danger { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25); }
+.btn.danger:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+.btn.logout { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+.btn.logout:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); }
 
 /* ================= FILTER ================= */
 
@@ -447,7 +426,11 @@ textarea:focus {
   background: #f8fafc;
   font-size: 13px;
   font-weight: 800;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+  hyphens: auto;
 }
 
 .data-table td { background: #ffffff; }
@@ -735,12 +718,18 @@ textarea:focus {
 }
 
 .data-table th {
-  height: 38px;
+  height: auto;
+  min-height: 38px;
   color: #334155;
   background: #f8fafc;
   font-size: 12px;
   font-weight: 800;
   text-align: center;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+  hyphens: auto;
 }
 
 .data-table tbody tr:not(.detail-row):hover td {
@@ -756,7 +745,8 @@ textarea:focus {
 .data-table td:nth-child(1) { width: 44px !important; text-align: center; }
 
 .data-table th:nth-child(2),
-.data-table td:nth-child(2) { width: 82px !important; white-space: nowrap !important; }
+.data-table td:nth-child(2) { width: 82px !important; }
+.data-table td:nth-child(2) { white-space: nowrap !important; }
 
 .data-table th:nth-child(3),
 .data-table td:nth-child(3) { width: 72px !important; }
@@ -905,256 +895,3 @@ textarea:focus {
   }
 }
 
-/* ======================================================
-   EA FACTORY - ACCOUNTING HEADER TALL FIX
-   ปรับก้อน Header ให้สูง/เต็มเหมือน Supervisor
-====================================================== */
-
-.topbar {
-  box-sizing: border-box !important;
-  width: 100% !important;
-  min-height: 148px !important;
-  height: auto !important;
-  padding: 28px 30px !important;
-  margin-bottom: 22px !important;
-
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 28px !important;
-
-  border-radius: 28px !important;
-
-  background:
-    linear-gradient(
-      135deg,
-      #123b73 0%,
-      #174f8f 58%,
-      #0f8a68 100%
-    ) !important;
-
-  box-shadow:
-    0 20px 48px rgba(18, 59, 115, 0.16) !important;
-}
-
-.topbar .header-brand {
-  min-width: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 24px !important;
-}
-
-.topbar .logo-icon {
-  flex: 0 0 auto !important;
-  width: 128px !important;
-  min-width: 128px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.topbar .logo-icon img {
-  display: block !important;
-  width: 128px !important;
-  height: auto !important;
-  max-width: 128px !important;
-  max-height: 92px !important;
-  object-fit: contain !important;
-}
-
-.topbar .title {
-  min-width: 0 !important;
-}
-
-.topbar .title h1 {
-  margin: 0 !important;
-  color: #ffffff !important;
-  font-size: clamp(30px, 2.6vw, 38px) !important;
-  font-weight: 800 !important;
-  line-height: 1.2 !important;
-  letter-spacing: -0.025em !important;
-}
-
-.topbar .title p {
-  margin: 8px 0 0 !important;
-  color: rgba(255, 255, 255, 0.78) !important;
-  font-size: 14px !important;
-  line-height: 1.5 !important;
-}
-
-.topbar .actions {
-  flex: 0 0 auto !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  gap: 10px !important;
-  margin-left: auto !important;
-}
-
-.topbar .actions .btn {
-  min-height: 46px !important;
-  padding: 10px 16px !important;
-  border-radius: 13px !important;
-  font-size: 14px !important;
-  font-weight: 800 !important;
-}
-
-@media (max-width: 1000px) {
-  .topbar {
-    min-height: 138px !important;
-    padding: 24px !important;
-    flex-direction: row !important;
-    align-items: center !important;
-  }
-
-  .topbar .logo-icon {
-    width: 110px !important;
-    min-width: 110px !important;
-  }
-
-  .topbar .logo-icon img {
-    width: 110px !important;
-    max-width: 110px !important;
-  }
-
-  .topbar .title h1 {
-    font-size: 29px !important;
-  }
-}
-
-@media (max-width: 760px) {
-  .topbar {
-    min-height: 0 !important;
-    padding: 20px !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    border-radius: 22px !important;
-  }
-
-  .topbar .header-brand {
-    width: 100% !important;
-  }
-
-  .topbar .logo-icon {
-    width: 92px !important;
-    min-width: 92px !important;
-  }
-
-  .topbar .logo-icon img {
-    width: 92px !important;
-    max-width: 92px !important;
-  }
-
-  .topbar .title h1 {
-    font-size: 24px !important;
-  }
-
-  .topbar .actions {
-    width: 100% !important;
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    margin-left: 0 !important;
-  }
-
-  .topbar .actions .btn {
-    width: 100% !important;
-  }
-}
-
-@media (max-width: 480px) {
-  .topbar {
-    padding: 18px !important;
-  }
-
-  .topbar .logo-icon {
-    width: 80px !important;
-    min-width: 80px !important;
-  }
-
-  .topbar .logo-icon img {
-    width: 80px !important;
-    max-width: 80px !important;
-  }
-
-  .topbar .title h1 {
-    font-size: 21px !important;
-  }
-}
-
-/* ======================================================
-   ACCOUNTING HEADER - MATCH SUPERVISOR HEIGHT
-====================================================== */
-
-.topbar {
-  min-height: 180px !important;
-  padding: 34px 34px !important;
-  border-radius: 30px !important;
-}
-
-.topbar .header-brand {
-  gap: 28px !important;
-}
-
-.topbar .logo-icon {
-  width: 145px !important;
-  min-width: 145px !important;
-}
-
-.topbar .logo-icon img {
-  width: 145px !important;
-  max-width: 145px !important;
-  max-height: 105px !important;
-}
-
-.topbar .title h1 {
-  font-size: clamp(34px, 3vw, 42px) !important;
-  line-height: 1.15 !important;
-}
-
-.topbar .title p {
-  margin-top: 10px !important;
-  font-size: 15px !important;
-}
-
-.topbar .actions {
-  align-self: flex-start !important;
-  margin-top: 2px !important;
-}
-
-.topbar .actions .btn {
-  min-height: 48px !important;
-  padding: 11px 17px !important;
-}
-
-@media (max-width: 1000px) {
-  .topbar {
-    min-height: 164px !important;
-    padding: 28px !important;
-  }
-
-  .topbar .logo-icon {
-    width: 125px !important;
-    min-width: 125px !important;
-  }
-
-  .topbar .logo-icon img {
-    width: 125px !important;
-    max-width: 125px !important;
-  }
-
-  .topbar .title h1 {
-    font-size: 32px !important;
-  }
-}
-
-@media (max-width: 760px) {
-  .topbar {
-    min-height: 0 !important;
-    padding: 22px !important;
-  }
-
-  .topbar .actions {
-    align-self: stretch !important;
-    margin-top: 6px !important;
-  }
-}

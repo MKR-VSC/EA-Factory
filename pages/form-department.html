@@ -18,13 +18,13 @@
     />
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/BG1.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icons/BG1.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/LOGOWPA.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/LOGOWPA.png" />
     <link rel="apple-touch-icon" href="/icons/LOGOWPA.png" />
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#4caf8a" />
+    <meta name="theme-color" content="#1E3A8A" />
 
 
     <link rel="icon" href="data:;base64,=" />
@@ -88,8 +88,11 @@
         <aside class="sidebar app-hero">
           <div class="pvt-top-header">
             <div class="brand-text">
-              <img src="/icons/LOGOWPA.png" alt="EA Factory Logo" />
-              <p>ระบบบันทึกของเสียจากการผลิต</p>
+              <img src="/icons/LOGOWPA.png" alt="EA Factory Logo" style="width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important;" />
+              <div class="title-copy">
+                <h3>ระบบบันทึกข้อมูลของเสียจากการผลิต</h3>
+                <p>บริษัท พี.วี.ที.แอนด์ ที.พลาส จำกัด</p>
+              </div>
             </div>
 
             <div class="user-profile-box">
@@ -343,6 +346,8 @@
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/activityLogger.js"></script>
     <script src="/core/ea-common.js"></script>
+    <script src="/core/tableSwipeDetector.js"></script>
+    <script src="/core/counterAnimation.js"></script>
     <script src="/js/department/form-department.js"></script>
   </body>
 </html>

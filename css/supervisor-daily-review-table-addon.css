@@ -31,7 +31,11 @@
   z-index: 1;
   color: #475569;
   font-weight: 950;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+  hyphens: auto;
   background: #f8fafc;
 }
 

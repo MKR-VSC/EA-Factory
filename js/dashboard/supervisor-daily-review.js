@@ -768,20 +768,14 @@ async function loadMachineDailyCheck(reportRows, date) {
       .eq("work_date", date);
 
     if (statusError) {
-      // ถ้ายังไม่ได้สร้าง table ให้บอกตรง ๆ ในหน้า
+      // ถ้ายังไม่ได้สร้าง table ให้ fallback เป็น [] เพื่อไม่ให้แอปพัง
       const msg = String(statusError.message || "");
-      if (msg.toLowerCase().includes("daily_machine_status")) {
-        if (body) {
-          body.innerHTML = `
-            <div class="empty-cell">
-              ยังไม่พบตาราง <strong>daily_machine_status</strong><br>
-              กรุณารัน SQL ที่ให้มาพร้อมไฟล์นี้ใน Supabase ก่อน 1 ครั้ง
-            </div>`;
-        }
-        updateMachineCheckSummary([]);
-        return;
+      if (statusError.code === "PGRST205" || msg.toLowerCase().includes("daily_machine_status")) {
+        console.warn("Table daily_machine_status not found, fallback to empty.");
+        statusData = [];
+      } else {
+        throw statusError;
       }
-      throw statusError;
     }
 
     let statuses = Array.isArray(statusData) ? statusData : [];
@@ -1263,8 +1257,12 @@ function setValue(id, v) {
   if (e) e.value = v;
 }
 function setText(id, v) {
-  const e = document.getElementById(id);
-  if (e) e.textContent = v;
+  if (window.setTextAnimated) {
+    window.setTextAnimated(id, v);
+  } else {
+    const e = document.getElementById(id);
+    if (e) e.textContent = v;
+  }
 }
 function safeJsonParse(v) {
   try {

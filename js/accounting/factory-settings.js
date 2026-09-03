@@ -205,22 +205,18 @@ async function saveSettings() {
 async function logoutSettings() {
   try {
     if (state.supabase?.auth?.signOut) {
-      await state.supabase.auth.signOut();
+      await Promise.race([
+        state.supabase.auth.signOut(),
+        new Promise((res) => setTimeout(res, 800)),
+      ]);
     }
   } catch (err) {
     console.warn("Supabase signOut warning:", err);
+  } finally {
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = "/login.html";
   }
-
-  [
-    "activeUser",
-    "activeUserId",
-    "activeUsername",
-    "activeRole",
-    "activeDisplayName",
-    "activeDepartment",
-  ].forEach((key) => localStorage.removeItem(key));
-
-  window.location.href = "/login.html";
 }
 
 function normalizeCode(value) {

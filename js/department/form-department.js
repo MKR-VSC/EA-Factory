@@ -416,6 +416,14 @@ window.addEventListener("DOMContentLoaded", async () => {
     setupOtherProblemModal();
     renderCurrentDeptLabel();
 
+    // Attach direct event listener to logout buttons as fallback
+    document.querySelectorAll(".btn-logout, #btn-logout, [data-action='logout']").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        handleLogout();
+      });
+    });
+
     await loadShiftOptions();
     await loadMasterDataAndRender();
 
@@ -752,13 +760,23 @@ function setupNetworkStatus() {
     document.getElementById("network-status-text");
   if (!el) return;
 
+  const parentBtn = el.closest(".status-btn");
+
   function updateStatus() {
-    if (navigator.onLine) {
-      el.innerHTML = `: ONLINE`;
-      el.className = "badge badge-status-online";
+    const isOnline = navigator.onLine;
+    el.innerHTML = isOnline ? `: ONLINE` : `: OFFLINE`;
+
+    if (parentBtn) {
+      el.className = "";
+      if (isOnline) {
+        parentBtn.classList.add("online-btn");
+        parentBtn.classList.remove("offline-btn");
+      } else {
+        parentBtn.classList.add("offline-btn");
+        parentBtn.classList.remove("online-btn");
+      }
     } else {
-      el.innerHTML = `: OFFLINE`;
-      el.className = "badge badge-status-offline";
+      el.className = isOnline ? "badge badge-status-online" : "badge badge-status-offline";
     }
   }
 
@@ -2014,22 +2032,24 @@ function resetQrIdleTimer() {
 // =========================================================
 
 async function handleLogout() {
-  const confirmed = confirm("ต้องการออกจากระบบใช่ไหม?");
-  if (!confirmed) return;
-
   try {
     const clientSupabase = window.supabaseClient;
 
     if (clientSupabase?.auth) {
-      await clientSupabase.auth.signOut();
+      await Promise.race([
+        clientSupabase.auth.signOut(),
+        new Promise((res) => setTimeout(res, 800)),
+      ]);
     }
   } catch (err) {
     console.warn("Supabase signOut error:", err);
+  } finally {
+    clearAuthLocalSession();
+    if (window.AUTH_GUARD?.clearLocalLogin) {
+      window.AUTH_GUARD.clearLocalLogin();
+    }
+    window.location.href = "/login.html";
   }
-
-  clearAuthLocalSession();
-
-  window.location.href = "/login.html";
 }
 
 // =========================================================

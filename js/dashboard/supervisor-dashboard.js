@@ -103,14 +103,44 @@ document.addEventListener("DOMContentLoaded", async () => {
 ====================================================== */
 
 function initDateRange() {
-  const today = new Date();
-
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
-  setValue("startDate", toDateInputValue(firstDay));
-  setValue("endDate", toDateInputValue(lastDay));
+  setQuickDate("thisMonth", false);
 }
+
+function setQuickDate(preset, autoLoad = true) {
+  const today = new Date();
+  let start = new Date();
+  let end = new Date();
+
+  if (preset === "today") {
+    start = today;
+    end = today;
+  } else if (preset === "7days") {
+    start = new Date(today);
+    start.setDate(today.getDate() - 6);
+    end = today;
+  } else if (preset === "30days") {
+    start = new Date(today);
+    start.setDate(today.getDate() - 29);
+    end = today;
+  } else if (preset === "thisMonth") {
+    start = new Date(today.getFullYear(), today.getMonth(), 1);
+    end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  }
+
+  setValue("startDate", toDateInputValue(start));
+  setValue("endDate", toDateInputValue(end));
+
+  document.querySelectorAll(".quick-date-btn").forEach((btn) => {
+    btn.classList.remove("active");
+  });
+  const activeBtn = document.querySelector(`.quick-date-btn[onclick*="${preset}"]`);
+  if (activeBtn) activeBtn.classList.add("active");
+
+  if (autoLoad && typeof loadDashboard === "function") {
+    loadDashboard();
+  }
+}
+window.setQuickDate = setQuickDate;
 
 /* ======================================================
    MASTER DATA: DEPARTMENTS
@@ -339,6 +369,99 @@ function filterRowsForCurrentUser(rows) {
    โหลดข้อมูลของเสียจาก Supabase ตามช่วงวันที่ แล้วกรองตามสิทธิ์ผู้ใช้
 ====================================================== */
 
+/* ======================================================
+   PREVIOUS MONTH COMPARISON HELPERS
+====================================================== */
+
+function getPreviousMonthRange(startStr, endStr) {
+  let startDate = new Date(startStr);
+  if (isNaN(startDate.getTime())) startDate = new Date();
+
+  // Compute 1 month prior
+  const prevMonthStart = new Date(startDate.getFullYear(), startDate.getMonth() - 1, 1);
+  const prevMonthEnd = new Date(startDate.getFullYear(), startDate.getMonth(), 0);
+
+  const format = (d) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  return {
+    start: format(prevMonthStart),
+    end: format(prevMonthEnd),
+  };
+}
+
+function renderKPIComparison(elementId, current, previous, unit = "kg", higherIsBetter = false) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+
+  if (previous === undefined || previous === null || isNaN(previous)) {
+    el.innerHTML = "";
+    return;
+  }
+
+  const diff = current - previous;
+  const pctChange = previous ? (diff / previous) * 100 : 0;
+  const formattedDiff = (diff > 0 ? "+" : "") + formatNumber(diff);
+  const formattedPct = (pctChange > 0 ? "+" : "") + pctChange.toFixed(1) + "%";
+
+  let statusClass = "neutral";
+  let icon = "trending_flat";
+
+  if (diff < 0) {
+    statusClass = higherIsBetter ? "worse" : "better";
+    icon = "trending_down";
+  } else if (diff > 0) {
+    statusClass = higherIsBetter ? "better" : "worse";
+    icon = "trending_up";
+  } else {
+    el.className = "kpi-compare-badge neutral";
+    el.innerHTML = `<span class="material-symbols-outlined">trending_flat</span> เท่ากับเดือนก่อน`;
+    return;
+  }
+
+  el.className = `kpi-compare-badge ${statusClass}`;
+  el.innerHTML = `<span class="material-symbols-outlined">${icon}</span> ${formattedDiff} ${unit} (${formattedPct}) เทียบเดือนก่อน`;
+}
+
+function renderKPIPercentComparison(elementId, currentPct, previousPct) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+
+  if (previousPct === undefined || previousPct === null || isNaN(previousPct)) {
+    el.innerHTML = "";
+    return;
+  }
+
+  const diffPts = currentPct - previousPct;
+  const formattedDiff = (diffPts > 0 ? "+" : "") + diffPts.toFixed(2) + "%";
+
+  let statusClass = "neutral";
+  let icon = "trending_flat";
+
+  if (diffPts < -0.001) {
+    statusClass = "better";
+    icon = "trending_down";
+  } else if (diffPts > 0.001) {
+    statusClass = "worse";
+    icon = "trending_up";
+  } else {
+    el.className = "kpi-compare-badge neutral";
+    el.innerHTML = `<span class="material-symbols-outlined">trending_flat</span> เท่ากับเดือนก่อน (${previousPct.toFixed(2)}%)`;
+    return;
+  }
+
+  el.className = `kpi-compare-badge ${statusClass}`;
+  el.innerHTML = `<span class="material-symbols-outlined">${icon}</span> ${formattedDiff} เทียบเดือนก่อน (${previousPct.toFixed(2)}%)`;
+}
+
+/* ======================================================
+   LOAD DASHBOARD
+====================================================== */
+
 async function loadDashboard() {
   const startDate = getValue("startDate");
   const endDate = getValue("endDate");
@@ -353,31 +476,42 @@ async function loadDashboard() {
     return;
   }
 
+  const prevRange = getPreviousMonthRange(startDate, endDate);
+
   try {
     showLoadingText();
 
-    const { data, error } = await supabaseClient
-      .from(REPORT_TABLE)
-      .select("*")
-      .gte("report_date", startDate)
-      .lte("report_date", endDate)
-      .order("report_date", { ascending: true })
-      .order("created_at", { ascending: true });
+    const [currRes, prevRes] = await Promise.all([
+      supabaseClient
+        .from(REPORT_TABLE)
+        .select("*")
+        .gte("report_date", startDate)
+        .lte("report_date", endDate)
+        .order("report_date", { ascending: true })
+        .order("created_at", { ascending: true }),
+      supabaseClient
+        .from(REPORT_TABLE)
+        .select("*")
+        .gte("report_date", prevRange.start)
+        .lte("report_date", prevRange.end)
+    ]);
 
-    if (error) throw error;
+    if (currRes.error) throw currRes.error;
 
-    const rawRows = Array.isArray(data) ? data : [];
+    const rawRows = Array.isArray(currRes.data) ? currRes.data : [];
+    const prevRawRows = Array.isArray(prevRes.data) ? prevRes.data : [];
 
-    // แสดงเฉพาะรายการที่บัญชีตรวจแล้ว
-    // แต่ตัดรายการที่ยกเลิกออกจากการคำนวณ Dashboard
     const visibleRows = filterRowsForCurrentUser(rawRows).filter(isValidForDashboardCalculation);
-    const rows = await attachProblemItemsToReports(visibleRows);
+    const prevVisibleRows = filterRowsForCurrentUser(prevRawRows).filter(isValidForDashboardCalculation);
 
-    renderDashboard(rows, { rawCount: rawRows.length, startDate, endDate });
+    const rows = await attachProblemItemsToReports(visibleRows);
+    const prevRows = await attachProblemItemsToReports(prevVisibleRows);
+
+    renderDashboard(rows, prevRows, { rawCount: rawRows.length, startDate, endDate, prevRange });
   } catch (error) {
     console.error("โหลด Dashboard ไม่สำเร็จ:", error);
     alert("โหลด Dashboard ไม่สำเร็จ: " + (error.message || error));
-    renderDashboard([], { rawCount: 0, startDate, endDate });
+    renderDashboard([], [], { rawCount: 0, startDate, endDate, prevRange });
   }
 }
 
@@ -403,11 +537,16 @@ function showLoadingText() {
    คำนวณ KPI และส่งข้อมูลไปแสดงผลบนหน้า Dashboard
 ====================================================== */
 
-function renderDashboard(rows, meta = {}) {
+function renderDashboard(rows, prevRows = [], meta = {}) {
   const totalRecords = rows.length;
   const totalWaste = sumWaste(rows);
   const totalProduction = sumProduction(rows);
   const wastePercent = calcWastePercent(totalWaste, totalProduction);
+
+  const prevRecordsCount = prevRows ? prevRows.length : 0;
+  const prevWaste = prevRows ? sumWaste(prevRows) : 0;
+  const prevProduction = prevRows ? sumProduction(prevRows) : 0;
+  const prevWastePercent = calcWastePercent(prevWaste, prevProduction);
 
   const problemCountMap = groupProblemCount(rows);
   const statusMap = groupStatusCount(rows);
@@ -425,6 +564,12 @@ function renderDashboard(rows, meta = {}) {
   setText("topProblemSub", topProblemEntry ? `${formatNumber(topProblemEntry[1])} ครั้ง` : "-");
   setText("topMachine", topMachineEntry?.[0] || "-");
   setText("topMachineSub", topMachineEntry ? `${formatNumber(topMachineEntry[1])} kg` : "-");
+
+  // Render KPI comparison badges
+  renderKPIComparison("totalRecordsCmp", totalRecords, prevRecordsCount, "รายการ", false);
+  renderKPIComparison("totalWasteCmp", totalWaste, prevWaste, "kg", false);
+  renderKPIComparison("totalProductionCmp", totalProduction, prevProduction, "kg", true);
+  renderKPIPercentComparison("wastePercentCmp", wastePercent, prevWastePercent);
 
   renderDailyTrendChart(dailyWasteMap);
   renderMachineChart(machineWasteMap);
@@ -995,8 +1140,12 @@ function uniqueArray(values) {
 }
 
 function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
+  if (window.setTextAnimated) {
+    window.setTextAnimated(id, value);
+  } else {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
 }
 
 function getValue(id) {
@@ -1085,23 +1234,35 @@ async function debugSupervisorDashboard() {
    ออกจากระบบและล้างข้อมูล Session ใน localStorage
 ====================================================== */
 
-function logout() {
-  const confirmLogout = confirm("ต้องการออกจากระบบใช่ไหม?");
-  if (!confirmLogout) return;
+async function logout() {
+  try {
+    if (typeof supabaseClient !== 'undefined' && supabaseClient?.auth) {
+      await Promise.race([
+        supabaseClient.auth.signOut(),
+        new Promise((res) => setTimeout(res, 800)),
+      ]);
+    }
+  } catch (e) {
+    console.warn("Supabase signout error:", e);
+  } finally {
+    const keys = [
+      "loginType",
+      "activeUserId",
+      "activeUser",
+      "activeName",
+      "activeDept",
+      "activeDeptName",
+      "activeRole",
+      "ea_profile",
+      "qrDept",
+      "qrDeptName",
+      "qrToken"
+    ];
+    keys.forEach(k => localStorage.removeItem(k));
+    sessionStorage.clear();
 
-  localStorage.removeItem("loginType");
-  localStorage.removeItem("activeUserId");
-  localStorage.removeItem("activeUser");
-  localStorage.removeItem("activeName");
-  localStorage.removeItem("activeDept");
-  localStorage.removeItem("activeDeptName");
-  localStorage.removeItem("activeRole");
-  localStorage.removeItem("ea_profile");
-  localStorage.removeItem("qrDept");
-  localStorage.removeItem("qrDeptName");
-  localStorage.removeItem("qrToken");
-
-  window.location.href = "/login.html";
+    window.location.href = "/login.html";
+  }
 }
 
 /* ======================================================

@@ -194,13 +194,19 @@ async function handleDashboardLogout() {
   const client = getSupabaseClient();
 
   try {
-    if (client?.auth) await client.auth.signOut();
+    if (client?.auth) {
+      await Promise.race([
+        client.auth.signOut(),
+        new Promise((res) => setTimeout(res, 800)),
+      ]);
+    }
   } catch (error) {
     console.warn("Supabase signOut ไม่สำเร็จ:", error);
+  } finally {
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = LOGIN_PAGE;
   }
-
-  localStorage.clear();
-  window.location.href = LOGIN_PAGE;
 }
 
 /* =========================================================
@@ -274,15 +280,39 @@ function renderDepartmentFilter() {
 ========================================================= */
 
 function initMonthFilter() {
+  setQuickMonth("thisMonth", false);
+}
+
+function setQuickMonth(preset, autoLoad = true) {
   const input = document.getElementById("filter-month");
   if (!input) return;
 
   const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  let yyyy = today.getFullYear();
+  let mm = today.getMonth() + 1;
 
-  input.value = `${yyyy}-${mm}`;
+  if (preset === "lastMonth") {
+    mm = mm - 1;
+    if (mm === 0) {
+      mm = 12;
+      yyyy = yyyy - 1;
+    }
+  }
+
+  const mmStr = String(mm).padStart(2, "0");
+  input.value = `${yyyy}-${mmStr}`;
+
+  document.querySelectorAll(".quick-month-btn").forEach((btn) => {
+    btn.classList.remove("active");
+  });
+  const activeBtn = document.querySelector(`.quick-month-btn[onclick*="${preset}"]`);
+  if (activeBtn) activeBtn.classList.add("active");
+
+  if (autoLoad && typeof loadAndProcessDashboardData === "function") {
+    loadAndProcessDashboardData();
+  }
 }
+window.setQuickMonth = setQuickMonth;
 
 function getSelectedDateRange() {
   const month = document.getElementById("filter-month")?.value;
@@ -308,6 +338,98 @@ function getSelectedDateRange() {
 }
 
 /* =========================================================
+   DATE RANGE HELPERS & PREVIOUS MONTH
+========================================================= */
+
+function getPreviousMonthRange(startStr, endStr) {
+  let startDate = new Date(startStr);
+  if (isNaN(startDate.getTime())) startDate = new Date();
+
+  // Compute 1 month prior
+  const prevMonthStart = new Date(startDate.getFullYear(), startDate.getMonth() - 1, 1);
+  const prevMonthEnd = new Date(startDate.getFullYear(), startDate.getMonth(), 0);
+
+  const format = (d) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const monthName = prevMonthStart.toLocaleDateString("th-TH", { month: "short" });
+
+  return {
+    start: format(prevMonthStart),
+    end: format(prevMonthEnd),
+    monthName,
+  };
+}
+
+function renderKPIComparison(elementId, current, previous, unit = "kg", higherIsBetter = false) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+
+  if (previous === undefined || previous === null || isNaN(previous)) {
+    el.innerHTML = "";
+    return;
+  }
+
+  const diff = current - previous;
+  const pctChange = previous ? (diff / previous) * 100 : 0;
+  const formattedDiff = (diff > 0 ? "+" : "") + formatNumber(diff);
+  const formattedPct = (pctChange > 0 ? "+" : "") + pctChange.toFixed(1) + "%";
+
+  let statusClass = "neutral";
+  let icon = "trending_flat";
+
+  if (diff < 0) {
+    statusClass = higherIsBetter ? "worse" : "better";
+    icon = "trending_down";
+  } else if (diff > 0) {
+    statusClass = higherIsBetter ? "better" : "worse";
+    icon = "trending_up";
+  } else {
+    el.className = "kpi-compare-badge neutral";
+    el.innerHTML = `<span class="material-symbols-outlined">trending_flat</span> เท่ากับเดือนก่อน`;
+    return;
+  }
+
+  el.className = `kpi-compare-badge ${statusClass}`;
+  el.innerHTML = `<span class="material-symbols-outlined">${icon}</span> ${formattedDiff} ${unit} (${formattedPct}) เทียบเดือนก่อน`;
+}
+
+function renderKPIPercentComparison(elementId, currentPct, previousPct) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+
+  if (previousPct === undefined || previousPct === null || isNaN(previousPct)) {
+    el.innerHTML = "";
+    return;
+  }
+
+  const diffPts = currentPct - previousPct;
+  const formattedDiff = (diffPts > 0 ? "+" : "") + diffPts.toFixed(2) + "%";
+
+  let statusClass = "neutral";
+  let icon = "trending_flat";
+
+  if (diffPts < -0.001) {
+    statusClass = "better";
+    icon = "trending_down";
+  } else if (diffPts > 0.001) {
+    statusClass = "worse";
+    icon = "trending_up";
+  } else {
+    el.className = "kpi-compare-badge neutral";
+    el.innerHTML = `<span class="material-symbols-outlined">trending_flat</span> เท่ากับเดือนก่อน (${previousPct.toFixed(2)}%)`;
+    return;
+  }
+
+  el.className = `kpi-compare-badge ${statusClass}`;
+  el.innerHTML = `<span class="material-symbols-outlined">${icon}</span> ${formattedDiff} เทียบเดือนก่อน (${previousPct.toFixed(2)}%)`;
+}
+
+/* =========================================================
    LOAD DATA
 ========================================================= */
 
@@ -316,26 +438,39 @@ async function loadAndProcessDashboardData() {
   if (!client) return;
 
   const range = getSelectedDateRange();
+  const prevRange = getPreviousMonthRange(range.start, range.end);
   const selectedDept = document.getElementById("sel-dept-filter")?.value || "all";
 
   showLoading();
 
   try {
-    const { data, error } = await client
-      .from(REPORT_TABLE)
-      .select("*")
-      .gte("report_date", range.start)
-      .lte("report_date", range.end)
-      .order("report_date", { ascending: true })
-      .order("created_at", { ascending: true });
+    const [currRes, prevRes] = await Promise.all([
+      client
+        .from(REPORT_TABLE)
+        .select("*")
+        .gte("report_date", range.start)
+        .lte("report_date", range.end)
+        .order("report_date", { ascending: true })
+        .order("created_at", { ascending: true }),
+      client
+        .from(REPORT_TABLE)
+        .select("*")
+        .gte("report_date", prevRange.start)
+        .lte("report_date", prevRange.end)
+    ]);
 
-    if (error) throw error;
+    if (currRes.error) throw currRes.error;
 
-    const checkedRows = (data || [])
+    const checkedRows = (currRes.data || [])
+      .filter(isAccountingChecked)
+      .filter((row) => !isCancelledRow(row));
+
+    const prevCheckedRows = (prevRes.data || [])
       .filter(isAccountingChecked)
       .filter((row) => !isCancelledRow(row));
 
     const rowsWithItems = await attachProblemItemsToReports(checkedRows);
+    const prevRowsWithItems = await attachProblemItemsToReports(prevCheckedRows);
 
     dashboardDataCache = rowsWithItems;
     filteredDataCache =
@@ -343,14 +478,19 @@ async function loadAndProcessDashboardData() {
         ? rowsWithItems
         : rowsWithItems.filter((row) => getDepartmentInfo(row).code === selectedDept);
 
+    const prevFilteredData =
+      selectedDept === "all"
+        ? prevRowsWithItems
+        : prevRowsWithItems.filter((row) => getDepartmentInfo(row).code === selectedDept);
+
     window.pvtDashboardRawCache = dashboardDataCache;
     window.pvtExecutiveFilteredCache = filteredDataCache;
 
-    renderAllDashboard(filteredDataCache, range);
+    renderAllDashboard(filteredDataCache, prevFilteredData, range, prevRange);
   } catch (error) {
     console.error("โหลดข้อมูลไม่สำเร็จ:", error);
     alert("โหลดข้อมูลไม่สำเร็จ: " + (error.message || error));
-    renderAllDashboard([], range);
+    renderAllDashboard([], [], range, prevRange);
   }
 }
 
@@ -373,13 +513,13 @@ function showLoading() {
    RENDER ALL
 ========================================================= */
 
-function renderAllDashboard(records, range) {
+function renderAllDashboard(records, prevRecords = [], range, prevRange) {
   const deptSummary = summarizeByDepartment(records);
   const machineSummary = summarizeByMachine(records);
   const problemSummary = summarizeByProblem(records);
   const dailySummary = summarizeByDate(records, range);
 
-  updateMetricCards(records, machineSummary, deptSummary, range);
+  updateMetricCards(records, prevRecords, machineSummary, deptSummary, range, prevRange);
   renderExecutiveInsight(records, machineSummary);
   renderDepartmentSummaryTable(deptSummary);
   renderMachineSummaryList(machineSummary);
@@ -394,19 +534,19 @@ function renderAllDashboard(records, range) {
    KPI CARDS
 ========================================================= */
 
-function updateMetricCards(records, machineSummary, deptSummary, range) {
+function updateMetricCards(records, prevRecords = [], machineSummary, deptSummary, range, prevRange) {
   const totalWaste = sumWaste(records);
   const totalProduction = sumProductionUnique(records);
   const wastePercent = calcWastePercent(totalWaste, totalProduction);
 
-  // KPI ช่องที่ 4: แผนกที่มี "น้ำหนักของเสียรวม" สูงสุดในเดือนที่เลือก
-  // ใช้ตามชื่อการ์ดใหม่: แผนกที่มีของเสียสูงสุด
+  const prevWaste = sumWaste(prevRecords);
+  const prevProduction = sumProductionUnique(prevRecords);
+  const prevWastePercent = calcWastePercent(prevWaste, prevProduction);
+
   const topDepartment = [...(deptSummary || [])].sort(
     (a, b) => b.waste - a.waste || b.percent - a.percent || b.production - a.production
   )[0];
 
-  // id เดิมใน HTML ยังใช้ชื่อ cnt-today / cnt-machine-risk อยู่
-  // แต่ค่าที่แสดงถูกเปลี่ยนให้ตรงกับ KPI ใหม่แล้ว
   setText("cnt-today", `${formatNumber(totalProduction)}`);
   setText("cnt-machine-risk", `${formatNumber(totalWaste)}`);
   setText("cnt-waste-percent", `${formatNumber(wastePercent)}%`);
@@ -420,11 +560,16 @@ function updateMetricCards(records, machineSummary, deptSummary, range) {
       : "-"
   );
 
+  // Render KPI comparison badges
+  renderKPIComparison("cnt-today-cmp", totalProduction, prevProduction, "kg", true);
+  renderKPIComparison("cnt-machine-risk-cmp", totalWaste, prevWaste, "kg", false);
+  renderKPIPercentComparison("cnt-waste-percent-cmp", wastePercent, prevWastePercent);
+
   const pill = document.getElementById("overall-result-pill");
   if (pill) {
     const result = getResultByPercent(wastePercent, FACTORY_WARNING_PERCENT, FACTORY_LIMIT_PERCENT);
     pill.textContent = result.label;
-    pill.className = `result-pill ${result.className}`;
+    pill.className = `status-pill ${result.className}`;
   }
 }
 
@@ -1203,8 +1348,12 @@ function toNumber(value) {
 }
 
 function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
+  if (window.setTextAnimated) {
+    window.setTextAnimated(id, value);
+  } else {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
 }
 
 function toDateInputValue(date) {

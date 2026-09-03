@@ -1,0 +1,6 @@
+{
+  "name": "EA Factory Management System",
+  "description": "Industrial production monitoring, scrap percentage tracking, PR management, and supervisory dashboard for EA Factory with custom brand styling.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

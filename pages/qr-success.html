@@ -13,6 +13,11 @@
 
     <title>บันทึกสำเร็จ | EA Factory</title>
 
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/LOGOWPA.png" />
+    <link rel="apple-touch-icon" href="/icons/LOGOWPA.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1E3A8A" />
+
     <link
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
@@ -26,8 +31,10 @@
     <style>
       :root {
         --primary: #1E3A8A;
-        --primary-hover: #1d4ed8;
-        --success: #16a34a;
+        --primary-dark: #0F2847;
+        --ea-blue: #0284c7;
+        --ea-orange: #ea580c;
+        --success: #10b981;
         --body-bg: #f8fafc;
         --card-bg: #ffffff;
         --text-main: #0f172a;
@@ -45,16 +52,16 @@
         display: grid;
         place-items: center;
         padding: 20px;
-        font-family: "Noto Sans Thai", "Kanit", sans-serif;
+        font-family: "Kanit", "Noto Sans Thai", sans-serif;
         background:
           radial-gradient(
             circle at top left,
-            rgba(37, 99, 235, 0.14),
+            rgba(30, 58, 138, 0.12),
             transparent 34%
           ),
           radial-gradient(
             circle at bottom right,
-            rgba(22, 163, 74, 0.14),
+            rgba(234, 88, 12, 0.10),
             transparent 34%
           ),
           var(--body-bg);
@@ -62,25 +69,44 @@
       }
 
       .success-card {
-        width: min(440px, 100%);
+        width: min(460px, 100%);
         background: var(--card-bg);
         border: 1px solid var(--border);
         border-radius: 28px;
-        padding: 30px;
+        padding: 32px 28px;
         text-align: center;
-        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.14);
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.10);
+      }
+
+      .brand-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 14px;
+        margin-bottom: 20px;
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      }
+
+      .brand-badge img {
+        height: 38px;
+        width: auto;
+        object-fit: contain;
       }
 
       .success-icon {
-        width: 82px;
-        height: 82px;
+        width: 76px;
+        height: 76px;
         display: grid;
         place-items: center;
         margin: 0 auto 16px;
-        border-radius: 26px;
-        background: #dcfce7;
+        border-radius: 24px;
+        background: #ecfdf5;
         color: var(--success);
-        font-size: 46px;
+        font-size: 40px;
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.15);
       }
 
       .material-symbols-outlined {
@@ -90,20 +116,21 @@
           "wght" 700,
           "GRAD" 0,
           "opsz" 48;
-        font-size: 64px;
+        font-size: 52px;
       }
 
       h1 {
         margin: 0 0 8px;
-        font-size: clamp(24px, 6vw, 30px);
+        font-size: clamp(22px, 5vw, 26px);
+        font-weight: 800;
         line-height: 1.25;
       }
 
       p {
         margin: 0 0 24px;
         color: var(--text-muted);
-        font-size: 16px;
-        line-height: 1.7;
+        font-size: 14px;
+        line-height: 1.6;
       }
 
       .actions {
@@ -114,46 +141,42 @@
       }
 
       .btn {
-        border: 2px solid transparent;
-        border-radius: 16px;
-        padding: 14px 18px;
+        border: 1px solid transparent;
+        border-radius: 14px;
+        padding: 12px 20px;
         min-height: 48px;
         font-family: inherit;
-        font-size: 16px;
-        font-weight: 800;
+        font-size: 15px;
+        font-weight: 700;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
-        letter-spacing: 0.02em;
+        letter-spacing: 0.01em;
         transition:
           transform 0.15s ease,
-          box-shadow 0.15s ease,
-          filter 0.15s ease;
+          box-shadow 0.15s ease;
       }
 
       .btn:hover {
         transform: translateY(-1px);
-        filter: brightness(1.04);
       }
 
       .btn-primary {
-        width: min(100%, 240px);
-        aspect-ratio: 1;
-        border-radius: 24px;
-        padding: 24px;
-        font-size: 24px;
-        font-weight: 900;
-        background: linear-gradient(135deg, #1E3A8A 0%, #0F2847 100%);
+        width: min(100%, 260px);
+        padding: 16px 20px;
+        font-size: 18px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #0284c7 0%, #1E3A8A 100%);
         color: #ffffff;
-        box-shadow: 0 18px 40px rgba(37, 99, 235, 0.35);
-        flex-direction: column;
-        border-color: rgba(255, 255, 255, 0.22);
+        box-shadow: 0 12px 28px rgba(2, 132, 199, 0.28);
+        border-radius: 18px;
       }
 
-      .btn-primary:active {
-        background: var(--primary-hover);
+      .btn-primary:hover {
+        background: linear-gradient(135deg, #0369a1 0%, #0F2847 100%);
+        box-shadow: 0 14px 32px rgba(2, 132, 199, 0.35);
       }
 
       .btn-secondary {
@@ -161,15 +184,19 @@
         background: #f8fafc;
         color: var(--text-main);
         border-color: #cbd5e1;
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+      }
+
+      .btn-secondary:hover {
+        background: #f1f5f9;
       }
 
       .hint {
         display: block;
-        margin-top: 16px;
+        margin-top: 18px;
         color: var(--text-muted);
-        font-size: 13px;
-        line-height: 1.6;
+        font-size: 12px;
+        line-height: 1.5;
       }
 
       #qr-reader {
@@ -183,6 +210,10 @@
 
   <body>
     <main class="success-card">
+      <div class="brand-badge">
+        <img src="/icons/LOGOWPA.png" alt="EA Factory Logo" />
+      </div>
+
       <div class="success-icon">✓</div>
 
       <h1>บันทึกข้อมูลสำเร็จ</h1>
@@ -194,7 +225,7 @@
 
       <div class="actions">
         <button class="btn btn-primary" type="button" onclick="scanAgain()">
-          <span class="material-symbols-outlined">qr_code_scanner</span>
+          <span class="material-symbols-outlined" style="font-size: 26px;">qr_code_scanner</span>
           <span>สแกน QR</span>
         </button>
 

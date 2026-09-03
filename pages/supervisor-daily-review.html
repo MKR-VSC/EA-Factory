@@ -19,9 +19,10 @@
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/LOGOWPA.png" />
     <link rel="apple-touch-icon" href="/icons/LOGOWPA.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#1E3A8A" />
 
     <!-- ใช้หัว/ธีมเดิม -->
+    <link rel="stylesheet" href="/css/loadingService.css" />
     <link rel="stylesheet" href="/css/supervisor-daily-review.css" />
     <!-- CSS เสริมเฉพาะตาราง Go Live -->
     <link rel="stylesheet" href="/css/supervisor-daily-review-table-addon.css" />
@@ -29,23 +30,23 @@
 
   <body>
     <main class="page">
-      <!-- HEADER ใหม่: กระชับ + Logo แทน icon -->
+      <!-- HEADER: 2-Column Layout -->
       <header class="page-header supervisor-hero">
-        <div class="header-top">
-          <div class="title-area">
-            <div class="header-brand">
-              <div class="header-logo" aria-hidden="true">
-                <img src="/icons/LOGOWPA.png" alt="PVT Factory" />
-              </div>
+        <div class="header-col-left">
+          <div class="header-brand">
+            <div class="header-logo" aria-hidden="true">
+              <img src="/icons/LOGOWPA.png" alt="EA Factory" width="64" height="64" style="width: 64px; height: 64px; max-width: 64px; max-height: 64px; object-fit: contain;" />
+            </div>
 
-              <div class="header-copy">
-                <span class="header-kicker">SUPERVISOR DAILY REVIEW</span>
-                <h1>ตรวจสอบข้อมูลรายวัน</h1>
-                <p>ตรวจสอบข้อมูลของเสียก่อนส่งเข้าฐานข้อมูล</p>
-              </div>
+            <div class="header-copy">
+              <span class="header-kicker">SUPERVISOR DAILY REVIEW</span>
+              <h1>ตรวจสอบข้อมูลรายวัน</h1>
+              <p>ตรวจสอบข้อมูลของเสียก่อนส่งเข้าฐานข้อมูล</p>
             </div>
           </div>
+        </div>
 
+        <div class="header-col-right">
           <div class="header-actions">
             <a href="/pages/supervisor-dashboard.html" class="btn primary">
               <span class="material-symbols-outlined">dashboard</span>
@@ -60,9 +61,7 @@
               <span>ออกระบบ</span>
             </button>
           </div>
-        </div>
 
-        <div class="header-user-row">
           <div class="user-info-card">
             <div class="user-avatar">
               <span class="material-symbols-outlined">person</span>
@@ -206,6 +205,10 @@
     <script src="/core/roleConfig.js"></script>
     <script src="/core/ea-common.js"></script>
     <script src="/core/departmentConfig.js"></script>
+    <script src="/core/tableSwipeDetector.js"></script>
+    <script src="/core/counterAnimation.js"></script>
+    <script src="/core/autoRefresh.js"></script>
+    <script src="/services/loadingService.js"></script>
     <script src="/js/dashboard/supervisor-daily-review.js?v=old-header-table-v1"></script>
   </body>
 </html>

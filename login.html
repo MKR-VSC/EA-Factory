@@ -32,21 +32,32 @@
     <script src="/core/activityLogger.js"></script>
     <!-- Splash Screen -->
     <div id="splash-screen">
-      <div class="splash-logo">
-        <img src="/icons/LOGOWPA.png" alt="EA Factory Logo" />
+      <div class="splash-bg-glow"></div>
+      <div class="splash-card">
+        <div class="splash-loader">
+          <div class="orbit-ring ring-1"></div>
+          <div class="orbit-ring ring-2"></div>
+          <img src="/icons/LOGOWPA.png" alt="EA Factory Logo" class="splash-logo-img" />
+          <div class="splash-logo-glow"></div>
+        </div>
+        <div class="splash-title">PVT FACTORY</div>
+        <div class="splash-sub">ศูนย์รวมข้อมูลและระบบงาน</div>
       </div>
-      <!-- 11111 -->
-      <!-- <div class="splash-title">EA Factory</div> -->
-      <div class="splash-sub">ศูนย์รวมข้อมูลและระบบงาน</div>
-      <div class="splash-dots"><span></span><span></span><span></span></div>
     </div>
 
     <!-- Login Overlay -->
     <div id="login-overlay" class="hidden">
       <div class="overlay-box">
-        <div class="overlay-ring"></div>
+        <div class="loading-spinner-wrap">
+          <div class="spinner-outer"></div>
+          <div class="spinner-inner"></div>
+          <div class="spinner-core"></div>
+        </div>
         <h3>กำลังเข้าสู่ระบบ...</h3>
         <p>กรุณารอสักครู่</p>
+        <div class="loading-bar-wrap">
+          <div class="loading-bar-glow"></div>
+        </div>
       </div>
     </div>
 
@@ -165,6 +176,7 @@
 
     <script src="/core/roleConfig.js"></script>
     <script src="/auth/authGuard.js"></script>
+    <script src="/services/loadingService.js"></script>
     <script src="/auth/login.js"></script>
   </body>
 </html>

@@ -320,8 +320,8 @@ body {
 .dept-tape .sidebar { background: #065f46; }
 .dept-tape .sidebar-header { background: #065f46; }
 .dept-tape .sidebar-menu a.active { color: #065f46; }
-.dept-tape .btn-submit { background: #10b981; }
-.dept-tape .btn-submit:hover { background: #059669; }
+.dept-tape .btn-submit { background: #EA580C; }
+.dept-tape .btn-submit:hover { background: #C2410C; }
 
 /* 🎈 แผนกเป่าถุง - BLOW (ม่วง) */
 .dept-blow .sidebar { background: #6b21a8; }
@@ -380,4 +380,12 @@ body {
     background: #f59e0b;
     color: #000000;
     box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+main:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1) > input#startDate:nth-of-type(1) {
+  height: 35.4375px;
+}
+
+main:nth-of-type(1) > header:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(1) {
+  color: #0c7fba;
 }
