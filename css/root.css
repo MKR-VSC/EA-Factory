@@ -1,229 +1,121 @@
 /* =========================================================== 
-     1. SAP Style ⭐ นิยมมากสุด 
- =========================================================== */
-
- :root {
-  --primary: #0f6cbd;
-  --primary-dark: #0a4d88;
-
-  --success: #107c10;
-  --warning: #ffb900;
-  --danger: #d13438;
-
-  --bg: #f5f7fa;
-  --card: #ffffff;
-
-  --text: #323130;
-  --border: #e1dfdd;
-}
-
-/* =========================================================== 
-     2. Microsoft Dynamics 365 Style ⭐⭐⭐ 
- =========================================================== */
-
- :root {
-  --primary: #0078d4;
-  --primary-dark: #005a9e;
-
-  --sidebar: #0f172a;
-
-  --success: #16a34a;
-  --warning: #f59e0b;
-  --danger: #dc2626;
-
-  --bg: #f8fafc;
-}
-
-
-/* =========================================================== 
-     3. Odoo Style
- =========================================================== */
-
- :root {
-  --primary: #714b67;
-  --primary-dark: #5c3d54;
-
-  --success: #28a745;
-  --warning: #ffc107;
-  --danger: #dc3545;
-
-  --bg: #f6f7f9;
-}
-
-
-/* =========================================================== 
-     4. ERPNext Style
- =========================================================== */
-
- :root {
-  --primary: #2490ef;
-
-  --success: #28a745;
-  --warning: #ffa00a;
-  --danger: #e24c4b;
-
-  --sidebar: #2c3e50;
-  --bg: #f7fafc;
-}
-
-
-/* =========================================================== 
-     5. Industrial Factory Style ⭐⭐⭐⭐⭐
- =========================================================== */
-
- :root {
-  --primary: #1E3A8A;
-
-  --production: #EA580C;
-  --warehouse: #1E3A8A;
-  --quality: #ea580c;
-  --maintenance: #7c3aed;
-
-  --success: #16a34a;
-  --warning: #EA580C;
-  --danger: #dc2626;
-
-  --sidebar: #0F2847;
-
-  --bg: #f8fafc;
-  --card: #ffffff;
-}
-
-
-
-
-
-/* =========================================================== 
-     ROOT ADMIN CSS 
-     - รวมตัวแปรสีและสไตล์พื้นฐาน
-     - ใช้ร่วมกันในทุกหน้าของระบบ Admin
-   ===========================================================*/
-
-
-
-
-/* =========================================================== 
-     1. Navy Admin ⭐ นิยมที่สุด
- =========================================================== */
+   EA FACTORY & P.V.T. PLAST - UNIFIED DESIGN SYSTEM
+   Theme inspired by EA Factory Logo & Identity:
+   - Deep Industrial Navy: #1E3A8A / #0F2847
+   - EA Electric Blue / Cyan Accent: #0284C7 / #009BC0
+   - EA Production Orange Accent: #EA580C / #F97316
+   - Modern Crisp Slate Surfaces & Clean Typography
+   =========================================================== */
 
 :root {
-  /* Primary */
+  /* ================= BRAND PRIMARY & ACCENTS ================= */
   --primary: #1E3A8A;
-  --primary-hover: #0F2847;
+  --primary-dark: #0F2847;
+  --primary-hover: #172554;
+  --primary-light: #2563EB;
+  --primary-soft: #EFF6FF;
+  --primary-soft-2: #DBEAFE;
 
-  /* Sidebar */
-  --sidebar-bg: #0f172a;
-  --sidebar-hover: #1e293b;
-  --sidebar-active: #1E3A8A;
-  --body-bg: #f8fafc;
-  --card-bg: #ffffff;
+  /* EA Signature Colors from Logo */
+  --ea-blue: #0284C7;
+  --ea-blue-hover: #0369A1;
+  --ea-blue-soft: #E0F2FE;
+  --ea-blue-glow: rgba(2, 132, 199, 0.22);
 
-  /* Text */
-  --text-main: #0f172a;
-  --text-muted: #64748b;
+  --ea-orange: #EA580C;
+  --ea-orange-hover: #C2410C;
+  --ea-orange-soft: #FFEDD5;
+  --ea-orange-glow: rgba(234, 88, 12, 0.20);
 
-  /* Status */
-  --success: #16a34a;
-  --warning: #f59e0b;
-  --danger: #dc2626;
+  --accent: var(--ea-blue);
+  --accent-hover: var(--ea-blue-hover);
+  --accent-orange: var(--ea-orange);
 
-  /* Border */
-  --border: #e2e8f0;
-}
+  /* ================= SURFACES & BACKGROUNDS ================= */
+  --body-bg: #F8FAFC;
+  --bg: #F8FAFC;
+  --page-bg: #FFFFFF;
+  --card-bg: #FFFFFF;
+  --panel: #FFFFFF;
+  --panel2: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-alt: #F1F5F9;
 
+  /* ================= SIDEBAR (DARK LUXURY INDUSTRIAL) ================= */
+  --sidebar-bg: #0F172A;
+  --sidebar-bg-alt: #1E293B;
+  --sidebar-hover: #1E293B;
+  --sidebar-active: #0284C7;
+  --sidebar-active-glow: rgba(2, 132, 199, 0.28);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-text: #F8FAFC;
+  --sidebar-muted: #94A3B8;
 
-
-/* =========================================================== 
-     2. Charcoal Admin ⭐⭐⭐
- =========================================================== */
-
-
- :root {
-  --primary: #3b82f6;
-
-  --sidebar-bg: #111827;
-  --sidebar-hover: #1f2937;
-
-  --body-bg: #f9fafb;
-  --card-bg: #ffffff;
-
-  --text-main: #111827;
-  --text-muted: #6b7280;
-
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-
-  --border: #e5e7eb;
-}
-
-
-
-/* =========================================================== 
-     3. Enterprise ERP ⭐⭐⭐⭐⭐
- =========================================================== */
-
-
- :root {
-  /* Brand */
-  --primary: #1E3A8A;
-  --primary-hover: #0F2847;
-
-  /* Sidebar */
-  --sidebar-bg: #0f172a;
-  --sidebar-hover: #1e293b;
-  --sidebar-active: #1E3A8A;
-
-  /* Background */
-  --body-bg: #f1f5f9;
-  --page-bg: #ffffff;
-  --card-bg: #ffffff;
-
-  /* Text */
-  --text-main: #0f172a;
+  /* ================= TYPOGRAPHY & TEXT ================= */
+  --text-main: #0F172A;
+  --text: #0F172A;
   --text-body: #334155;
-  --text-muted: #64748b;
+  --text-light: #64748B;
+  --text-muted: #64748B;
+  --text-soft: #94A3B8;
+  --ink: #0F172A;
+  --muted: #64748B;
+  --soft: #94A3B8;
 
-  /* Border */
-  --border: #e2e8f0;
+  /* ================= BORDERS & DIVIDERS ================= */
+  --border: #E2E8F0;
+  --border-soft: #F1F5F9;
+  --border-strong: #CBD5E1;
+  --line: #E2E8F0;
 
-  /* Status */
-  --success: #16a34a;
-  --success-bg: #dcfce7;
+  /* ================= STATUS & ALERTS ================= */
+  --success: #10B981;
+  --success-dark: #059669;
+  --success-soft: #DCFCE7;
+  --success-bg: #DCFCE7;
 
-  --warning: #d97706;
-  --warning-bg: #fef3c7;
+  --warning: #F59E0B;
+  --warning-dark: #D97706;
+  --warning-soft: #FEF3C7;
+  --warning-bg: #FEF3C7;
 
-  --danger: #dc2626;
-  --danger-bg: #fee2e2;
+  --danger: #EF4444;
+  --danger-dark: #DC2626;
+  --danger-soft: #FEE2E2;
+  --danger-bg: #FEE2E2;
 
-  --info: #1E3A8A;
-  --info-bg: #e0f2fe;
-}
-
-
-/* =========================================================== 
-     4. Admin ของ EA Factory
- =========================================================== */
-
-
- :root {
-  --primary: #1E3A8A;
-
-  --sidebar-bg: #0f172a;
-  --sidebar-active: #1E3A8A;
-
-  --body-bg: #f8fafc;
-  --card-bg: #ffffff;
-
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-
-  --border: #e2e8f0;
-
-  --success: #16a34a;
-  --warning: #d97706;
-  --danger: #dc2626;
+  --info: #0284C7;
+  --info-soft: #E0F2FE;
+  --info-bg: #E0F2FE;
 
   --executive: #541029;
+
+  /* Department Colors */
+  --production: #EA580C;
+  --warehouse: #1E3A8A;
+  --quality: #0284C7;
+  --maintenance: #7C3AED;
+
+  /* ================= GEOMETRY & RADIUS ================= */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
+  --radius-full: 9999px;
+
+  /* ================= SHADOWS & ELEVATION ================= */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 2px 5px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 30px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+  --shadow-xl: 0 20px 40px -8px rgba(15, 23, 42, 0.12);
+  --shadow: var(--shadow-md);
+  --shadow-glow-blue: 0 0 24px rgba(2, 132, 199, 0.20);
+  --shadow-glow-orange: 0 0 24px rgba(234, 88, 12, 0.20);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
