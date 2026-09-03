@@ -1,6 +1,6 @@
 {
   "name": "EA Factory",
-  "short_name": "EA Factory",
+  "short_name": "PVT&T Factory",
   "start_url": "/login.html",
   "scope": "/",
   "display": "standalone",
