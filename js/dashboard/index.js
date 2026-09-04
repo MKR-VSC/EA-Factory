@@ -528,6 +528,9 @@ function renderAllDashboard(records, prevRecords = [], range, prevRange) {
   renderMachineRiskChart(machineSummary);
   renderProblemChart(problemSummary);
   renderDepartmentDonutChart(deptSummary);
+
+  // Render D3 Sparklines for KPIs
+  renderKPISparklines(records, dailySummary, deptSummary);
 }
 
 /* =========================================================
@@ -1405,6 +1408,170 @@ function escapeAttr(value) {
     .replaceAll("&", "&amp;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+/* =========================================================
+   D3 SPARKLINE TREND CHARTS
+========================================================= */
+
+function renderKPISparklines(records, dailySummary, deptSummary) {
+  // Sort deptSummary to find the top department
+  const topDepartment = [...(deptSummary || [])].sort(
+    (a, b) => b.waste - a.waste || b.percent - a.percent || b.production - a.production
+  )[0];
+
+  const topDeptCode = topDepartment ? topDepartment.code : null;
+  const topDeptName = topDepartment ? topDepartment.department : "";
+
+  // Filter out days in dailySummary with actual activity (production or waste)
+  const activeDays = (dailySummary || []).filter(d => d.production > 0 || d.waste > 0);
+  
+  // If we don't have enough active days, fall back to the whole dailySummary
+  const trendDays = activeDays.length > 0 ? activeDays.slice(-7) : (dailySummary || []).slice(-7);
+
+  if (!trendDays || trendDays.length === 0) {
+    // Clear all sparklines if no data is available
+    ["sparkline-production", "sparkline-waste", "sparkline-waste-percent", "sparkline-top-department"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = "";
+    });
+    return;
+  }
+
+  // Calculate trends
+  const productionTrend = trendDays.map(d => d.production);
+  const wasteTrend = trendDays.map(d => d.waste);
+  const percentTrend = trendDays.map(d => d.percent);
+
+  // For Top Department, find its waste weight on each of those trend days
+  const topDeptTrend = trendDays.map(day => {
+    if (!topDeptCode) return 0;
+    const dayRecords = records.filter(r => {
+      const date = r.report_date || toDateInputValue(new Date(getRowDate(r)));
+      const dept = getDepartmentInfo(r);
+      return date === day.date && dept.code === topDeptCode;
+    });
+    return dayRecords.reduce((sum, r) => sum + getWasteWeight(r), 0);
+  });
+
+  // Render each sparkline with appropriate colors and titles
+  drawSparkline(
+    "sparkline-production",
+    productionTrend,
+    "#0284c7", // blue
+    "rgba(2, 132, 199, 0.08)",
+    `แนวโน้มการผลิต 7 วันล่าสุด: ${productionTrend.map(v => formatNumber(v) + " kg").join(" -> ")}`
+  );
+
+  drawSparkline(
+    "sparkline-waste",
+    wasteTrend,
+    "#ea580c", // warning / orange
+    "rgba(234, 88, 12, 0.08)",
+    `แนวโน้มของเสีย 7 วันล่าสุด: ${wasteTrend.map(v => formatNumber(v) + " kg").join(" -> ")}`
+  );
+
+  drawSparkline(
+    "sparkline-waste-percent",
+    percentTrend,
+    "#16a34a", // success / green
+    "rgba(22, 163, 74, 0.08)",
+    `แนวโน้ม % ของเสีย 7 วันล่าสุด: ${percentTrend.map(v => formatNumber(v) + "%").join(" -> ")}`
+  );
+
+  drawSparkline(
+    "sparkline-top-department",
+    topDeptTrend,
+    "#dc2626", // danger / red
+    "rgba(220, 38, 38, 0.08)",
+    topDeptCode 
+      ? `แนวโน้มของเสียแผนก ${topDeptName} 7 วันล่าสุด: ${topDeptTrend.map(v => formatNumber(v) + " kg").join(" -> ")}`
+      : "ไม่มีข้อมูลของเสียรายแผนก"
+  );
+}
+
+function drawSparkline(containerId, data, color, areaColor, tooltipTitle) {
+  const container = d3.select(`#${containerId}`);
+  if (container.empty()) return;
+
+  container.html(""); // Clear old SVG
+
+  const node = container.node();
+  const width = node ? node.getBoundingClientRect().width || 120 : 120;
+  const height = node ? node.getBoundingClientRect().height || 36 : 36;
+
+  // Set native browser tooltip
+  container.attr("title", tooltipTitle);
+
+  // Handle all zeros or flat data
+  const minVal = d3.min(data) || 0;
+  const maxVal = d3.max(data) || 0;
+  const yDomain = minVal === maxVal ? [minVal - 1, maxVal + 1] : [minVal, maxVal];
+
+  // Map ranges with margin padding to avoid clipped lines/circles
+  const xScale = d3.scaleLinear()
+    .domain([0, data.length - 1])
+    .range([4, width - 8]);
+
+  const yScale = d3.scaleLinear()
+    .domain(yDomain)
+    .range([height - 4, 4]);
+
+  const svg = container.append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .style("display", "block")
+    .style("overflow", "visible");
+
+  // Smooth line curve
+  const lineGen = d3.line()
+    .x((_, i) => xScale(i))
+    .y(d => yScale(d))
+    .curve(d3.curveMonotoneX);
+
+  // Gradient fill under the line
+  const areaGen = d3.area()
+    .x((_, i) => xScale(i))
+    .y0(height)
+    .y1(d => yScale(d))
+    .curve(d3.curveMonotoneX);
+
+  // Render Area under curve
+  svg.append("path")
+    .datum(data)
+    .attr("d", areaGen)
+    .attr("fill", areaColor);
+
+  // Render Line path
+  svg.append("path")
+    .datum(data)
+    .attr("d", lineGen)
+    .attr("fill", "none")
+    .attr("stroke", color)
+    .attr("stroke-width", 2)
+    .attr("stroke-linecap", "round");
+
+  // Render last data point highlights
+  const lastIndex = data.length - 1;
+  const lastX = xScale(lastIndex);
+  const lastY = yScale(data[lastIndex]);
+
+  // Outer glowing pulse
+  svg.append("circle")
+    .attr("cx", lastX)
+    .attr("cy", lastY)
+    .attr("r", 4.5)
+    .attr("fill", color)
+    .attr("opacity", 0.4);
+
+  // Solid center dot
+  svg.append("circle")
+    .attr("cx", lastX)
+    .attr("cy", lastY)
+    .attr("r", 2.5)
+    .attr("fill", color)
+    .attr("stroke", "#ffffff")
+    .attr("stroke-width", 1.2);
 }
 
 /* =========================================================

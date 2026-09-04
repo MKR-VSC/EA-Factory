@@ -120,6 +120,7 @@ select {
   max-height: 74px;
   display: block;
   object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
 }
 
 .exec-header .brand-icon {
@@ -846,6 +847,7 @@ select {
   .exec-header .logo img {
     height: 42px;
     max-width: 100px;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.12));
   }
 
   .exec-header h1 {

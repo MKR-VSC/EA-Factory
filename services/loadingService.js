@@ -566,7 +566,7 @@
                 <div class="ea-orbit-ring ring-1"></div>
                 <div class="ea-orbit-ring ring-2"></div>
                 <img
-                  src="/icons/LOGOWPA.png"
+                  src="/icons/Logo_Apps3.png?v=3"
                   class="ea-splash-logo"
                   alt="EA Factory Logo"
                 />

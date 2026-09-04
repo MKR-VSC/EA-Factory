@@ -164,7 +164,7 @@ select {
   width: 120px;
   height: 120px;
   object-fit: contain;
-  /* box-shadow: 0 12px 22px rgba(37, 99, 235, 0.28); */
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.15));
 }
 
 .logo-text strong {
@@ -2105,6 +2105,7 @@ td select {
 .admin-ui-v2 .logo-icon img {
   width: 54px;
   height: 54px;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.12));
 }
 
 .admin-ui-v2 .logo-text {
@@ -2811,6 +2812,7 @@ td select {
   .admin-ui-v2 .logo-icon img {
     width: 44px;
     height: 44px;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.12));
   }
 
   .admin-ui-v2 .sidebar-menu {
