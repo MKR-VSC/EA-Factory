@@ -414,6 +414,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     setupDropdownListeners();
     setupProblemItemsEvents();
     setupOtherProblemModal();
+    setupFieldHighlighting();
     renderCurrentDeptLabel();
 
     // Attach direct event listener to logout buttons as fallback
@@ -944,6 +945,13 @@ function addProblemItem(
   const weightInput = row.querySelector(".problem-weight-input");
   const detailInput = row.querySelector(".problem-detail-input");
   const removeButton = row.querySelector(".btn-remove-problem");
+
+  // Highlight logic for new row
+  if (window.updateFieldHighlight) {
+    updateFieldHighlight(select);
+    updateFieldHighlight(weightInput);
+    updateFieldHighlight(detailInput);
+  }
 
   // คลิก/แตะช่องไหน การ์ดนั้นจะเด่นขึ้นทันที
   row.addEventListener("focusin", () => {
@@ -2053,9 +2061,155 @@ async function handleLogout() {
 }
 
 // =========================================================
+// FIELD VALIDATION HIGHLIGHTING
+// =========================================================
+
+function updateFieldHighlight(element) {
+  if (!element) return;
+  const val = String(element.value || "").trim();
+  const isRequired = element.required;
+  
+  // Only process if it is required or we explicitly want to track it
+  if (!isRequired && !element.classList.contains('problem-detail-input')) return;
+
+  // special case for detail input which is only required if type is 'other'
+  if (element.classList.contains('problem-detail-input')) {
+    const row = element.closest('.problem-item');
+    if (row) {
+      const typeSelect = row.querySelector('.problem-type-select');
+      if (typeSelect && typeof isOtherProblem === 'function' && isOtherProblem(typeSelect.value)) {
+        if (val === "") {
+           element.classList.add("field-unfilled");
+           element.classList.remove("field-filled");
+           updateLabelPill(element, false);
+        } else {
+           element.classList.remove("field-unfilled");
+           element.classList.add("field-filled");
+           updateLabelPill(element, true);
+        }
+      } else {
+        element.classList.remove("field-unfilled", "field-filled");
+        updateLabelPill(element, true, true); // hide pill
+      }
+    }
+    return;
+  }
+
+  if (val === "" || val === "0" || val === "0.00") {
+    element.classList.add("field-unfilled");
+    element.classList.remove("field-filled");
+    updateLabelPill(element, false);
+  } else {
+    element.classList.remove("field-unfilled");
+    element.classList.add("field-filled");
+    updateLabelPill(element, true);
+  }
+}
+
+function updateLabelPill(element, isFilled, isNotRequired = false) {
+  let label = null;
+  if (element.id) {
+    label = document.querySelector(`label[for="${element.id}"]`);
+  }
+  if (!label && element.closest('.form-group')) {
+     label = element.closest('.form-group').querySelector('label');
+  }
+  
+  const isProblemItem = element.closest('.problem-item');
+  if (isProblemItem) {
+     const wrapper = element.closest('div');
+     label = wrapper ? wrapper.querySelector('.problem-mini-label') : null;
+  }
+
+  if (!label) return;
+
+  let pill = label.querySelector('.field-status-pill, .problem-field-pill');
+  if (!pill) {
+     pill = document.createElement('span');
+     pill.className = isProblemItem ? 'problem-field-pill' : 'field-status-pill';
+     label.appendChild(pill);
+  }
+
+  if (isNotRequired) {
+     pill.style.display = 'none';
+     return;
+  }
+
+  pill.style.display = 'inline-flex';
+  
+  if (isFilled) {
+     pill.className = (isProblemItem ? 'problem-field-pill' : 'field-status-pill') + ' is-filled';
+     pill.innerHTML = `<span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>${isProblemItem ? 'ระบุแล้ว' : 'ระบุแล้ว'}`;
+  } else {
+     pill.className = (isProblemItem ? 'problem-field-pill' : 'field-status-pill') + ' is-unfilled';
+     pill.innerHTML = `<span class="material-symbols-outlined" style="font-size: 14px;">error</span>${isProblemItem ? 'ต้องระบุ' : 'จำเป็นต้องระบุ'}`;
+  }
+}
+
+function setupFieldHighlighting() {
+  const fields = [
+    document.getElementById("incident-datetime"),
+    document.getElementById("work-shift"),
+    document.getElementById("machine-no")
+  ];
+  
+  fields.forEach(field => {
+    if (!field) return;
+    
+    // Initial check
+    updateFieldHighlight(field);
+    
+    // Check on input/change
+    field.addEventListener("input", () => updateFieldHighlight(field));
+    field.addEventListener("change", () => updateFieldHighlight(field));
+  });
+  
+  // Attach event delegation for problem items
+  const problemContainer = document.getElementById("problem-items");
+  if (problemContainer) {
+    problemContainer.addEventListener("input", (e) => {
+       if (e.target.matches('.problem-type-select, .problem-weight-input, .problem-detail-input')) {
+          updateFieldHighlight(e.target);
+          
+          if (e.target.matches('.problem-type-select')) {
+             const row = e.target.closest('.problem-item');
+             if (row) {
+                const detailInput = row.querySelector('.problem-detail-input');
+                if (detailInput) updateFieldHighlight(detailInput);
+             }
+          }
+       }
+    });
+    
+    problemContainer.addEventListener("change", (e) => {
+       if (e.target.matches('.problem-type-select, .problem-weight-input, .problem-detail-input')) {
+          updateFieldHighlight(e.target);
+       }
+    });
+  }
+
+  // Handle shake animation on form invalid (native validation)
+  const form = document.getElementById("department-waste-form");
+  if (form) {
+    form.addEventListener("invalid", (e) => {
+      e.preventDefault(); // Prevent default browser tooltip if we want custom UI, but we just want to shake it
+      const el = e.target;
+      el.classList.remove("field-attention-shake");
+      void el.offsetWidth; // trigger reflow
+      el.classList.add("field-attention-shake");
+      
+      // Update highlight state just in case
+      updateFieldHighlight(el);
+    }, true); // use capture phase because invalid event does not bubble
+  }
+}
+
+// =========================================================
 // EXPORT TO HTML
 // =========================================================
 
+window.updateFieldHighlight = updateFieldHighlight;
+window.setupFieldHighlighting = setupFieldHighlighting;
 window.resetFormWithConfirm = resetFormWithConfirm;
 window.handleLogout = handleLogout;
 window.goBackToLogin = goBackToLogin;

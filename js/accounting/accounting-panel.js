@@ -112,6 +112,10 @@ function bindEvents() {
         applyFilters,
       ),
   );
+
+  document.getElementById("summaryGroupType")?.addEventListener("change", () => {
+    renderSummary(state.groups);
+  });
 }
 function setDefaultMonth() {
   const d = new Date();
@@ -512,9 +516,98 @@ function renderSummary(groups) {
   const activeGroups = groups.filter((g) => normalizeText(g.status) !== STATUS_CANCELLED);
   const waste = activeGroups.reduce((s, g) => s + g.waste, 0),
     prod = activeGroups.reduce((s, g) => s + (g.production || 0), 0);
+  
   setText("sumCount", activeGroups.length.toLocaleString("th-TH"));
   setText("sumWaste", formatNumber(waste));
   setText("sumProduction", formatNumber(prod));
+
+  // อัปเดตบิชสถานะแผนกด้านขวาบน
+  const deptFilter = document.getElementById("filterDept")?.value || "all";
+  const deptName = deptFilter === "all" ? "ทั้งหมด" : (getDeptName(deptFilter) || deptFilter);
+  const badge = document.getElementById("summaryDeptBadge");
+  if (badge) {
+    badge.textContent = `แผนก: ${deptName}`;
+    if (deptFilter !== "all") {
+      badge.style.background = "#dcfce7";
+      badge.style.color = "#166534";
+      badge.style.borderColor = "#bbf7d0";
+    } else {
+      badge.style.background = "#e0f2fe";
+      badge.style.color = "#0284c7";
+      badge.style.borderColor = "#bae6fd";
+    }
+  }
+
+  // คำนวณสรุปแยกตามประเภทที่เลือก (แผนก, เครื่องจักร, ปัญหา)
+  const groupType = document.getElementById("summaryGroupType")?.value || "dept";
+  const summaryMap = {};
+
+  activeGroups.forEach(g => {
+    if (groupType === "problem") {
+      if (g.items && g.items.length > 0) {
+        g.items.forEach(item => {
+          const pType = item.problem_type || "ไม่ระบุ";
+          if (!summaryMap[pType]) summaryMap[pType] = { name: pType, production: 0, waste: 0 };
+          summaryMap[pType].waste += Number(item.waste_weight_kg || 0);
+        });
+      } else if (g.waste > 0) {
+        const pType = "ไม่ระบุ";
+        if (!summaryMap[pType]) summaryMap[pType] = { name: pType, production: 0, waste: 0 };
+        summaryMap[pType].waste += g.waste;
+      }
+    } else if (groupType === "machine") {
+      const mCode = g.machine || "ไม่ระบุ";
+      if (!summaryMap[mCode]) summaryMap[mCode] = { name: mCode, production: 0, waste: 0 };
+      summaryMap[mCode].production += (g.production || 0);
+      summaryMap[mCode].waste += (g.waste || 0);
+    } else {
+      const deptCode = g.dept;
+      const deptName = getDeptName(deptCode) || deptCode;
+      if (!summaryMap[deptCode]) {
+        summaryMap[deptCode] = { name: deptName, production: 0, waste: 0 };
+      }
+      summaryMap[deptCode].production += (g.production || 0);
+      summaryMap[deptCode].waste += (g.waste || 0);
+    }
+  });
+
+  const headTitle = document.getElementById("summaryTableTitle");
+  if (headTitle) {
+    headTitle.textContent = groupType === "problem" ? "สรุปผลรวมแยกตามประเภทปัญหา" 
+                          : groupType === "machine" ? "สรุปผลรวมแยกตามเครื่องจักร" 
+                          : "สรุปผลรวมแยกตามแผนก / สินค้า";
+  }
+
+  const thCol = document.querySelector("#summaryTableHead th:first-child");
+  if (thCol) {
+    thCol.textContent = groupType === "problem" ? "ประเภทปัญหา" 
+                      : groupType === "machine" ? "เครื่องจักร" 
+                      : "แผนก / สินค้า";
+  }
+
+  const summaryBody = document.getElementById("summaryDeptBody");
+  if (summaryBody) {
+    const keys = Object.keys(summaryMap);
+    if (keys.length === 0) {
+      summaryBody.innerHTML = `<tr><td colspan="4" class="empty">ไม่พบข้อมูลตามตัวกรอง</td></tr>`;
+    } else {
+      const sortedValues = Object.values(summaryMap).sort((a, b) => b.waste - a.waste);
+      summaryBody.innerHTML = sortedValues.map(d => {
+        const pct = d.production > 0 ? (d.waste / d.production) * 100 : 0;
+        const prodText = groupType === "problem" ? "-" : formatNumber(d.production);
+        const pctText = groupType === "problem" ? "-" : `${formatNumber(pct)}%`;
+        const pctColor = groupType === "problem" ? 'inherit' : (pct > 0 ? (pct > 3 ? '#dc2626' : '#1e40af') : 'inherit');
+        return `
+          <tr>
+            <td style="font-weight: 600;">${safeText(d.name)}</td>
+            <td class="text-right" style="color: #16a34a; font-weight: 500;">${prodText}</td>
+            <td class="text-right" style="color: #dc2626; font-weight: 500;">${formatNumber(d.waste)}</td>
+            <td class="text-right font-bold" style="color: ${pctColor}">${pctText}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
 }
 function renderTable(groups) {
   const body = document.getElementById("accountingBody");
@@ -1115,34 +1208,62 @@ function generateAccountingReportHTML(isPrintImmediate = false) {
     filterDesc += ` | สถานะ: ${statusText}`;
   }
 
-  // Calculate Departmental Summary
+  // Calculate Summary based on selected group type
+  const groupType = document.getElementById("summaryGroupType")?.value || "dept";
   const activeGroups = (state.groups || []).filter(g => normalizeText(g.status) !== STATUS_CANCELLED);
-  const deptSummaryMap = {};
+  const summaryMap = {};
+
   activeGroups.forEach(g => {
-    const deptCode = g.dept;
-    const deptName = getDeptName(deptCode) || deptCode;
-    if (!deptSummaryMap[deptCode]) {
-      deptSummaryMap[deptCode] = {
-        name: deptName,
-        production: 0,
-        waste: 0
-      };
+    if (groupType === "problem") {
+      if (g.items && g.items.length > 0) {
+        g.items.forEach(item => {
+          const pType = item.problem_type || "ไม่ระบุ";
+          if (!summaryMap[pType]) summaryMap[pType] = { name: pType, production: 0, waste: 0 };
+          summaryMap[pType].waste += Number(item.waste_weight_kg || 0);
+        });
+      } else if (g.waste > 0) {
+        const pType = "ไม่ระบุ";
+        if (!summaryMap[pType]) summaryMap[pType] = { name: pType, production: 0, waste: 0 };
+        summaryMap[pType].waste += g.waste;
+      }
+    } else if (groupType === "machine") {
+      const mCode = g.machine || "ไม่ระบุ";
+      if (!summaryMap[mCode]) summaryMap[mCode] = { name: mCode, production: 0, waste: 0 };
+      summaryMap[mCode].production += (g.production || 0);
+      summaryMap[mCode].waste += (g.waste || 0);
+    } else {
+      const deptCode = g.dept;
+      const deptName = getDeptName(deptCode) || deptCode;
+      if (!summaryMap[deptCode]) {
+        summaryMap[deptCode] = { name: deptName, production: 0, waste: 0 };
+      }
+      summaryMap[deptCode].production += (g.production || 0);
+      summaryMap[deptCode].waste += (g.waste || 0);
     }
-    deptSummaryMap[deptCode].production += (g.production || 0);
-    deptSummaryMap[deptCode].waste += (g.waste || 0);
   });
 
-  const deptRowsHTML = Object.values(deptSummaryMap).map(d => {
+  const sortedValues = Object.values(summaryMap).sort((a, b) => b.waste - a.waste);
+  const deptRowsHTML = sortedValues.map(d => {
     const pct = d.production > 0 ? (d.waste / d.production) * 100 : 0;
+    const prodText = groupType === "problem" ? "-" : `${formatNumber(d.production)} kg`;
+    const pctText = groupType === "problem" ? "-" : `${formatNumber(pct)}%`;
     return `
       <tr>
         <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-weight: 600; text-align: left;">${safeText(d.name)}</td>
-        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${formatNumber(d.production)} kg</td>
+        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${prodText}</td>
         <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${formatNumber(d.waste)} kg</td>
-        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${formatNumber(pct)}%</td>
+        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${pctText}</td>
       </tr>
     `;
   }).join("");
+
+  const summaryTitle = groupType === "problem" ? "สรุปผลรวมแยกตามประเภทปัญหา" 
+                     : groupType === "machine" ? "สรุปผลรวมแยกตามเครื่องจักร" 
+                     : "สรุปผลรวมแยกตามแผนก / สินค้า";
+                     
+  const summaryColName = groupType === "problem" ? "ประเภทปัญหา" 
+                       : groupType === "machine" ? "เครื่องจักร" 
+                       : "แผนก / สินค้า";
 
   // Detailed rows HTML
   const detailedRowsHTML = (state.groups || []).map(g => {
@@ -1273,18 +1394,18 @@ function generateAccountingReportHTML(isPrintImmediate = false) {
         <strong>ช่วงเวลาและตัวกรอง:</strong> ${filterDesc}
       </div>
 
-      <div class="section-title">1. สรุปรายเดือนตามแผนก (Departmental Summary)</div>
+      <div class="section-title">1. ${summaryTitle}</div>
       <table>
         <thead>
           <tr>
-            <th style="text-align: left;">แผนก</th>
+            <th style="text-align: left;">${summaryColName}</th>
             <th style="text-align: right;">ผลิตรวม (kg)</th>
             <th style="text-align: right;">ของเสียรวม (kg)</th>
             <th style="text-align: right;">อัตราของเสีย (% Waste)</th>
           </tr>
         </thead>
         <tbody>
-          ${deptRowsHTML || '<tr><td colspan="4" style="padding: 15px; text-align: center; color: #64748b;">ไม่มีข้อมูลแผนก</td></tr>'}
+          ${deptRowsHTML || '<tr><td colspan="4" style="padding: 15px; text-align: center; color: #64748b;">ไม่มีข้อมูล</td></tr>'}
         </tbody>
       </table>
 

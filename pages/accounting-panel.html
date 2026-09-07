@@ -131,6 +131,10 @@
         </div>
       </section>
 
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 12px; padding: 0 4px;">
+        <h2 style="font-size: 16px; margin: 0; color: #334155; font-weight: 700;">ภาพรวมข้อมูล</h2>
+        <span id="summaryDeptBadge" style="background: #e0f2fe; color: #0284c7; padding: 4px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid #bae6fd;">แผนก: ทั้งหมด</span>
+      </div>
       <section class="summary-grid">
         <div class="summary-card">
           <span>จำนวนรายการ</span>
@@ -143,6 +147,33 @@
         <div class="summary-card success">
           <span>น้ำหนักผลิตรวม</span>
           <strong id="sumProduction">0.00</strong>
+        </div>
+      </section>
+
+      <!-- ตารางสรุปผลรวมแยกตามแผนก / สินค้า / เครื่องจักร / ประเภทปัญหา -->
+      <section class="panel" style="margin-top: 24px; margin-bottom: 24px;">
+        <div class="table-head" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+          <h2 id="summaryTableTitle">สรุปผลรวมแยกตามแผนก / สินค้า</h2>
+          <select id="summaryGroupType" class="filter-select" style="min-width: 180px;">
+            <option value="dept">แยกตามแผนก / สินค้า</option>
+            <option value="machine">แยกตามเครื่องจักร</option>
+            <option value="problem">แยกตามประเภทปัญหา</option>
+          </select>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead id="summaryTableHead">
+              <tr>
+                <th>แผนก / สินค้า</th>
+                <th class="text-right">น้ำหนักผลิตรวม (kg)</th>
+                <th class="text-right">น้ำหนักสูญเสียรวม (kg)</th>
+                <th class="text-right">% Waste</th>
+              </tr>
+            </thead>
+            <tbody id="summaryDeptBody">
+              <tr><td colspan="4" class="empty">กำลังคำนวณข้อมูล...</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
