@@ -2,14 +2,17 @@
 <html lang="th">
   <head>
     <!-- ======================================================
-      EA FACTORY - EXECUTIVE DASHBOARD v1.0
+      PVT&T FACTORY - EXECUTIVE DASHBOARD v1.0
       หน้าแรกสำหรับผู้บริหาร / Management / Admin
       ใช้ดูภาพรวมของเสียทั้งโรงงานแบบรายเดือน
     ======================================================= -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>Dashboard | EA Factory Waste Management</title>
+    <title>PVT&T FACTORY | Dashboard สรุปภาพรวมของเสีย</title>
+    <meta name="description" content="Industrial production monitoring, scrap percentage tracking, PR management, and supervisory dashboard for PVT&T FACTORY with custom brand styling." />
+    <meta property="og:title" content="PVT&T FACTORY" />
+    <meta property="og:description" content="Industrial production monitoring, scrap percentage tracking, PR management, and supervisory dashboard for PVT&T FACTORY with custom brand styling." />
 
     <!-- Fonts -->
     <link
@@ -42,9 +45,9 @@
       <header class="exec-header">
         <div class="brand-block">
           <div class="logo">
-        <img src="/icons/Logo_Apps3.png?v=3" alt="EA Factory Logo" />
+        <img src="/icons/Logo_Apps3.png?v=3" alt="PVT&T FACTORY Logo" />
         <div>
-          <!-- <h2>EA Factory</h2> -->
+          <!-- <h2>PVT&T FACTORY</h2> -->
           <!-- <p>ศูนย์รวมข้อมูลและระบบงาน</p> -->
         </div>
       </div>
@@ -98,8 +101,26 @@
       <section class="filter-card">
         <div class="filter-inputs">
           <div class="form-group">
-            <label for="filter-month">เดือนที่ต้องการดู</label>
-            <input id="filter-month" type="month" />
+            <label for="filter-month-select">เลือกเดือนที่ต้องการดู (ภาษาไทย)</label>
+            <div class="thai-month-picker" style="display: flex; gap: 8px;">
+              <select id="filter-month-select" class="thai-month-select" aria-label="เลือกเดือน" style="flex: 1.6;">
+                <option value="01">มกราคม</option>
+                <option value="02">กุมภาพันธ์</option>
+                <option value="03">มีนาคม</option>
+                <option value="04">เมษายน</option>
+                <option value="05">พฤษภาคม</option>
+                <option value="06">มิถุนายน</option>
+                <option value="07">กรกฎาคม</option>
+                <option value="08">สิงหาคม</option>
+                <option value="09">กันยายน</option>
+                <option value="10">ตุลาคม</option>
+                <option value="11">พฤศจิกายน</option>
+                <option value="12">ธันวาคม</option>
+              </select>
+              <select id="filter-year-select" class="thai-year-select" aria-label="เลือกปี" style="flex: 1.2;">
+              </select>
+              <input id="filter-month" type="hidden" />
+            </div>
           </div>
 
           <div class="form-group">
@@ -141,9 +162,18 @@
       <!-- ================= DEPARTMENT SUMMARY ================= -->
       <section class="table-card department-summary-card">
         <div class="section-head">
-          <div>
-            <h2>สรุปรายเดือนตามแผนก</h2>
-            <p>ผลิตรวม / ของเสียรวม / % Waste ของแต่ละแผนก</p>
+          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 16px; flex-wrap: wrap;">
+            <div>
+              <h2 style="display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                สรุปรายเดือนตามแผนก
+                <span id="scrap-alarm-container"></span>
+              </h2>
+              <p>ผลิตรวม / ของเสียรวม / % Waste ของแต่ละแผนก</p>
+            </div>
+            <button onclick="exportDepartmentSummaryPDF()" class="btn-primary" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; border-radius: 8px; background: #0284c7; color: white; border: none; cursor: pointer; font-weight: 600; white-space: nowrap; height: fit-content; transition: background 0.15s ease;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">picture_as_pdf</span>
+              ออกรายงาน PDF
+            </button>
           </div>
         </div>
 
@@ -168,8 +198,8 @@
       </section>
 
       <!-- ================= KPI ================= -->
-      <section class="metric-grid">
-        <article class="metric-card">
+      <section class="metric-grid" id="exec-kpi-grid">
+        <article class="metric-card" data-widget-id="kpi_total_prod">
           <span>รวมผลิตเดือนนี้(รวม)</span>
           <strong id="cnt-today">0</strong>
           <small>จำนวน kg.</small>
@@ -177,7 +207,7 @@
           <div id="cnt-today-cmp" class="kpi-compare-badge"></div>
         </article>
 
-        <article class="metric-card warning">
+        <article class="metric-card warning" data-widget-id="kpi_total_waste">
           <span>จำนวนของเสียเดือนนี้(รวม)</span>
           <strong id="cnt-machine-risk">0</strong>
           <small>จำนวน kg.</small>
@@ -185,7 +215,15 @@
           <div id="cnt-machine-risk-cmp" class="kpi-compare-badge"></div>
         </article>
 
-        <article class="metric-card success">
+        <article class="metric-card warning" id="kpi-scrap-mom-card" data-widget-id="kpi_scrap_mom">
+          <span>เปรียบเทียบของเสีย MoM</span>
+          <strong id="cnt-scrap-mom-val">0 kg</strong>
+          <small id="cnt-scrap-mom-sub">เทียบเดือนก่อนหน้า</small>
+          <div id="sparkline-scrap-mom" class="sparkline-container" style="height: 36px; margin: 8px 0 4px 0;"></div>
+          <div id="cnt-scrap-mom-cmp" class="kpi-compare-badge"></div>
+        </article>
+
+        <article class="metric-card success" data-widget-id="kpi_waste_pct">
           <span>% ของเสียเดือนนี้(รวม)</span>
           <strong id="cnt-waste-percent">0%</strong>
           <small id="cnt-waste-percent-sub">ผลิต 0 kg / เสีย 0 kg</small>
@@ -193,7 +231,7 @@
           <div id="cnt-waste-percent-cmp" class="kpi-compare-badge"></div>
         </article>
 
-        <article class="metric-card danger">
+        <article class="metric-card danger" data-widget-id="kpi_top_dept">
           <span>แผนกที่มีของเสียสูงสุด</span>
           <strong id="cnt-top-machine">-</strong>
           <small id="cnt-top-machine-sub">-</small>
@@ -250,7 +288,7 @@
             <h2>สถิติของเสียรายเดือนแยกตามเครื่อง</h2>
             <p>
               แสดงทุกเครื่องที่มีข้อมูลในเดือนนี้ เรียงตามแผนกและเครื่อง
-              สีแดงคือเกิน 1%
+              สีแดงคือเกิน 1% (กดปุ่ม Info เพื่อดูกราฟย้อนหลังและประวัติซ่อมบำรุง)
             </p>
           </div>
         </div>
@@ -260,14 +298,337 @@
       </section>
     </main>
 
+    <!-- ================= CENTERED MACHINE PERFORMANCE & MAINTENANCE MODAL ================= -->
+    <div id="machine-info-modal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" style="display: none;">
+      <div class="modal-dialog machine-modal-dialog">
+        <header class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon-badge" id="modal-dept-icon-badge">
+              <span class="material-symbols-outlined">precision_manufacturing</span>
+            </div>
+            <div>
+              <div class="modal-eyebrow" id="modal-machine-dept-name">แผนกการผลิต</div>
+              <h2 class="modal-title" id="modal-machine-title">ข้อมูลเครื่องจักร</h2>
+            </div>
+          </div>
+          <div class="modal-header-actions">
+            <button type="button" class="btn-create-ticket-header" onclick="openCreateTicketModal()" title="เปิดใบแจ้งซ่อมบำรุงเครื่องนี้">
+              <span class="material-symbols-outlined" style="font-size: 16px;">add_task</span>
+              <span>Create Ticket</span>
+            </button>
+            <span id="modal-machine-status-pill" class="result-pill pill-success">ปกติ</span>
+            <button type="button" class="modal-close-btn" onclick="closeMachineInfoModal()" aria-label="ปิดหน้าต่าง">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="modal-body">
+          <!-- Machine KPI Summary Bar -->
+          <div class="machine-modal-kpis">
+            <div class="m-kpi-card">
+              <span class="m-kpi-label">ผลิตสะสม (เดือนนี้)</span>
+              <strong class="m-kpi-value" id="modal-m-prod">0 kg</strong>
+            </div>
+            <div class="m-kpi-card">
+              <span class="m-kpi-label">ของเสียสะสม (เดือนนี้)</span>
+              <strong class="m-kpi-value text-danger" id="modal-m-waste">0 kg</strong>
+            </div>
+            <div class="m-kpi-card">
+              <span class="m-kpi-label">อัตราของเสียเฉลี่ย</span>
+              <strong class="m-kpi-value" id="modal-m-pct">0.00%</strong>
+            </div>
+            <div class="m-kpi-card">
+              <span class="m-kpi-label">จำนวนกะที่บันทึก</span>
+              <strong class="m-kpi-value" id="modal-m-records">0 กะ</strong>
+            </div>
+          </div>
+
+          <!-- Historical Performance Chart Section -->
+          <div class="modal-section-card">
+            <div class="modal-section-head">
+              <div class="modal-section-title">
+                <span class="material-symbols-outlined">query_stats</span>
+                <span>กราฟประสิทธิภาพและอัตราของเสียย้อนหลัง (Historical Performance)</span>
+              </div>
+              <div class="chart-legend-hint">
+                <span class="legend-dot green"></span> ผลิต (kg)
+                <span class="legend-dot red"></span> เสีย (kg)
+                <span class="legend-line blue"></span> % Waste
+              </div>
+            </div>
+            <div class="modal-chart-container">
+              <canvas id="chart-machine-history"></canvas>
+            </div>
+          </div>
+
+          <!-- Recent Maintenance & Defect Notes Section -->
+          <div class="modal-section-card">
+            <div class="modal-section-head">
+              <div class="modal-section-title">
+                <span class="material-symbols-outlined">build_circle</span>
+                <span>ประวัติบันทึกปัญหาและการซ่อมบำรุงล่าสุด (Recent Defect & Maintenance Logs)</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button type="button" class="btn-create-ticket-sub" onclick="openCreateTicketModal()" title="เปิดใบแจ้งซ่อมเครื่องนี้">
+                  <span class="material-symbols-outlined" style="font-size: 15px;">build</span>
+                  <span>แจ้งซ่อม (Create Ticket)</span>
+                </button>
+                <span class="badge" id="modal-notes-count">0 รายการ</span>
+              </div>
+            </div>
+            <div class="modal-table-scroll">
+              <table class="modal-data-table">
+                <thead>
+                  <tr>
+                    <th>วันที่ / กะ</th>
+                    <th>สาเหตุ / อาการปัญหา</th>
+                    <th class="text-right">ของเสีย kg</th>
+                    <th>สถานะ (Status)</th>
+                    <th>รายละเอียด & บันทึกการซ่อมบำรุง / หมายเหตุ</th>
+                    <th>ผู้บันทึก</th>
+                  </tr>
+                </thead>
+                <tbody id="modal-maintenance-notes-body">
+                  <tr>
+                    <td colspan="6" class="empty-cell">กำลังโหลดข้อมูล...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <footer class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn-create-ticket-footer" onclick="openCreateTicketModal()">
+            <span class="material-symbols-outlined" style="font-size: 17px;">build</span>
+            <span>เปิดใบแจ้งซ่อมเครื่องนี้ (Create Ticket)</span>
+          </button>
+          <button type="button" class="btn btn-light" onclick="closeMachineInfoModal()">
+            <span class="material-symbols-outlined">close</span>
+            <span>ปิดหน้าต่าง</span>
+          </button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- ================= CREATE MAINTENANCE TICKET MODAL OVERLAY ================= -->
+    <div id="create-ticket-modal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" style="display: none; z-index: 1050;">
+      <div class="modal-dialog" style="max-width: 540px;">
+        <header class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon-badge" style="background: rgba(2, 132, 199, 0.12); color: #0284c7;">
+              <span class="material-symbols-outlined">build</span>
+            </div>
+            <div>
+              <div class="modal-eyebrow">Maintenance Dispatch</div>
+              <h2 class="modal-title">เปิดใบแจ้งซ่อมบำรุง (Create Ticket)</h2>
+            </div>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeCreateTicketModal()" aria-label="ปิดหน้าต่าง">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </header>
+
+        <form id="create-ticket-form" onsubmit="handleCreateTicketSubmit(event)">
+          <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+            <!-- Pre-filled machine & dept summary card -->
+            <div class="ticket-prefill-card">
+              <div class="ticket-prefill-item">
+                <span class="ticket-prefill-label">รหัสเครื่องจักร (Machine ID)</span>
+                <strong id="ticket-field-machine" class="ticket-prefill-val">-</strong>
+                <input type="hidden" id="ticket-input-machine" name="machine_no" />
+              </div>
+              <div class="ticket-prefill-item">
+                <span class="ticket-prefill-label">แผนก (Department)</span>
+                <strong id="ticket-field-dept" class="ticket-prefill-val">-</strong>
+                <input type="hidden" id="ticket-input-dept" name="department_code" />
+              </div>
+            </div>
+
+            <!-- Urgency & Category -->
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+              <div>
+                <label for="ticket-input-urgency" class="ticket-form-label">
+                  ระดับความเร่งด่วน <span style="color: #ef4444;">*</span>
+                </label>
+                <select id="ticket-input-urgency" name="urgency" required class="ticket-form-select">
+                  <option value="Normal">ปกติ (Normal - วางแผนซ่อม)</option>
+                  <option value="Urgent">ด่วน (Urgent - กระทบคุณภาพ)</option>
+                  <option value="Critical">วิกฤต (Critical - เครื่องหยุด)</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="ticket-input-category" class="ticket-form-label">
+                  หมวดหมู่อาการเสีย <span style="color: #ef4444;">*</span>
+                </label>
+                <select id="ticket-input-category" name="problem_type" required class="ticket-form-select">
+                  <option value="ระบบกลไก / แมคคานิค (Mechanical)">ระบบกลไก / แมคคานิค</option>
+                  <option value="ระบบไฟฟ้า / มอเตอร์ (Electrical)">ระบบไฟฟ้า / มอเตอร์</option>
+                  <option value="ระบบความร้อน / ฮีตเตอร์ (Heating)">ระบบความร้อน / ฮีตเตอร์</option>
+                  <option value="แม่พิมพ์ / หัวฉีด-ดาย (Mold & Die)">แม่พิมพ์ / หัวฉีด-ดาย</option>
+                  <option value="ระบบควบคุม / เซ็นเซอร์ (PLC & Sensor)">ระบบควบคุม / เซ็นเซอร์</option>
+                  <option value="ระบบลม / ไฮดรอลิก (Pneumatic/Hydraulic)">ระบบลม / ไฮดรอลิก</option>
+                  <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Problem details -->
+            <div>
+              <label for="ticket-input-detail" class="ticket-form-label">
+                รายละเอียดอาการเสีย / ข้อบกพร่อง <span style="color: #ef4444;">*</span>
+              </label>
+              <textarea id="ticket-input-detail" name="detail" rows="3" required placeholder="ระบุอาการผิดปกติ เสียง ความร้อน หรือข้อบกพร่องของชิ้นงาน..." class="ticket-form-textarea"></textarea>
+            </div>
+
+            <!-- Initial Action / Recommendation -->
+            <div>
+              <label for="ticket-input-action" class="ticket-form-label">
+                การดำเนินการเบื้องต้น / ข้อเสนอแนะช่าง
+              </label>
+              <input type="text" id="ticket-input-action" name="action_taken" placeholder="เช่น หยุดเครื่องชั่วคราว, ปรับอุณหภูมิ, เปลี่ยนใบมีด..." class="ticket-form-input" />
+            </div>
+
+            <!-- Reporter info & shift in 2 columns -->
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+              <div>
+                <label for="ticket-input-reporter" class="ticket-form-label">
+                  ผู้แจ้ง / หัวหน้างาน (Supervisor)
+                </label>
+                <input type="text" id="ticket-input-reporter" name="reporter" class="ticket-form-input" />
+              </div>
+              <div>
+                <label for="ticket-input-shift" class="ticket-form-label">
+                  กะการทำงาน (Shift)
+                </label>
+                <select id="ticket-input-shift" name="shift" class="ticket-form-select">
+                  <option value="day">กะวัน (Day Shift)</option>
+                  <option value="night">กะคืน (Night Shift)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <footer class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" class="btn btn-light" onclick="closeCreateTicketModal()">
+              <span>ยกเลิก</span>
+            </button>
+            <button type="submit" class="btn btn-primary" id="btn-submit-ticket" style="display: inline-flex; align-items: center; gap: 6px;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">send</span>
+              <span>บันทึกและส่งใบแจ้งซ่อม</span>
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+
+    <!-- Floating 'Scan QR' Action Button -->
+    <button id="btn-floating-scan-qr" class="floating-scan-qr-btn" type="button" aria-label="สแกน QR ประจำเครื่องจักร เพื่อเปิดข้อมูลซ่อมบำรุงและประสิทธิภาพ" title="สแกน QR เครื่องจักร (เปิดข้อมูลซ่อมบำรุงและประสิทธิภาพ)">
+      <span class="scan-qr-pulse" aria-hidden="true"></span>
+      <span class="scan-qr-icon-wrap">
+        <span class="material-symbols-outlined scan-icon">qr_code_scanner</span>
+      </span>
+      <span class="scan-qr-label">สแกน QR เครื่อง</span>
+    </button>
+
+    <!-- ================= QR CODE CAMERA SCANNER MODAL ================= -->
+    <div id="qr-scan-modal" class="modal-backdrop qr-scan-modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" style="display: none;">
+      <div class="modal-dialog qr-scan-dialog">
+        <header class="modal-header qr-scan-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="modal-title-group" style="display: flex; align-items: center; gap: 12px;">
+            <div class="modal-icon-badge qr-scan-badge" style="width: 42px; height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;">
+              <span class="material-symbols-outlined">qr_code_scanner</span>
+            </div>
+            <div>
+              <div class="modal-eyebrow" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px; color: #0284c7;">SUPERVISOR SCANNER</div>
+              <h2 class="modal-title" style="font-size: 18px; margin: 0; font-weight: 600;">สแกน QR Code เครื่องจักร</h2>
+            </div>
+          </div>
+          <button type="button" id="btn-close-qr-scan" class="modal-close-btn" aria-label="ปิดหน้าต่างสแกน QR" style="border: none; background: #f1f5f9; border-radius: 50%; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #475569;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+          </button>
+        </header>
+
+        <div class="modal-body qr-scan-body">
+          <!-- Status Indicator Pill -->
+          <div id="qr-scan-status" class="qr-scan-status-pill status-info">
+            <span class="status-indicator-dot"></span>
+            <span id="qr-scan-status-text">กำลังเปิดกล้องถ่ายภาพ...</span>
+          </div>
+
+          <!-- Camera Viewfinder with Overlay HUD -->
+          <div class="qr-viewfinder-wrapper">
+            <div id="qr-camera-stream" class="qr-camera-container"></div>
+
+            <div class="qr-hud-overlay" id="qr-hud-overlay">
+              <div class="qr-target-box">
+                <span class="corner-marker top-left"></span>
+                <span class="corner-marker top-right"></span>
+                <span class="corner-marker bottom-left"></span>
+                <span class="corner-marker bottom-right"></span>
+                <div class="qr-laser-line"></div>
+              </div>
+              <div class="qr-hud-instruction">
+                <span class="material-symbols-outlined" style="font-size: 16px;">center_focus_strong</span>
+                <span>จัดตำแหน่ง QR Code ให้อยู่ในกรอบ</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camera Controls Toolbar -->
+          <div class="qr-toolbar-actions">
+            <button type="button" id="btn-toggle-camera-facing" class="qr-action-btn" title="สลับกล้องหน้า/หลัง" style="display: none;">
+              <span class="material-symbols-outlined">flip_camera_ios</span>
+              <span>สลับกล้อง</span>
+            </button>
+            <button type="button" id="btn-toggle-camera-torch" class="qr-action-btn" title="เปิด/ปิดไฟฉาย" style="display: none;">
+              <span class="material-symbols-outlined">flashlight_on</span>
+              <span>เปิดไฟฉาย</span>
+            </button>
+            <label for="qr-file-input" class="qr-action-btn qr-file-label" title="อัปโหลดรูปภาพ QR Code">
+              <span class="material-symbols-outlined">image</span>
+              <span>เลือกรูปภาพ QR</span>
+            </label>
+            <input type="file" id="qr-file-input" accept="image/*" style="display: none;" />
+          </div>
+
+          <!-- Manual Machine Fallback -->
+          <div class="qr-manual-fallback">
+            <div class="qr-manual-divider">
+              <span>หรือเลือกเครื่องจากรายการโดยตรง</span>
+            </div>
+            <div class="qr-manual-row">
+              <div class="qr-select-wrap">
+                <select id="qr-quick-machine-select" class="qr-quick-select">
+                  <option value="">-- เลือกรหัสเครื่องจากรายการ --</option>
+                </select>
+              </div>
+              <button type="button" id="btn-qr-open-selected-machine" class="btn btn-primary qr-quick-open-btn">
+                <span>เปิดข้อมูล</span>
+                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="dashboard-toast" class="toast hidden"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="/js/vendor/html5-qrcode.min.js"></script>
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/tableSwipeDetector.js"></script>
     <script src="/core/counterAnimation.js"></script>
     <script src="/core/autoRefresh.js"></script>
+    <script src="/core/widgetDragDrop.js"></script>
     <script src="/services/loadingService.js"></script>
     <script src="/js/dashboard/index.js"></script>
+    <script src="/js/dashboard/qr-machine-scanner.js"></script>
   </body>
 </html>

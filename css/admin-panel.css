@@ -2235,7 +2235,7 @@ td select {
 .admin-ui-v2 .main-workspace {
   width: 100%;
   min-width: 0;
-  max-width: 1720px;
+  max-width: 1400px;
   padding: 24px 28px 40px;
   margin: 0 auto;
 }
@@ -2654,16 +2654,51 @@ td select {
   font-size: 38px;
 }
 
-.admin-ui-v2 .user-create-body,
-.admin-ui-v2 .user-card-list {
+.admin-ui-v2 .user-create-body {
   padding: 14px 16px 16px;
 }
 
+.admin-ui-v2 .user-card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  background: transparent;
+}
+
 .admin-ui-v2 .user-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-top: 4px solid #94a3b8;
+  border-left: none;
+  border-radius: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+}
+
+.admin-ui-v2 .user-card:hover {
+  transform: translateY(-2px);
+  background: #ffffff;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+}
+
+.admin-ui-v2 .user-card.role-admin { border-top-color: #dc2626; border-left: none; }
+.admin-ui-v2 .user-card.role-management { border-top-color: #7c3aed; border-left: none; }
+.admin-ui-v2 .user-card.role-accounting { border-top-color: #EA580C; border-left: none; }
+.admin-ui-v2 .user-card.role-supervisor { border-top-color: #f59e0b; border-left: none; }
+.admin-ui-v2 .user-card.role-staff { border-top-color: #16a34a; border-left: none; }
+
+.admin-ui-v2 .user-card-main {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  padding: 12px;
-  border-left-width: 4px;
-  border-radius: 14px;
+  border-bottom: 1px dashed #e2e8f0;
+  padding-bottom: 12px;
 }
 
 .admin-ui-v2 .user-avatar {
@@ -2673,10 +2708,40 @@ td select {
   border-radius: 12px;
 }
 
+.admin-ui-v2 .user-card-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.admin-ui-v2 .meta-box {
+  min-width: 0;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+}
+
+.admin-ui-v2 .user-card-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-ui-v2 .user-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 12px;
+  margin-top: auto;
+}
+
 .admin-ui-v2 .user-card-actions .icon-action {
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
 }
 
 .admin-ui-v2 .user-dept-permission-panel.compact {
@@ -2698,7 +2763,9 @@ td select {
 
 .admin-ui-v2 .qr-machine-list,
 .admin-ui-v2 .qr-dept-list {
-  gap: 11px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
   padding: 14px 16px 16px;
 }
 
@@ -2710,8 +2777,10 @@ td select {
 }
 
 .admin-ui-v2 .qr-machine-card {
+  display: grid;
   grid-template-columns: 84px minmax(0, 1fr) auto;
   padding: 13px;
+  gap: 12px;
 }
 
 .admin-ui-v2 .qr-preview {

@@ -12,7 +12,7 @@
     ======================================================= -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>สรุปของเสีย - หัวหน้างาน</title>
+    <title>สรุปของเสีย - หัวหน้างาน | PVT&T FACTORY</title>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -44,7 +44,7 @@
                 <img
                   class="dashboard-logo"
                   src="/icons/Logo_Apps3.png?v=3"
-                  alt="PVT Factory Logo"
+                  alt="PVT&T FACTORY Logo"
                 />
               </div>
 
@@ -117,43 +117,43 @@
         </div>
       </section>
 
-      <section class="summary-grid">
-        <article class="summary-card">
+      <section class="summary-grid" id="supervisor-kpi-grid">
+        <article class="summary-card" data-widget-id="kpi_records">
           <span>จำนวนรายการ</span>
           <strong id="totalRecords">0</strong>
           <small>รายการในช่วงวันที่เลือก</small>
           <div id="totalRecordsCmp" class="kpi-compare-badge"></div>
         </article>
 
-        <article class="summary-card success">
+        <article class="summary-card success" data-widget-id="kpi_waste">
           <span>น้ำหนักของเสียรวม</span>
           <strong id="totalWaste">0 kg</strong>
           <small>รวมทุกเครื่องในแผนก</small>
           <div id="totalWasteCmp" class="kpi-compare-badge"></div>
         </article>
 
-        <article class="summary-card success">
+        <article class="summary-card success" data-widget-id="kpi_production">
           <span>น้ำหนักผลิตรวม</span>
           <strong id="totalProduction">0 kg</strong>
           <small>ข้อมูลจากการผลิต</small>
           <div id="totalProductionCmp" class="kpi-compare-badge"></div>
         </article>
 
-        <article class="summary-card warning">
+        <article class="summary-card warning" data-widget-id="kpi_problem">
           <span>ปัญหาที่พบบ่อยสุด</span>
           <strong id="topProblem">-</strong>
           <small id="topProblemSub">-</small>
           <div id="topProblemCmp" class="kpi-compare-badge"></div>
         </article>
 
-        <article class="summary-card danger">
+        <article class="summary-card danger" data-widget-id="kpi_machine">
           <span>เครื่องที่ของเสียสูงสุด</span>
           <strong id="topMachine">-</strong>
           <small id="topMachineSub">-</small>
           <div id="topMachineCmp" class="kpi-compare-badge"></div>
         </article>
 
-        <article class="summary-card warning">
+        <article class="summary-card warning" data-widget-id="kpi_waste_pct">
           <span>% Waste</span>
           <strong id="wastePercent">0%</strong>
           <small>ของเสียรวมเดือนนี้</small>
@@ -189,8 +189,100 @@
       </section>
     </main>
 
+    <!-- Floating 'Scan QR' Action Button -->
+    <button id="btn-floating-scan-qr" class="floating-scan-qr-btn" type="button" aria-label="สแกน QR ประจำเครื่องจักร เพื่อเปิดข้อมูลซ่อมบำรุงและประสิทธิภาพ" title="สแกน QR เครื่องจักร (เปิดข้อมูลซ่อมบำรุงและประสิทธิภาพ)">
+      <span class="scan-qr-pulse" aria-hidden="true"></span>
+      <span class="scan-qr-icon-wrap">
+        <span class="material-symbols-outlined scan-icon">qr_code_scanner</span>
+      </span>
+      <span class="scan-qr-label">สแกน QR เครื่อง</span>
+    </button>
+
+    <!-- ================= QR CODE CAMERA SCANNER MODAL ================= -->
+    <div id="qr-scan-modal" class="modal-backdrop qr-scan-modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" style="display: none;">
+      <div class="modal-dialog qr-scan-dialog">
+        <header class="modal-header qr-scan-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="modal-title-group" style="display: flex; align-items: center; gap: 12px;">
+            <div class="modal-icon-badge qr-scan-badge" style="width: 42px; height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;">
+              <span class="material-symbols-outlined">qr_code_scanner</span>
+            </div>
+            <div>
+              <div class="modal-eyebrow" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px; color: #0284c7;">SUPERVISOR SCANNER</div>
+              <h2 class="modal-title" style="font-size: 18px; margin: 0; font-weight: 600;">สแกน QR Code เครื่องจักร</h2>
+            </div>
+          </div>
+          <button type="button" id="btn-close-qr-scan" class="modal-close-btn" aria-label="ปิดหน้าต่างสแกน QR" style="border: none; background: #f1f5f9; border-radius: 50%; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #475569;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+          </button>
+        </header>
+
+        <div class="modal-body qr-scan-body">
+          <!-- Status Indicator Pill -->
+          <div id="qr-scan-status" class="qr-scan-status-pill status-info">
+            <span class="status-indicator-dot"></span>
+            <span id="qr-scan-status-text">กำลังเปิดกล้องถ่ายภาพ...</span>
+          </div>
+
+          <!-- Camera Viewfinder with Overlay HUD -->
+          <div class="qr-viewfinder-wrapper">
+            <div id="qr-camera-stream" class="qr-camera-container"></div>
+
+            <div class="qr-hud-overlay" id="qr-hud-overlay">
+              <div class="qr-target-box">
+                <span class="corner-marker top-left"></span>
+                <span class="corner-marker top-right"></span>
+                <span class="corner-marker bottom-left"></span>
+                <span class="corner-marker bottom-right"></span>
+                <div class="qr-laser-line"></div>
+              </div>
+              <div class="qr-hud-instruction">
+                <span class="material-symbols-outlined" style="font-size: 16px;">center_focus_strong</span>
+                <span>จัดตำแหน่ง QR Code ให้อยู่ในกรอบ</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camera Controls Toolbar -->
+          <div class="qr-toolbar-actions">
+            <button type="button" id="btn-toggle-camera-facing" class="qr-action-btn" title="สลับกล้องหน้า/หลัง" style="display: none;">
+              <span class="material-symbols-outlined">flip_camera_ios</span>
+              <span>สลับกล้อง</span>
+            </button>
+            <button type="button" id="btn-toggle-camera-torch" class="qr-action-btn" title="เปิด/ปิดไฟฉาย" style="display: none;">
+              <span class="material-symbols-outlined">flashlight_on</span>
+              <span>เปิดไฟฉาย</span>
+            </button>
+            <label for="qr-file-input" class="qr-action-btn qr-file-label" title="อัปโหลดรูปภาพ QR Code">
+              <span class="material-symbols-outlined">image</span>
+              <span>เลือกรูปภาพ QR</span>
+            </label>
+            <input type="file" id="qr-file-input" accept="image/*" style="display: none;" />
+          </div>
+
+          <!-- Manual Machine Fallback -->
+          <div class="qr-manual-fallback">
+            <div class="qr-manual-divider">
+              <span>หรือเลือกเครื่องจากรายการโดยตรง</span>
+            </div>
+            <div class="qr-manual-row">
+              <div class="qr-select-wrap">
+                <select id="qr-quick-machine-select" class="qr-quick-select">
+                  <option value="">-- เลือกรหัสเครื่องจากรายการ --</option>
+                </select>
+              </div>
+              <button type="button" id="btn-qr-open-selected-machine" class="btn btn-primary qr-quick-open-btn">
+                <span>เปิดข้อมูล</span>
+                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/vendor/html5-qrcode.min.js"></script>
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/roleConfig.js"></script>
     <script src="/core/ea-common.js"></script>
@@ -198,7 +290,9 @@
     <script src="/core/tableSwipeDetector.js"></script>
     <script src="/core/counterAnimation.js"></script>
     <script src="/core/autoRefresh.js"></script>
+    <script src="/core/widgetDragDrop.js"></script>
     <script src="/services/loadingService.js"></script>
     <script src="/js/dashboard/supervisor-dashboard.js"></script>
+    <script src="/js/dashboard/qr-machine-scanner.js"></script>
   </body>
 </html>

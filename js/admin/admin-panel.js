@@ -80,15 +80,28 @@ const state = {
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const profile = await AUTH_GUARD.requireLogin(["admin"]);
+  try {
+    // บังคับการล็อกอินก่อนเข้าถึง โดยไม่บล็อกสิทธิ์ระดับกลุ่มใน authGuard (เพราะเราต้องการเช็คสิทธิ์แบบละเอียดต่อที่นี่เพื่อรองรับ is_system_owner)
+    const profile = await AUTH_GUARD.requireLogin([]);
 
-  if (!profile?.is_system_owner) {
-    alert("คุณไม่มีสิทธิ์เข้าใช้งานหน้า Admin Panel");
-    window.location.href = LOGIN_PAGE;
-    return;
+    if (!profile) {
+      window.location.replace(LOGIN_PAGE);
+      return;
+    }
+
+    // อนุญาตทั้งผู้ที่มี Role = admin หรือมีสถานะ is_system_owner = true
+    const role = String(profile.role || "").toLowerCase().trim();
+    if (role !== "admin" && !profile?.is_system_owner) {
+      alert("คุณไม่มีสิทธิ์เข้าใช้งานหน้า Admin Panel");
+      window.location.replace(LOGIN_PAGE);
+      return;
+    }
+
+    initAdminPanel(profile);
+  } catch (err) {
+    console.error("Auth initialization error in Admin Panel:", err);
+    window.location.replace(LOGIN_PAGE);
   }
-
-  initAdminPanel(profile);
 });
 
 function setButtonBusy(button, busy, loadingText = "กำลังบันทึก...") {
@@ -302,6 +315,18 @@ function bindEvents() {
   document
     .getElementById("btn-refresh-machine-qr")
     ?.addEventListener("click", renderMachineQrList);
+
+  document
+    .getElementById("machine-qr-search-input")
+    ?.addEventListener("input", renderMachineQrList);
+
+  document
+    .getElementById("btn-export-reports")
+    ?.addEventListener("click", exportReportsCSV);
+
+  document
+    .getElementById("btn-export-users")
+    ?.addEventListener("click", exportUsersCSV);
 }
 
 function showSection(section, activeBtn) {
@@ -325,7 +350,7 @@ function showSection(section, activeBtn) {
    LOAD DATA
 ========================================================= */
 
-async function loadAll(showLoading = true) {
+async function loadAll(showLoading = false) {
   hideAlert();
 
   if (showLoading) {
@@ -344,10 +369,141 @@ async function loadAll(showLoading = true) {
   const start = performance.now();
 
   try {
+    // ตรวจสอบความถูกต้องของเซสชันก่อนที่จะเริ่มดึงข้อมูล (ป้องกันเซสชันหมดอายุตอนกดโหลดข้อมูลใหม่ หรือตอนออโต้รีเฟรช)
+    if (window.AUTH_GUARD) {
+      const profile = await AUTH_GUARD.getCurrentProfile();
+      if (!profile) {
+        console.warn("Session expired on loadAll, redirecting to login...");
+        AUTH_GUARD.clearLocalLogin();
+        window.location.replace(LOGIN_PAGE);
+        return;
+      }
 
-    await loadReports();
-    await loadMasters();
-    await loadUsers();
+      const role = String(profile.role || "").toLowerCase().trim();
+      if (role !== "admin" && !profile?.is_system_owner) {
+        console.warn("Unauthorized role on loadAll, redirecting to login...");
+        window.location.replace(LOGIN_PAGE);
+        return;
+      }
+    }
+
+    // โหลดข้อมูลทุกอย่างพร้อมกันแบบขนาน (Concurrent/Parallel Loading) เพื่อขจัดเวลาสะสมของ Network Roundtrips
+    await Promise.all([
+      // A. โหลดข้อมูล Reports
+      (async () => {
+        const { data, error } = await state.supabase
+          .from(REPORT_TABLE)
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(300);
+
+        if (error) {
+          throw new Error(`โหลดข้อมูล ${REPORT_TABLE} ไม่สำเร็จ: ${error.message}`);
+        }
+        state.reports = Array.isArray(data) ? data : [];
+      })(),
+
+      // B. โหลดข้อมูล Master Tables (โหลดขนาน 4 ตารางในคราวเดียว)
+      (async () => {
+        const [department, machine, problem, shift] = await Promise.all([
+          selectFirstAvailableTable(MASTER_TABLES.departments, "*", {
+            orderColumn: "sort_order",
+            ascending: true,
+            optional: true,
+          }),
+          selectFirstAvailableTable(MASTER_TABLES.machines, "*", {
+            orderColumn: "sort_order",
+            ascending: true,
+            optional: true,
+          }),
+          selectFirstAvailableTable(MASTER_TABLES.problems, "*", {
+            orderColumn: "sort_order",
+            ascending: true,
+            optional: true,
+          }),
+          selectFirstAvailableTable(MASTER_TABLES.shifts, "*", {
+            orderColumn: "sort_order",
+            ascending: true,
+            optional: true,
+          })
+        ]);
+
+        state.departmentTable = department.table;
+        state.machineTable = machine.table;
+        state.problemTable = problem.table;
+        state.shiftTable = shift.table;
+
+        state.departments = department.rows.length ? department.rows : DEFAULT_DEPARTMENTS;
+        state.machines = machine.rows;
+        state.problems = problem.rows;
+        state.shifts = shift.rows.length ? shift.rows : DEFAULT_SHIFTS;
+      })(),
+
+      // C. โหลดข้อมูล Users และ User Departments คู่ขนานกัน
+      (async () => {
+        const [profileResult, userDeptResult] = await Promise.all([
+          state.supabase
+            .from(PROFILE_TABLE)
+            .select(`
+              id,
+              username,
+              password,
+              role,
+              department,
+              department_code,
+              display_name,
+              full_name,
+              email,
+              status,
+              is_system_owner,
+              created_at
+            `)
+            .order("username", { ascending: true }),
+          
+          (async () => {
+            try {
+              const { data, error } = await state.supabase
+                .from(USER_DEPARTMENT_TABLE)
+                .select("user_id, department_code")
+                .order("department_code", { ascending: true });
+              if (error) throw error;
+              return Array.isArray(data) ? data : [];
+            } catch (err) {
+              console.warn(`โหลด ${USER_DEPARTMENT_TABLE} ไม่สำเร็จ:`, err);
+              return [];
+            }
+          })()
+        ]);
+
+        if (profileResult.error) {
+          throw new Error(`โหลดข้อมูลผู้ใช้งานไม่สำเร็จ: ${profileResult.error.message}`);
+        }
+
+        state.users = Array.isArray(profileResult.data) ? profileResult.data : [];
+        state.userDepartments = userDeptResult;
+      })()
+    ]);
+
+    // เมื่อข้อมูลทุกส่วนถูกอัปเดตลง State ครบสมบูรณ์แล้ว จึงรันฟังก์ชันเรนเดอร์ลง DOM ตามลำดับที่เหมาะสม
+    // ป้องกันปัญหา Race Condition ที่รายงานพยายามแปลงรหัสแผนกเป็นชื่อแผนกในขณะที่ตาราง Master ยังโหลดไม่เสร็จ
+    renderDepartments();
+    renderDepartmentFilter();
+    renderUserDepartmentOptions();
+    renderUserDepartmentPermissionBoxes();
+    renderShifts();
+    renderMachines();
+    renderProblems();
+
+    renderReports();
+    updateSummary();
+
+    renderMachineQrDepartmentOptions();
+    renderDepartmentQrList();
+    renderMachineQrList();
+
+    renderUsers();
+    renderUserStats();
+    bindDepartmentPermissionCounters();
 
     const latency = Math.round(performance.now() - start);
 
@@ -400,33 +556,28 @@ async function loadReports() {
 }
 
 async function loadMasters() {
-  const department = await selectFirstAvailableTable(
-    MASTER_TABLES.departments,
-    "*",
-    {
+  const [department, machine, problem, shift] = await Promise.all([
+    selectFirstAvailableTable(MASTER_TABLES.departments, "*", {
       orderColumn: "sort_order",
       ascending: true,
       optional: true,
-    },
-  );
-
-  const machine = await selectFirstAvailableTable(MASTER_TABLES.machines, "*", {
-    orderColumn: "sort_order",
-    ascending: true,
-    optional: true,
-  });
-
-  const problem = await selectFirstAvailableTable(MASTER_TABLES.problems, "*", {
-    orderColumn: "sort_order",
-    ascending: true,
-    optional: true,
-  });
-
-  const shift = await selectFirstAvailableTable(MASTER_TABLES.shifts, "*", {
-    orderColumn: "sort_order",
-    ascending: true,
-    optional: true,
-  });
+    }),
+    selectFirstAvailableTable(MASTER_TABLES.machines, "*", {
+      orderColumn: "sort_order",
+      ascending: true,
+      optional: true,
+    }),
+    selectFirstAvailableTable(MASTER_TABLES.problems, "*", {
+      orderColumn: "sort_order",
+      ascending: true,
+      optional: true,
+    }),
+    selectFirstAvailableTable(MASTER_TABLES.shifts, "*", {
+      orderColumn: "sort_order",
+      ascending: true,
+      optional: true,
+    })
+  ]);
 
   state.departmentTable = department.table;
   state.machineTable = machine.table;
@@ -448,46 +599,52 @@ async function loadMasters() {
   renderMachines();
   renderProblems();
 
-  /*
-    หลังจากโหลด Master Data เสร็จ
-    ให้รีเฟรชตัวเลือกและรายการ QR รายเครื่องด้วย
-    เพื่อให้หน้า QR ใช้ข้อมูลเครื่องจักรชุดเดียวกับหน้า Master Data
-  */
   renderMachineQrDepartmentOptions();
   renderDepartmentQrList();
   renderMachineQrList();
 }
 
 async function loadUsers() {
-  const { data, error } = await state.supabase
-    .from(PROFILE_TABLE)
-    .select(
-      `
-  id,
-  username,
-  password,
-  role,
-  department,
-  department_code,
-  display_name,
-  full_name,
-  email,
-  status,
-  is_system_owner,
-  created_at
-`,
-    )
-    .order("username", { ascending: true });
+  const [profileResult, userDeptResult] = await Promise.all([
+    state.supabase
+      .from(PROFILE_TABLE)
+      .select(`
+        id,
+        username,
+        password,
+        role,
+        department,
+        department_code,
+        display_name,
+        full_name,
+        email,
+        status,
+        is_system_owner,
+        created_at
+      `)
+      .order("username", { ascending: true }),
+    
+    (async () => {
+      try {
+        const { data, error } = await state.supabase
+          .from(USER_DEPARTMENT_TABLE)
+          .select("user_id, department_code")
+          .order("department_code", { ascending: true });
+        if (error) throw error;
+        return Array.isArray(data) ? data : [];
+      } catch (err) {
+        console.warn(`โหลด ${USER_DEPARTMENT_TABLE} ไม่สำเร็จ:`, err);
+        return [];
+      }
+    })()
+  ]);
 
-  if (error) {
-    throw new Error(`โหลดข้อมูลผู้ใช้งานไม่สำเร็จ: ${error.message}`);
+  if (profileResult.error) {
+    throw new Error(`โหลดข้อมูลผู้ใช้งานไม่สำเร็จ: ${profileResult.error.message}`);
   }
 
-  state.users = Array.isArray(data) ? data : [];
-
-  // โหลดตารางกลางว่า User แต่ละคนรับผิดชอบแผนกอะไรบ้าง
-  // ถ้าตาราง user_departments ยังไม่มีหรือ RLS ยังไม่เปิดสิทธิ์ ระบบจะไม่พัง
-  await loadUserDepartments();
+  state.users = Array.isArray(profileResult.data) ? profileResult.data : [];
+  state.userDepartments = userDeptResult;
 
   renderUsers();
   renderUserStats();
@@ -524,7 +681,18 @@ async function selectFirstAvailableTable(
 ) {
   let lastError = null;
 
-  for (const table of tableNames) {
+  // ใช้ caching เพื่อจำชื่อตารางที่มีอยู่จริงและดึงสำเร็จล่าสุด จะได้ไม่ต้องวนลูปดึงข้อมูลจากตารางที่ไม่มีจริงทุกครั้ง
+  const cacheKey = `cached_table_${tableNames.join("_")}`;
+  const cachedTable = localStorage.getItem(cacheKey);
+
+  const orderedTableNames = [...tableNames];
+  if (cachedTable && orderedTableNames.includes(cachedTable)) {
+    const idx = orderedTableNames.indexOf(cachedTable);
+    orderedTableNames.splice(idx, 1);
+    orderedTableNames.unshift(cachedTable); // นำตารางที่เคยดึงสำเร็จล่าสุดมาตรวจสอบก่อนเป็นอันดับแรก
+  }
+
+  for (const table of orderedTableNames) {
     try {
       let query = state.supabase.from(table).select(columns);
 
@@ -537,6 +705,7 @@ async function selectFirstAvailableTable(
       const { data, error } = await query;
 
       if (!error) {
+        localStorage.setItem(cacheKey, table); // บันทึกความสำเร็จลง Cache
         return {
           table,
           rows: Array.isArray(data) ? data : [],
@@ -547,6 +716,7 @@ async function selectFirstAvailableTable(
       if (options.orderColumn === "sort_order") {
         const retry = await state.supabase.from(table).select(columns);
         if (!retry.error) {
+          localStorage.setItem(cacheKey, table); // บันทึกความสำเร็จลง Cache
           return {
             table,
             rows: sortRowsByOrder(Array.isArray(retry.data) ? retry.data : []),
@@ -2340,18 +2510,23 @@ function getMachinesByDepartment(deptCode) {
 /*
   renderMachineQrList()
   ---------------------------------------------------------
-  แสดง QR รายเครื่องตามแผนกที่เลือก
+  แสดง QR รายเครื่องตามแผนกที่เลือก (พร้อมช่องค้นหาตามคำหลัก)
 */
 function renderMachineQrList() {
   const list = document.getElementById("machine-qr-list");
   const countEl = document.getElementById("machine-qr-count");
   const deptSelect = document.getElementById("machine-qr-dept-filter");
+  const searchInput = document.getElementById("machine-qr-search-input");
 
   if (!list) return;
 
   const selectedDept = normalizeDept(deptSelect?.value || "");
 
   if (!selectedDept) {
+    if (searchInput) {
+      searchInput.value = "";
+      searchInput.disabled = true;
+    }
     list.innerHTML = `
       <div class="qr-empty">
         กรุณาเลือกแผนกก่อน ระบบจะแสดง QR รายเครื่องให้ค่ะ
@@ -2361,7 +2536,18 @@ function renderMachineQrList() {
     return;
   }
 
-  const machines = getMachinesByDepartment(selectedDept);
+  if (searchInput) {
+    searchInput.disabled = false;
+  }
+
+  let machines = getMachinesByDepartment(selectedDept);
+  const q = (searchInput?.value || "").trim().toLowerCase();
+  if (q) {
+    machines = machines.filter((row) => {
+      const machineName = getMasterItemName(row, "machine").toLowerCase();
+      return machineName.includes(q);
+    });
+  }
 
   if (countEl) {
     countEl.textContent = `${machines.length.toLocaleString("th-TH")} เครื่อง`;
@@ -2370,7 +2556,7 @@ function renderMachineQrList() {
   if (!machines.length) {
     list.innerHTML = `
       <div class="qr-empty">
-        ยังไม่มีเครื่องจักรในแผนกนี้ กรุณาเพิ่มเครื่องในเมนู Master Data ก่อน
+        ${q ? 'ไม่พบเครื่องจักรที่ตรงกับคำค้นหา' : 'ยังไม่มีเครื่องจักรในแผนกนี้ กรุณาเพิ่มเครื่องในเมนู Master Data ก่อน'}
       </div>
     `;
     return;
@@ -3033,3 +3219,152 @@ window.editShiftOrder = editShiftOrder;
 window.loadActivityLogs = loadActivityLogs;
 window.toggleMasterActive = toggleMasterActive;
 window.toggleDepartmentActive = toggleDepartmentActive;
+
+function exportToCSV(filename, headers, rows, keyMap) {
+  let csvContent = "\uFEFF"; // UTF-8 BOM for Thai encoding in Excel
+  csvContent += headers.map(h => `"${h.replace(/"/g, '""')}"`).join(",") + "\r\n";
+
+  rows.forEach(row => {
+    const line = keyMap.map(key => {
+      let val = typeof key === 'function' ? key(row) : row[key];
+      if (val === null || val === undefined) val = "";
+      val = String(val).replace(/"/g, '""');
+      return `"${val}"`;
+    });
+    csvContent += line.join(",") + "\r\n";
+  });
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function exportReportsCSV() {
+  const keyword = (document.getElementById("search-input")?.value || "").toLowerCase();
+  const statusFilter = document.getElementById("status-filter")?.value || "all";
+
+  const rows = (state.reports || []).filter((row) => {
+    const status = normalizeStatus(row.status || "pending");
+    const text = [
+      row.department,
+      row.department_code,
+      row.product_name,
+      row.machine_no,
+      row.machine,
+      row.problem_type,
+      row.problem_detail,
+      row.reason_detail,
+      row.detail,
+      row.corrective_action,
+      row.forecast_note,
+      row.note,
+      row.reported_by,
+      row.reporter_name,
+      row.created_by,
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    const matchKeyword = !keyword || text.includes(keyword);
+    const matchStatus = statusFilter === "all" || status === statusFilter;
+    return matchKeyword && matchStatus;
+  });
+
+  if (!rows.length) {
+    alert("ไม่พบข้อมูลรายงานตามตัวกรองปัจจุบันเพื่อส่งออก");
+    return;
+  }
+
+  const headers = [
+    "วันที่รายงาน",
+    "แผนก",
+    "กะ",
+    "เครื่องจักร",
+    "ประเภทปัญหา",
+    "น้ำหนัก (kg)",
+    "ผู้รายงาน",
+    "สถานะ"
+  ];
+
+  const keyMap = [
+    r => r.report_date || r.incident_datetime || r.created_at || "",
+    r => getDepartmentName(r.department_code || r.department) || r.department_code || r.department || "",
+    r => r.shift || r.work_shift || "",
+    r => r.machine_no || r.machine || "",
+    r => (r.problem_items || []).map(p => `${p.problem_type}: ${p.detail}`).join("; ") || r.problem_type || "",
+    r => r.total_waste_weight || r.waste_weight || 0,
+    r => r.reported_by || r.reporter_name || "",
+    r => {
+      const s = normalizeStatus(r.status || "pending");
+      return s === "approved" ? "ตรวจสอบแล้ว" : (s === "rejected" ? "ไม่ผ่าน" : "รอตรวจสอบ");
+    }
+  ];
+
+  exportToCSV("Daily_Waste_Reports.csv", headers, rows, keyMap);
+}
+
+function exportUsersCSV() {
+  const keyword = (document.getElementById("user-search-input")?.value || "").toLowerCase();
+  const statusFilter = document.getElementById("user-status-filter")?.value || "all";
+  const roleFilter = document.getElementById("user-role-filter")?.value || "all";
+
+  const rows = (state.users || []).filter((user) => {
+    const status = String(user.status || "active").toLowerCase();
+    const role = String(user.role || "staff").toLowerCase();
+    const responsibleCodes = getUserDepartmentCodes ? getUserDepartmentCodes(user.id) : [];
+    const responsibleText = responsibleCodes.map((code) => `${code} ${getDepartmentName(code)}`).join(" ");
+
+    const text = [
+      user.username,
+      user.display_name,
+      user.full_name,
+      user.department,
+      user.department_code,
+      responsibleText,
+      user.email,
+      user.role,
+      user.status,
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    const matchKeyword = !keyword || text.includes(keyword);
+    const matchStatus = statusFilter === "all" || status === statusFilter;
+    const matchRole = roleFilter === "all" || role === roleFilter;
+
+    return matchKeyword && matchStatus && matchRole;
+  });
+
+  if (!rows.length) {
+    alert("ไม่พบข้อมูลผู้ใช้งานตามตัวกรองปัจจุบันเพื่อส่งออก");
+    return;
+  }
+
+  const headers = [
+    "Username",
+    "ชื่อผู้ใช้",
+    "อีเมล",
+    "บทบาท (Role)",
+    "แผนกรับผิดชอบ",
+    "สถานะ"
+  ];
+
+  const keyMap = [
+    u => u.username || "",
+    u => u.display_name || u.full_name || "",
+    u => u.email || "",
+    u => u.role || "",
+    u => {
+      const codes = getUserDepartmentCodes ? getUserDepartmentCodes(u.id) : [];
+      return codes.map(c => getDepartmentName(c) || c).join(", ");
+    },
+    u => u.status || ""
+  ];
+
+  exportToCSV("User_Accounts.csv", headers, rows, keyMap);
+}
+
+window.exportReportsCSV = exportReportsCSV;
+window.exportUsersCSV = exportUsersCSV;

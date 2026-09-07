@@ -568,13 +568,13 @@
                 <img
                   src="/icons/Logo_Apps3.png?v=3"
                   class="ea-splash-logo"
-                  alt="EA Factory Logo"
+                  alt="PVT&T FACTORY Logo"
                 />
                 <div class="ea-splash-logo-glow"></div>
               </div>
 
               <div class="ea-splash-title">
-                PVT FACTORY
+                PVT&T FACTORY
               </div>
 
               <div class="ea-splash-text">

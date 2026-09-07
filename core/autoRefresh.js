@@ -1,11 +1,11 @@
 /* ======================================================
    EA Factory - Header Auto-Refresh Widget Module
-   ทำหน้าที่สร้างสวิตช์เปิด/ปิด Auto-Refresh ข้อมูลใน Header ทุก 5 นาที
+   ทำหน้าที่สร้างสวิตช์เปิด/ปิด Auto-Refresh ข้อมูลใน Header ทุก 30 วินาที
    พร้อมระบบนับถอยหลัง (Countdown Timer) และจดจำสถานะใน LocalStorage
    ====================================================== */
 
 (function () {
-  const DEFAULT_INTERVAL_SECONDS = 300; // 5 นาที = 300 วินาที
+  const DEFAULT_INTERVAL_SECONDS = 30; // 30 วินาที
   const STORAGE_KEY = "ea_auto_refresh_enabled";
 
   let countdownTimer = null;
@@ -238,12 +238,12 @@
 
   function createWidgetHTML() {
     return `
-      <div id="auto-refresh-widget-el" class="auto-refresh-widget" title="เปิด/ปิดการรีเฟรชข้อมูลอัตโนมัติทุก 5 นาที">
+      <div id="auto-refresh-widget-el" class="auto-refresh-widget" title="เปิด/ปิดการรีเฟรชข้อมูลอัตโนมัติทุก 30 วินาที">
         <label class="auto-refresh-label" for="auto-refresh-checkbox">
           <span class="material-symbols-outlined auto-refresh-icon">sync</span>
-          <span>รีเฟรช 5 นาที</span>
+          <span>รีเฟรช 30 วิ</span>
         </label>
-        <span id="auto-refresh-timer-text" class="auto-refresh-timer">05:00</span>
+        <span id="auto-refresh-timer-text" class="auto-refresh-timer">00:30</span>
         <label class="auto-refresh-switch">
           <input type="checkbox" id="auto-refresh-checkbox">
           <span class="auto-refresh-slider"></span>

@@ -762,7 +762,8 @@ async function loadMachineDailyCheck(reportRows, date) {
     }
 
     // โหลดสถานะที่หัวหน้ายืนยันไว้แล้วของวันที่เลือก
-    const { data: statusData, error: statusError } = await state.supabase
+    let statusData = [];
+    const { data: fetchedData, error: statusError } = await state.supabase
       .from(MACHINE_STATUS_TABLE)
       .select("*")
       .eq("work_date", date);
@@ -776,6 +777,8 @@ async function loadMachineDailyCheck(reportRows, date) {
       } else {
         throw statusError;
       }
+    } else {
+      statusData = fetchedData || [];
     }
 
     let statuses = Array.isArray(statusData) ? statusData : [];

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>บัญชีตรวจสอบของเสีย | EA Factory</title>
+    <title>บัญชีตรวจสอบของเสีย | PVT&T FACTORY</title>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -32,7 +32,7 @@
   <div class="header-brand">
 
     <div class="logo-icon">
-      <img src="/icons/Logo_Apps3.png?v=3" alt="EA Factory Logo" />
+      <img src="/icons/Logo_Apps3.png?v=3" alt="PVT&T FACTORY Logo" />
     </div>
 
     <div class="title">
@@ -79,8 +79,27 @@
       <section class="panel">
         <div class="filter-grid">
           <div class="form-group">
-            <label for="filterMonth">เดือน</label>
-            <input type="month" id="filterMonth" />
+            <label for="filterMonthSelect">เลือกเดือน (ภาษาไทย)</label>
+            <div class="thai-month-picker" style="display: flex; gap: 6px;">
+              <select id="filterMonthSelect" style="flex: 1.6;">
+                <option value="all">ทุกเดือน</option>
+                <option value="01">มกราคม</option>
+                <option value="02">กุมภาพันธ์</option>
+                <option value="03">มีนาคม</option>
+                <option value="04">เมษายน</option>
+                <option value="05">พฤษภาคม</option>
+                <option value="06">มิถุนายน</option>
+                <option value="07">กรกฎาคม</option>
+                <option value="08">สิงหาคม</option>
+                <option value="09">กันยายน</option>
+                <option value="10">ตุลาคม</option>
+                <option value="11">พฤศจิกายน</option>
+                <option value="12">ธันวาคม</option>
+              </select>
+              <select id="filterYearSelect" style="flex: 1.2;">
+              </select>
+              <input type="hidden" id="filterMonth" />
+            </div>
           </div>
 
           <div class="form-group">
@@ -128,10 +147,20 @@
       </section>
 
       <section class="panel">
-        <div class="table-head">
+        <div class="table-head" style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 16px; flex-wrap: wrap;">
           <div>
             <h2>รายการข้อมูลของเสียจากหน้างาน</h2>
             <p class="muted">กรอกน้ำหนักผลิต แล้วบันทึกเพื่อปิดรายการบัญชี</p>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button onclick="exportAccountingSummaryPDF()" class="btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; border-radius: 8px; background: #0284c7; color: white; border: none; cursor: pointer; font-weight: 600; white-space: nowrap; height: fit-content; transition: background 0.15s ease;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">picture_as_pdf</span>
+              ออกรายงาน PDF
+            </button>
+            <button onclick="printAccountingSummary()" class="btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; border-radius: 8px; background: #0ea5e9; color: white; border: none; cursor: pointer; font-weight: 600; white-space: nowrap; height: fit-content; transition: background 0.15s ease;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">print</span>
+              พิมพ์รายงาน
+            </button>
           </div>
           <span id="lastUpdate" class="muted">-</span>
         </div>
@@ -148,7 +177,7 @@
                 <th>ผู้บันทึก</th>
                 <th class="text-right">ของเสีย kg</th>
                 <th>รายการปัญหา</th>
-                <th class="text-right">ผลิต kg</th>
+                <th class="text-right col-production">ผลิต kg</th>
                 <th class="text-right">% Waste</th>
                 <th>ผลประเมิน</th>
                 <th>สถานะ</th>

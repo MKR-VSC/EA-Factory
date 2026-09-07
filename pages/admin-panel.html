@@ -12,7 +12,7 @@
     ======================================================= -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Panel - Daily Defect</title>
+    <title>Admin Panel | PVT&T FACTORY</title>
 
     <link
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
@@ -196,7 +196,7 @@
       <aside class="sidebar">
         <div class="sidebar-logo">
           <div class="logo-icon">
-            <img src="/icons/Logo_Apps3.png?v=3" alt="EA Factory Logo" />
+            <img src="/icons/Logo_Apps3.png?v=3" alt="PVT&T FACTORY Logo" />
           </div>
 
           <div class="logo-text">
@@ -336,8 +336,8 @@
               <span id="last-update" class="muted">ยังไม่ได้โหลดข้อมูล</span>
             </div>
 
-            <div class="filter-row dashboard-filter-row">
-              <div class="search-field">
+            <div class="filter-row dashboard-filter-row" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+              <div class="search-field" style="flex: 1; min-width: 250px;">
                 <span class="material-symbols-outlined">search</span>
                 <input
                   id="search-input"
@@ -352,6 +352,11 @@
                 <option value="approved">ตรวจสอบแล้ว</option>
                 <option value="rejected">ไม่ผ่าน</option>
               </select>
+
+              <button class="btn btn-secondary" type="button" id="btn-export-reports" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background 0.15s ease;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">download</span>
+                ส่งออก CSV
+              </button>
             </div>
 
             <div class="table-scroll">
@@ -722,11 +727,12 @@
               </div>
             </div>
 
-            <div class="filter-row user-filter-row">
+            <div class="filter-row user-filter-row" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
               <input
                 id="user-search-input"
                 type="search"
                 placeholder="ค้นหา username / ชื่อ / แผนก / role..."
+                style="flex: 1; min-width: 200px;"
               />
 
               <select id="user-role-filter">
@@ -743,6 +749,11 @@
                 <option value="active">active</option>
                 <option value="inactive">inactive</option>
               </select>
+
+              <button class="btn btn-secondary" type="button" id="btn-export-users" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background 0.15s ease;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">download</span>
+                ส่งออก CSV
+              </button>
             </div>
 
             <div class="user-card-list" id="user-card-list">
@@ -802,12 +813,20 @@
               >
             </div>
 
-            <div class="qr-machine-toolbar">
-              <select id="machine-qr-dept-filter">
+            <div class="qr-machine-toolbar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+              <select id="machine-qr-dept-filter" style="flex: 1; min-width: 200px;">
                 <option value="">
                   -- เลือกแผนกเพื่อสร้าง QR รายเครื่อง --
                 </option>
               </select>
+
+              <input
+                id="machine-qr-search-input"
+                type="search"
+                placeholder="ค้นหาชื่อเครื่อง..."
+                style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; outline: none; flex: 1; min-width: 150px;"
+                disabled
+              />
 
               <button
                 class="btn btn-secondary"

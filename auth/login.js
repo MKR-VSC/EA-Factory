@@ -465,8 +465,53 @@ function showQrScanner() {
       onQrScanSuccess,
     )
     .catch((err) => {
-      console.error(err);
-      alert("ไม่สามารถเปิดกล้องได้");
+      console.warn("Camera start failed, showing fallback UI:", err);
+      
+      const qrReader = document.getElementById("qr-reader");
+      if (qrReader) {
+        qrReader.innerHTML = `
+          <div style="padding: 24px 16px; text-align: center; color: #f1f5f9; background: #1e293b; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+            <span class="material-symbols-outlined" style="font-size: 48px; color: #94a3b8;">no_photography</span>
+            <div style="font-size: 15px; font-weight: 600; color: #e2e8f0;">ไม่พบกล้อง หรือสิทธิ์กล้องถูกปฏิเสธ</div>
+            <p style="font-size: 13px; color: #94a3b8; margin: 0; line-height: 1.4;">อุปกรณ์ของคุณไม่มีกล้อง หรือเบราว์เซอร์ไม่ได้รับอนุญาตให้ใช้กล้อง คุณสามารถอัปโหลดรูปภาพ QR หรือใช้วิธีอื่นๆ ได้</p>
+            
+            <button type="button" id="btn-upload-qr-fallback" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; padding: 10px 16px; border-radius: 8px; width: 100%; justify-content: center; font-weight: 600; background: #3b82f6; border: none; color: white; cursor: pointer;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">upload_file</span>
+              อัปโหลดรูปภาพ QR
+            </button>
+            <input type="file" id="qr-file-input-fallback" accept="image/*" style="display: none;" />
+            
+            <div style="width: 100%; border-top: 1px solid #334155; margin: 8px 0;"></div>
+            
+            <a href="/login.html" style="font-size: 13px; color: #3b82f6; text-decoration: none; font-weight: 600;">กลับหน้าล็อกอินแบบปกติ</a>
+          </div>
+        `;
+        
+        const uploadBtn = document.getElementById("btn-upload-qr-fallback");
+        const fileInput = document.getElementById("qr-file-input-fallback");
+        
+        if (uploadBtn && fileInput) {
+          uploadBtn.addEventListener("click", () => fileInput.click());
+          fileInput.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            window.LoadingService?.show("กำลังสแกนรูปภาพ", "กรุณารอสักครู่...");
+            
+            const fileReaderQr = new Html5Qrcode("qr-reader");
+            fileReaderQr.scanFile(file, true)
+              .then((decodedText) => {
+                window.LoadingService?.hide();
+                onQrScanSuccess(decodedText);
+              })
+              .catch((scanErr) => {
+                window.LoadingService?.hide();
+                console.warn("Scan file error:", scanErr);
+                alert("สแกนภาพ QR ไม่สำเร็จ! กรุณาตรวจสอบว่าในรูปภาพมีรหัส QR Code ที่ชัดเจน");
+              });
+          });
+        }
+      }
     });
 }
 

@@ -301,6 +301,25 @@ textarea { font: inherit; }
   font-weight: 800;
 }
 
+.thai-month-picker {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.thai-month-picker select {
+  min-height: 44px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .thai-month-picker {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
 input,
 select,
 textarea {
@@ -465,6 +484,93 @@ textarea:focus {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 11px;
+}
+
+/* =========================================================
+   คอลัมน์ ผลิต kg. (ผลิตดี) - สีฟ้าเดียวกับปุ่มหลัก #0284c7
+========================================================= */
+
+.data-table th:nth-child(9),
+.data-table th.col-production {
+  width: 106px !important;
+  color: #0284c7 !important;
+  font-weight: 800 !important;
+  background: #f0f9ff !important;
+  border-bottom: 2px solid #0284c7 !important;
+}
+
+.data-table td:nth-child(9),
+.data-table td.cell-production-col {
+  width: 106px !important;
+  background: rgba(2, 132, 199, 0.035);
+  transition: background 0.15s ease;
+}
+
+.data-table tbody tr:hover td:nth-child(9),
+.data-table tbody tr:hover td.cell-production-col {
+  background: rgba(2, 132, 199, 0.075) !important;
+}
+
+/* กล่องกรอกน้ำหนักผลิต (ผลิตดี) สีฟ้าสอดคล้องกับปุ่มหลัก #0284c7 */
+.cell-input-production,
+.data-table td:nth-child(9) .cell-input,
+.cell-input[data-prod] {
+  width: 96px;
+  min-width: 0;
+  min-height: 34px;
+  padding: 6px 8px;
+  box-sizing: border-box !important;
+  background: #f0f9ff !important;
+  border: 1.5px solid #0284c7 !important;
+  border-radius: 10px !important;
+  color: #0284c7 !important;
+  font-family: inherit;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.15) !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.cell-input-production::placeholder,
+.data-table td:nth-child(9) .cell-input::placeholder,
+.cell-input[data-prod]::placeholder {
+  color: #7dd3fc !important;
+  font-weight: 500 !important;
+}
+
+.cell-input-production:hover:not(:disabled),
+.data-table td:nth-child(9) .cell-input:hover:not(:disabled),
+.cell-input[data-prod]:hover:not(:disabled) {
+  border-color: #0369a1 !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.22) !important;
+}
+
+.cell-input-production:focus,
+.data-table td:nth-child(9) .cell-input:focus,
+.cell-input[data-prod]:focus {
+  background: #ffffff !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 3.5px rgba(2, 132, 199, 0.25), 0 2px 8px rgba(2, 132, 199, 0.2) !important;
+  color: #0369a1 !important;
+  outline: none !important;
+}
+
+.cell-input-production:disabled,
+.data-table td:nth-child(9) .cell-input:disabled,
+.cell-input[data-prod]:disabled {
+  background: #f0f9ff !important;
+  border: 1.5px solid #38bdf8 !important;
+  color: #0284c7 !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+  cursor: default !important;
+}
+
+.cell-production-empty {
+  color: #0284c7 !important;
+  font-weight: 600;
+  opacity: 0.5;
 }
 
 .problem-inline {
@@ -767,7 +873,7 @@ textarea:focus {
 .data-table td:nth-child(8) { width: 210px !important; }
 
 .data-table th:nth-child(9),
-.data-table td:nth-child(9) { width: 94px !important; }
+.data-table td:nth-child(9) { width: 106px !important; }
 
 .data-table th:nth-child(10),
 .data-table td:nth-child(10) { width: 74px !important; }
@@ -810,6 +916,20 @@ textarea:focus {
   border-radius: 10px !important;
   background: #f8fafc !important;
   font-size: 13px;
+}
+
+.cell-input-production,
+.data-table td:nth-child(9) .cell-input,
+.cell-input[data-prod] {
+  width: 96px !important;
+  max-width: 96px !important;
+  min-height: 34px !important;
+  padding: 6px 8px !important;
+  box-sizing: border-box !important;
+  border: 1.5px solid #0284c7 !important;
+  background: #f0f9ff !important;
+  color: #0284c7 !important;
+  font-weight: 700 !important;
 }
 
 .status-pill,

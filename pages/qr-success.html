@@ -11,7 +11,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>บันทึกสำเร็จ | EA Factory</title>
+    <title>บันทึกสำเร็จ | PVT&T FACTORY</title>
 <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/Logo_Apps3.png?v=3" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/Logo_Apps3.png?v=3" />
@@ -213,7 +213,7 @@
   <body>
     <main class="success-card">
       <div class="brand-badge">
-        <img src="/icons/Logo_Apps3.png?v=3" alt="EA Factory Logo" />
+        <img src="/icons/Logo_Apps3.png?v=3" alt="PVT&T FACTORY Logo" />
       </div>
 
       <div class="success-icon">✓</div>
@@ -327,8 +327,44 @@
             () => {},
           )
           .catch((err) => {
-            console.error(err);
-            alert("เปิดกล้องไม่ได้ กรุณาอนุญาตใช้กล้องก่อนค่ะ");
+            console.warn("Camera start failed in qr-success.html, showing fallback:", err);
+            const qrReader = document.getElementById("qr-reader");
+            if (qrReader) {
+              qrReader.innerHTML = `
+                <div style="padding: 20px 14px; text-align: center; color: #f1f5f9; background: #1e293b; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 12px;">
+                  <span class="material-symbols-outlined" style="font-size: 40px; color: #94a3b8;">no_photography</span>
+                  <div style="font-size: 14px; font-weight: 600; color: #e2e8f0;">ไม่สามารถเข้าถึงกล้องถ่ายภาพได้</div>
+                  <p style="font-size: 12px; color: #94a3b8; margin: 0; line-height: 1.4;">อุปกรณ์นี้ไม่มีกล้อง หรือเบราว์เซอร์ไม่ได้รับสิทธิ์ คุณสามารถอัปโหลดรูปภาพรหัส QR เพื่อทำการสแกนแทนได้</p>
+                  
+                  <button type="button" id="btn-upload-qr-success-fallback" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; padding: 10px 14px; border-radius: 8px; width: 100%; justify-content: center; font-weight: 600; background: #3b82f6; border: none; color: white; cursor: pointer;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">upload_file</span>
+                    อัปโหลดรูปภาพ QR
+                  </button>
+                  <input type="file" id="qr-success-file-input-fallback" accept="image/*" style="display: none;" />
+                </div>
+              `;
+
+              const uploadBtn = document.getElementById("btn-upload-qr-success-fallback");
+              const fileInput = document.getElementById("qr-success-file-input-fallback");
+
+              if (uploadBtn && fileInput) {
+                uploadBtn.addEventListener("click", () => fileInput.click());
+                fileInput.addEventListener("change", (e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+
+                  const fileReaderQr = new Html5Qrcode("qr-reader");
+                  fileReaderQr.scanFile(file, true)
+                    .then((decodedText) => {
+                      handleQrResult(decodedText);
+                    })
+                    .catch((scanErr) => {
+                      console.warn("Scan success file error:", scanErr);
+                      alert("ไม่สามารถตรวจพบรหัส QR ในภาพที่อัปโหลดได้ กรุณาลองด้วยภาพอื่นค่ะ");
+                    });
+                });
+              }
+            }
           });
       }
 

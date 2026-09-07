@@ -125,218 +125,359 @@ img {
 ====================================================== */
 
 .app-hero {
-  position: relative;
-  overflow: hidden;
   margin-bottom: 24px;
-  padding: 20px 24px;
-  border-radius: 28px;
-  background: var(--card);
-  border: 1px solid rgba(30, 58, 138, 0.12);
-  color: var(--text);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.05);
-}
-
-.app-hero::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 5px;
-  background: linear-gradient(90deg, #1E3A8A 0%, #2563EB 50%, #EA580C 100%);
+  padding: 24px 28px;
+  border-radius: 26px;
+  background: var(--accent-orange-soft);
+  border: 1px solid var(--accent-orange-border);
+  box-shadow: 0 12px 32px rgba(234, 88, 12, 0.08);
 }
 
 .pvt-top-header {
-  position: relative;
-  overflow: hidden;
-  min-height: auto;
+  min-height: 0;
   padding: 0;
   border-radius: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 12px;
   background: transparent;
-  border: none;
   box-shadow: none;
+  border: none;
 }
 
-.pvt-top-header::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-  background-size: 32px 32px;
-  opacity: 0.45;
-}
-
-.logo,
 .brand-text,
-.dev-badge {
+.user-profile-box {
   position: relative;
   z-index: 1;
 }
 
 .brand-text {
+  min-width: 0;
   display: flex;
+  flex-direction: row;
   align-items: center;
+  text-align: left;
   gap: 16px;
 }
 
 .brand-text img {
-  width: 100px;
-  height: 100px;
-  max-width: 100px;
-  max-height: 100px;
+  width: 74px !important;
+  height: 74px !important;
+  max-width: 74px !important;
+  max-height: 74px !important;
+  flex: 0 0 auto;
   object-fit: contain;
-  border-radius: 18px;
+  background: transparent;
+  border-radius: 0;
+  filter: drop-shadow(0 6px 14px rgba(234, 88, 12, 0.16)) drop-shadow(0 2px 5px rgba(15, 23, 42, 0.10));
 }
 
-.logo {
-  width: 110px;
-  height: 110px;
-  display: grid;
-  place-items: center;
-}
-
-.logo img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  padding: 8px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
-}
-
-.pvt-top-header h3 {
+.brand-text h3 {
   margin: 0;
   color: #0f172a;
-  font-size: 24px;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
-.pvt-top-header p {
-  margin: 8px 0 0;
+.brand-text p {
+  margin: 4px 0 0;
+  padding-left: 0;
+  border-left: none;
+  font-size: 14px;
+  font-weight: 500;
   color: #64748b;
-  font-size: 15px;
-  opacity: 0.92;
 }
 
-
-
-.dev-badge .material-symbols-outlined {
-  font-size: 16px;
-}
-
-.hero-panel {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 14px;
-  align-items: center;
-  margin-top: 18px;
-}
-
-.menu-label,
-.menu-link {
-  display: none !important;
-}
-
-.menu-group {
-  margin: 0;
-}
-
-.user-profile-box {
-  min-height: 58px;
-  padding: 12px 16px;
+.pvt-top-header .user-profile-box {
+  min-height: 0;
+  padding: 10px 16px;
   border-radius: 18px;
-  background: rgba(30, 41, 59, 0.9);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(30, 58, 138, 0.12);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-.user-info {
-  height: 100%;
-  display: grid;
-  grid-template-columns: 30px auto 1fr;
+.pvt-top-header .user-info {
+  display: flex;
   align-items: center;
-  gap: 10px;
-  color: #e2e8f0;
-  font-weight: 700;
+  gap: 12px;
 }
 
-.user-icon {
-  color: #4ade80;
-  font-size: 28px;
+.pvt-top-header .user-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(30, 58, 138, 0.1);
+  color: #1e3a8a;
+  font-size: 24px;
+}
+
+.user-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-copy > span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 #display-username {
-  color: #86efac;
-  text-align: right;
+  display: block;
+  max-width: 100%;
+  text-align: left;
+  color: #1e3a8a;
+  font-size: 14px;
+  font-weight: 800;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 800;
+}
+
+.hero-panel {
+  display: block;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(30, 58, 138, 0.1);
 }
 
 .hero-actions {
-  display: flex;
+  width: 100%;
+  margin-top: 0 !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(260px, 1fr) auto;
   align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
+  gap: 10px;
 }
 
 .btn-back,
 .btn-logout {
-  min-height: 48px;
-  border: 0;
-  border-radius: 16px;
-  padding: 12px 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  min-height: 42px;
+  border-radius: 13px;
+  padding: 9px 16px;
+  font-size: 14px;
   font-weight: 800;
-  color: #ffffff;
-  white-space: nowrap;
+  box-shadow: none;
+  transition: transform 0.18s ease, filter 0.18s ease, background 0.18s ease;
+}
+
+.btn-back span,
+.btn-logout span {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 18px !important;
 }
 
 .btn-back {
-  background: #334155;
+  margin-right: 0 !important;
+  background: #1e293b;
+  color: #ffffff;
+  border: 1px solid #0f172a;
 }
 
 .btn-logout {
-  background: linear-gradient(135deg, #ef4444, #fb3b45);
+  margin-left: 0 !important;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #ffffff;
+  border: none;
 }
 
-/* Desktop */
-@media (min-width: 901px) {
-
-  .hero-actions{
-    display:flex;
-    align-items:center;
-    width:100%;
-    margin-top:16px;
-  }
-
-  .btn-back{
-    display:flex !important;
-    margin-right:auto;
-  }
-
-  .btn-logout{
-    margin-left:auto;
-  }
-
+.btn-back:hover,
+.btn-logout:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
 }
-/* desktop: ซ่อนปุ่มย้อนกลับเพื่อลดความรก */
-/* @media (min-width: 901px) {
-  .btn-back {
-    display: none !important;
+
+.header-status-buttons {
+  width: 100%;
+  max-width: 430px;
+  justify-self: center;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.header-status-buttons .status-btn {
+  height: 42px;
+  min-width: 0;
+  border-radius: 13px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.header-status-buttons .dept-btn {
+  background: rgba(219, 234, 254, 0.97);
+  color: #1d4ed8;
+}
+
+.header-status-buttons .online-btn {
+  background: rgba(220, 252, 231, 0.97);
+  color: #15803d;
+}
+
+/* หลังย้ายสถานะขึ้น Header ให้หัวฟอร์มสั้นลง */
+.content-header {
+  gap: 0;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .app-hero {
+    width: calc(100% - 20px) !important;
+    max-width: 420px !important;
+    margin: 12px auto 12px !important;
+    border-radius: 20px !important;
+    padding: 18px 20px !important;
+    background: var(--accent-orange-soft) !important;
+    border: 1px solid var(--accent-orange-border) !important;
+    box-shadow: 0 10px 25px rgba(234, 88, 12, 0.08) !important;
   }
-} */
+
+  .pvt-top-header {
+    min-height: 0;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .brand-text {
+    gap: 12px;
+  }
+
+  .brand-text img {
+    width: 74px !important;
+    height: 74px !important;
+    max-width: 74px !important;
+    max-height: 74px !important;
+  }
+
+  .brand-text h3 {
+    font-size: 17px !important;
+    color: #0f172a !important;
+  }
+
+  .brand-text p {
+    font-size: 12px !important;
+    color: #64748b !important;
+    padding-left: 0 !important;
+    border-left: none !important;
+  }
+
+  .pvt-top-header .user-profile-box {
+    padding: 8px 12px !important;
+    border-radius: 14px !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  .pvt-top-header .user-info {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .pvt-top-header .user-icon {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 10px !important;
+    font-size: 20px !important;
+    background: rgba(30, 58, 138, 0.08) !important;
+    color: #1e3a8a !important;
+  }
+
+  .user-copy > span {
+    font-size: 10px !important;
+    color: #64748b !important;
+  }
+
+  #display-username {
+    font-size: 13px !important;
+    color: #1e3a8a !important;
+  }
+
+  .hero-panel {
+    margin-top: 12px !important;
+    padding-top: 12px !important;
+    border-top: 1px solid #f1f5f9 !important;
+  }
+
+  .hero-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+  }
+
+  .header-status-buttons {
+    width: 100% !important;
+    order: -1;
+    margin-bottom: 4px;
+    gap: 8px;
+  }
+
+  .header-status-buttons .status-btn {
+    height: 38px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  .btn-back,
+  .btn-logout {
+    flex: 1 1 calc(50% - 4px);
+    min-height: 40px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 430px) {
+  .brand-text img {
+    width: 74px !important;
+    height: 74px !important;
+    max-width: 74px !important;
+    max-height: 74px !important;
+  }
+
+  .brand-text h3 {
+    font-size: 15px !important;
+  }
+
+  .brand-text p {
+    font-size: 11px !important;
+  }
+
+  .header-status-buttons .status-btn {
+    padding: 0 8px;
+    font-size: 11px;
+  }
+}
 
 /* ======================================================
    MAIN FORM CARD
@@ -922,11 +1063,14 @@ img {
   }
 
   .app-hero {
-    width: 100%;
-    max-width: 420px;
-    margin: 0 auto;
-    border-radius: 0 0 24px 24px;
-    padding: 10px;
+    width: calc(100% - 20px) !important;
+    max-width: 420px !important;
+    margin: 12px auto 12px !important;
+    border-radius: 20px !important;
+    padding: 18px 20px !important;
+    background: var(--accent-orange-soft) !important;
+    border: 1px solid var(--accent-orange-border) !important;
+    box-shadow: 0 10px 25px rgba(234, 88, 12, 0.08) !important;
   }
 
   .pvt-top-header {
@@ -1350,357 +1494,7 @@ img {
   }
 }
 
-/* ======================================================
-   HEADER V2 - COMPACT FACTORY DASHBOARD
-   ปรับส่วนหัวให้กระชับ สถานะ/ผู้ใช้รวมอยู่ใน Header เดียว
-====================================================== */
-.app-hero {
-  margin-bottom: 20px;
-  padding: 16px 20px;
-  border-radius: 26px;
-  background: var(--card);
-  border: 1px solid rgba(30, 58, 138, 0.12);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.05);
-}
 
-.pvt-top-header {
-  min-height: 0;
-  padding: 0;
-  border-radius: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-  gap: 12px;
-  background: transparent;
-  box-shadow: none;
-  border: none;
-}
-
-.pvt-top-header::before,
-.pvt-top-header::after {
-  display: none;
-}
-
-.brand-text,
-.user-profile-box {
-  position: relative;
-  z-index: 1;
-}
-
-.brand-text {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 10px;
-}
-
-.brand-text img {
-  width: 64px !important;
-  height: 64px !important;
-  max-width: 64px !important;
-  max-height: 64px !important;
-  flex: 0 0 auto;
-  object-fit: contain;
-  background: transparent;
-  border-radius: 0;
-  filter: drop-shadow(0 6px 14px rgba(234, 88, 12, 0.16)) drop-shadow(0 2px 5px rgba(15, 23, 42, 0.10));
-}
-
-.brand-text h3 {
-  margin: 0;
-  color: #0f172a;
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1.2;
-}
-
-.brand-text p {
-  margin: 4px 0 0;
-  padding-left: 0;
-  border-left: none;
-  font-size: 14px;
-  font-weight: 500;
-  color: #64748b;
-}
-
-.pvt-top-header .user-profile-box {
-  min-height: 0;
-  padding: 10px 16px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(30, 58, 138, 0.12);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.pvt-top-header .user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.pvt-top-header .user-icon {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: rgba(30, 58, 138, 0.1);
-  color: #1e3a8a;
-  font-size: 24px;
-}
-
-.user-copy {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.user-copy > span {
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-#display-username {
-  display: block;
-  max-width: 100%;
-  text-align: left;
-  color: #1e3a8a;
-  font-size: 14px;
-  font-weight: 800;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.hero-panel {
-  display: block;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(30, 58, 138, 0.1);
-}
-
-.hero-actions {
-  width: 100%;
-  margin-top: 0 !important;
-  display: grid !important;
-  grid-template-columns: auto minmax(260px, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-}
-
-.btn-back,
-.btn-logout {
-  min-height: 42px;
-  border-radius: 13px;
-  padding: 9px 16px;
-  font-size: 14px;
-  font-weight: 800;
-  box-shadow: none;
-  transition: transform 0.18s ease, filter 0.18s ease, background 0.18s ease;
-}
-
-.btn-back {
-  margin-right: 0 !important;
-  background: #1e293b;
-  color: #ffffff;
-  border: 1px solid #0f172a;
-}
-
-.btn-logout {
-  margin-left: 0 !important;
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: #ffffff;
-  border: none;
-}
-
-.btn-back:hover,
-.btn-logout:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.05);
-}
-
-.header-status-buttons {
-  width: 100%;
-  max-width: 430px;
-  justify-self: center;
-  margin: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.header-status-buttons .status-btn {
-  height: 42px;
-  min-width: 0;
-  border-radius: 13px;
-  padding: 0 12px;
-  font-size: 13px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.header-status-buttons .dept-btn {
-  background: rgba(219, 234, 254, 0.97);
-  color: #1d4ed8;
-}
-
-.header-status-buttons .online-btn {
-  background: rgba(220, 252, 231, 0.97);
-  color: #15803d;
-}
-
-/* หลังย้ายสถานะขึ้น Header ให้หัวฟอร์มสั้นลง */
-.content-header {
-  gap: 0;
-  margin-bottom: 20px;
-}
-
-@media (max-width: 900px) {
-  .app-hero {
-    width: 100%;
-    max-width: 100%;
-    margin: 0 auto 20px;
-    padding: 16px;
-    border-radius: 22px;
-    background: var(--card) !important;
-    border: 1px solid rgba(226, 232, 240, 0.9) !important;
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06) !important;
-  }
-
-  .pvt-top-header {
-    min-height: 0;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    justify-content: flex-start !important;
-    gap: 10px !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
-  }
-
-  .brand-text {
-    gap: 12px;
-  }
-
-  .brand-text img {
-    width: 64px !important;
-    height: 64px !important;
-    max-width: 64px !important;
-    max-height: 64px !important;
-  }
-
-  .brand-text h3 {
-    font-size: 17px !important;
-    color: #0f172a !important;
-  }
-
-  .brand-text p {
-    font-size: 12px !important;
-    color: #64748b !important;
-    padding-left: 0 !important;
-    border-left: none !important;
-  }
-
-  .pvt-top-header .user-profile-box {
-    padding: 8px 12px !important;
-    border-radius: 14px !important;
-    background: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
-  }
-
-  .pvt-top-header .user-info {
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-  }
-
-  .pvt-top-header .user-icon {
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 10px !important;
-    font-size: 20px !important;
-    background: rgba(30, 58, 138, 0.08) !important;
-    color: #1e3a8a !important;
-  }
-
-  .user-copy > span {
-    font-size: 10px !important;
-    color: #64748b !important;
-  }
-
-  #display-username {
-    font-size: 13px !important;
-    color: #1e3a8a !important;
-  }
-
-  .hero-panel {
-    margin-top: 12px !important;
-    padding-top: 12px !important;
-    border-top: 1px solid #f1f5f9 !important;
-  }
-
-  .hero-actions {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 8px !important;
-  }
-
-  .header-status-buttons {
-    width: 100% !important;
-    order: -1;
-    margin-bottom: 4px;
-    gap: 8px;
-  }
-
-  .header-status-buttons .status-btn {
-    height: 38px;
-    border-radius: 12px;
-    font-size: 12px;
-  }
-
-  .btn-back,
-  .btn-logout {
-    flex: 1 1 calc(50% - 4px);
-    min-height: 40px;
-    padding: 8px 10px;
-    border-radius: 12px;
-    font-size: 13px;
-  }
-}
-
-@media (max-width: 430px) {
-  .brand-text img {
-    width: 64px !important;
-    height: 64px !important;
-    max-width: 64px !important;
-    max-height: 64px !important;
-  }
-
-  .brand-text h3 {
-    font-size: 15px !important;
-  }
-
-  .brand-text p {
-    font-size: 11px !important;
-  }
-
-  .header-status-buttons .status-btn {
-    padding: 0 8px;
-    font-size: 11px;
-  }
-}
 /* ======================================================
    EA FACTORY UNIFIED THEME
    Form Department = สีประจำแผนก
@@ -1782,9 +1576,9 @@ body {
 .dept-rain-tape-cut-punch .app-hero,
 .dept-rain-tape .app-hero,
 .dept-garbage-bag-cut .app-hero {
-  background: var(--card) !important;
-  border: 1px solid rgba(226, 232, 240, 0.9) !important;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06) !important;
+  background: var(--accent-orange-soft) !important;
+  border: 1px solid var(--accent-orange-border) !important;
+  box-shadow: 0 10px 25px rgba(234, 88, 12, 0.08) !important;
   color: #0f172a !important;
 }
 

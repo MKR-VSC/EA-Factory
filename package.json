@@ -1,7 +1,7 @@
 {
-  "name": "ea-factory-management-system",
+  "name": "pvtt-factory-management-system",
   "version": "2.0.0",
-  "description": "EA Factory Management System - Production & Waste Tracking",
+  "description": "PVT&T FACTORY Management System - Production & Waste Tracking",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -13,5 +13,8 @@
   "license": "ISC",
   "devDependencies": {
     "vite": "^8.2.2"
+  },
+  "dependencies": {
+    "html5-qrcode": "^2.3.8"
   }
 }

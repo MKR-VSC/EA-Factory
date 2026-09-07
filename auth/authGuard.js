@@ -17,55 +17,67 @@ async function getCurrentAuthUser() {
 }
 
 async function getCurrentProfile() {
-  const authUser = await getCurrentAuthUser();
+  try {
+    const authUser = await getCurrentAuthUser();
 
-  if (!authUser) return null;
+    if (!authUser) return null;
 
-  const { data: profile, error } = await window.supabaseClient
-    .from("profiles")
-    .select(`
-      id,
-      username,
-      email,
-      full_name,
-      display_name,
-      department,
-      department_code,
-      role,
-      status,
-      is_system_owner
-    `)
-    .eq("id", authUser.id)
-    .eq("status", "active")
-    .maybeSingle();
+    const { data: profile, error } = await window.supabaseClient
+      .from("profiles")
+      .select(`
+        id,
+        username,
+        email,
+        full_name,
+        display_name,
+        department,
+        department_code,
+        role,
+        status,
+        is_system_owner
+      `)
+      .eq("id", authUser.id)
+      .eq("status", "active")
+      .maybeSingle();
 
-  if (error || !profile) return null;
+    if (error || !profile) return null;
 
-  return profile;
+    return profile;
+  } catch (err) {
+    console.error("Error in getCurrentProfile:", err);
+    return null;
+  }
 }
 
 async function requireLogin(allowedRoles = []) {
-  const profile = await getCurrentProfile();
+  try {
+    const profile = await getCurrentProfile();
 
-  if (!profile) {
+    if (!profile) {
+      clearLocalLogin();
+      window.location.replace(AUTH_LOGIN_PAGE);
+      return null;
+    }
+
+    const role = String(profile.role || "staff").toLowerCase();
+    const allowed = (allowedRoles || []).map((r) => String(r).toLowerCase());
+
+    if (allowed.length && !allowed.includes(role)) {
+      alert("คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้");
+      window.location.replace(AUTH_LOGIN_PAGE);
+      return null;
+    }
+
+    saveProfileSession(profile);
+    CURRENT_USER = profile;
+
+    return profile;
+  } catch (err) {
+    console.error("Error in requireLogin:", err);
     clearLocalLogin();
-    window.location.href = AUTH_LOGIN_PAGE;
+    window.location.replace(AUTH_LOGIN_PAGE);
     return null;
   }
-
-  const role = String(profile.role || "staff").toLowerCase();
-  const allowed = (allowedRoles || []).map((r) => String(r).toLowerCase());
-
-  if (allowed.length && !allowed.includes(role)) {
-    alert("คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้");
-    window.location.href = AUTH_LOGIN_PAGE;
-    return null;
-  }
-
-  saveProfileSession(profile);
-CURRENT_USER = profile;
-
-  return profile;
 }
 
 function clearLocalLogin() {

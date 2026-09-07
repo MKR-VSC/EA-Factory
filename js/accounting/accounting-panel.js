@@ -45,9 +45,66 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadAccountingData();
 });
 
+const THAI_MONTHS_ACCOUNTING = [
+  { value: "01", name: "มกราคม" },
+  { value: "02", name: "กุมภาพันธ์" },
+  { value: "03", name: "มีนาคม" },
+  { value: "04", name: "เมษายน" },
+  { value: "05", name: "พฤษภาคม" },
+  { value: "06", name: "มิถุนายน" },
+  { value: "07", name: "กรกฎาคม" },
+  { value: "08", name: "สิงหาคม" },
+  { value: "09", name: "กันยายน" },
+  { value: "10", name: "ตุลาคม" },
+  { value: "11", name: "พฤศจิกายน" },
+  { value: "12", name: "ธันวาคม" },
+];
+
+function formatThaiMonthYearAccounting(ymStr) {
+  if (!ymStr || ymStr === "all") return "ทั้งหมด";
+  const parts = ymStr.split("-");
+  if (parts.length < 2) return ymStr;
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  const mName = THAI_MONTHS_ACCOUNTING[m - 1] ? THAI_MONTHS_ACCOUNTING[m - 1].name : `เดือน ${m}`;
+  return `${mName} ${y + 543}`;
+}
+
+function populateAccountingThaiYears(selectEl, selectedYear) {
+  if (!selectEl) return;
+  const currentYear = new Date().getFullYear();
+  const startYear = currentYear - 4;
+  const endYear = currentYear + 2;
+
+  let html = "";
+  for (let y = endYear; y >= startYear; y--) {
+    const buddhistYear = y + 543;
+    html += `<option value="${y}" ${y === Number(selectedYear) ? "selected" : ""}>ปี ${buddhistYear} (${y})</option>`;
+  }
+  selectEl.innerHTML = html;
+}
 
 function bindEvents() {
-  ["filterMonth", "filterDept", "filterStatus", "searchInput"].forEach((id) =>
+  const monthSelect = document.getElementById("filterMonthSelect");
+  const yearSelect = document.getElementById("filterYearSelect");
+  const hiddenMonth = document.getElementById("filterMonth");
+
+  const handleMonthYearChange = () => {
+    const m = monthSelect?.value || "";
+    const y = yearSelect?.value || String(new Date().getFullYear());
+
+    if (!m || m === "all") {
+      if (hiddenMonth) hiddenMonth.value = "";
+    } else {
+      if (hiddenMonth) hiddenMonth.value = `${y}-${m}`;
+    }
+    applyFilters();
+  };
+
+  monthSelect?.addEventListener("change", handleMonthYearChange);
+  yearSelect?.addEventListener("change", handleMonthYearChange);
+
+  ["filterDept", "filterStatus", "searchInput"].forEach((id) =>
     document
       .getElementById(id)
       ?.addEventListener(
@@ -58,10 +115,71 @@ function bindEvents() {
 }
 function setDefaultMonth() {
   const d = new Date();
+  const currentY = d.getFullYear();
+  const currentM = String(d.getMonth() + 1).padStart(2, "0");
+
+  const yearSelect = document.getElementById("filterYearSelect");
+  if (yearSelect) {
+    populateAccountingThaiYears(yearSelect, currentY);
+  }
+
+  const monthSelect = document.getElementById("filterMonthSelect");
+  if (monthSelect) {
+    monthSelect.value = currentM;
+  }
+
   setValue(
     "filterMonth",
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+    `${currentY}-${currentM}`,
   );
+}
+
+function adjustMonthToAvailableData() {
+  const currentFilterMonth = getValue("filterMonth");
+  const allMonths = new Set();
+
+  (state.reports || []).forEach((r) => {
+    const m = toMonth(r.report_date || r.incident_datetime || r.created_at);
+    if (m) allMonths.add(m);
+  });
+
+  (state.machineStatuses || []).forEach((r) => {
+    const m = toMonth(r.work_date || r.created_at);
+    if (m) allMonths.add(m);
+  });
+
+  if (allMonths.size === 0) return;
+
+  // หากเดือนที่เลือกไว้ปัจจุบันมีข้อมูลอยู่แล้ว ไม่ต้องเปลี่ยน
+  if (currentFilterMonth && allMonths.has(currentFilterMonth)) {
+    return;
+  }
+
+  // หากไม่มีข้อมูลในเดือนปัจจุบัน ให้เลือกเดือนล่าสุดที่มีข้อมูลจริง
+  const sortedMonths = Array.from(allMonths).sort().reverse();
+  const latestMonth = sortedMonths[0];
+  if (!latestMonth) return;
+
+  const [y, m] = latestMonth.split("-");
+  const yearSelect = document.getElementById("filterYearSelect");
+  const monthSelect = document.getElementById("filterMonthSelect");
+
+  if (yearSelect) {
+    // ถ้าไม่มีปีนี้ใน dropdown ให้เติมเข้าไป
+    const hasYearOption = Array.from(yearSelect.options).some(
+      (opt) => opt.value === y,
+    );
+    if (!hasYearOption) {
+      populateAccountingThaiYears(yearSelect, Number(y));
+    }
+    yearSelect.value = y;
+  }
+
+  if (monthSelect) {
+    monthSelect.value = m;
+  }
+
+  setValue("filterMonth", latestMonth);
 }
 async function loadStandards() {
   const { data, error } = await state.supabase
@@ -137,6 +255,9 @@ async function loadAccountingData() {
     state.machineStatuses = Array.isArray(machineResult.data)
       ? machineResult.data
       : [];
+
+    // หากเดือนปัจจุบันที่ระบบตั้งไว้ไม่มีข้อมูล แต่ในระบบมีข้อมูลเดือนอื่น ให้ปรับตัวเลือกเดือนไปยังเดือนล่าสุดที่มีข้อมูล
+    adjustMonthToAvailableData();
 
     setText(
       "lastUpdate",
@@ -467,12 +588,17 @@ function renderGroup(g, i) {
       ? `<span class="muted">ไม่ได้เดินเครื่อง</span>`
       : renderProblemInline(g.items);
 
+  const formattedProdVal = g.production ? formatQtyNumber(g.production) : "";
   const productionCell = isNotRunning
-    ? `<span class="muted">-</span>`
-    : `<input class="cell-input text-right" type="number" step="0.01" min="0"
-        value="${safeAttr(g.production || "")}"
+    ? `<span class="muted cell-production-empty">-</span>`
+    : `<input class="cell-input cell-input-production text-right" type="text" inputmode="decimal" autocomplete="off"
+        value="${safeAttr(formattedProdVal)}"
         data-prod="${safeAttr(g.key)}"
-        placeholder="kg"
+        placeholder="0.00"
+        onfocus="handleProductionFocus(this)"
+        onblur="formatProductionInput(this)"
+        oninput="handleProductionInput(this, '${safeAttr(g.key)}')"
+        onkeydown="if(event.key==='Enter'){ this.blur(); }"
         ${productionInputAttr}>`;
 
   const percentCell =
@@ -536,7 +662,7 @@ function renderGroup(g, i) {
     <td>${safeText([...g.reporter].join(", "))}</td>
     <td class="text-right"><strong>${wasteCell}</strong></td>
     <td>${problemCell}</td>
-    <td class="text-right">${productionCell}</td>
+    <td class="text-right cell-production-col">${productionCell}</td>
     <td class="text-right">${percentCell}</td>
     <td><span class="result-pill ${result.className}">${safeText(result.label)}</span></td>
     <td>${status}</td>
@@ -566,7 +692,7 @@ function editGroup(key) {
     ?.classList.remove("hidden");
 
   input.focus();
-  input.select();
+  handleProductionFocus(input);
 
   showToast("แก้ไขน้ำหนักผลิต แล้วกดบันทึกอีกครั้ง", "success");
 }
@@ -600,9 +726,9 @@ async function saveGroup(key) {
     return showToast("เครื่องนี้ไม่ได้เดินเครื่อง ไม่ต้องกรอกน้ำหนักผลิต", "error");
   }
 
-  const prod = Number(
-    document.querySelector(`[data-prod="${cssEscape(key)}"]`)?.value || 0,
-  );
+  const inputEl = document.querySelector(`[data-prod="${cssEscape(key)}"]`);
+  const rawVal = inputEl?.value || "0";
+  const prod = Number(String(rawVal).replace(/,/g, "").trim()) || 0;
 
   if (!prod || prod <= 0) {
     return showToast("กรุณากรอกน้ำหนักผลิตให้ถูกต้อง", "error");
@@ -775,7 +901,15 @@ function normalizeText(v) {
         .toLowerCase();
 }
 function toMonth(v) {
-  const d = new Date(v);
+  if (!v) return "";
+  const s = String(v).trim();
+  // 1) Direct matching for YYYY-MM prefix (e.g. "2026-03-07", "2026-03", "2026-03-07T14:30:00Z")
+  const isoMatch = s.match(/^(\d{4})-(\d{1,2})/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2].padStart(2, "0")}`;
+  }
+  // 2) Fallback to date parsing
+  const d = new Date(s);
   return Number.isNaN(d.getTime())
     ? ""
     : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -795,6 +929,76 @@ function formatNumber(v) {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
+}
+function formatQtyNumber(v) {
+  if (v === null || v === undefined || v === "") return "";
+  const clean = String(v).replace(/,/g, "").trim();
+  const n = Number(clean);
+  if (isNaN(n) || n === 0) return "";
+  return n.toLocaleString("th-TH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+function formatProductionInput(input) {
+  const raw = String(input.value || "").replace(/,/g, "").trim();
+  if (!raw) {
+    input.value = "";
+    return;
+  }
+  const n = Number(raw);
+  if (!isNaN(n) && n >= 0) {
+    input.value = n.toLocaleString("th-TH", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+}
+function handleProductionFocus(input) {
+  setTimeout(() => {
+    try {
+      input.select();
+    } catch (_) {}
+  }, 25);
+}
+function handleProductionInput(input, key) {
+  const filtered = input.value.replace(/[^0-9.,]/g, "");
+  if (filtered !== input.value) {
+    input.value = filtered;
+  }
+
+  const cleanNum = Number(String(input.value || "").replace(/,/g, "").trim());
+  const g = state.groups.find((x) => x.key === key);
+  if (!g) return;
+
+  const row = input.closest("tr");
+  if (!row) return;
+
+  const pctTd = row.children[9];
+  const evalTd = row.children[10];
+
+  if (!isNaN(cleanNum) && cleanNum > 0) {
+    const isNoWaste =
+      g.sourceType === "machine_status" &&
+      normalizeText(g.operationStatus) === MACHINE_STATUS_NO_WASTE;
+    const isCancelled = normalizeText(g.status) === STATUS_CANCELLED;
+    const isNotRunning =
+      g.sourceType === "machine_status" &&
+      normalizeText(g.operationStatus) === MACHINE_STATUS_NOT_RUNNING;
+
+    let percent = 0;
+    if (isNoWaste) {
+      percent = 0;
+    } else if (!isCancelled && !isNotRunning) {
+      percent = (g.waste / cleanNum) * 100;
+    }
+    const result = getResult(g.dept, percent, true);
+    if (pctTd) pctTd.textContent = formatPercent(percent);
+    if (evalTd)
+      evalTd.innerHTML = `<span class="result-pill ${result.className}">${safeText(result.label)}</span>`;
+  } else {
+    if (pctTd) pctTd.textContent = "-";
+  }
 }
 function formatPercent(v) {
   return `${formatNumber(v)}%`;
@@ -870,3 +1074,247 @@ window.closeModal = closeModal;
 window.editGroup = editGroup;
 window.cancelGroup = cancelGroup;
 window.logoutAccounting = logoutAccounting;
+window.formatProductionInput = formatProductionInput;
+window.handleProductionFocus = handleProductionFocus;
+window.handleProductionInput = handleProductionInput;
+window.formatQtyNumber = formatQtyNumber;
+
+function exportAccountingSummaryPDF() {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    alert("กรุณาอนุญาตให้เปิดหน้าต่างป็อปอัปเพื่อออกรายงาน PDF");
+    return;
+  }
+  const html = generateAccountingReportHTML(false);
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
+
+function printAccountingSummary() {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    alert("กรุณาอนุญาตให้เปิดหน้าต่างป็อปอัปเพื่อพิมพ์รายงาน");
+    return;
+  }
+  const html = generateAccountingReportHTML(true);
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
+
+function generateAccountingReportHTML(isPrintImmediate = false) {
+  const month = document.getElementById("filterMonth")?.value || "";
+  const deptFilter = document.getElementById("filterDept")?.value || "all";
+  const statusFilter = document.getElementById("filterStatus")?.value || "all";
+
+  let filterDesc = `ข้อมูลประจำเดือน: ${formatThaiMonthYearAccounting(month)}`;
+  if (deptFilter !== "all") {
+    filterDesc += ` | แผนก: ${getDeptName(deptFilter)}`;
+  }
+  if (statusFilter !== "all") {
+    const statusText = statusFilter === "sent_accounting" ? "รอบัญชีตรวจ" : (statusFilter === "accounting_checked" ? "บัญชีตรวจแล้ว" : "ยกเลิกรายการ");
+    filterDesc += ` | สถานะ: ${statusText}`;
+  }
+
+  // Calculate Departmental Summary
+  const activeGroups = (state.groups || []).filter(g => normalizeText(g.status) !== STATUS_CANCELLED);
+  const deptSummaryMap = {};
+  activeGroups.forEach(g => {
+    const deptCode = g.dept;
+    const deptName = getDeptName(deptCode) || deptCode;
+    if (!deptSummaryMap[deptCode]) {
+      deptSummaryMap[deptCode] = {
+        name: deptName,
+        production: 0,
+        waste: 0
+      };
+    }
+    deptSummaryMap[deptCode].production += (g.production || 0);
+    deptSummaryMap[deptCode].waste += (g.waste || 0);
+  });
+
+  const deptRowsHTML = Object.values(deptSummaryMap).map(d => {
+    const pct = d.production > 0 ? (d.waste / d.production) * 100 : 0;
+    return `
+      <tr>
+        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-weight: 600; text-align: left;">${safeText(d.name)}</td>
+        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${formatNumber(d.production)} kg</td>
+        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${formatNumber(d.waste)} kg</td>
+        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${formatNumber(pct)}%</td>
+      </tr>
+    `;
+  }).join("");
+
+  // Detailed rows HTML
+  const detailedRowsHTML = (state.groups || []).map(g => {
+    const isCancelled = normalizeText(g.status) === STATUS_CANCELLED;
+    const pct = g.production ? (g.waste / g.production) * 100 : 0;
+    const formattedPct = isCancelled ? "-" : formatNumber(pct) + "%";
+    const statusText = isCancelled ? "ยกเลิกรายการ" : (normalizeText(g.status) === STATUS_DONE ? "บัญชีตรวจแล้ว" : "รอบัญชีตรวจ");
+    
+    return `
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 13px;">${g.date || "-"}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 13px;">${safeText(getDeptName(g.dept))}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 13px;">${g.shift || "-"}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 13px;">${g.machine || "-"}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 13px;">${formatNumber(g.waste)} kg</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 13px;">${g.production ? formatNumber(g.production) + " kg" : "-"}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 13px; font-weight: 600;">${formattedPct}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 12px;">${statusText}</td>
+      </tr>
+    `;
+  }).join("");
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>รายงานสรุปข้อมูลของเสียประจำแผนกบัญชี</title>
+      <meta charset="utf-8">
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+      <style>
+        body {
+          font-family: 'Sarabun', sans-serif;
+          color: #1e293b;
+          margin: 40px;
+          line-height: 1.6;
+        }
+        .header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 2px solid #0284c7;
+          padding-bottom: 15px;
+          margin-bottom: 30px;
+        }
+        .header h1 {
+          font-size: 24px;
+          margin: 0;
+          color: #0f172a;
+        }
+        .header p {
+          font-size: 14px;
+          margin: 5px 0 0 0;
+          color: #64748b;
+        }
+        .meta-info {
+          font-size: 14px;
+          margin-bottom: 25px;
+          color: #475569;
+          background: #f8fafc;
+          padding: 12px 18px;
+          border-radius: 8px;
+          border-left: 4px solid #0284c7;
+        }
+        .section-title {
+          font-size: 18px;
+          font-weight: 700;
+          color: #0f172a;
+          margin: 30px 0 12px 0;
+          border-bottom: 1px solid #cbd5e1;
+          padding-bottom: 6px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 30px;
+        }
+        th {
+          background-color: #0284c7;
+          color: white;
+          font-weight: 600;
+          text-align: left;
+          padding: 10px 8px;
+          font-size: 14px;
+        }
+        th.text-right {
+          text-align: right;
+        }
+        td {
+          font-size: 14px;
+        }
+        .footer {
+          margin-top: 50px;
+          text-align: center;
+          font-size: 12px;
+          color: #94a3b8;
+          border-top: 1px solid #e2e8f0;
+          padding-top: 15px;
+        }
+        @media print {
+          body {
+            margin: 20px;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      </style>
+    </head>
+    <body ${isPrintImmediate ? 'onload="window.print()"' : ''}>
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;" class="no-print">
+        <button onclick="window.print();" style="background: #0284c7; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.2);">
+          พิมพ์ / บันทึกเป็น PDF
+        </button>
+      </div>
+      <div class="header">
+        <div>
+          <h1>รายงานสรุปประสิทธิภาพและของเสียรายแผนก (Accounting)</h1>
+          <p>PVT&T FACTORY Management System - ฝ่ายบัญชีและการคำนวณอัตราของเสีย</p>
+        </div>
+        <div style="text-align: right; font-size: 12px; color: #64748b;">
+          พิมพ์เมื่อ: ${new Date().toLocaleDateString("th-TH")}
+        </div>
+      </div>
+      
+      <div class="meta-info">
+        <strong>ช่วงเวลาและตัวกรอง:</strong> ${filterDesc}
+      </div>
+
+      <div class="section-title">1. สรุปรายเดือนตามแผนก (Departmental Summary)</div>
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align: left;">แผนก</th>
+            <th style="text-align: right;">ผลิตรวม (kg)</th>
+            <th style="text-align: right;">ของเสียรวม (kg)</th>
+            <th style="text-align: right;">อัตราของเสีย (% Waste)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${deptRowsHTML || '<tr><td colspan="4" style="padding: 15px; text-align: center; color: #64748b;">ไม่มีข้อมูลแผนก</td></tr>'}
+        </tbody>
+      </table>
+
+      <div class="section-title">2. รายละเอียดรายการผลิตและของเสียรายวัน (Daily Transactions)</div>
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align: left;">วันที่</th>
+            <th style="text-align: left;">แผนก</th>
+            <th style="text-align: center;">กะ</th>
+            <th style="text-align: left;">เครื่อง</th>
+            <th style="text-align: right;">ของเสีย (kg)</th>
+            <th style="text-align: right;">ยอดผลิต (kg)</th>
+            <th style="text-align: right;">% Waste</th>
+            <th style="text-align: center;">สถานะ</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${detailedRowsHTML || '<tr><td colspan="8" style="padding: 15px; text-align: center; color: #64748b;">ไม่มีข้อมูลรายละเอียด</td></tr>'}
+        </tbody>
+      </table>
+
+      <div class="footer">
+        เอกสารนี้จัดทำและรับรองโดยระบบบัญชีอัตโนมัติของบริษัท PVT&T FACTORY Management System
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+window.exportAccountingSummaryPDF = exportAccountingSummaryPDF;
+window.printAccountingSummary = printAccountingSummary;
+

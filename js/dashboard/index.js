@@ -150,6 +150,7 @@ let chartDailyWastePercent = null;
 let chartMachineRisk = null;
 let chartProblem = null;
 let chartDeptDonut = null;
+let chartMachineHistory = null;
 
 /* =========================================================
    INIT
@@ -276,16 +277,111 @@ function renderDepartmentFilter() {
 }
 
 /* =========================================================
-   DATE / FILTER
+   DATE / FILTER (THAI MONTH SELECTION)
 ========================================================= */
 
+const THAI_MONTH_NAMES = [
+  { value: "01", name: "มกราคม", short: "ม.ค." },
+  { value: "02", name: "กุมภาพันธ์", short: "ก.พ." },
+  { value: "03", name: "มีนาคม", short: "มี.ค." },
+  { value: "04", name: "เมษายน", short: "เม.ย." },
+  { value: "05", name: "พฤษภาคม", short: "พ.ค." },
+  { value: "06", name: "มิถุนายน", short: "มิ.ย." },
+  { value: "07", name: "กรกฎาคม", short: "ก.ค." },
+  { value: "08", name: "สิงหาคม", short: "ส.ค." },
+  { value: "09", name: "กันยายน", short: "ก.ย." },
+  { value: "10", name: "ตุลาคม", short: "ต.ค." },
+  { value: "11", name: "พฤศจิกายน", short: "พ.ย." },
+  { value: "12", name: "ธันวาคม", short: "ธ.ค." },
+];
+
+function getThaiMonthFullName(mmNumber) {
+  const idx = Number(mmNumber) - 1;
+  return THAI_MONTH_NAMES[idx] ? THAI_MONTH_NAMES[idx].name : `เดือน ${mmNumber}`;
+}
+
+function getThaiMonthShortName(mmNumber) {
+  const idx = Number(mmNumber) - 1;
+  return THAI_MONTH_NAMES[idx] ? THAI_MONTH_NAMES[idx].short : `ด.${mmNumber}`;
+}
+
+function getThaiYearDisplay(yyyy) {
+  const num = Number(yyyy);
+  const buddhistYear = num + 543;
+  return `ปี ${buddhistYear} (${num})`;
+}
+
+function populateThaiYearOptions(selectEl, selectedYear) {
+  if (!selectEl) return;
+  const currentYear = new Date().getFullYear();
+  const startYear = currentYear - 4;
+  const endYear = currentYear + 2;
+
+  let html = "";
+  for (let y = endYear; y >= startYear; y--) {
+    const buddhistYear = y + 543;
+    html += `<option value="${y}" ${y === Number(selectedYear) ? "selected" : ""}>ปี ${buddhistYear} (${y})</option>`;
+  }
+  selectEl.innerHTML = html;
+}
+
 function initMonthFilter() {
+  const monthSelect = document.getElementById("filter-month-select");
+  const yearSelect = document.getElementById("filter-year-select");
+  const hiddenInput = document.getElementById("filter-month");
+
+  const today = new Date();
+  const currentY = today.getFullYear();
+  const currentM = String(today.getMonth() + 1).padStart(2, "0");
+
+  if (yearSelect) {
+    populateThaiYearOptions(yearSelect, currentY);
+  }
+
+  if (monthSelect) {
+    monthSelect.value = currentM;
+  }
+
+  if (hiddenInput) {
+    hiddenInput.value = `${currentY}-${currentM}`;
+  }
+
+  const handleMonthChange = () => {
+    const y = yearSelect ? yearSelect.value : String(currentY);
+    const m = monthSelect ? monthSelect.value : currentM;
+    if (hiddenInput) {
+      hiddenInput.value = `${y}-${m}`;
+    }
+
+    // Check if preset active
+    const now = new Date();
+    const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthStr = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, "0")}`;
+    const currentVal = `${y}-${m}`;
+
+    document.querySelectorAll(".quick-month-btn").forEach((btn) => btn.classList.remove("active"));
+    if (currentVal === thisMonthStr) {
+      document.querySelector(`.quick-month-btn[onclick*="thisMonth"]`)?.classList.add("active");
+    } else if (currentVal === lastMonthStr) {
+      document.querySelector(`.quick-month-btn[onclick*="lastMonth"]`)?.classList.add("active");
+    }
+
+    if (typeof loadAndProcessDashboardData === "function") {
+      loadAndProcessDashboardData();
+    }
+  };
+
+  monthSelect?.addEventListener("change", handleMonthChange);
+  yearSelect?.addEventListener("change", handleMonthChange);
+
   setQuickMonth("thisMonth", false);
 }
 
 function setQuickMonth(preset, autoLoad = true) {
+  const monthSelect = document.getElementById("filter-month-select");
+  const yearSelect = document.getElementById("filter-year-select");
   const input = document.getElementById("filter-month");
-  if (!input) return;
 
   const today = new Date();
   let yyyy = today.getFullYear();
@@ -300,7 +396,21 @@ function setQuickMonth(preset, autoLoad = true) {
   }
 
   const mmStr = String(mm).padStart(2, "0");
-  input.value = `${yyyy}-${mmStr}`;
+
+  if (yearSelect) {
+    if (!yearSelect.querySelector(`option[value="${yyyy}"]`)) {
+      populateThaiYearOptions(yearSelect, yyyy);
+    }
+    yearSelect.value = String(yyyy);
+  }
+
+  if (monthSelect) {
+    monthSelect.value = mmStr;
+  }
+
+  if (input) {
+    input.value = `${yyyy}-${mmStr}`;
+  }
 
   document.querySelectorAll(".quick-month-btn").forEach((btn) => {
     btn.classList.remove("active");
@@ -324,6 +434,11 @@ function getSelectedDateRange() {
     return {
       start: toDateInputValue(firstDay),
       end: toDateInputValue(lastDay),
+      monthNumber: today.getMonth() + 1,
+      yearNumber: today.getFullYear(),
+      thaiMonth: getThaiMonthFullName(today.getMonth() + 1),
+      thaiYear: today.getFullYear() + 543,
+      thaiLabel: `${getThaiMonthFullName(today.getMonth() + 1)} ${today.getFullYear() + 543}`,
     };
   }
 
@@ -334,6 +449,11 @@ function getSelectedDateRange() {
   return {
     start: toDateInputValue(firstDay),
     end: toDateInputValue(lastDay),
+    monthNumber: mm,
+    yearNumber: yyyy,
+    thaiMonth: getThaiMonthFullName(mm),
+    thaiYear: yyyy + 543,
+    thaiLabel: `${getThaiMonthFullName(mm)} ${yyyy + 543}`,
   };
 }
 
@@ -356,12 +476,15 @@ function getPreviousMonthRange(startStr, endStr) {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  const monthName = prevMonthStart.toLocaleDateString("th-TH", { month: "short" });
+  const prevMM = prevMonthStart.getMonth() + 1;
+  const prevYY = prevMonthStart.getFullYear() + 543;
+  const monthName = `${getThaiMonthShortName(prevMM)} ${prevYY}`;
 
   return {
     start: format(prevMonthStart),
     end: format(prevMonthEnd),
     monthName,
+    thaiFullName: `${getThaiMonthFullName(prevMM)} ${prevYY}`,
   };
 }
 
@@ -521,7 +644,7 @@ function renderAllDashboard(records, prevRecords = [], range, prevRange) {
 
   updateMetricCards(records, prevRecords, machineSummary, deptSummary, range, prevRange);
   renderExecutiveInsight(records, machineSummary);
-  renderDepartmentSummaryTable(deptSummary);
+  renderDepartmentSummaryTable(deptSummary, machineSummary);
   renderMachineSummaryList(machineSummary);
 
   renderDailyWastePercentChart(dailySummary);
@@ -531,6 +654,9 @@ function renderAllDashboard(records, prevRecords = [], range, prevRange) {
 
   // Render D3 Sparklines for KPIs
   renderKPISparklines(records, dailySummary, deptSummary);
+
+  // Re-trigger entrance animation on load/updates
+  triggerEntranceAnimations();
 }
 
 /* =========================================================
@@ -563,9 +689,49 @@ function updateMetricCards(records, prevRecords = [], machineSummary, deptSummar
       : "-"
   );
 
+  // For MoM scrap comparison card
+  const scrapDiff = totalWaste - prevWaste;
+  const scrapPctChange = prevWaste ? (scrapDiff / prevWaste) * 100 : 0;
+  const scrapFormattedPct = (scrapPctChange > 0 ? "+" : "") + scrapPctChange.toFixed(1) + "%";
+
+  const scrapValEl = document.getElementById("cnt-scrap-mom-val");
+  if (scrapValEl) {
+    let arrowIcon = "trending_flat";
+    let color = "#475569"; // neutral Gray
+    if (scrapDiff > 0) {
+      arrowIcon = "trending_up";
+      color = "#ef4444"; // Worse (red)
+    } else if (scrapDiff < 0) {
+      arrowIcon = "trending_down";
+      color = "#10b981"; // Better (green)
+    }
+    scrapValEl.innerHTML = `
+      <span style="display: inline-flex; align-items: center; gap: 4px; color: ${color};">
+        <span class="material-symbols-outlined" style="font-size: 24px; font-weight: bold; vertical-align: middle;">${arrowIcon}</span>
+        ${prevWaste === 0 ? "0%" : scrapFormattedPct}
+      </span>
+    `;
+  }
+
+  setText("cnt-scrap-mom-sub", `เดือนนี้เสีย ${formatNumber(totalWaste)} kg / เดือนก่อน ${formatNumber(prevWaste)} kg`);
+
+  // Dynamically change card class border color
+  const cardEl = document.getElementById("kpi-scrap-mom-card");
+  if (cardEl) {
+    cardEl.classList.remove("success", "warning", "danger");
+    if (scrapDiff < 0) {
+      cardEl.classList.add("success");
+    } else if (scrapDiff > 0) {
+      cardEl.classList.add("danger");
+    } else {
+      cardEl.classList.add("warning");
+    }
+  }
+
   // Render KPI comparison badges
   renderKPIComparison("cnt-today-cmp", totalProduction, prevProduction, "kg", true);
   renderKPIComparison("cnt-machine-risk-cmp", totalWaste, prevWaste, "kg", false);
+  renderKPIComparison("cnt-scrap-mom-cmp", totalWaste, prevWaste, "kg", false);
   renderKPIPercentComparison("cnt-waste-percent-cmp", wastePercent, prevWastePercent);
 
   const pill = document.getElementById("overall-result-pill");
@@ -759,9 +925,29 @@ function getProductionUniqueKey(row) {
    TABLES / LISTS
 ========================================================= */
 
-function renderDepartmentSummaryTable(rows) {
+function renderDepartmentSummaryTable(rows, machineSummary = []) {
   const tbody = document.getElementById("department-summary-body");
   if (!tbody) return;
+
+  // Calculate overall scrap percentage
+  const totalWaste = rows.reduce((sum, item) => sum + item.waste, 0);
+  const totalProduction = rows.reduce((sum, item) => sum + item.production, 0);
+  const overallPercent = totalProduction > 0 ? (totalWaste / totalProduction) * 100 : 0;
+
+  // Render or remove the blinking notification badge
+  const alarmContainer = document.getElementById("scrap-alarm-container");
+  if (alarmContainer) {
+    if (overallPercent > 2.5) {
+      alarmContainer.innerHTML = `
+        <span class="scrap-alarm-badge" title="อัตราของเสียรวมสูงเกิน 2.5% (ปัจจุบัน: ${formatNumber(overallPercent)}%)">
+          <span class="material-symbols-outlined">warning</span>
+          <span>ALERT: อัตราของเสียสะสมรวมเกินเกณฑ์กำหนด (${formatNumber(overallPercent)}%)</span>
+        </span>
+      `;
+    } else {
+      alarmContainer.innerHTML = "";
+    }
+  }
 
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="5" class="empty-cell">ไม่พบข้อมูลแผนกในช่วงเดือนที่เลือก</td></tr>`;
@@ -772,14 +958,16 @@ function renderDepartmentSummaryTable(rows) {
     .sort((a, b) => a.department.localeCompare(b.department, "th"))
     .map((item) => {
       const result = getResultByPercent(item.percent, FACTORY_WARNING_PERCENT, FACTORY_LIMIT_PERCENT);
+      const isAttention = item.percent > 2.5;
+      const attentionClass = isAttention ? " dept-row-attention" : "";
 
       return `
-        <tr>
+        <tr class="${attentionClass}">
           <td>
-            <span style="display:inline-flex;align-items:center;gap:8px;">
-              <span style="width:12px;height:12px;border-radius:999px;background:${getDepartmentColor(item.code)};display:inline-block;box-shadow:0 0 0 3px rgba(15,23,42,.06);"></span>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="width: 12px; height: 12px; border-radius: 999px; background: ${getDepartmentColor(item.code)}; display: inline-block; box-shadow: 0 0 0 3px rgba(15,23,42,.06); flex-shrink: 0;"></span>
               <strong>${escapeHTML(item.department)}</strong>
-            </span>
+            </div>
           </td>
           <td class="text-right">${formatNumber(item.production)}</td>
           <td class="text-right">${formatNumber(item.waste)}</td>
@@ -789,6 +977,51 @@ function renderDepartmentSummaryTable(rows) {
       `;
     })
     .join("");
+}
+
+function copyMachineId(machineId, btnId) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(machineId)
+      .then(() => showCopyFeedback(btnId))
+      .catch(() => fallbackCopyMachineId(machineId, btnId));
+  } else {
+    fallbackCopyMachineId(machineId, btnId);
+  }
+}
+
+function fallbackCopyMachineId(text, btnId) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.top = "0";
+  textArea.style.left = "0";
+  textArea.style.position = "fixed";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  try {
+    document.execCommand("copy");
+    showCopyFeedback(btnId);
+  } catch (err) {
+    console.error("Copy machine ID fallback failed:", err);
+  }
+  document.body.removeChild(textArea);
+}
+
+function showCopyFeedback(btnId) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  const originalHTML = btn.innerHTML;
+  btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:13px;color:#10b981;">check</span>`;
+  btn.style.borderColor = "#10b981";
+  btn.style.background = "#f0fdf4";
+  btn.style.color = "#10b981";
+  
+  setTimeout(() => {
+    btn.innerHTML = originalHTML;
+    btn.style.borderColor = "";
+    btn.style.background = "";
+    btn.style.color = "";
+  }, 1200);
 }
 
 function renderMachineSummaryList(rows) {
@@ -813,11 +1046,29 @@ function renderMachineSummaryList(rows) {
       const machineHtml = machines
         .map((item) => {
           const rowClass = getMachineRowClass(item.percent);
+          const safeMachine = escapeHTML(item.machine);
+          const safeDeptCode = escapeHTML(item.departmentCode || "");
+          const btnId = `copy-btn-list-${safeDeptCode}-${String(item.machine).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 
           return `
             <div class="machine-item ${rowClass}" style="border-left: 8px solid ${getDepartmentColor(item.departmentCode)};">
-              <div>
-                <strong>เครื่อง ${escapeHTML(item.machine)}</strong>
+              <div class="machine-main-col">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <strong>เครื่อง ${safeMachine}</strong>
+                  <button type="button" 
+                          class="btn-machine-info-pill" 
+                          onclick="event.stopPropagation(); openMachineInfoModal('${safeMachine}', '${safeDeptCode}')"
+                          title="เปิดกราฟสถิติและประวัติซ่อมบำรุง">
+                    <span class="material-symbols-outlined">info</span>
+                    <span>Info</span>
+                  </button>
+                  <button id="${btnId}" 
+                          onclick="event.stopPropagation(); copyMachineId('${safeMachine}', '${btnId}')" 
+                          title="คัดลอกรหัสเครื่องจักร" 
+                          style="border: 1px solid rgba(226, 232, 240, 0.8); background: #f8fafc; border-radius: 6px; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; color: #64748b; transition: all 0.15s ease;">
+                    <span class="material-symbols-outlined" style="font-size: 13px;">content_copy</span>
+                  </button>
+                </div>
                 <small>
                   ปัญหาหลัก: ${escapeHTML(item.topProblemName)}
                   ${item.topProblemWaste ? `(${formatNumber(item.topProblemWaste)} kg)` : ""}
@@ -846,6 +1097,668 @@ function renderMachineSummaryList(rows) {
     })
     .join("");
 }
+
+/* =========================================================
+   MACHINE DETAIL MODAL & HISTORICAL PERFORMANCE CHART
+========================================================= */
+
+let activeMachineModalContext = null;
+
+function showDashboardToast(message, type = "success") {
+  const toast = document.getElementById("dashboard-toast");
+  if (!toast) return;
+
+  const iconName = type === "success" ? "check_circle" : type === "error" ? "error" : "info";
+
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <span class="material-symbols-outlined" style="font-size: 20px;">${iconName}</span>
+    <span>${escapeHTML(message)}</span>
+  `;
+
+  if (toast.dataset.hideTimeout) {
+    clearTimeout(parseInt(toast.dataset.hideTimeout, 10));
+  }
+
+  toast.classList.remove("hidden");
+
+  const timeoutId = setTimeout(() => {
+    toast.classList.add("hidden");
+    toast.removeAttribute("data-hide-timeout");
+  }, 3500);
+
+  toast.dataset.hideTimeout = timeoutId.toString();
+}
+
+async function openMachineInfoModal(machineName, deptCode) {
+  const modal = document.getElementById("machine-info-modal");
+  if (!modal) return;
+
+  const machineIdClean = String(machineName || "").trim();
+  const allData = window.pvtDashboardRawCache || dashboardDataCache || [];
+
+  // Filter records matching this machine (case-insensitive for resilience)
+  let machineRecords = allData.filter((row) => {
+    const m = String(row.machine_no || row.machine || "").trim();
+    if (deptCode) {
+      const dCode = getDepartmentInfo(row).code;
+      return m.toLowerCase() === machineIdClean.toLowerCase() && dCode.toLowerCase() === String(deptCode).trim().toLowerCase();
+    }
+    return m.toLowerCase() === machineIdClean.toLowerCase();
+  });
+
+  // Fallback: if deptCode was passed but no records matched, try matching machine name only
+  if (machineRecords.length === 0 && deptCode) {
+    machineRecords = allData.filter((row) => {
+      const m = String(row.machine_no || row.machine || "").trim();
+      return m.toLowerCase() === machineIdClean.toLowerCase();
+    });
+  }
+
+  // Fallback: if no records exist in current month cache, query Supabase for any recent records for this machine
+  if (machineRecords.length === 0 && window.supabaseClient) {
+    try {
+      const { data: dbRows, error: dbErr } = await window.supabaseClient
+        .from("daily_waste_reports")
+        .select("*")
+        .ilike("machine_no", machineIdClean)
+        .order("report_date", { ascending: false })
+        .limit(30);
+
+      if (!dbErr && dbRows && dbRows.length > 0) {
+        machineRecords = dbRows;
+      }
+    } catch (err) {
+      console.warn("Could not query extra machine records from DB:", err);
+    }
+  }
+
+  // Load any locally created tickets for this machine
+  try {
+    const savedTickets = JSON.parse(localStorage.getItem("ea_maintenance_tickets") || "[]");
+    const matchingSaved = savedTickets.filter((t) => {
+      const m = String(t.machine_no || t.machine || "").trim();
+      if (deptCode) {
+        return m.toLowerCase() === machineIdClean.toLowerCase() && String(t.department_code || "").toLowerCase() === String(deptCode).toLowerCase();
+      }
+      return m.toLowerCase() === machineIdClean.toLowerCase();
+    });
+
+    matchingSaved.forEach((t) => {
+      if (!machineRecords.some((r) => (r.id && r.id === t.id) || (r.ticket_id && r.ticket_id === t.ticket_id))) {
+        machineRecords.unshift(t);
+      }
+    });
+  } catch (err) {
+    console.warn("Error loading saved maintenance tickets:", err);
+  }
+
+  const deptInfo = (deptCode && departmentMasters[deptCode]) 
+    ? departmentMasters[deptCode] 
+    : (machineRecords.length ? getDepartmentInfo(machineRecords[0]) : { name: "แผนกการผลิต", code: deptCode || "UNKNOWN" });
+  
+  const deptColor = getDepartmentColor(deptInfo.code);
+
+  // Save active machine context
+  activeMachineModalContext = {
+    machineName: machineIdClean,
+    deptCode: deptInfo.code,
+    deptName: deptInfo.name,
+    records: machineRecords,
+    deptColor: deptColor,
+  };
+
+  // Compute metrics
+  const totalProduction = sumProductionUnique(machineRecords);
+  const totalWaste = sumWaste(machineRecords);
+  const wastePercent = calcWastePercent(totalWaste, totalProduction);
+  const totalRecords = machineRecords.length;
+  const result = getResultByPercent(wastePercent, MACHINE_WARNING_PERCENT, MACHINE_LIMIT_PERCENT);
+
+  // Update Header
+  const iconBadge = document.getElementById("modal-dept-icon-badge");
+  if (iconBadge) {
+    iconBadge.style.backgroundColor = `${deptColor}18`;
+    iconBadge.style.color = deptColor;
+  }
+
+  setText("modal-machine-dept-name", `${deptInfo.name} (${deptInfo.code})`);
+  setText("modal-machine-title", `เครื่องจักร: ${machineIdClean}`);
+
+  const statusPill = document.getElementById("modal-machine-status-pill");
+  if (statusPill) {
+    statusPill.className = `result-pill ${result.className}`;
+    statusPill.textContent = result.label;
+  }
+
+  // Update KPIs
+  setText("modal-m-prod", `${formatNumber(totalProduction)} kg`);
+  setText("modal-m-waste", `${formatNumber(totalWaste)} kg`);
+  setText("modal-m-pct", `${formatNumber(wastePercent)}%`);
+  setText("modal-m-records", `${formatNumber(totalRecords)} กะ`);
+
+  // Render Historical Chart
+  renderMachineHistoryChart(machineRecords, machineIdClean, deptColor);
+
+  // Render Maintenance & Defect Notes
+  renderMachineMaintenanceNotes(machineRecords);
+
+  // Display Modal
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+}
+
+function closeMachineInfoModal() {
+  const modal = document.getElementById("machine-info-modal");
+  if (!modal) return;
+
+  closeCreateTicketModal();
+
+  modal.style.display = "none";
+  modal.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+
+  if (chartMachineHistory) {
+    chartMachineHistory.destroy();
+    chartMachineHistory = null;
+  }
+
+  activeMachineModalContext = null;
+}
+
+/* =========================================================
+   CREATE MAINTENANCE TICKET LOGIC
+========================================================= */
+
+function openCreateTicketModal() {
+  const ticketModal = document.getElementById("create-ticket-modal");
+  if (!ticketModal) return;
+
+  if (!activeMachineModalContext) {
+    showDashboardToast("กรุณาเลือกเครื่องจักรก่อนเปิดใบแจ้งซ่อม", "error");
+    return;
+  }
+
+  const { machineName, deptCode, deptName } = activeMachineModalContext;
+
+  // Pre-fill machine info
+  setText("ticket-field-machine", `เครื่อง ${machineName}`);
+  const inputMachine = document.getElementById("ticket-input-machine");
+  if (inputMachine) inputMachine.value = machineName;
+
+  setText("ticket-field-dept", `${deptName} (${deptCode})`);
+  const inputDept = document.getElementById("ticket-input-dept");
+  if (inputDept) inputDept.value = deptCode;
+
+  // Pre-fill reporter
+  const activeUser = localStorage.getItem("activeName") || localStorage.getItem("activeUser") || "หัวหน้างาน (Supervisor)";
+  const reporterInput = document.getElementById("ticket-input-reporter");
+  if (reporterInput) reporterInput.value = activeUser;
+
+  // Pre-fill shift
+  const currentHour = new Date().getHours();
+  const shiftSelect = document.getElementById("ticket-input-shift");
+  if (shiftSelect) {
+    shiftSelect.value = (currentHour >= 8 && currentHour < 20) ? "day" : "night";
+  }
+
+  // Reset form fields
+  const urgencySelect = document.getElementById("ticket-input-urgency");
+  if (urgencySelect) urgencySelect.value = "Normal";
+
+  const categorySelect = document.getElementById("ticket-input-category");
+  if (categorySelect) categorySelect.selectedIndex = 0;
+
+  const detailInput = document.getElementById("ticket-input-detail");
+  if (detailInput) detailInput.value = "";
+
+  const actionInput = document.getElementById("ticket-input-action");
+  if (actionInput) actionInput.value = "";
+
+  // Show ticket overlay
+  ticketModal.style.display = "flex";
+  ticketModal.setAttribute("aria-hidden", "false");
+
+  if (detailInput) {
+    setTimeout(() => detailInput.focus(), 100);
+  }
+}
+
+function closeCreateTicketModal() {
+  const ticketModal = document.getElementById("create-ticket-modal");
+  if (!ticketModal) return;
+
+  ticketModal.style.display = "none";
+  ticketModal.setAttribute("aria-hidden", "true");
+
+  const form = document.getElementById("create-ticket-form");
+  if (form) form.reset();
+}
+
+function handleCreateTicketSubmit(event) {
+  event.preventDefault();
+
+  if (!activeMachineModalContext) {
+    showDashboardToast("ไม่พบข้อมูลเครื่องจักรที่ระบุ", "error");
+    return;
+  }
+
+  const form = document.getElementById("create-ticket-form");
+  if (!form) return;
+
+  const machineNo = document.getElementById("ticket-input-machine")?.value || activeMachineModalContext.machineName;
+  const deptCode = document.getElementById("ticket-input-dept")?.value || activeMachineModalContext.deptCode;
+  const urgency = document.getElementById("ticket-input-urgency")?.value || "Normal";
+  const problemType = document.getElementById("ticket-input-category")?.value || "ข้อบกพร่องทั่วไป";
+  const detail = document.getElementById("ticket-input-detail")?.value.trim() || "";
+  const actionTaken = document.getElementById("ticket-input-action")?.value.trim() || "";
+  const reporter = document.getElementById("ticket-input-reporter")?.value.trim() || "Supervisor";
+  const shift = document.getElementById("ticket-input-shift")?.value || "day";
+
+  if (!detail) {
+    showDashboardToast("กรุณากรอกรายละเอียดอาการเสีย", "error");
+    return;
+  }
+
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10);
+  const ticketId = `TKT-${dateStr.replace(/-/g, "")}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+  // Determine initial status based on urgency
+  const status = urgency === "Critical" ? "Critical" : "Pending";
+
+  const newTicketRecord = {
+    id: ticketId,
+    ticket_id: ticketId,
+    report_date: dateStr,
+    date: dateStr,
+    created_at: now.toISOString(),
+    machine_no: machineNo,
+    machine: machineNo,
+    department_code: deptCode,
+    shift: shift,
+    problem_type: problemType,
+    waste_weight_kg: 0,
+    waste_weight: 0,
+    detail: `${detail}${actionTaken ? ` | การดำเนินการเบื้องต้น: ${actionTaken}` : ""} [เลขที่แจ้ง: ${ticketId}]`,
+    remark: `ใบแจ้งซ่อมด่วน (${urgency}): ${detail}`,
+    notes: detail,
+    supervisor_comment: `ใบแจ้งซ่อม [${urgency}]: ${detail}`,
+    status: status,
+    maintenance_status: status,
+    action_status: status,
+    operator_name: reporter,
+    reporter_name: reporter,
+    created_by_name: reporter,
+    urgency: urgency,
+  };
+
+  // 1. Store in local storage for persistence across reloads
+  try {
+    const existingTickets = JSON.parse(localStorage.getItem("ea_maintenance_tickets") || "[]");
+    existingTickets.unshift(newTicketRecord);
+    localStorage.setItem("ea_maintenance_tickets", JSON.stringify(existingTickets));
+  } catch (err) {
+    console.warn("Could not save ticket to localStorage:", err);
+  }
+
+  // 2. Prepend to active machine records and re-render maintenance notes table
+  if (activeMachineModalContext && activeMachineModalContext.records) {
+    activeMachineModalContext.records.unshift(newTicketRecord);
+    renderMachineMaintenanceNotes(activeMachineModalContext.records);
+  }
+
+  // 3. Close create ticket modal & give feedback
+  closeCreateTicketModal();
+  showDashboardToast(`บันทึกใบแจ้งซ่อมเครื่อง ${machineNo} สำเร็จ (${ticketId})`, "success");
+}
+
+function renderMachineHistoryChart(records, machineName, deptColor) {
+  const canvas = document.getElementById("chart-machine-history");
+  if (!canvas || typeof Chart === "undefined") return;
+
+  if (chartMachineHistory) {
+    chartMachineHistory.destroy();
+    chartMachineHistory = null;
+  }
+
+  if (!records.length) {
+    return;
+  }
+
+  // Sort chronologically
+  const sortedRecords = [...records].sort((a, b) => {
+    const dComp = (a.report_date || "").localeCompare(b.report_date || "");
+    if (dComp !== 0) return dComp;
+    return (a.created_at || "").localeCompare(b.created_at || "");
+  });
+
+  // Group by date & shift
+  const labels = [];
+  const prodData = [];
+  const wasteData = [];
+  const percentData = [];
+
+  sortedRecords.forEach((r) => {
+    const dStr = formatDateShort(r.report_date || r.date);
+    const shiftLabel = r.shift === "day" ? "กะวัน" : r.shift === "night" ? "กะคืน" : (r.shift ? `กะ ${r.shift}` : "");
+    labels.push(shiftLabel ? `${dStr} (${shiftLabel})` : dStr);
+
+    const prod = toNumber(r.production_weight_kg || r.production_weight || r.production_kg || 0);
+    const waste = getWasteWeight(r);
+    const pct = calcWastePercent(waste, prod);
+
+    prodData.push(prod);
+    wasteData.push(waste);
+    percentData.push(pct);
+  });
+
+  chartMachineHistory = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          type: "line",
+          label: "% Waste",
+          data: percentData,
+          yAxisID: "yPercent",
+          borderColor: "#0284c7",
+          backgroundColor: "rgba(2, 132, 199, 0.12)",
+          pointBackgroundColor: percentData.map((pct) => getRiskColor(pct)),
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          borderWidth: 2.5,
+          tension: 0.25,
+          fill: true,
+          order: 1,
+        },
+        {
+          type: "bar",
+          label: "ผลิต (kg)",
+          data: prodData,
+          yAxisID: "yWeight",
+          backgroundColor: "rgba(16, 185, 129, 0.65)",
+          borderColor: "#10b981",
+          borderWidth: 1,
+          borderRadius: 6,
+          order: 2,
+        },
+        {
+          type: "bar",
+          label: "เสีย (kg)",
+          data: wasteData,
+          yAxisID: "yWeight",
+          backgroundColor: "rgba(239, 68, 68, 0.75)",
+          borderColor: "#ef4444",
+          borderWidth: 1,
+          borderRadius: 6,
+          order: 3,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: "top",
+          labels: {
+            boxWidth: 12,
+            boxHeight: 12,
+            usePointStyle: true,
+            font: { family: "Prompt, sans-serif", size: 12 },
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label(ctx) {
+              const datasetLabel = ctx.dataset.label || "";
+              const val = ctx.parsed.y;
+              if (ctx.dataset.yAxisID === "yPercent") {
+                return `${datasetLabel}: ${val.toFixed(2)}%`;
+              }
+              return `${datasetLabel}: ${formatNumber(val)} kg`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: "Prompt, sans-serif", size: 11 } },
+        },
+        yWeight: {
+          type: "linear",
+          display: true,
+          position: "left",
+          title: {
+            display: true,
+            text: "น้ำหนัก (kg)",
+            font: { family: "Prompt, sans-serif", size: 11, weight: 600 },
+          },
+          grid: { color: "rgba(226, 232, 240, 0.6)" },
+          ticks: {
+            callback: (val) => formatNumber(val),
+            font: { family: "Prompt, sans-serif", size: 11 },
+          },
+        },
+        yPercent: {
+          type: "linear",
+          display: true,
+          position: "right",
+          title: {
+            display: true,
+            text: "อัตราของเสีย (%)",
+            font: { family: "Prompt, sans-serif", size: 11, weight: 600 },
+          },
+          grid: { drawOnChartArea: false },
+          ticks: {
+            callback: (val) => val + "%",
+            font: { family: "Prompt, sans-serif", size: 11 },
+          },
+        },
+      },
+    },
+  });
+}
+
+function getMaintenanceStatusConfig(status, row, item) {
+  const raw = String(
+    status || 
+    (item && (item.status || item.maintenance_status || item.action_status)) ||
+    (row && (row.maintenance_status || row.status || row.supervisor_status || row.action_status)) ||
+    ""
+  ).trim().toLowerCase();
+
+  if (["resolved", "fixed", "completed", "done", "closed", "pass", "success", "เรียบร้อย", "แก้ไขแล้ว", "เสร็จสิ้น"].includes(raw)) {
+    return {
+      label: "Resolved",
+      thaiLabel: "แก้ไขแล้ว",
+      className: "status-pill-resolved",
+      icon: "check_circle"
+    };
+  }
+
+  if (["in_progress", "in progress", "in-progress", "processing", "working", "action_taken", "กำลังดำเนินการ", "อยู่ระหว่างแก้ไข", "กำลังซ่อม"].includes(raw)) {
+    return {
+      label: "In Progress",
+      thaiLabel: "กำลังดำเนินการ",
+      className: "status-pill-in-progress",
+      icon: "autorenew"
+    };
+  }
+
+  if (["pending", "open", "waiting", "review", "submitted", "รอตรวจสอบ", "รอดำเนินการ", "ยังไม่แก้ไข", "รอซ่อม"].includes(raw)) {
+    return {
+      label: "Pending",
+      thaiLabel: "รอดำเนินการ",
+      className: "status-pill-pending",
+      icon: "schedule"
+    };
+  }
+
+  if (["critical", "urgent", "danger", "failed", "ด่วน", "วิกฤต"].includes(raw)) {
+    return {
+      label: "Critical",
+      thaiLabel: "วิกฤต",
+      className: "status-pill-critical",
+      icon: "error"
+    };
+  }
+
+  // Fallback based on supervisor review presence
+  if (row && (row.supervisor_comment || row.supervisor_action || row.approved_at)) {
+    return {
+      label: "Resolved",
+      thaiLabel: "แก้ไขแล้ว",
+      className: "status-pill-resolved",
+      icon: "check_circle"
+    };
+  }
+
+  return {
+    label: "Resolved",
+    thaiLabel: "แก้ไขแล้ว",
+    className: "status-pill-resolved",
+    icon: "check_circle"
+  };
+}
+
+function renderMachineMaintenanceNotes(records) {
+  const tbody = document.getElementById("modal-maintenance-notes-body");
+  const countBadge = document.getElementById("modal-notes-count");
+  if (!tbody) return;
+
+  const notesList = [];
+
+  records.forEach((row) => {
+    const dStr = formatDateShort(row.report_date || row.date);
+    const shiftText = row.shift === "day" ? "กะวัน" : row.shift === "night" ? "กะคืน" : (row.shift || "-");
+    const reporter = row.operator_name || row.created_by_name || row.reporter_name || row.shift_leader || "เจ้าหน้าที่";
+
+    const items = getProblemItems(row);
+    if (items && items.length > 0) {
+      items.forEach((item) => {
+        const statusConfig = getMaintenanceStatusConfig(item.status || row.status || row.maintenance_status, row, item);
+        notesList.push({
+          dateText: `${dStr} (${shiftText})`,
+          problemType: item.problem_type || "ข้อบกพร่อง/ปัญหาการผลิต",
+          wasteKg: toNumber(item.waste_weight_kg || 0),
+          statusConfig,
+          notes: item.detail || row.remark || row.notes || row.supervisor_comment || "ไม่มีบันทึกเพิ่มเติม",
+          reporter,
+        });
+      });
+    } else if (row.remark || row.notes || row.supervisor_comment) {
+      const statusConfig = getMaintenanceStatusConfig(row.status || row.maintenance_status, row, null);
+      notesList.push({
+        dateText: `${dStr} (${shiftText})`,
+        problemType: "บันทึกทั่วไป",
+        wasteKg: getWasteWeight(row),
+        statusConfig,
+        notes: row.remark || row.notes || row.supervisor_comment || "-",
+        reporter,
+      });
+    }
+  });
+
+  if (countBadge) {
+    countBadge.textContent = `${notesList.length} รายการ`;
+  }
+
+  if (!notesList.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty-cell" style="padding: 24px; text-align: center; color: #64748b;">
+          ไม่พบบันทึกข้อบกพร่องหรือการซ่อมบำรุงสำหรับเครื่องนี้ในช่วงเวลาที่เลือก
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = notesList
+    .map((item) => {
+      const st = item.statusConfig;
+      return `
+        <tr>
+          <td style="white-space: nowrap; font-weight: 600; color: #1e293b;">
+            ${escapeHTML(item.dateText)}
+          </td>
+          <td>
+            <span class="badge" style="background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; font-size: 11px; padding: 2px 8px; border-radius: 99px;">
+              ${escapeHTML(item.problemType)}
+            </span>
+          </td>
+          <td class="text-right" style="font-weight: 700; color: #ef4444; white-space: nowrap;">
+            ${formatNumber(item.wasteKg)}
+          </td>
+          <td>
+            <span class="status-pill ${st.className}" title="${st.label}">
+              <span class="material-symbols-outlined">${st.icon}</span>
+              <span>${st.label}</span>
+            </span>
+          </td>
+          <td style="color: #475569; max-width: 280px; word-break: break-word;">
+            ${escapeHTML(item.notes)}
+          </td>
+          <td style="color: #64748b; white-space: nowrap;">
+            ${escapeHTML(item.reporter)}
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+// Global modal event listeners
+window.addEventListener("DOMContentLoaded", () => {
+  const modalBackdrop = document.getElementById("machine-info-modal");
+  if (modalBackdrop) {
+    modalBackdrop.addEventListener("click", (e) => {
+      if (e.target === modalBackdrop) {
+        closeMachineInfoModal();
+      }
+    });
+  }
+
+  const ticketBackdrop = document.getElementById("create-ticket-modal");
+  if (ticketBackdrop) {
+    ticketBackdrop.addEventListener("click", (e) => {
+      if (e.target === ticketBackdrop) {
+        closeCreateTicketModal();
+      }
+    });
+  }
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const ticketModal = document.getElementById("create-ticket-modal");
+      if (ticketModal && ticketModal.style.display !== "none" && ticketModal.getAttribute("aria-hidden") !== "true") {
+        closeCreateTicketModal();
+      } else {
+        closeMachineInfoModal();
+      }
+    }
+  });
+});
+
+window.copyMachineId = copyMachineId;
+window.openMachineInfoModal = openMachineInfoModal;
+window.closeMachineInfoModal = closeMachineInfoModal;
+window.openCreateTicketModal = openCreateTicketModal;
+window.closeCreateTicketModal = closeCreateTicketModal;
+window.handleCreateTicketSubmit = handleCreateTicketSubmit;
+window.showDashboardToast = showDashboardToast;
 
 /* =========================================================
    CHARTS
@@ -1431,7 +2344,7 @@ function renderKPISparklines(records, dailySummary, deptSummary) {
 
   if (!trendDays || trendDays.length === 0) {
     // Clear all sparklines if no data is available
-    ["sparkline-production", "sparkline-waste", "sparkline-waste-percent", "sparkline-top-department"].forEach(id => {
+    ["sparkline-production", "sparkline-waste", "sparkline-waste-percent", "sparkline-top-department", "sparkline-scrap-mom"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = "";
     });
@@ -1487,6 +2400,14 @@ function renderKPISparklines(records, dailySummary, deptSummary) {
     topDeptCode 
       ? `แนวโน้มของเสียแผนก ${topDeptName} 7 วันล่าสุด: ${topDeptTrend.map(v => formatNumber(v) + " kg").join(" -> ")}`
       : "ไม่มีข้อมูลของเสียรายแผนก"
+  );
+
+  drawSparkline(
+    "sparkline-scrap-mom",
+    wasteTrend,
+    "#f59e0b", // amber/orange
+    "rgba(245, 158, 11, 0.08)",
+    `แนวโน้มของเสีย 7 วันล่าสุด: ${wasteTrend.map(v => formatNumber(v) + " kg").join(" -> ")}`
   );
 }
 
@@ -1575,6 +2496,19 @@ function drawSparkline(containerId, data, color, areaColor, tooltipTitle) {
 }
 
 /* =========================================================
+   ANIMATIONS
+========================================================= */
+
+function triggerEntranceAnimations() {
+  const sections = document.querySelectorAll(".exec-shell > header, .exec-shell > section");
+  sections.forEach((section) => {
+    section.style.animation = "none";
+    section.offsetHeight; // force reflow
+    section.style.animation = "";
+  });
+}
+
+/* =========================================================
    GLOBAL EXPORT
 ========================================================= */
 
@@ -1582,3 +2516,169 @@ window.loadAndProcessDashboardData = loadAndProcessDashboardData;
 window.handleDashboardLogout = handleDashboardLogout;
 window.exportToDataExcelCSV = exportToDataExcelCSV;
 window.getSupabaseClient = getSupabaseClient;
+
+function exportDepartmentSummaryPDF() {
+  const tbody = document.getElementById("department-summary-body");
+  if (!tbody) return;
+
+  // Create a clean HTML document for printing
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    alert("กรุณาอนุญาตให้เปิดหน้าต่างป็อปอัปเพื่อออกรายงาน PDF");
+    return;
+  }
+
+  // Get active date range values for report header
+  const rangeStart = document.getElementById("range-start")?.value || "";
+  const rangeEnd = document.getElementById("range-end")?.value || "";
+  const dateStr = rangeStart && rangeEnd ? `${rangeStart} ถึง ${rangeEnd}` : "สรุปข้อมูลรายเดือน";
+
+  const rowsHTML = Array.from(tbody.querySelectorAll("tr.dept-row-clickable")).map(tr => {
+    // Extract text values safely
+    const deptName = tr.querySelector("strong")?.textContent || "";
+    const cols = tr.querySelectorAll("td");
+    const production = cols[1]?.textContent || "0";
+    const waste = cols[2]?.textContent || "0";
+    const percent = cols[3]?.textContent || "0%";
+    const result = cols[4]?.querySelector(".result-pill")?.textContent || "";
+    
+    return `
+      <tr>
+        <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600; text-align: left;">${deptName}</td>
+        <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">${production}</td>
+        <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">${waste}</td>
+        <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${percent}</td>
+        <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${result}</td>
+      </tr>
+    `;
+  }).join("");
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>รายงานสรุปรายเดือนตามแผนก</title>
+      <meta charset="utf-8">
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+      <style>
+        body {
+          font-family: 'Sarabun', sans-serif;
+          color: #1e293b;
+          margin: 40px;
+          line-height: 1.6;
+        }
+        .header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 2px solid #0284c7;
+          padding-bottom: 15px;
+          margin-bottom: 30px;
+        }
+        .header h1 {
+          font-size: 24px;
+          margin: 0;
+          color: #0f172a;
+        }
+        .header p {
+          font-size: 14px;
+          margin: 5px 0 0 0;
+          color: #64748b;
+        }
+        .meta-info {
+          font-size: 14px;
+          margin-bottom: 25px;
+          color: #475569;
+          background: #f8fafc;
+          padding: 12px 18px;
+          border-radius: 8px;
+          border-left: 4px solid #0284c7;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 30px;
+        }
+        th {
+          background-color: #0284c7;
+          color: white;
+          font-weight: 600;
+          text-align: left;
+          padding: 12px 10px;
+          font-size: 14px;
+        }
+        th.text-right {
+          text-align: right;
+        }
+        td {
+          font-size: 14px;
+        }
+        .footer {
+          margin-top: 50px;
+          text-align: center;
+          font-size: 12px;
+          color: #94a3b8;
+          border-top: 1px solid #e2e8f0;
+          padding-top: 15px;
+        }
+        @media print {
+          body {
+            margin: 20px;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;" class="no-print">
+        <button onclick="window.print();" style="background: #0284c7; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.2);">
+          พิมพ์ / บันทึกเป็น PDF
+        </button>
+      </div>
+      <div class="header">
+        <div>
+          <h1>รายงานสรุปประสิทธิภาพรายแผนก</h1>
+          <p>PVT&T FACTORY Management System - แผนกตรวจสอบและติดตามอัตราของเสีย</p>
+        </div>
+        <div style="text-align: right; font-size: 12px; color: #64748b;">
+          พิมพ์เมื่อ: ${new Date().toLocaleDateString("th-TH")}
+        </div>
+      </div>
+      
+      <div class="meta-info">
+        <strong>ช่วงเวลาของข้อมูล:</strong> ${dateStr}
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align: left;">แผนก</th>
+            <th style="text-align: right;">ผลิตรวม (kg)</th>
+            <th style="text-align: right;">ของเสียรวม (kg)</th>
+            <th style="text-align: right;">อัตราของเสีย (% Waste)</th>
+            <th style="text-align: center;">ผลการประเมิน</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHTML}
+        </tbody>
+      </table>
+
+      <div class="footer">
+        เอกสารนี้จัดทำโดยระบบคำนวณอัตราของเสียอัตโนมัติของบริษัท PVT&T FACTORY Management System
+      </div>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
+window.exportDepartmentSummaryPDF = exportDepartmentSummaryPDF;
+window.openMachineInfoModal = openMachineInfoModal;
+window.closeMachineInfoModal = closeMachineInfoModal;
+window.showDashboardToast = showDashboardToast;
+
