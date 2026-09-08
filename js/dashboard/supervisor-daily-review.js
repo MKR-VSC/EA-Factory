@@ -722,12 +722,12 @@ function ensureMachineCheckUI() {
       .machine-tick.off .tick-box{border-color:#64748b;background:#fff;color:transparent}
 
       /* เมื่อเลือกสถานะไม่มีของเสีย */
-      .machine-tick.no-waste:has(input:checked){background:#16a34a;border-color:#15803d;color:#fff}
-      .machine-tick.no-waste input:checked + .tick-box{background:#fff;border-color:#fff;color:#16a34a}
+      .machine-tick.no-waste:has(input:checked), .machine-tick.no-waste.is-selected{background:#16a34a;border-color:#15803d;color:#fff}
+      .machine-tick.no-waste input:checked + .tick-box, .machine-tick.no-waste.is-selected .tick-box{background:#fff;border-color:#fff;color:#16a34a}
 
       /* เมื่อเลือกสถานะไม่ได้เดินเครื่อง */
-      .machine-tick.off:has(input:checked){background:#64748b;border-color:#475569;color:#fff}
-      .machine-tick.off input:checked + .tick-box{background:#fff;border-color:#fff;color:#64748b}
+      .machine-tick.off:has(input:checked), .machine-tick.off.is-selected{background:#64748b;border-color:#475569;color:#fff}
+      .machine-tick.off input:checked + .tick-box, .machine-tick.off.is-selected .tick-box{background:#fff;border-color:#fff;color:#64748b}
 
       .machine-auto-status{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:8px;background:#fee2e2;color:#b91c1c;font-size:12px;font-weight:800;white-space:nowrap}
       .machine-pending-label{font-size:11px;font-weight:700;color:#92400e;white-space:nowrap}
@@ -909,7 +909,7 @@ function renderMachineDailyCheck(rows) {
            </div>`
         : `
           <div class="machine-check-actions">
-            <label class="machine-tick no-waste">
+            <label class="machine-tick no-waste ${isNoWaste ? "is-selected" : ""}">
               <input
                 type="radio"
                 name="machine-status-${index}"
@@ -920,7 +920,7 @@ function renderMachineDailyCheck(rows) {
               <span>เดินเครื่อง / ไม่มีของเสีย</span>
             </label>
 
-            <label class="machine-tick off">
+            <label class="machine-tick off ${isOff ? "is-selected" : ""}">
               <input
                 type="radio"
                 name="machine-status-${index}"

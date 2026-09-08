@@ -318,6 +318,110 @@ function fallbackItems(r) {
     },
   ];
 }
+function consolidateGroups(allGroups) {
+  const merged = new Map();
+
+  allGroups.forEach((g) => {
+    const isCancelled = normalizeText(g.status) === STATUS_CANCELLED;
+    const isNotRunning = g.sourceType === "machine_status" && normalizeText(g.operationStatus) === MACHINE_STATUS_NOT_RUNNING;
+
+    if (isCancelled || isNotRunning || !g.machine || g.machine === "-") {
+      merged.set(g.key, g);
+      return;
+    }
+
+    const key = `${g.date}|${g.dept}|${g.machine}`;
+    if (!merged.has(key)) {
+      merged.set(key, {
+        key,
+        date: g.date,
+        dept: g.dept,
+        machine: g.machine,
+        shift: new Set(),
+        reporter: new Set(),
+        items: [],
+        waste: 0,
+        production: g.production || 0,
+        status: g.status,
+        ids: [],
+        machineStatusIds: [],
+        sourceTypes: new Set(),
+        originalGroups: []
+      });
+    }
+
+    const mg = merged.get(key);
+    mg.originalGroups.push(g);
+
+    if (g.shift) {
+      if (g.shift.includes(",")) {
+        g.shift.split(",").forEach(s => mg.shift.add(s.trim()));
+      } else {
+        mg.shift.add(g.shift);
+      }
+    }
+
+    if (g.reporter) {
+      g.reporter.forEach(r => mg.reporter.add(r));
+    }
+
+    if (g.items && g.items.length > 0) {
+      mg.items.push(...g.items);
+    }
+
+    mg.waste += (g.waste || 0);
+
+    if (g.ids && g.ids.length > 0) {
+      mg.ids.push(...g.ids);
+    }
+
+    if (g.machineStatusId) {
+      mg.machineStatusIds.push(g.machineStatusId);
+    }
+
+    if (g.sourceType) {
+      mg.sourceTypes.add(g.sourceType);
+    }
+
+    if (g.production && g.production > mg.production) {
+      mg.production = g.production;
+    }
+  });
+
+  return [...merged.values()].map((mg) => {
+    if (mg.originalGroups === undefined) {
+      return mg;
+    }
+
+    const shiftsArr = [...mg.shift].filter(s => s && s !== "-");
+    const shiftStr = shiftsArr.length > 0 ? shiftsArr.sort().join(", ") : "-";
+
+    const allDone = mg.originalGroups.every(og => normalizeText(og.status) === STATUS_DONE);
+    const finalStatus = allDone ? STATUS_DONE : STATUS_SENT;
+
+    const finalSourceType = mg.sourceTypes.has("machine_status") && mg.ids.length === 0 
+      ? "machine_status" 
+      : "report";
+
+    return {
+      key: mg.key,
+      ids: mg.ids,
+      machineStatusIds: mg.machineStatusIds,
+      machineStatusId: mg.machineStatusIds[0] || null,
+      sourceType: finalSourceType,
+      date: mg.date,
+      dept: mg.dept,
+      shift: shiftStr,
+      machine: mg.machine,
+      reporter: mg.reporter,
+      items: mg.items,
+      waste: mg.waste,
+      production: mg.production,
+      status: finalStatus,
+    };
+  });
+}
+
 function applyFilters() {
   const month = getValue("filterMonth"),
     dept = getValue("filterDept"),
@@ -386,7 +490,9 @@ function applyFilters() {
   const reportGroups = buildGroups(reportRows);
   const machineGroups = buildMachineStatusGroups(machineRows);
 
-  state.groups = [...reportGroups, ...machineGroups].sort(sortAccountingGroups);
+  const unsorted = [...reportGroups, ...machineGroups];
+  const consolidated = consolidateGroups(unsorted);
+  state.groups = consolidated.sort(sortAccountingGroups);
 
   renderSummary(state.groups);
   renderTable(state.groups);
@@ -436,7 +542,11 @@ function buildGroups(rows) {
     }
     g.reporter.add(r.reported_by || r.created_by_name || "-");
     (r.problem_items || []).forEach((i) => {
-      g.items.push(i);
+      g.items.push({
+        ...i,
+        shift: r.shift || r.work_shift || "-",
+        reported_by: r.reported_by || r.created_by_name || "-"
+      });
       g.waste += Number(i.waste_weight_kg || 0);
     });
     // ป้องกันค่าจากหน้างาน/ฟิลด์เก่าไหลมาแสดงในช่องผลิต kg
@@ -514,8 +624,18 @@ function sortAccountingGroups(a, b) {
 function renderSummary(groups) {
   // ไม่นับรายการที่ยกเลิกในยอดสรุป เพื่อไม่ให้ตัวเลขบัญชีเพี้ยน
   const activeGroups = groups.filter((g) => normalizeText(g.status) !== STATUS_CANCELLED);
-  const waste = activeGroups.reduce((s, g) => s + g.waste, 0),
-    prod = activeGroups.reduce((s, g) => s + (g.production || 0), 0);
+  const waste = activeGroups.reduce((s, g) => s + g.waste, 0);
+
+  // เพื่อหลีกเลี่ยงการนับซ้ำ น้ำหนักผลิตรวม 1 วัน สำหรับเครื่องจักรเดียวกัน
+  const countedKeys = new Set();
+  let prod = 0;
+  activeGroups.forEach((g) => {
+    const key = `${g.date}|${g.dept}|${g.machine}`;
+    if (!countedKeys.has(key)) {
+      countedKeys.add(key);
+      prod += (g.production || 0);
+    }
+  });
   
   setText("sumCount", activeGroups.length.toLocaleString("th-TH"));
   setText("sumWaste", formatNumber(waste));
@@ -541,6 +661,8 @@ function renderSummary(groups) {
   // คำนวณสรุปแยกตามประเภทที่เลือก (แผนก, เครื่องจักร, ปัญหา)
   const groupType = document.getElementById("summaryGroupType")?.value || "dept";
   const summaryMap = {};
+  const countedMachineKeys = new Set();
+  const countedDeptKeys = new Set();
 
   activeGroups.forEach(g => {
     if (groupType === "problem") {
@@ -558,7 +680,12 @@ function renderSummary(groups) {
     } else if (groupType === "machine") {
       const mCode = g.machine || "ไม่ระบุ";
       if (!summaryMap[mCode]) summaryMap[mCode] = { name: mCode, production: 0, waste: 0 };
-      summaryMap[mCode].production += (g.production || 0);
+      
+      const machineKey = `${g.date}|${g.dept}|${g.machine}`;
+      if (!countedMachineKeys.has(machineKey)) {
+        countedMachineKeys.add(machineKey);
+        summaryMap[mCode].production += (g.production || 0);
+      }
       summaryMap[mCode].waste += (g.waste || 0);
     } else {
       const deptCode = g.dept;
@@ -566,7 +693,12 @@ function renderSummary(groups) {
       if (!summaryMap[deptCode]) {
         summaryMap[deptCode] = { name: deptName, production: 0, waste: 0 };
       }
-      summaryMap[deptCode].production += (g.production || 0);
+      
+      const deptKey = `${g.date}|${g.dept}|${g.machine}`;
+      if (!countedDeptKeys.has(deptKey)) {
+        countedDeptKeys.add(deptKey);
+        summaryMap[deptCode].production += (g.production || 0);
+      }
       summaryMap[deptCode].waste += (g.waste || 0);
     }
   });
@@ -774,20 +906,21 @@ function renderGroup(g, i) {
 }
 
 function editGroup(key) {
-  const input = document.querySelector(`[data-prod="${cssEscape(key)}"]`);
-  if (!input) return;
+  const g = state.groups.find((x) => x.key === key);
+  if (!g) return;
 
-  // รายการที่บันทึกแล้วจะล็อกช่องไว้
-  // เมื่อกด "แก้ไข" จึงเปิดให้แก้และแสดงปุ่ม "บันทึก" กลับมา
-  input.readOnly = false;
+  const input = document.querySelector(`[data-prod="${cssEscape(g.key)}"]`);
+  if (input) {
+    input.readOnly = false;
+    input.focus();
+    handleProductionFocus(input);
+  }
+
   document
-    .querySelector(`[data-save="${cssEscape(key)}"]`)
+    .querySelector(`[data-save="${cssEscape(g.key)}"]`)
     ?.classList.remove("hidden");
 
-  input.focus();
-  handleProductionFocus(input);
-
-  showToast("แก้ไขน้ำหนักผลิต แล้วกดบันทึกอีกครั้ง", "success");
+  showToast("แก้ไขน้ำหนักผลิตรวมประจำวัน แล้วกดบันทึกอีกครั้ง", "success");
 }
 
 
@@ -803,7 +936,49 @@ function renderProblemInline(items) {
     )}${items.length > 3 ? `<br><small>+${items.length - 3} รายการ</small>` : ""}</div>`;
 }
 function renderProblemTable(items, total) {
-  return `<table class="problem-table"><thead><tr><th>ปัญหา</th><th class="text-right">น้ำหนัก kg</th><th>รายละเอียด</th></tr></thead><tbody>${items.map((x) => `<tr><td><strong>${safeText(x.problem_type)}</strong></td><td class="text-right">${formatNumber(x.waste_weight_kg)}</td><td>${safeText(x.detail || "-")}</td></tr>`).join("")}</tbody><tfoot><tr><td>รวมของเสีย</td><td class="text-right">${formatNumber(total)}</td><td>kg</td></tr></tfoot></table>`;
+  return `<table class="problem-table">
+    <thead>
+      <tr>
+        <th style="padding:8px 12px;text-align:left;">กะ</th>
+        <th style="padding:8px 12px;text-align:left;">ปัญหา / รายละเอียดปัญหา</th>
+        <th style="padding:8px 12px;text-align:right;">น้ำหนักของเสีย kg</th>
+        <th style="padding:8px 12px;text-align:left;">รายละเอียดเพิ่มเติม</th>
+        <th style="padding:8px 12px;text-align:left;">ผู้บันทึก</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${items.map((x) => `
+        <tr>
+          <td style="padding:8px 12px;vertical-align:middle;">
+            <span class="status-pill" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;padding:2px 8px;font-size:12px;font-weight:600;border-radius:4px;white-space:nowrap;">
+              ${safeText(x.shift || "-")}
+            </span>
+          </td>
+          <td style="padding:8px 12px;vertical-align:middle;">
+            <strong>${safeText(x.problem_type)}</strong>
+          </td>
+          <td style="padding:8px 12px;text-align:right;font-weight:600;color:#e11d48;vertical-align:middle;">
+            ${formatNumber(x.waste_weight_kg)}
+          </td>
+          <td style="padding:8px 12px;color:#475569;vertical-align:middle;">
+            ${safeText(x.detail || "-")}
+          </td>
+          <td style="padding:8px 12px;color:#64748b;font-size:13px;vertical-align:middle;">
+            ${safeText(x.reported_by || "-")}
+          </td>
+        </tr>
+      `).join("")}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="2" style="padding:10px 12px;font-weight:700;">รวมของเสียทั้งหมด (ทุกกะ)</td>
+        <td style="padding:10px 12px;text-align:right;font-weight:bold;color:#e11d48;font-size:16px;">
+          ${formatNumber(total)}
+        </td>
+        <td colspan="2" style="padding:10px 12px;font-weight:600;">kg</td>
+      </tr>
+    </tfoot>
+  </table>`;
 }
 function toggleDetail(i) {
   document.getElementById(`detail-${i}`)?.classList.toggle("hidden");
@@ -831,50 +1006,52 @@ async function saveGroup(key) {
     state.currentUser?.id || localStorage.getItem("activeUserId") || null;
   const now = new Date().toISOString();
 
-  // ---------------------------------------------------------
-  // เครื่อง "เดินเครื่อง / ไม่มีของเสีย"
-  // เก็บน้ำหนักผลิตไว้ใน daily_machine_status
-  // ---------------------------------------------------------
-  if (g.sourceType === "machine_status") {
-    const { error } = await state.supabase
-      .from(MACHINE_STATUS_TABLE)
-      .update({
-        production_kg: prod,
-        accounting_checked_by: uid,
-        accounting_checked_at: now,
-        updated_at: now,
-      })
-      .eq("id", g.machineStatusId);
+  const machineStatusIds = g.machineStatusIds || (g.machineStatusId ? [g.machineStatusId] : []);
+  const reportIds = g.ids || [];
 
-    if (error) {
-      return showToast(`บันทึกไม่สำเร็จ: ${error.message}`, "error");
-    }
+  const promises = [];
 
-    showToast("บันทึกน้ำหนักผลิตเรียบร้อยแล้ว", "success");
-    await loadAccountingData();
-    return;
+  if (machineStatusIds.length > 0) {
+    promises.push(
+      state.supabase
+        .from(MACHINE_STATUS_TABLE)
+        .update({
+          production_kg: prod,
+          accounting_checked_by: uid,
+          accounting_checked_at: now,
+          updated_at: now,
+        })
+        .in("id", machineStatusIds)
+    );
   }
 
-  // ---------------------------------------------------------
-  // รายการที่มีของเสีย ใช้ daily_waste_reports ตามระบบเดิม
-  // ---------------------------------------------------------
-  const { error } = await state.supabase
-    .from(REPORT_TABLE)
-    .update({
-      production_kg: prod,
-      status: STATUS_DONE,
-      accounting_status: STATUS_DONE,
-      accounting_checked_by: uid,
-      accounting_checked_at: now,
-      updated_at: now,
-    })
-    .in("id", g.ids);
-
-  if (error) {
-    return showToast(`บันทึกไม่สำเร็จ: ${error.message}`, "error");
+  if (reportIds.length > 0) {
+    promises.push(
+      state.supabase
+        .from(REPORT_TABLE)
+        .update({
+          production_kg: prod,
+          status: STATUS_DONE,
+          accounting_status: STATUS_DONE,
+          accounting_checked_by: uid,
+          accounting_checked_at: now,
+          updated_at: now,
+        })
+        .in("id", reportIds)
+    );
   }
 
-  showToast("บันทึกเรียบร้อยแล้ว", "success");
+  if (promises.length === 0) {
+    return showToast("ไม่พบรายการสำหรับบันทึก", "error");
+  }
+
+  const results = await Promise.all(promises);
+  const failed = results.find((r) => r.error);
+  if (failed) {
+    return showToast(`บันทึกไม่สำเร็จ: ${failed.error.message}`, "error");
+  }
+
+  showToast("บันทึกน้ำหนักผลิตรวม 1 วัน เรียบร้อยแล้ว", "success");
   await loadAccountingData();
 }
 
@@ -1064,34 +1241,44 @@ function handleProductionInput(input, key) {
   const g = state.groups.find((x) => x.key === key);
   if (!g) return;
 
+  // Update in state
+  g.production = cleanNum;
+
   const row = input.closest("tr");
-  if (!row) return;
+  if (row) {
+    const pctTd = row.children[9];
+    const evalTd = row.children[10];
 
-  const pctTd = row.children[9];
-  const evalTd = row.children[10];
+    if (!isNaN(cleanNum) && cleanNum > 0) {
+      const isNoWaste =
+        g.sourceType === "machine_status" &&
+        normalizeText(g.operationStatus) === MACHINE_STATUS_NO_WASTE;
+      const isCancelled = normalizeText(g.status) === STATUS_CANCELLED;
+      const isNotRunning =
+        g.sourceType === "machine_status" &&
+        normalizeText(g.operationStatus) === MACHINE_STATUS_NOT_RUNNING;
 
-  if (!isNaN(cleanNum) && cleanNum > 0) {
-    const isNoWaste =
-      g.sourceType === "machine_status" &&
-      normalizeText(g.operationStatus) === MACHINE_STATUS_NO_WASTE;
-    const isCancelled = normalizeText(g.status) === STATUS_CANCELLED;
-    const isNotRunning =
-      g.sourceType === "machine_status" &&
-      normalizeText(g.operationStatus) === MACHINE_STATUS_NOT_RUNNING;
-
-    let percent = 0;
-    if (isNoWaste) {
-      percent = 0;
-    } else if (!isCancelled && !isNotRunning) {
-      percent = (g.waste / cleanNum) * 100;
+      let percent = 0;
+      if (isNoWaste) {
+        percent = 0;
+      } else if (!isCancelled && !isNotRunning) {
+        percent = (g.waste / cleanNum) * 100;
+      }
+      const result = getResult(g.dept, percent, true);
+      if (pctTd) pctTd.textContent = formatPercent(percent);
+      if (evalTd)
+        evalTd.innerHTML = `<span class="result-pill ${result.className}">${safeText(result.label)}</span>`;
+    } else {
+      if (pctTd) pctTd.textContent = "-";
+      if (evalTd) {
+        const result = getResult(g.dept, 0, false);
+        evalTd.innerHTML = `<span class="result-pill ${result.className}">${safeText(result.label)}</span>`;
+      }
     }
-    const result = getResult(g.dept, percent, true);
-    if (pctTd) pctTd.textContent = formatPercent(percent);
-    if (evalTd)
-      evalTd.innerHTML = `<span class="result-pill ${result.className}">${safeText(result.label)}</span>`;
-  } else {
-    if (pctTd) pctTd.textContent = "-";
   }
+
+  // Update summary counts instantly
+  renderSummary(state.groups);
 }
 function formatPercent(v) {
   return `${formatNumber(v)}%`;
@@ -1212,6 +1399,8 @@ function generateAccountingReportHTML(isPrintImmediate = false) {
   const groupType = document.getElementById("summaryGroupType")?.value || "dept";
   const activeGroups = (state.groups || []).filter(g => normalizeText(g.status) !== STATUS_CANCELLED);
   const summaryMap = {};
+  const countedMachineKeys = new Set();
+  const countedDeptKeys = new Set();
 
   activeGroups.forEach(g => {
     if (groupType === "problem") {
@@ -1229,7 +1418,12 @@ function generateAccountingReportHTML(isPrintImmediate = false) {
     } else if (groupType === "machine") {
       const mCode = g.machine || "ไม่ระบุ";
       if (!summaryMap[mCode]) summaryMap[mCode] = { name: mCode, production: 0, waste: 0 };
-      summaryMap[mCode].production += (g.production || 0);
+      
+      const machineKey = `${g.date}|${g.dept}|${g.machine}`;
+      if (!countedMachineKeys.has(machineKey)) {
+        countedMachineKeys.add(machineKey);
+        summaryMap[mCode].production += (g.production || 0);
+      }
       summaryMap[mCode].waste += (g.waste || 0);
     } else {
       const deptCode = g.dept;
@@ -1237,7 +1431,12 @@ function generateAccountingReportHTML(isPrintImmediate = false) {
       if (!summaryMap[deptCode]) {
         summaryMap[deptCode] = { name: deptName, production: 0, waste: 0 };
       }
-      summaryMap[deptCode].production += (g.production || 0);
+      
+      const deptKey = `${g.date}|${g.dept}|${g.machine}`;
+      if (!countedDeptKeys.has(deptKey)) {
+        countedDeptKeys.add(deptKey);
+        summaryMap[deptCode].production += (g.production || 0);
+      }
       summaryMap[deptCode].waste += (g.waste || 0);
     }
   });
