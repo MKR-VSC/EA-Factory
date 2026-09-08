@@ -709,13 +709,25 @@ function ensureMachineCheckUI() {
       .machine-check-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;margin:0}
 
       /* ช่องติ๊กสถานะ */
-      .machine-tick{position:relative;display:inline-flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid #dbe3ec;border-radius:8px;background:#fff;color:#334155;font-size:12px;font-weight:700;line-height:1.2;cursor:pointer;user-select:none;white-space:nowrap}
+      .machine-tick{position:relative;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:12px;font-weight:700;line-height:1.2;cursor:pointer;user-select:none;white-space:nowrap;transition:all 0.15s ease}
       .machine-tick input{position:absolute;opacity:0;pointer-events:none}
-      .machine-tick .tick-box{width:17px;height:17px;display:grid;place-items:center;flex:0 0 17px;border:2px solid #cbd5e1;border-radius:4px;background:#fff;color:transparent;font-size:11px;font-weight:900}
-      .machine-tick.no-waste input:checked + .tick-box{background:#16a34a;border-color:#16a34a;color:#fff}
-      .machine-tick.off input:checked + .tick-box{background:#64748b;border-color:#64748b;color:#fff}
-      .machine-tick.no-waste:has(input:checked){border-color:#86efac;background:#dcfce7;color:#166534}
-      .machine-tick.off:has(input:checked){border-color:#cbd5e1;background:#e2e8f0;color:#334155}
+      .machine-tick .tick-box{width:16px;height:16px;display:grid;place-items:center;flex:0 0 16px;border:1.5px solid currentColor;border-radius:50%;background:#fff;color:transparent;font-size:10px;font-weight:900;transition:all 0.15s ease}
+      
+      /* สถานะไม่มีของเสีย (ยังไม่เลือก) */
+      .machine-tick.no-waste{background:#f0fdf4;border-color:#86efac;color:#15803d}
+      .machine-tick.no-waste .tick-box{border-color:#16a34a;background:#fff;color:transparent}
+      
+      /* สถานะไม่ได้เดินเครื่อง (ยังไม่เลือก) */
+      .machine-tick.off{background:#f1f5f9;border-color:#cbd5e1;color:#475569}
+      .machine-tick.off .tick-box{border-color:#64748b;background:#fff;color:transparent}
+
+      /* เมื่อเลือกสถานะไม่มีของเสีย */
+      .machine-tick.no-waste:has(input:checked){background:#16a34a;border-color:#15803d;color:#fff}
+      .machine-tick.no-waste input:checked + .tick-box{background:#fff;border-color:#fff;color:#16a34a}
+
+      /* เมื่อเลือกสถานะไม่ได้เดินเครื่อง */
+      .machine-tick.off:has(input:checked){background:#64748b;border-color:#475569;color:#fff}
+      .machine-tick.off input:checked + .tick-box{background:#fff;border-color:#fff;color:#64748b}
 
       .machine-auto-status{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:8px;background:#fee2e2;color:#b91c1c;font-size:12px;font-weight:800;white-space:nowrap}
       .machine-pending-label{font-size:11px;font-weight:700;color:#92400e;white-space:nowrap}
