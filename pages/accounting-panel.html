@@ -36,8 +36,8 @@
     </div>
 
     <div class="title">
-      <h1>แผงควบคุมข้อมูลของเสีย - บัญชี</h1>
-      <p>รับเฉพาะรายการที่หัวหน้างานส่งบัญชีแล้ว</p>
+      <h1>ข้อมูลของเสียจากการผลิต</h1>
+      <p>เฉพาะรายการที่หัวหน้างานส่งบัญชีแล้ว</p>
     </div>
 
   </div>
@@ -79,9 +79,9 @@
       <section class="panel">
         <div class="filter-grid">
           <div class="form-group">
-            <label for="filterMonthSelect">เลือกเดือน (ภาษาไทย)</label>
+            <label for="filterMonthSelect">เลือกเดือน</label>
             <div class="thai-month-picker" style="display: flex; gap: 6px;">
-              <select id="filterMonthSelect" style="flex: 1.6;">
+              <select id="filterMonthSelect" style="flex: 1; min-width: 0;">
                 <option value="all">ทุกเดือน</option>
                 <option value="01">มกราคม</option>
                 <option value="02">กุมภาพันธ์</option>
@@ -96,7 +96,7 @@
                 <option value="11">พฤศจิกายน</option>
                 <option value="12">ธันวาคม</option>
               </select>
-              <select id="filterYearSelect" style="flex: 1.2;">
+              <select id="filterYearSelect" style="flex: 1; min-width: 0;">
               </select>
               <input type="hidden" id="filterMonth" />
             </div>
@@ -113,8 +113,8 @@
             <label for="filterStatus">สถานะ</label>
             <select id="filterStatus">
               <option value="all">ทั้งหมด</option>
-              <option value="sent_accounting">รอบัญชีตรวจ</option>
-              <option value="accounting_checked">บัญชีตรวจแล้ว</option>
+              <option value="sent_accounting">รอตรวจสอบ</option>
+              <option value="accounting_checked">ตรวจแล้วสอบแล้ว</option>
               <option value="accounting_cancelled">ยกเลิกรายการ</option>
             </select>
           </div>
@@ -126,14 +126,13 @@
 
           <div class="form-group">
             <label>&nbsp;</label>
-            <button class="btn primary" type="button" onclick="applyFilters()">ค้นหา</button>
+            <button class="btn primary" type="button" onclick="applyFilters()" style="width: 100%;">ค้นหา</button>
           </div>
         </div>
       </section>
 
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 12px; padding: 0 4px;">
+      <div style="margin-top: 20px; margin-bottom: 12px; padding: 0 4px;">
         <h2 style="font-size: 16px; margin: 0; color: #334155; font-weight: 700;">ภาพรวมข้อมูล</h2>
-        <span id="summaryDeptBadge" style="background: #e0f2fe; color: #0284c7; padding: 4px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid #bae6fd;">แผนก: ทั้งหมด</span>
       </div>
       <section class="summary-grid">
         <div class="summary-card">
@@ -151,23 +150,26 @@
       </section>
 
       <!-- ตารางสรุปผลรวมแยกตามแผนก / สินค้า / เครื่องจักร / ประเภทปัญหา -->
-      <section class="panel" style="margin-top: 24px; margin-bottom: 24px;">
+      <section class="panel" style="margin-top: 24px; margin-bottom: 24px; background-color: #eff5ff;">
         <div class="table-head" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-          <h2 id="summaryTableTitle">สรุปผลรวมแยกตามแผนก / สินค้า</h2>
-          <select id="summaryGroupType" class="filter-select" style="min-width: 180px;">
-            <option value="dept">แยกตามแผนก / สินค้า</option>
-            <option value="machine">แยกตามเครื่องจักร</option>
-            <option value="problem">แยกตามประเภทปัญหา</option>
-          </select>
+          <h2 id="summaryTableTitle" style="color: #0031b7;">สรุปผลรวมแยกตามแผนก / สินค้า</h2>
+          <div style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0;">
+            <span id="summaryDeptBadge" style="display: inline-flex; justify-content: center; align-items: center; min-width: 112px; min-height: 44px; margin-right: 14px; background: #e0f2fe; color: #0284c7; padding: 4px 18px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid #bae6fd; white-space: nowrap; text-align: center;">แผนก: ทั้งหมด</span>
+            <select id="summaryGroupType" class="filter-select" style="min-width: 180px;">
+              <option value="dept">แยกตามแผนก / สินค้า</option>
+              <option value="machine">แยกตามเครื่องจักร</option>
+              <option value="problem">แยกตามประเภทปัญหา</option>
+            </select>
+          </div>
         </div>
         <div class="table-responsive">
           <table class="data-table">
             <thead id="summaryTableHead">
               <tr>
-                <th>แผนก / สินค้า</th>
-                <th class="text-right">น้ำหนักผลิตรวม (kg)</th>
-                <th class="text-right">น้ำหนักสูญเสียรวม (kg)</th>
-                <th class="text-right">% Waste</th>
+                <th style="background-color: #afdeff; color: #0200bf;">แผนก / สินค้า</th>
+                <th class="text-right" style="background-color: #afdeff; color: #0200bf;">น้ำหนักผลิตรวม (kg)</th>
+                <th class="text-right" style="background-color: #afdeff; color: #0200bf;">น้ำหนักสูญเสียรวม (kg)</th>
+                <th class="text-right" style="background-color: #afdeff; color: #0200bf;">% Waste</th>
               </tr>
             </thead>
             <tbody id="summaryDeptBody">
@@ -184,6 +186,7 @@
             <p class="muted">กรอกน้ำหนักผลิต แล้วบันทึกเพื่อปิดรายการบัญชี</p>
           </div>
           <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <span id="lastUpdate" style="margin-right: 8px; font-size: 13px; color: #ed7700; font-weight: 500;">-</span>
             <button onclick="exportAccountingSummaryPDF()" class="btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; border-radius: 8px; background: #0284c7; color: white; border: none; cursor: pointer; font-weight: 600; white-space: nowrap; height: fit-content; transition: background 0.15s ease;">
               <span class="material-symbols-outlined" style="font-size: 18px;">picture_as_pdf</span>
               ออกรายงาน PDF
@@ -193,7 +196,6 @@
               พิมพ์รายงาน
             </button>
           </div>
-          <span id="lastUpdate" class="muted">-</span>
         </div>
 
         <div class="table-scroll">

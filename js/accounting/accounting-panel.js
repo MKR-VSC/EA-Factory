@@ -650,11 +650,11 @@ function renderGroup(g, i) {
   if (isCancelled) {
     status = `<span class="status-pill status-cancelled">ยกเลิกรายการ</span>`;
   } else if (isNotRunning) {
-    status = `<span class="status-pill" style="background:#e2e8f0;color:#475569;">ไม่ได้เดินเครื่อง</span>`;
+    status = `<span class="status-pill" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;">ไม่ได้เดินเครื่อง</span>`;
   } else if (isDone) {
     status = `<span class="status-pill status-done">บัญชีตรวจแล้ว</span>`;
   } else if (isNoWaste) {
-    status = `<span class="status-pill status-sent">รอบัญชีกรอกผลิต</span>`;
+    status = `<span class="status-pill" style="background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;">ไม่มีของเสีย (รอกรอกผลิต)</span>`;
   } else {
     status = `<span class="status-pill status-sent">รอบัญชีตรวจ</span>`;
   }
@@ -678,7 +678,7 @@ function renderGroup(g, i) {
   const problemCell = isNoWaste
     ? `<span class="status-pill status-done">ไม่มีของเสีย</span>`
     : isNotRunning
-      ? `<span class="muted">ไม่ได้เดินเครื่อง</span>`
+      ? `<span class="status-pill" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;">ไม่ได้เดินเครื่อง</span>`
       : renderProblemInline(g.items);
 
   const formattedProdVal = g.production ? formatQtyNumber(g.production) : "";

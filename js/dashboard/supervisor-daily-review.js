@@ -651,12 +651,12 @@ function ensureMachineCheckUI() {
       </div>
     </div>
 
-    <div class="machine-bulk-actions">
+    <div class="machine-bulk-actions" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
       <span class="muted">ตั้งค่ารวดเร็วสำหรับเครื่องที่ยังรอยืนยัน:</span>
-      <button class="btn secondary" type="button" onclick="setAllPendingMachineStatus('no_waste')">
+      <button class="btn" type="button" onclick="setAllPendingMachineStatus('no_waste')" style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; padding: 6px 12px; font-size: 13px; font-weight: 700; cursor: pointer; border-radius: 8px;">
         ไม่มีของเสียทั้งหมด
       </button>
-      <button class="btn secondary" type="button" onclick="setAllPendingMachineStatus('not_running')">
+      <button class="btn" type="button" onclick="setAllPendingMachineStatus('not_running')" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 6px 12px; font-size: 13px; font-weight: 700; cursor: pointer; border-radius: 8px;">
         ไม่ได้เดินเครื่องทั้งหมด
       </button>
     </div>
@@ -698,9 +698,9 @@ function ensureMachineCheckUI() {
       .machine-check-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:8px;padding:10px 0}
       .machine-check-item{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #e5e7eb;border-radius:10px;padding:9px 10px;background:#fff;min-height:58px}
       .machine-check-item.is-pending{border-color:#fbbf24;background:#fffbeb}
-      .machine-check-item.is-waste{border-color:#fecaca;background:#fff7f7}
-      .machine-check-item.is-no-waste{border-color:#bbf7d0;background:#f0fdf4}
-      .machine-check-item.is-off{border-color:#d1d5db;background:#f8fafc}
+      .machine-check-item.is-waste{border-color:#fca5a5;background:#fff5f5}
+      .machine-check-item.is-no-waste{border-color:#86efac;background:#f0fdf4}
+      .machine-check-item.is-off{border-color:#cbd5e1;background:#f1f5f9}
 
       .machine-identity{min-width:96px;flex:1 1 auto}
       .machine-name{font-weight:800;font-size:14px;line-height:1.25}
