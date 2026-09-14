@@ -211,7 +211,7 @@
         updateScanStatus('เล็งกล้องไปที่ QR Code ประจำเครื่อง', 'active');
         checkTorchSupport();
       } catch (fallbackErr) {
-        console.error('[QR Scanner] Camera start error:', fallbackErr);
+        console.warn('[QR Scanner] Camera start info (expected if no webcam):', fallbackErr);
         handleCameraError(fallbackErr);
       }
     }
@@ -428,20 +428,61 @@
       return;
     }
 
-    // Check if openMachineInfoModal is available in current window
-    if (typeof window.openMachineInfoModal === 'function') {
-      window.openMachineInfoModal(cleanMachine, deptCode);
-      showNotice(`เปิดข้อมูลเครื่อง ${cleanMachine} สำเร็จ`, 'success');
-      return;
-    }
+    // Modern "Under Development" Modal Popup
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
+    overlay.style.backdropFilter = 'blur(4px)';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.zIndex = '10000';
+    overlay.style.transition = 'opacity 0.2s ease-out';
 
-    // If on a page without machine modal (e.g., supervisor-dashboard.html), navigate to main dashboard
-    const targetUrl = new URL('/', window.location.origin);
-    targetUrl.searchParams.set('machine', cleanMachine);
-    if (deptCode) targetUrl.searchParams.set('dept', deptCode);
+    const modal = document.createElement('div');
+    modal.style.background = '#ffffff';
+    modal.style.borderRadius = '16px';
+    modal.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+    modal.style.width = 'min(400px, calc(100% - 32px))';
+    modal.style.padding = '24px';
+    modal.style.textAlign = 'center';
+    modal.style.transform = 'scale(0.95)';
+    modal.style.transition = 'transform 0.2s ease-out';
 
-    showNotice(`กำลังเปิดข้อมูลเครื่อง ${cleanMachine}...`, 'info');
-    window.location.href = targetUrl.toString();
+    modal.innerHTML = `
+      <div style="width: 56px; height: 56px; background: #fff7ed; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 16px;">
+        <span class="material-symbols-outlined" style="color: #ea580c; font-size: 32px;">engineering</span>
+      </div>
+      <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 800; color: #0f172a; font-family: inherit;">อยู่ระหว่างพัฒนา</h3>
+      <p style="margin: 0 0 20px; font-size: 14px; color: #64748b; line-height: 1.5; font-family: inherit;">ระบบข้อมูลเครื่องจักรสำหรับเครื่อง <strong>${escapeHTML(cleanMachine)}</strong> อยู่ระหว่างการพัฒนาเพิ่มเติม ขออภัยในความไม่สะดวกค่ะ</p>
+      <button type="button" class="btn btn-orange" style="width: 100%; min-height: 40px; border-radius: 8px; font-weight: 700; border: 0; cursor: pointer;" id="btn-dev-close">ตกลง</button>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Animate scale in
+    setTimeout(() => {
+      modal.style.transform = 'scale(1)';
+    }, 10);
+
+    const closeBtn = modal.querySelector('#btn-dev-close');
+    const closePopup = () => {
+      modal.style.transform = 'scale(0.95)';
+      overlay.style.opacity = '0';
+      setTimeout(() => {
+        overlay.remove();
+      }, 200);
+    };
+
+    closeBtn.addEventListener('click', closePopup);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closePopup();
+    });
   }
 
   function showNotice(msg, type) {

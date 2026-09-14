@@ -124,112 +124,297 @@
 
       <!-- Main Settings Panel -->
       <section class="panel" id="settings-panel">
-        <div class="panel-head" id="panel-header">
-          <div class="panel-title-group">
-            <div class="panel-icon-circle">
-              <span class="material-symbols-outlined">tune</span>
-            </div>
-            <div>
-              <h2 class="panel-heading">ตารางกำหนดเกณฑ์ของเสียรายแผนก</h2>
-              <p class="panel-subheading">ปรับเปลี่ยนตัวเลขเปอร์เซ็นต์ตามมาตรฐานของแต่ละสายการผลิต แล้วกดปุ่มบันทึก</p>
-            </div>
-          </div>
+        <!-- Elegant Tab System -->
+        <div class="settings-tabs" id="settings-tabs-nav">
+          <button type="button" class="tab-btn active" data-tab="departments" title="ตั้งค่าเปอร์เซ็นต์ของเสียและเกณฑ์เตือนรายแผนก">
+            <span class="material-symbols-outlined">tune</span>
+            <span>เกณฑ์ % ของเสียรายแผนก</span>
+          </button>
+          <button type="button" class="tab-btn" data-tab="machine-waste" title="ตั้งค่าเปอร์เซ็นต์ของเสียรายเครื่องจักร เช่น ไม่เกิน 2% ต่อเครื่อง ต่อเดือน">
+            <span class="material-symbols-outlined">percent</span>
+            <span>เกณฑ์ % ของเสียรายเครื่อง (ต่อเดือน/วัน)</span>
+          </button>
+          <button type="button" class="tab-btn" data-tab="machines" title="จัดการเครื่องจักร เปิด-ปิด และเพิ่มเครื่องจักร">
+            <span class="material-symbols-outlined">precision_manufacturing</span>
+            <span>จัดการเครื่องจักรรายแผนก</span>
+          </button>
+          <button type="button" class="tab-btn" data-tab="problems" title="กำหนดประเภทหัวข้อปัญหาของเสียประจำแต่ละแผนก">
+            <span class="material-symbols-outlined">report_problem</span>
+            <span>จัดการหัวข้อปัญหาของเสีย</span>
+          </button>
+        </div>
 
-          <div class="panel-toolbar" id="panel-toolbar">
-            <!-- Search Department Input -->
-            <div class="search-input-wrap">
-              <span class="material-symbols-outlined search-icon">search</span>
-              <input
-                type="text"
-                id="input-search-dept"
-                class="search-input"
-                placeholder="ค้นหาแผนก หรือรหัส..."
-                autocomplete="off"
-              />
-              <button type="button" id="btn-clear-search" class="btn-clear-search" hidden aria-label="ล้างการค้นหา">
-                <span class="material-symbols-outlined">close</span>
+        <!-- TAB 1: Department Waste Thresholds (Original View) -->
+        <div id="tab-view-departments" class="tab-content-view">
+          <div class="panel-head" id="panel-header">
+            <div class="panel-title-group">
+              <div class="panel-icon-circle">
+                <span class="material-symbols-outlined">analytics</span>
+              </div>
+              <div>
+                <h2 class="panel-heading">ตารางกำหนดเกณฑ์ของเสียรายแผนก (Department Standards)</h2>
+                <p class="panel-subheading">กำหนดเกณฑ์ของเสียสูงสุด (Max %) และเกณฑ์เฝ้าระวังเตือน (Warning %) ประจำแผนก</p>
+              </div>
+            </div>
+
+            <div class="panel-toolbar" id="panel-toolbar">
+              <!-- Search Department Input -->
+              <div class="search-input-wrap">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input
+                  type="text"
+                  id="input-search-dept"
+                  class="search-input"
+                  placeholder="ค้นหาแผนก หรือรหัส..."
+                  autocomplete="off"
+                />
+                <button type="button" id="btn-clear-search" class="btn-clear-search" hidden aria-label="ล้างการค้นหา">
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <!-- Quick Template Preset Button -->
+              <button type="button" id="btn-apply-standard" class="btn btn-preset" title="ปรับทุกแผนกเป็นเกณฑ์มาตรฐาน 2.00% / เตือน 1.50%">
+                <span class="material-symbols-outlined">auto_fix_high</span>
+                <span>ใช้เกณฑ์มาตรฐาน 2.0% (เตือน 1.5%)</span>
               </button>
             </div>
-
-            <!-- Quick Template Preset Button -->
-            <button type="button" id="btn-apply-standard" class="btn btn-preset" title="ปรับทุกแผนกเป็นเกณฑ์มาตรฐาน 1.00% / เตือน 0.70%">
-              <span class="material-symbols-outlined">auto_fix_high</span>
-              <span>ใช้เกณฑ์มาตรฐาน (1.0% / 0.7%)</span>
-            </button>
           </div>
-        </div>
 
-        <!-- Unsaved changes warning bar -->
-        <div id="unsaved-banner" class="unsaved-banner" hidden>
-          <div class="unsaved-content">
-            <span class="material-symbols-outlined unsaved-icon">edit_notifications</span>
-            <span>คุณมีการเปลี่ยนแปลงค่าเกณฑ์ที่ยังไม่ได้บันทึก</span>
-          </div>
-          <div class="unsaved-actions">
-            <button type="button" id="btn-discard-changes" class="btn btn-text-danger">คืนค่าเดิม</button>
-            <button type="button" id="btn-save-inline" class="btn btn-orange-sm">บันทึกทันที</button>
-          </div>
-        </div>
-
-        <!-- Department Table Scroll Container -->
-        <div class="table-scroll" id="table-scroll-container">
-          <table class="settings-table" id="settings-table">
-            <thead>
-              <tr>
-                <th class="th-order">ลำดับ</th>
-                <th class="th-dept">แผนกการผลิต</th>
-                <th class="th-input text-right">
-                  <div class="th-label-group text-right">
-                    <span>เกณฑ์ไม่เกิน (%)</span>
-                    <small class="th-sub">Max Standard</small>
-                  </div>
-                </th>
-                <th class="th-input text-right">
-                  <div class="th-label-group text-right">
-                    <span>ค่าเตือน (%)</span>
-                    <small class="th-sub">Warning Alert</small>
-                  </div>
-                </th>
-                <th class="th-preview">ช่วงระดับเฝ้าระวัง</th>
-                <th class="th-status text-center">สถานะ</th>
-              </tr>
-            </thead>
-
-            <tbody id="settings-table-body">
-              <tr class="tb-loading-row">
-                <td colspan="6" class="tb-empty">
-                  <div class="loading-spinner-wrap">
-                    <div class="spinner"></div>
-                    <span>กำลังโหลดข้อมูลเกณฑ์ของเสียล่าสุด...</span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Sticky Footer Save Bar -->
-        <footer class="save-row" id="save-row">
-          <div class="save-meta">
-            <div class="save-note" id="save-note">
-              <span class="material-symbols-outlined">info</span>
-              <span>ระบบตรวจสอบความถูกต้องอัตโนมัติ: ค่าเตือนต้องน้อยกว่าหรือเท่ากับเกณฑ์สูงสุด</span>
+          <!-- Unsaved changes warning bar -->
+          <div id="unsaved-banner" class="unsaved-banner" hidden>
+            <div class="unsaved-content">
+              <span class="material-symbols-outlined unsaved-icon">edit_notifications</span>
+              <span>คุณมีการเปลี่ยนแปลงค่าเกณฑ์ที่ยังไม่ได้บันทึก</span>
             </div>
-            <div class="last-sync-time" id="lbl-last-sync">--</div>
+            <div class="unsaved-actions">
+              <button type="button" id="btn-discard-changes" class="btn btn-text-danger">คืนค่าเดิม</button>
+              <button type="button" id="btn-save-inline" class="btn btn-orange-sm">บันทึกทันที</button>
+            </div>
           </div>
 
-          <div class="save-buttons-wrap">
-            <button id="btn-reset" class="btn btn-light" type="button" title="โหลดข้อมูลเดิมกลับมา">
-              <span class="material-symbols-outlined">restart_alt</span>
-              <span>รีเซ็ต</span>
-            </button>
+          <!-- Department Table Scroll Container -->
+          <div class="table-scroll" id="table-scroll-container">
+            <table class="settings-table" id="settings-table">
+              <thead>
+                <tr>
+                  <th class="th-order">ลำดับ</th>
+                  <th class="th-dept">แผนกการผลิต</th>
+                  <th class="th-input text-right">
+                    <div class="th-label-group text-right">
+                      <span>เกณฑ์ไม่เกิน (%)</span>
+                      <small class="th-sub">Max Waste % / เดือน</small>
+                    </div>
+                  </th>
+                  <th class="th-input text-right">
+                    <div class="th-label-group text-right">
+                      <span>ค่าเตือน (%)</span>
+                      <small class="th-sub">Warning Alert %</small>
+                    </div>
+                  </th>
+                  <th class="th-preview">ช่วงระดับเฝ้าระวัง</th>
+                  <th class="th-status text-center">สถานะ</th>
+                </tr>
+              </thead>
 
-            <button id="btn-save" class="btn btn-orange btn-save-primary" type="button">
-              <span class="material-symbols-outlined">save</span>
-              <span>บันทึกการตั้งค่า</span>
-            </button>
+              <tbody id="settings-table-body">
+                <tr class="tb-loading-row">
+                  <td colspan="6" class="tb-empty">
+                    <div class="loading-spinner-wrap">
+                      <div class="spinner"></div>
+                      <span>กำลังโหลดข้อมูลเกณฑ์ของเสียล่าสุด...</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </footer>
+
+          <!-- Sticky Footer Save Bar -->
+          <footer class="save-row" id="save-row">
+            <div class="save-meta">
+              <div class="save-note" id="save-note">
+                <span class="material-symbols-outlined">info</span>
+                <span>ระบบตรวจสอบความถูกต้องอัตโนมัติ: ค่าเตือนต้องน้อยกว่าหรือเท่ากับเกณฑ์สูงสุด</span>
+              </div>
+              <div class="last-sync-time" id="lbl-last-sync">--</div>
+            </div>
+
+            <div class="save-buttons-wrap">
+              <button id="btn-reset" class="btn btn-light" type="button" title="โหลดข้อมูลเดิมกลับมา">
+                <span class="material-symbols-outlined">restart_alt</span>
+                <span>รีเซ็ต</span>
+              </button>
+
+              <button id="btn-save" class="btn btn-orange btn-save-primary" type="button">
+                <span class="material-symbols-outlined">save</span>
+                <span>บันทึกการตั้งค่าแผนก</span>
+              </button>
+            </div>
+          </footer>
+        </div>
+
+        <!-- TAB 2: Machine Waste Standards (Per-Machine % Targets, e.g., 2% per month) -->
+        <div id="tab-view-machine-waste" class="tab-content-view" hidden>
+          <div class="config-panel-container">
+            <!-- Guidance Card -->
+            <div class="guidance-box">
+              <span class="material-symbols-outlined">lightbulb</span>
+              <div>
+                <strong>การกำหนดเกณฑ์ของเสียรายเครื่องจักร (Machine Waste Standard %):</strong>
+                <div>สามารถกำหนดเป้าหมาย % ของเสียสูงสุดและค่าเตือนเจาะจงเฉพาะเครื่อง เช่น <em>"ของเสียต้องไม่เกิน 2.00% ต่อเครื่อง ต่อเดือน (เตือนที่ 1.50%)"</em> หรือเลือกใช้เกณฑ์สืบทอดอัตโนมัติตามแผนก (Inherit from Department)</div>
+              </div>
+            </div>
+
+            <!-- Toolbar & Batch Preset -->
+            <div class="config-toolbar">
+              <div class="config-form-inline">
+                <span class="material-symbols-outlined" style="color: var(--ea-blue);">filter_alt</span>
+                <select id="machine-waste-filter-dept" class="config-select-dept" style="font-weight:600;">
+                  <!-- Populated dynamically -->
+                  <option value="">กำลังโหลดแผนก...</option>
+                </select>
+
+                <div style="width: 1px; height: 24px; background: #cbd5e1; margin: 0 4px;"></div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 13px; font-weight: 600; color: #475569;">ปรับด่วนทุกเครื่องในแผนก:</span>
+                  <input type="number" id="batch-machine-max" class="config-input-text" style="width: 80px; text-align: right;" step="0.1" min="0" max="100" value="2.00" placeholder="Max %" />
+                  <span style="font-size: 13px; color: #64748b;">% (เตือน</span>
+                  <input type="number" id="batch-machine-warn" class="config-input-text" style="width: 80px; text-align: right;" step="0.1" min="0" max="100" value="1.50" placeholder="Warn %" />
+                  <span style="font-size: 13px; color: #64748b;">%)</span>
+                  <button type="button" id="btn-apply-batch-machine" class="btn btn-preset" style="min-height: 38px; padding: 0 12px;" title="นำเกณฑ์นี้ไปใช้กับทุกเครื่องจักรในแผนกที่เลือก">
+                    <span class="material-symbols-outlined">auto_fix_high</span>
+                    <span>ปรับทุกเครื่อง</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <button type="button" id="btn-save-all-machine-waste" class="btn btn-orange" style="min-height: 38px; padding: 0 16px;">
+                  <span class="material-symbols-outlined">save</span>
+                  <span>บันทึกเกณฑ์รายเครื่องทั้งหมด</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Machine Waste Standards Table -->
+            <div class="table-scroll">
+              <table class="config-table">
+                <thead>
+                  <tr>
+                    <th style="width: 60px; text-align: center;">ลำดับ</th>
+                    <th style="width: 130px;">รหัสเครื่องจักร</th>
+                    <th style="width: 120px;">แผนก</th>
+                    <th style="width: 160px; text-align: right;">เกณฑ์ไม่เกินต่อเดือน (%)<br><small style="color:#64748b; font-weight:normal;">Max % / เดือน</small></th>
+                    <th style="width: 150px; text-align: right;">ค่าเตือนเฝ้าระวัง (%)<br><small style="color:#64748b; font-weight:normal;">Warning Alert %</small></th>
+                    <th style="width: 150px; text-align: center;">รูปแบบเกณฑ์</th>
+                    <th style="text-align: center;">ระดับช่วงเฝ้าระวัง</th>
+                    <th style="width: 100px; text-align: center;">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="machine-waste-table-body">
+                  <tr>
+                    <td colspan="8" style="text-align: center; padding: 32px; color: #64748b; font-style: italic;">
+                      กำลังดึงข้อมูลเกณฑ์ของเสียรายเครื่องจักร...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- TAB 2: Machine Management -->
+        <div id="tab-view-machines" class="tab-content-view" hidden>
+          <div class="config-panel-container">
+            <div class="config-toolbar">
+              <div class="config-form-inline">
+                <span class="material-symbols-outlined" style="color: var(--ea-blue);">filter_alt</span>
+                <select id="machine-filter-dept" class="config-select-dept" style="font-weight:600;">
+                  <!-- Dynamically populated -->
+                  <option value="">กำลังโหลดแผนก...</option>
+                </select>
+                <div style="width: 1px; height: 24px; background: #cbd5e1; margin: 0 4px;"></div>
+                <input type="text" id="new-machine-no" class="config-input-text" placeholder="ระบุเลข/ชื่อเครื่องจักรใหม่ (เช่น B06)..." required />
+                <input type="number" id="new-machine-sort" class="config-input-text" placeholder="ลำดับ" style="width: 80px;" min="0" value="0" />
+                <button type="button" id="btn-add-machine" class="btn btn-orange" style="min-height:38px; padding:0 14px;">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>เพิ่มเครื่องจักร</span>
+                </button>
+              </div>
+              <div class="last-sync-time" id="lbl-machines-count" style="font-weight: 700; color: var(--text-muted);">-- เครื่องจักร</div>
+            </div>
+
+            <div class="table-scroll">
+              <table class="config-table">
+                <thead>
+                  <tr>
+                    <th style="width: 80px; text-align: center;">ลำดับ</th>
+                    <th>แผนก</th>
+                    <th>รหัส / ชื่อเครื่องจักร</th>
+                    <th style="width: 120px;">ลำดับแสดงผล</th>
+                    <th style="width: 120px; text-align: center;">เปิดใช้งาน</th>
+                    <th style="width: 100px; text-align: center;">ลบออก</th>
+                  </tr>
+                </thead>
+                <tbody id="machines-table-body">
+                  <tr>
+                    <td colspan="6" style="text-align: center; padding: 32px; color: #64748b; font-style: italic;">
+                      กำลังดึงข้อมูลเครื่องจักร...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: Problem Type Master Management -->
+        <div id="tab-view-problems" class="tab-content-view" hidden>
+          <div class="config-panel-container">
+            <div class="config-toolbar">
+              <div class="config-form-inline">
+                <span class="material-symbols-outlined" style="color: var(--ea-blue);">filter_alt</span>
+                <select id="problem-filter-dept" class="config-select-dept" style="font-weight:600;">
+                  <!-- Dynamically populated -->
+                  <option value="">กำลังโหลดแผนก...</option>
+                </select>
+                <div style="width: 1px; height: 24px; background: #cbd5e1; margin: 0 4px;"></div>
+                <input type="text" id="new-problem-type" class="config-input-text" placeholder="ระบุประเภทหัวข้อปัญหาใหม่ (เช่น หลอดสั้น)..." required style="width: 300px;" />
+                <input type="number" id="new-problem-sort" class="config-input-text" placeholder="ลำดับ" style="width: 80px;" min="0" value="0" />
+                <button type="button" id="btn-add-problem" class="btn btn-orange" style="min-height:38px; padding:0 14px;">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>เพิ่มประเภทปัญหา</span>
+                </button>
+              </div>
+              <div class="last-sync-time" id="lbl-problems-count" style="font-weight: 700; color: var(--text-muted);">-- รายการ</div>
+            </div>
+
+            <div class="table-scroll">
+              <table class="config-table">
+                <thead>
+                  <tr>
+                    <th style="width: 80px; text-align: center;">ลำดับ</th>
+                    <th>แผนก</th>
+                    <th>ประเภทหัวข้อปัญหา</th>
+                    <th style="width: 120px;">ลำดับแสดงผล</th>
+                    <th style="width: 120px; text-align: center;">เปิดใช้งาน</th>
+                    <th style="width: 100px; text-align: center;">ลบออก</th>
+                  </tr>
+                </thead>
+                <tbody id="problems-table-body">
+                  <tr>
+                    <td colspan="6" style="text-align: center; padding: 32px; color: #64748b; font-style: italic;">
+                      กำลังดึงข้อมูลรายการปัญหา...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
 

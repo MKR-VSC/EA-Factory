@@ -801,9 +801,7 @@ function renderGroup(g, i) {
 
   const rowClass = isCancelled ? ` class="row-cancelled"` : "";
 
-  const expandCell = isMachineStatus
-    ? `<span class="muted">—</span>`
-    : `<button class="expand-btn" onclick="toggleDetail(${i})">▼</button>`;
+  const expandCell = `<button class="expand-btn" onclick="toggleDetail(${i})">▼</button>`;
 
   const wasteCell = isNotRunning ? "-" : formatNumber(g.waste);
 
@@ -894,14 +892,12 @@ function renderGroup(g, i) {
     <td>${actions}</td>
   </tr>`;
 
-  if (isMachineStatus) return mainRow;
-
   return `${mainRow}
   <tr
     id="detail-${i}"
     class="detail-row hidden${isCancelled ? " row-cancelled" : ""}"
   >
-    <td colspan="13">${renderProblemTable(g.items, g.waste)}</td>
+    <td colspan="13">${renderProblemTable(g.items || [], g.waste || 0, g.key)}</td>
   </tr>`;
 }
 
@@ -935,19 +931,26 @@ function renderProblemInline(items) {
       "<br>",
     )}${items.length > 3 ? `<br><small>+${items.length - 3} รายการ</small>` : ""}</div>`;
 }
-function renderProblemTable(items, total) {
-  return `<table class="problem-table">
-    <thead>
-      <tr>
-        <th style="padding:8px 12px;text-align:left;">กะ</th>
-        <th style="padding:8px 12px;text-align:left;">ปัญหา / รายละเอียดปัญหา</th>
-        <th style="padding:8px 12px;text-align:right;">น้ำหนักของเสีย kg</th>
-        <th style="padding:8px 12px;text-align:left;">รายละเอียดเพิ่มเติม</th>
-        <th style="padding:8px 12px;text-align:left;">ผู้บันทึก</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${items.map((x) => `
+function renderProblemTable(items, total, groupKey) {
+  const g = state.groups.find(x => x.key === groupKey);
+  const isCancelled = g ? normalizeText(g.status) === STATUS_CANCELLED : false;
+  const isDone = g ? normalizeText(g.status) === STATUS_DONE : false;
+
+  let actionHtml = "";
+  if (!isCancelled && !isDone) {
+    actionHtml = `
+      <div style="margin-top: 14px; display: flex; justify-content: flex-start; padding: 0 4px;">
+        <button class="btn primary" onclick="showAddScrapModal('${safeAttr(groupKey)}')" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; border-radius: 8px; font-weight: 600; cursor: pointer; background: #0284c7; color: white; border: none; height: 38px; transition: background 0.15s ease;">
+          <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+          เพิ่มรายการของเสีย (Add Scrap Item)
+        </button>
+      </div>
+    `;
+  }
+
+  const hasItems = items && items.length > 0;
+  const tbodyContent = hasItems 
+    ? items.map((x) => `
         <tr>
           <td style="padding:8px 12px;vertical-align:middle;">
             <span class="status-pill" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;padding:2px 8px;font-size:12px;font-weight:600;border-radius:4px;white-space:nowrap;">
@@ -967,18 +970,39 @@ function renderProblemTable(items, total) {
             ${safeText(x.reported_by || "-")}
           </td>
         </tr>
-      `).join("")}
-    </tbody>
-    <tfoot>
-      <tr>
-        <td colspan="2" style="padding:10px 12px;font-weight:700;">รวมของเสียทั้งหมด (ทุกกะ)</td>
-        <td style="padding:10px 12px;text-align:right;font-weight:bold;color:#e11d48;font-size:16px;">
-          ${formatNumber(total)}
-        </td>
-        <td colspan="2" style="padding:10px 12px;font-weight:600;">kg</td>
-      </tr>
-    </tfoot>
-  </table>`;
+      `).join("")
+    : `<tr><td colspan="5" style="text-align:center; padding:24px; color:#64748b; font-style:italic;">ยังไม่มีรายการของเสียสำหรับวันนี้</td></tr>`;
+
+  return `
+    <div style="padding: 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin: 8px 0;">
+      <table class="problem-table" style="width:100%; border-collapse:collapse; background:white; border-radius:6px; overflow:hidden; border:1px solid #e2e8f0;">
+        <thead>
+          <tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1;">
+            <th style="padding:10px 12px;text-align:left;font-size:13px;color:#475569;font-weight:600;">กะ</th>
+            <th style="padding:10px 12px;text-align:left;font-size:13px;color:#475569;font-weight:600;">ปัญหา / รายละเอียดปัญหา</th>
+            <th style="padding:10px 12px;text-align:right;font-size:13px;color:#475569;font-weight:600;">น้ำหนักของเสีย kg</th>
+            <th style="padding:10px 12px;text-align:left;font-size:13px;color:#475569;font-weight:600;">รายละเอียดเพิ่มเติม</th>
+            <th style="padding:10px 12px;text-align:left;font-size:13px;color:#475569;font-weight:600;">ผู้บันทึก</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tbodyContent}
+        </tbody>
+        ${hasItems ? `
+        <tfoot>
+          <tr style="background:#f8fafc; border-top:2px solid #cbd5e1;">
+            <td colspan="2" style="padding:12px;font-weight:700;color:#1e293b;">รวมของเสียทั้งหมด (ทุกกะ)</td>
+            <td style="padding:12px;text-align:right;font-weight:bold;color:#e11d48;font-size:16px;">
+              ${formatNumber(total)}
+            </td>
+            <td colspan="2" style="padding:12px;font-weight:600;color:#1e293b;">kg</td>
+          </tr>
+        </tfoot>
+        ` : ""}
+      </table>
+      ${actionHtml}
+    </div>
+  `;
 }
 function toggleDetail(i) {
   document.getElementById(`detail-${i}`)?.classList.toggle("hidden");
@@ -1637,4 +1661,262 @@ function generateAccountingReportHTML(isPrintImmediate = false) {
 
 window.exportAccountingSummaryPDF = exportAccountingSummaryPDF;
 window.printAccountingSummary = printAccountingSummary;
+
+async function fetchProblemTypesForDept(dept) {
+  const cleanDept = String(dept || "").toLowerCase().trim();
+  try {
+    const { data, error } = await state.supabase
+      .from("master_problems")
+      .select("problem_type")
+      .eq("department_code", cleanDept)
+      .eq("is_active", true)
+      .order("problem_type", { ascending: true });
+
+    if (!error && data?.length > 0) {
+      return data.map((item) => item.problem_type).filter(Boolean);
+    }
+  } catch (err) {
+    console.warn("Error fetching master_problems by code:", err);
+  }
+
+  try {
+    const { data, error } = await state.supabase
+      .from("master_problems")
+      .select("problem_type")
+      .eq("department", cleanDept)
+      .eq("is_active", true)
+      .order("problem_type", { ascending: true });
+
+    if (!error && data?.length > 0) {
+      return data.map((item) => item.problem_type).filter(Boolean);
+    }
+  } catch (err) {
+    console.warn("Error fetching master_problems by name:", err);
+  }
+
+  try {
+    const { data, error } = await state.supabase
+      .from("pvt_problem_types")
+      .select("problem_name")
+      .eq("department_code", cleanDept)
+      .order("problem_name", { ascending: true });
+
+    if (!error && data?.length > 0) {
+      return data.map((item) => item.problem_name).filter(Boolean);
+    }
+  } catch (err) {
+    console.warn("Error fetching pvt_problem_types:", err);
+  }
+
+  // Fallback lists
+  if (cleanDept.includes("blow")) {
+    return ["หลอดสั้น", "หลอดคด", "ก้นบาง", "น้ำหนักเกิน", "ฟองอากาศ", "รอยขีดข่วน", "อื่นๆ"];
+  } else if (cleanDept.includes("print")) {
+    return ["สีเพี้ยน", "ลายเลอะ", "พิมพ์ไม่ติด", "พิมพ์เบี้ยว", "อื่นๆ"];
+  }
+  return ["ชำรุด", "ไม่ได้มาตรฐาน", "เศษวัสดุ", "อื่นๆ"];
+}
+
+async function showAddScrapModal(groupKey) {
+  const g = state.groups.find((x) => x.key === groupKey);
+  if (!g) return;
+
+  const modal = document.getElementById("appModal");
+  const title = document.getElementById("modalTitle");
+  const body = document.getElementById("modalBody");
+  const actions = document.getElementById("modalActions");
+
+  if (!modal || !title || !body || !actions) return;
+
+  title.textContent = `เพิ่มรายการของเสีย - เครื่อง ${g.machine} (${formatDate(g.date)})`;
+
+  body.innerHTML = `
+    <form id="addScrapForm" style="display: flex; flex-direction: column; gap: 14px; padding: 8px 4px;">
+      <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-weight: 600; font-size: 14px; color: #334155;">กะการผลิต *</label>
+        <select id="scrapShift" class="filter-select" style="width: 100%; height: 40px; border-radius: 6px; padding: 0 10px; border: 1px solid #cbd5e1;" required>
+          <option value="A">กะ A (เช้า)</option>
+          <option value="B">กะ B (บ่าย)</option>
+          <option value="C">กะ C (ดึก)</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-weight: 600; font-size: 14px; color: #334155;">ประเภทปัญหา *</label>
+        <select id="scrapProblemType" class="filter-select" style="width: 100%; height: 40px; border-radius: 6px; padding: 0 10px; border: 1px solid #cbd5e1;" required>
+          <option value="">กำลังโหลดรายการปัญหา...</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-weight: 600; font-size: 14px; color: #334155;">น้ำหนักของเสีย (kg) *</label>
+        <input type="number" id="scrapWeight" class="cell-input" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;" step="0.01" min="0.01" placeholder="ระบุน้ำหนักเป็น kg" required />
+      </div>
+
+      <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-weight: 600; font-size: 14px; color: #334155;">รายละเอียดเพิ่มเติม</label>
+        <textarea id="scrapDetail" class="cell-input" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; min-height: 60px; box-sizing: border-box;" placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)"></textarea>
+      </div>
+    </form>
+  `;
+
+  actions.innerHTML = `
+    <button class="btn light" id="btnCancelScrap" style="padding: 8px 16px; border-radius: 6px;">ยกเลิก</button>
+    <button class="btn primary" id="btnSubmitScrap" style="background-color: #0284c7; padding: 8px 16px; border-radius: 6px; color: white; border: none; font-weight: 600; cursor: pointer;">บันทึกของเสีย</button>
+  `;
+
+  modal.classList.remove("hidden");
+
+  // Load problem types asynchronously
+  const problemSelect = document.getElementById("scrapProblemType");
+  fetchProblemTypesForDept(g.dept).then(problems => {
+    if (problemSelect) {
+      problemSelect.innerHTML = problems.map(p => `<option value="${safeAttr(p)}">${safeText(p)}</option>`).join("");
+      if (!problems.some(p => p.includes("อื่น"))) {
+        problemSelect.innerHTML += `<option value="อื่นๆ">อื่นๆ</option>`;
+      }
+    }
+  }).catch(err => {
+    console.error("Failed to load problem types:", err);
+    if (problemSelect) {
+      problemSelect.innerHTML = `
+        <option value="ทั่วไป">ทั่วไป</option>
+        <option value="อื่นๆ">อื่นๆ</option>
+      `;
+    }
+  });
+
+  const cancelBtn = document.getElementById("btnCancelScrap");
+  cancelBtn?.addEventListener("click", () => {
+    closeModal();
+  });
+
+  const submitBtn = document.getElementById("btnSubmitScrap");
+  submitBtn?.addEventListener("click", async () => {
+    const shift = document.getElementById("scrapShift")?.value;
+    const problemType = document.getElementById("scrapProblemType")?.value;
+    const weightStr = document.getElementById("scrapWeight")?.value;
+    const detail = document.getElementById("scrapDetail")?.value || "";
+
+    if (!shift || !problemType || !weightStr) {
+      showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "error");
+      return;
+    }
+
+    const weight = parseFloat(weightStr);
+    if (isNaN(weight) || weight <= 0) {
+      showToast("กรุณากรอกน้ำหนักของเสียให้ถูกต้อง (มากกว่า 0)", "error");
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "กำลังบันทึก...";
+
+    try {
+      await appendScrapItem(g, shift, problemType, weight, detail);
+      closeModal();
+      showToast("เพิ่มรายการของเสียเรียบร้อยแล้ว", "success");
+      await loadAccountingData();
+    } catch (err) {
+      console.error(err);
+      showToast(`เกิดข้อผิดพลาด: ${err.message || err}`, "error");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "บันทึกของเสีย";
+    }
+  });
+}
+
+async function appendScrapItem(g, shift, problemType, weight, detail) {
+  // Check if a report already exists for this date, dept, machine, and shift
+  const { data: existingReports, error: findErr } = await state.supabase
+    .from(REPORT_TABLE)
+    .select("id, status")
+    .eq("report_date", g.date)
+    .eq("department_code", g.dept)
+    .eq("machine_no", g.machine)
+    .eq("work_shift", shift)
+    .neq("status", STATUS_CANCELLED)
+    .limit(1);
+
+  if (findErr) throw findErr;
+
+  let reportId;
+  let reportStatus = g.status === STATUS_DONE ? STATUS_DONE : STATUS_SENT;
+
+  if (existingReports && existingReports.length > 0) {
+    reportId = existingReports[0].id;
+    reportStatus = existingReports[0].status;
+  } else {
+    // No active report exists for this shift, create a new one
+    const newReport = {
+      report_date: g.date,
+      department_code: g.dept,
+      department: g.dept,
+      machine_no: g.machine,
+      shift: shift,
+      work_shift: shift,
+      reported_by: state.currentUser?.name || state.currentUser?.username || 'บัญชี',
+      status: reportStatus,
+      waste_weight_kg: weight,
+      reason_detail: problemType,
+      detail: detail || null
+    };
+
+    const { data: insertedReport, error: reportInsertErr } = await state.supabase
+      .from(REPORT_TABLE)
+      .insert(newReport)
+      .select("id")
+      .single();
+
+    if (reportInsertErr) throw reportInsertErr;
+    reportId = insertedReport?.id;
+  }
+
+  // Get the next item_no for this report
+  const { data: existingItems, error: itemsError } = await state.supabase
+    .from(ITEM_TABLE)
+    .select("item_no")
+    .eq("report_id", reportId);
+
+  if (itemsError) throw itemsError;
+
+  const nextItemNo = (existingItems || []).reduce((max, item) => Math.max(max, item.item_no || 0), 0) + 1;
+
+  // Insert the new scrap item
+  const newItemRow = {
+    report_id: reportId,
+    item_no: nextItemNo,
+    problem_type: problemType,
+    waste_weight_kg: weight,
+    detail: detail || null
+  };
+
+  const { error: itemInsertErr } = await state.supabase
+    .from(ITEM_TABLE)
+    .insert(newItemRow);
+
+  if (itemInsertErr) throw itemInsertErr;
+
+  // Recalculate and update the total waste_weight_kg on the parent report
+  const { data: updatedItems, error: loadUpdatedErr } = await state.supabase
+    .from(ITEM_TABLE)
+    .select("waste_weight_kg")
+    .eq("report_id", reportId);
+
+  if (!loadUpdatedErr && updatedItems) {
+    const totalWasteWeight = updatedItems.reduce((sum, item) => sum + Number(item.waste_weight_kg || 0), 0);
+    
+    // Update parent report with the new total waste weight
+    await state.supabase
+      .from(REPORT_TABLE)
+      .update({ 
+        waste_weight_kg: totalWasteWeight,
+        waste_qty: totalWasteWeight // sync waste_qty if they are used interchangeably
+      })
+      .eq("id", reportId);
+  }
+}
+
+window.showAddScrapModal = showAddScrapModal;
+
 
