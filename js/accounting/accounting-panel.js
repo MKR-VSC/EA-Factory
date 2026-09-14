@@ -775,7 +775,7 @@ function renderGroup(g, i) {
   } else if (isNoWaste && g.production) {
     result = { label: "ไม่มีของเสีย", className: "result-success" };
   } else {
-    result = getResult(g.dept, percent, !!g.production);
+    result = getResult(g.dept, percent, !!g.production, g.machine);
   }
 
   let status;
@@ -1141,16 +1141,35 @@ function askCancelConfirm(g) {
   });
 }
 
-function getResult(dept, percent, hasProd) {
+function getResult(dept, percent, hasProd, machineNo = "") {
   if (!hasProd) return { label: "รอน้ำหนักผลิต", className: "result-none" };
+
+  // Check machine-specific standard first
+  let maxStd = null;
+  let warnStd = null;
+
+  if (machineNo && window.WasteStandardService?.getMachineStandard) {
+    const customMachine = window.WasteStandardService.getMachineStandard(dept, machineNo);
+    if (customMachine && customMachine.is_custom) {
+      maxStd = Number(customMachine.max_waste_percent);
+      warnStd = Number(customMachine.warning_percent);
+    }
+  }
+
+  // Fallback to department standard
   const s = state.standards[dept];
-  if (!s) return { label: "ไม่พบเกณฑ์", className: "result-none" };
-  if (percent > s.max)
+  if (maxStd === null) {
+    if (!s) return { label: "ไม่พบเกณฑ์", className: "result-none" };
+    maxStd = s.max;
+    warnStd = s.warning;
+  }
+
+  if (percent > maxStd)
     return {
-      label: `เกิน ${formatPercent(percent - s.max)}`,
+      label: `เกิน ${formatPercent(percent - maxStd)}`,
       className: "result-danger",
     };
-  if (s.warning > 0 && percent >= s.warning)
+  if (warnStd > 0 && percent >= warnStd)
     return { label: "เริ่มสูง", className: "result-warning" };
   return { label: "ผ่าน", className: "result-success" };
 }
@@ -1288,14 +1307,14 @@ function handleProductionInput(input, key) {
       } else if (!isCancelled && !isNotRunning) {
         percent = (g.waste / cleanNum) * 100;
       }
-      const result = getResult(g.dept, percent, true);
+      const result = getResult(g.dept, percent, true, g.machine);
       if (pctTd) pctTd.textContent = formatPercent(percent);
       if (evalTd)
         evalTd.innerHTML = `<span class="result-pill ${result.className}">${safeText(result.label)}</span>`;
     } else {
       if (pctTd) pctTd.textContent = "-";
       if (evalTd) {
-        const result = getResult(g.dept, 0, false);
+        const result = getResult(g.dept, 0, false, g.machine);
         evalTd.innerHTML = `<span class="result-pill ${result.className}">${safeText(result.label)}</span>`;
       }
     }
