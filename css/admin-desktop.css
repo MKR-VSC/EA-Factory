@@ -1,0 +1,195 @@
+/* ==========================================================
+   admin-desktop.css — หน้า Admin เน้นการใช้งานบน PC / โน้ตบุ๊ก
+   ใช้คู่กับ core/adminDesktop.js
+   ========================================================== */
+
+/* ---------- แถวที่ซ่อนจากการแบ่งหน้า (ชนะทุกโหมดแสดงผล รวมโหมดการ์ด) ---------- */
+table[data-pager] > tbody > tr.pager-hidden.pager-hidden {
+  display: none !important;
+}
+
+/* ---------- แถบแบ่งหน้า ---------- */
+.admin-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 12px 18px;
+  border-top: 1px solid #e6ebf2;
+  background: #fbfcfe;
+  border-radius: 0 0 16px 16px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.admin-pager-info {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-pager-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-pager-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 8px;
+  font-weight: 600;
+}
+
+.admin-pager-size select {
+  width: auto !important;
+  min-height: 34px;
+  padding: 4px 28px 4px 10px;
+  border: 1px solid #d5dde8;
+  border-radius: 10px;
+  background-color: #fff;
+  font: inherit;
+  font-size: 13px;
+}
+
+.admin-pager-page {
+  min-width: 92px;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #1e293b;
+}
+
+.admin-pager-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid #d5dde8;
+  border-radius: 10px;
+  background: #fff;
+  color: #1e3a8a;
+  cursor: pointer;
+}
+
+.admin-pager-btn:hover:not(:disabled) {
+  background: #eef4ff;
+  border-color: #b9c9ea;
+}
+
+.admin-pager-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.admin-pager-btn .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.admin-pager.is-single-page .admin-pager-btn,
+.admin-pager.is-single-page .admin-pager-page {
+  display: none;
+}
+
+/* ---------- PC / โน้ตบุ๊ก (≥1100px) ---------- */
+@media (min-width: 1100px) {
+  /* ตารางเลื่อนในกรอบ หัวตารางค้างอยู่ด้านบนตลอด */
+  /* ตารางกว้างพอบน PC → ไม่ต้องมีกล่องเลื่อนซ้อน
+     ให้หน้าเลื่อนปกติ และหัวตารางค้างที่ขอบบนของจอ */
+  body.admin-ui-v2 .page-section .table-scroll {
+    overflow: visible !important;
+  }
+
+  body.admin-ui-v2 .page-section .table-scroll th {
+    top: 0;
+  }
+
+  /* กรอบการ์ดเดิมใช้ overflow:hidden (มุมโค้ง) ซึ่งทำให้หัวตารางค้างไม่ได้
+     overflow:clip ตัดมุมเหมือนเดิม แต่ไม่ขวางการค้างของหัวตาราง */
+  body.admin-ui-v2 .page-section .panel:has(table[data-pager]) {
+    overflow: clip !important;
+  }
+
+  body.admin-ui-v2 th {
+    box-shadow: inset 0 -1px 0 #dfe6ee;
+    font-size: 12.5px !important;
+    white-space: nowrap !important;
+  }
+
+  /* แถวกระชับ อ่านได้มากขึ้นในหนึ่งจอ */
+  body.admin-ui-v2 td {
+    padding-top: 9px !important;
+    padding-bottom: 9px !important;
+    font-size: 13.5px;
+  }
+
+  body.admin-ui-v2 tbody tr {
+    transition: background 0.1s ease;
+  }
+}
+
+/* จอกว้าง (≥1600px): ใช้พื้นที่เต็ม เมนูข้างกว้างขึ้นเล็กน้อย */
+@media (min-width: 1600px) {
+  body.admin-ui-v2 .app-shell {
+    grid-template-columns: 264px minmax(0, 1fr) !important;
+  }
+
+  body.admin-ui-v2 td {
+    font-size: 14px;
+  }
+}
+
+/* ---------- มือถือ: แถบแนะนำให้ใช้บน PC ---------- */
+.admin-desktop-notice {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .admin-desktop-notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border: 1px solid #fde68a;
+    border-radius: 14px;
+    background: #fffbeb;
+    color: #92400e;
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .admin-desktop-notice > .material-symbols-outlined {
+    font-size: 22px;
+    flex: 0 0 auto;
+  }
+
+  .admin-desktop-notice > span:nth-child(2) {
+    flex: 1 1 auto;
+  }
+
+  .admin-desktop-notice button {
+    flex: 0 0 auto;
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .admin-pager {
+    justify-content: center;
+  }
+
+  .admin-pager-btn {
+    width: 42px;
+    height: 42px;
+  }
+}

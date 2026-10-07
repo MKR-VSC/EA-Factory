@@ -222,6 +222,9 @@
   }
 
   async function onScanSuccess(decodedText) {
+    try {
+      navigator.vibrate && navigator.vibrate(60);
+    } catch (_) {}
     if (!isScanning) return;
     isScanning = false;
 

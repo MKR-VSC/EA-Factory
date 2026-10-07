@@ -1,0 +1,345 @@
+/* ==========================================================
+   splash.css — หน้าโหลดตอนเปิดแอป (Login และฟอร์มบันทึกของเสีย)
+   ลำดับเดียวต่อเนื่อง: โลโก้หมุนเข้า (เหมือนลูกศรรีไซเคิล) → แสงขาวฟุ้ง
+   → วงแหวนส้ม-น้ำเงินวาดรอบโลโก้ → ชื่อระบบค่อย ๆ ขึ้น → ออกโดยจางหาย
+   พื้นสีพีช + ลายตาราง ให้ต่อเนื่องกับแถบโค้งบนหน้า Login
+   (ทับสไตล์เดิมใน loadingService.css จึงต้องใช้ !important)
+   ========================================================== */
+
+#splash-screen.pvt-splash {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 999999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  padding: 24px !important;
+  overflow: hidden !important;
+  background:
+    linear-gradient(rgba(122, 62, 22, 0.07) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, rgba(122, 62, 22, 0.07) 1px, transparent 1px) 0 0 / 32px 32px,
+    radial-gradient(70% 55% at 50% 42%, #fff4ea 0%, rgba(255, 244, 234, 0) 70%),
+    linear-gradient(165deg, #ffe2cc 0%, #ffc49c 100%) !important;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0.5s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  font-family: "Kanit", "Noto Sans Thai", system-ui, sans-serif;
+}
+
+#splash-screen.pvt-splash.hide {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* ---------- โลโก้ + แสง + วงแหวน ---------- */
+.pvt-splash-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 168px;
+  height: 168px;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#splash-screen.pvt-splash.hide .pvt-splash-mark {
+  transform: scale(1.08);
+}
+
+.pvt-splash-glow {
+  position: absolute;
+  inset: -36px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.8) 36%, rgba(255, 255, 255, 0) 70%);
+  filter: blur(6px);
+  animation: pvtGlowIn 0.7s ease-out both;
+}
+
+.pvt-splash-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+.pvt-splash-ring .track {
+  fill: none;
+  stroke: rgba(122, 62, 22, 0.12);
+  stroke-width: 5;
+}
+
+.pvt-splash-ring .arc {
+  fill: none;
+  stroke: url(#pvtSplashRing);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 340;
+  stroke-dashoffset: 340;
+  /* วาดครบวง แล้วหมุนช้า ๆ ต่อถ้ายังโหลดไม่เสร็จ */
+  animation:
+    pvtRingDraw 0.95s cubic-bezier(0.65, 0, 0.35, 1) 0.15s forwards,
+    pvtRingSpin 2.4s linear 1.1s infinite;
+  transform-origin: 60px 60px;
+}
+
+.pvt-splash-logo {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 18px rgba(242, 106, 27, 0.22));
+  animation: pvtLogoIn 0.75s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+
+/* ---------- ข้อความ ---------- */
+.pvt-splash-title {
+  margin-top: 26px;
+  color: #13265c;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  animation: pvtTextUp 0.5s ease-out 0.35s both;
+}
+
+.pvt-splash-sub {
+  margin-top: 6px;
+  color: #7a3e16;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+  animation: pvtTextUp 0.5s ease-out 0.48s both;
+}
+
+/* ---------- จังหวะการเคลื่อนไหว ---------- */
+@keyframes pvtLogoIn {
+  from {
+    opacity: 0;
+    transform: scale(0.6) rotate(-28deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes pvtGlowIn {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pvtRingDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pvtRingSpin {
+  from {
+    stroke-dashoffset: 0;
+    stroke-dasharray: 250 90;
+    transform: rotate(0deg);
+  }
+  to {
+    stroke-dashoffset: 0;
+    stroke-dasharray: 250 90;
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pvtTextUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* หลังหน้าโหลดหาย: การ์ดเข้าสู่ระบบเลื่อนขึ้นมาวางที่ */
+body:has(#splash-screen.pvt-splash.hide) .login-card,
+body:has(#splash-screen.pvt-splash.hide) .qr-login-box:not(.hidden),
+body:has(#splash-screen.pvt-splash.hide) .form-page-card {
+  /* backwards: ไม่ค้าง transform หลังจบ (กันหน้าต่างลอยในฟอร์มเพี้ยนตำแหน่ง) */
+  animation: pvtCardRise 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+
+@keyframes pvtCardRise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ผู้ใช้ที่ตั้งค่า "ลดการเคลื่อนไหว": แสดงสถานะสุดท้ายทันที */
+@media (prefers-reduced-motion: reduce) {
+  .pvt-splash-logo,
+  .pvt-splash-glow,
+  .pvt-splash-title,
+  .pvt-splash-sub {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .pvt-splash-ring .arc {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
+
+/* ==========================================================
+   หน้าต่าง "กำลังโหลด / กำลังบันทึก" (ใช้ทั้งแอป)
+   #ea-loading-overlay (LoadingService.show) และ #login-overlay (Login / ฟอร์มบันทึก)
+   ใช้โลโก้ + วงแหวนส้ม-น้ำเงินชุดเดียวกับหน้าเปิดแอป
+   ========================================================== */
+#ea-loading-overlay.pvt-loader,
+#login-overlay.pvt-loader {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1000000 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+  background: rgba(15, 23, 42, 0.42) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  opacity: 1;
+  visibility: visible;
+  animation: pvtLoaderFade 0.2s ease-out both;
+  font-family: "Kanit", "Noto Sans Thai", system-ui, sans-serif;
+}
+
+#ea-loading-overlay.pvt-loader.hidden,
+#ea-loading-overlay.pvt-loader.ea-loading-hidden,
+#login-overlay.pvt-loader.hidden,
+#login-overlay.pvt-loader.ea-loading-hidden {
+  display: none !important;
+}
+
+.pvt-loader .pvt-loader-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 300px;
+  max-width: 88vw;
+  padding: 30px 24px 26px;
+  box-sizing: border-box;
+  text-align: center;
+  border-radius: 24px;
+  background:
+    linear-gradient(rgba(122, 62, 22, 0.05) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, rgba(122, 62, 22, 0.05) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(180deg, #fff6ef 0%, #ffffff 55%);
+  box-shadow: 0 26px 60px rgba(15, 23, 42, 0.28);
+  animation: pvtLoaderPop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+
+.pvt-loader .pvt-loader-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  margin-bottom: 16px;
+}
+
+.pvt-loader .pvt-loader-mark::before {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 70%);
+}
+
+.pvt-loader .pvt-loader-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  animation: pvtLoaderSpin 1.1s linear infinite;
+}
+
+.pvt-loader .pvt-loader-ring .track {
+  fill: none;
+  stroke: rgba(122, 62, 22, 0.12);
+  stroke-width: 6;
+}
+
+.pvt-loader .pvt-loader-ring .arc {
+  fill: none;
+  stroke: url(#pvtLoaderRing);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 230 340;
+}
+
+.pvt-loader .pvt-loader-logo {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgba(242, 106, 27, 0.25));
+}
+
+.pvt-loader .pvt-loader-title,
+.pvt-loader h3 {
+  margin: 0 !important;
+  color: #13265c !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+}
+
+.pvt-loader .pvt-loader-text,
+.pvt-loader p {
+  margin: 4px 0 0 !important;
+  color: #7a3e16 !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+@keyframes pvtLoaderSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pvtLoaderFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pvtLoaderPop {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pvt-loader .pvt-loader-ring {
+    animation-duration: 3s;
+  }
+  .pvt-loader .pvt-loader-card,
+  #ea-loading-overlay.pvt-loader,
+  #login-overlay.pvt-loader {
+    animation: none !important;
+  }
+}

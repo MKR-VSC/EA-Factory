@@ -529,10 +529,16 @@ function renderUserInfo() {
 // =========================================================
 
 function hideSplash() {
+  // ใช้จังหวะเดียวกันทั้งแอป (services/loadingService.js):
+  // เปิดแอปครั้งแรกเล่นแอนิเมชันเต็ม, เปลี่ยนหน้าครั้งต่อไปแสดงสั้น ๆ
+  if (window.LoadingService?.hideSplash) {
+    window.LoadingService.hideSplash();
+    return;
+  }
   setTimeout(() => {
     const splash = document.getElementById("splash-screen");
     if (splash) splash.classList.add("hide");
-  }, 600);
+  }, 1150);
 }
 
 function showLoginOverlay(text = "กำลังบันทึกข้อมูล...") {
@@ -1730,149 +1736,116 @@ async function handleFormSubmit(event) {
   const finalDateTime = new Date(dateInput.value).toISOString();
   const reportDate = finalDateTime.slice(0, 10);
 
+  const payloadArgs = {
+    finalDateTime,
+    reportDate,
+    selectedShift,
+    finalShift,
+    finalMachine,
+    problemItems,
+    totalWasteWeight,
+    reporterName,
+  };
+  const OFFLINE = window.PVT_OFFLINE;
+
+  // ไม่มีอินเทอร์เน็ตตั้งแต่ตอนกดบันทึก → เก็บไว้ในเครื่องก่อน แล้วส่งให้อัตโนมัติเมื่อเน็ตกลับมา
+  if (OFFLINE && navigator.onLine === false) {
+    const ok = confirm(
+      "ตอนนี้ไม่มีอินเทอร์เน็ต\n\nบันทึกไว้ในเครื่องนี้ก่อน แล้วระบบจะส่งให้อัตโนมัติเมื่อกลับมาออนไลน์ ใช่ไหม?\n(ห้ามล้างข้อมูลเบราว์เซอร์จนกว่าจะส่งเสร็จ)",
+    );
+    if (!ok) return;
+    const { reportData, itemRows } = buildSubmissionPayload(payloadArgs);
+    if (!OFFLINE.enqueue(OFFLINE.prepare(reportData, itemRows))) {
+      alert("เก็บข้อมูลในเครื่องไม่สำเร็จ (พื้นที่เต็ม) กรุณาจดข้อมูลไว้แล้วบันทึกใหม่เมื่อมีอินเทอร์เน็ต");
+      return;
+    }
+    alert("บันทึกไว้ในเครื่องแล้ว ✅\nระบบจะส่งให้อัตโนมัติเมื่อมีอินเทอร์เน็ต (ดูจำนวนที่รอส่งได้ที่มุมล่างของจอ)");
+    // ไม่เปลี่ยนหน้า เพราะไม่มีเน็ตจะเปิดหน้าใหม่ไม่ได้
+    resetFormAfterSubmit();
+    return;
+  }
+
+  let submission = null;
+
   try {
     setSubmitLoading(submitButton, true);
     showLoginOverlay("กำลังตรวจสอบข้อมูลซ้ำ...");
 
     const duplicateItem = await checkDuplicateReport(
-  clientSupabase,
-  reportDate,
-  finalShift,
-  finalMachine,
-  problemItems,
-);
-
-if (duplicateItem) {
-  const duplicateStatus =
-    duplicateItem.daily_waste_reports?.status || "pending";
-
-  const lockedStatuses = ["sent_accounting", "accounting_checked"];
-
-  if (lockedStatuses.includes(duplicateStatus)) {
-    alert(
-      `พบข้อมูลซ้ำ และรายการนี้ส่งบัญชีแล้ว\n\n` +
-        `วันที่: ${reportDate}\n` +
-        `เครื่อง: ${finalMachine}\n` +
-        `กะ: ${finalShift}\n` +
-        `ปัญหา: ${duplicateItem.problem_type}\n\n` +
-        `ไม่สามารถบันทึกซ้ำหรือแก้ไขได้ กรุณาติดต่อหัวหน้างานค่ะ`,
+      clientSupabase,
+      reportDate,
+      finalShift,
+      finalMachine,
+      problemItems,
     );
-    return;
-  }
 
-  alert(
-    `พบข้อมูลซ้ำในระบบแล้ว\n\n` +
-      `วันที่: ${reportDate}\n` +
-      `เครื่อง: ${finalMachine}\n` +
-      `กะ: ${finalShift}\n` +
-      `ปัญหา: ${duplicateItem.problem_type}\n\n` +
-      `หากกรอกผิด ให้หัวหน้าแก้ไขรายการเดิมจากหน้าตรวจสอบค่ะ`,
-  );
-  return;
-}
+    if (duplicateItem) {
+      const duplicateStatus =
+        duplicateItem.daily_waste_reports?.status || "pending";
+
+      const lockedStatuses = ["sent_accounting", "accounting_checked"];
+
+      if (lockedStatuses.includes(duplicateStatus)) {
+        alert(
+          `พบข้อมูลซ้ำ และรายการนี้ส่งบัญชีแล้ว\n\n` +
+            `วันที่: ${reportDate}\n` +
+            `เครื่อง: ${finalMachine}\n` +
+            `กะ: ${finalShift}\n` +
+            `ปัญหา: ${duplicateItem.problem_type}\n\n` +
+            `ไม่สามารถบันทึกซ้ำหรือแก้ไขได้ กรุณาติดต่อหัวหน้างานค่ะ`,
+        );
+        return;
+      }
+
+      alert(
+        `พบข้อมูลซ้ำในระบบแล้ว\n\n` +
+          `วันที่: ${reportDate}\n` +
+          `เครื่อง: ${finalMachine}\n` +
+          `กะ: ${finalShift}\n` +
+          `ปัญหา: ${duplicateItem.problem_type}\n\n` +
+          `หากกรอกผิด ให้หัวหน้าแก้ไขรายการเดิมจากหน้าตรวจสอบค่ะ`,
+      );
+      return;
+    }
 
     const confirmed = confirm("ยืนยันการบันทึกรายงานปัญหานี้เข้าสู่ระบบ?");
     if (!confirmed) return;
 
     showLoginOverlay("กำลังบันทึกข้อมูล...");
 
-    const problemSummary = problemItems
-      .map(
-        (item) => `${item.problem_type} ${item.waste_weight_kg.toFixed(2)} kg`,
-      )
-      .join(" | ");
-
-    const firstProblem = problemItems[0]?.problem_type || "หลายปัญหา";
-
-    const detailByItem = problemItems
-      .map((item) => {
-        const itemDetail = item.detail ? ` - ${item.detail}` : "";
-        return `${item.item_no}. ${item.problem_type}: ${item.waste_weight_kg.toFixed(2)} kg${itemDetail}`;
-      })
-      .join("\n");
-
-    // const finalDetailNote = `${detailNote}\n\n[รายการปัญหา]\n${detailByItem}`;
-    const finalDetailNote = `[รายการปัญหา]
-
-${detailByItem}`;
-
-    const reportData = {
-      report_date: reportDate,
-      incident_datetime: finalDateTime,
-
-      shift: selectedShift?.name || finalShift,
-      work_shift: finalShift,
-
-      // สำคัญ: ต้องตรงกับ master_departments.department_code เท่านั้น
-      department_code: currentDept,
-
-      // เก็บซ้ำไว้สำหรับหน้าเดิมที่อาจยังใช้ column department
-      department: getDeptDisplayName(currentDept),
-
-      machine_no: finalMachine,
-      product_name: "ปัญหาการผลิต",
-
-      // เก็บค่าแรกไว้เพื่อให้หน้าเดิมที่ยังอ่าน problem_type ทำงานได้
-      // รายละเอียดแยกจริงอยู่ที่ตาราง daily_waste_report_items
-      problem_type: firstProblem,
-      reason_detail: problemSummary,
-      other_problem_detail: null,
-
-      note: finalDetailNote,
-      detail: finalDetailNote,
-
-      // ยอดรวมของทุกปัญหาในรายงานนี้
-      waste_qty: totalWasteWeight,
-      waste_weight_kg: totalWasteWeight,
-      total_qty: totalWasteWeight,
-      good_qty: 0,
-      unit: "kg",
-
-      status: "pending",
-
-      reported_by: reporterName,
-
-      // ถ้ายังไม่ได้ใช้ reason_id ให้ส่ง null เพื่อไม่ชน foreign key
-      reason_id: null,
-    };
-
-    if (isValidUuid(activeUserId)) {
-      reportData.created_by = activeUserId;
-    }
+    const { reportData, itemRows } = buildSubmissionPayload(payloadArgs);
 
     console.log("[SUBMIT_DEPT]", currentDept);
     console.log("[SUBMIT_DATA]", reportData);
     console.log("[SUBMIT_ITEMS]", problemItems);
 
-    const { data: insertedReport, error: reportError } = await clientSupabase
-      .from("daily_waste_reports")
-      .insert([reportData])
-      .select("id")
-      .single();
+    if (OFFLINE) {
+      // ส่งแบบกำหนด id เอง: ถ้าเน็ตหลุดกลางทาง ส่งซ้ำได้โดยไม่เกิดรายการซ้ำ
+      submission = OFFLINE.prepare(reportData, itemRows);
+      await OFFLINE.send(submission);
+    } else {
+      const { data: insertedReport, error: reportError } = await clientSupabase
+        .from("daily_waste_reports")
+        .insert([reportData])
+        .select("id")
+        .single();
 
-    if (reportError) throw reportError;
+      if (reportError) throw reportError;
 
-    const reportId = insertedReport?.id;
+      const reportId = insertedReport?.id;
 
-    if (!reportId) {
-      throw new Error(
-        "บันทึกรายงานหลักแล้ว แต่ไม่พบ report_id สำหรับบันทึกรายการปัญหา",
-      );
+      if (!reportId) {
+        throw new Error(
+          "บันทึกรายงานหลักแล้ว แต่ไม่พบ report_id สำหรับบันทึกรายการปัญหา",
+        );
+      }
+
+      const { error: itemError } = await clientSupabase
+        .from("daily_waste_report_items")
+        .insert(itemRows.map((row) => ({ ...row, report_id: reportId })));
+
+      if (itemError) throw itemError;
     }
-
-    const itemRows = problemItems.map((item) => ({
-      report_id: reportId,
-      item_no: item.item_no,
-      problem_type: item.problem_type,
-      waste_weight_kg: item.waste_weight_kg,
-      detail: item.detail || null,
-    }));
-
-    const { error: itemError } = await clientSupabase
-      .from("daily_waste_report_items")
-      .insert(itemRows);
-
-    if (itemError) throw itemError;
 
     alert("บันทึกข้อมูลเรียบร้อยแล้ว");
 
@@ -1887,11 +1860,124 @@ ${detailByItem}`;
     resetFormAfterSubmit();
   } catch (err) {
     console.error("SQL Insert Error:", err);
+
+    // เน็ตหลุดระหว่างตรวจ/ส่ง → เสนอเก็บไว้ส่งทีหลัง
+    if (OFFLINE && OFFLINE.isNetworkError(err)) {
+      const keep = confirm(
+        "ส่งข้อมูลไม่สำเร็จ เพราะการเชื่อมต่ออินเทอร์เน็ตมีปัญหา\n\nเก็บไว้ในเครื่องนี้ แล้วให้ระบบส่งให้อัตโนมัติเมื่อเน็ตกลับมา ใช่ไหม?",
+      );
+      if (keep) {
+        let sub = submission;
+        if (!sub) {
+          const built = buildSubmissionPayload(payloadArgs);
+          sub = OFFLINE.prepare(built.reportData, built.itemRows);
+        }
+        if (OFFLINE.enqueue(sub)) {
+          alert("บันทึกไว้ในเครื่องแล้ว ✅ ระบบจะส่งให้อัตโนมัติเมื่อมีอินเทอร์เน็ต");
+          resetFormAfterSubmit();
+        } else {
+          alert("เก็บข้อมูลในเครื่องไม่สำเร็จ กรุณาลองบันทึกใหม่อีกครั้ง");
+        }
+      }
+      return;
+    }
+
+    if (OFFLINE && OFFLINE.isPeriodLocked(err)) {
+      alert("บันทึกไม่ได้: เดือนนี้ฝ่ายบัญชีปิดงวดแล้ว\nกรุณาตรวจสอบวันที่ หรือติดต่อหัวหน้างาน/ฝ่ายบัญชี");
+      return;
+    }
+
     alert("บันทึกข้อมูลไม่สำเร็จ: " + (err.message || err));
   } finally {
     hideLoginOverlay();
     setSubmitLoading(submitButton, false);
   }
+}
+
+// สร้างข้อมูลที่จะบันทึก (ใช้ทั้งตอนส่งทันทีและตอนเก็บไว้ส่งทีหลังเมื่อเน็ตหลุด)
+function buildSubmissionPayload({
+  finalDateTime,
+  reportDate,
+  selectedShift,
+  finalShift,
+  finalMachine,
+  problemItems,
+  totalWasteWeight,
+  reporterName,
+}) {
+  const problemSummary = problemItems
+    .map(
+      (item) => `${item.problem_type} ${item.waste_weight_kg.toFixed(2)} kg`,
+    )
+    .join(" | ");
+
+  const firstProblem = problemItems[0]?.problem_type || "หลายปัญหา";
+
+  const detailByItem = problemItems
+    .map((item) => {
+      const itemDetail = item.detail ? ` - ${item.detail}` : "";
+      return `${item.item_no}. ${item.problem_type}: ${item.waste_weight_kg.toFixed(2)} kg${itemDetail}`;
+    })
+    .join("\n");
+
+  // const finalDetailNote = `${detailNote}\n\n[รายการปัญหา]\n${detailByItem}`;
+  const finalDetailNote = `[รายการปัญหา]
+
+${detailByItem}`;
+
+  const reportData = {
+    report_date: reportDate,
+    incident_datetime: finalDateTime,
+
+    shift: selectedShift?.name || finalShift,
+    work_shift: finalShift,
+
+    // สำคัญ: ต้องตรงกับ master_departments.department_code เท่านั้น
+    department_code: currentDept,
+
+    // เก็บซ้ำไว้สำหรับหน้าเดิมที่อาจยังใช้ column department
+    department: getDeptDisplayName(currentDept),
+
+    machine_no: finalMachine,
+    product_name: "ปัญหาการผลิต",
+
+    // เก็บค่าแรกไว้เพื่อให้หน้าเดิมที่ยังอ่าน problem_type ทำงานได้
+    // รายละเอียดแยกจริงอยู่ที่ตาราง daily_waste_report_items
+    problem_type: firstProblem,
+    reason_detail: problemSummary,
+    other_problem_detail: null,
+
+    note: finalDetailNote,
+    detail: finalDetailNote,
+
+    // ยอดรวมของทุกปัญหาในรายงานนี้
+    waste_qty: totalWasteWeight,
+    waste_weight_kg: totalWasteWeight,
+    total_qty: totalWasteWeight,
+    good_qty: 0,
+    unit: "kg",
+
+    status: "pending",
+
+    reported_by: reporterName,
+
+    // ถ้ายังไม่ได้ใช้ reason_id ให้ส่ง null เพื่อไม่ชน foreign key
+    reason_id: null,
+  };
+
+  if (isValidUuid(activeUserId)) {
+    reportData.created_by = activeUserId;
+  }
+
+
+  const itemRows = problemItems.map((item) => ({
+    item_no: item.item_no,
+    problem_type: item.problem_type,
+    waste_weight_kg: item.waste_weight_kg,
+    detail: item.detail || null,
+  }));
+
+  return { reportData, itemRows };
 }
 
 function setSubmitLoading(button, isLoading) {

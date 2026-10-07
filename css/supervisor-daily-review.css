@@ -2449,3 +2449,102 @@ textarea:focus {
 }
 
 
+
+/* =========================================================
+   แถบเตือน "ยังไม่ได้ส่งบัญชี"
+========================================================= */
+.unsent-reminder {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border: 1px solid #fcd34d;
+  border-radius: 16px;
+  background: #fffbeb;
+  color: #78350f;
+}
+
+.unsent-reminder[hidden] {
+  display: none !important;
+}
+
+.unsent-reminder .unsent-icon {
+  flex: none;
+  font-size: 26px;
+  color: #d97706;
+}
+
+.unsent-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.unsent-body strong {
+  font-size: 15px;
+}
+
+.unsent-body > span {
+  font-size: 13px;
+  color: #92400e;
+}
+
+.unsent-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.unsent-day {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  color: #78350f;
+  background: #ffffff;
+  border: 1px solid #fcd34d;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.unsent-day small {
+  color: #b45309;
+  font-weight: 500;
+}
+
+.unsent-day:hover {
+  background: #fef3c7;
+}
+
+.unsent-day.is-current {
+  color: #ffffff;
+  background: #d97706;
+  border-color: #d97706;
+}
+
+.unsent-day.is-current small {
+  color: #fffbeb;
+}
+
+.unsent-days.is-collapsed .unsent-day.is-extra:not(.is-current) {
+  display: none;
+}
+
+.unsent-more {
+  min-height: 36px;
+  padding: 0 12px;
+  color: #92400e;
+  background: transparent;
+  border: 1px dashed #f59e0b;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}

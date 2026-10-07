@@ -31,11 +31,19 @@ function initSignaturePad(role) {
     }
 
     // --- Events สำหรับเมาส์ (คอมพิวเตอร์) ---
+    // แปลงพิกัดเมาส์ตามขนาดจริงของ canvas (กล่องลายเซ็นยืด/หดตามหน้าจอ)
+    function mousePoint(e) {
+        const rect = canvas.getBoundingClientRect();
+        return [
+            (e.clientX - rect.left) * (canvas.width / rect.width),
+            (e.clientY - rect.top) * (canvas.height / rect.height),
+        ];
+    }
     canvas.addEventListener('mousedown', (e) => {
         isDrawing = true;
-        [lastX, lastY] = [e.offsetX, e.offsetY];
+        [lastX, lastY] = mousePoint(e);
     });
-    canvas.addEventListener('mousemove', (e) => draw(e.offsetX, e.offsetY));
+    canvas.addEventListener('mousemove', (e) => draw(...mousePoint(e)));
     canvas.addEventListener('mouseup', () => isDrawing = false);
     canvas.addEventListener('mouseout', () => isDrawing = false);
 

@@ -8,6 +8,10 @@
     <link rel="apple-touch-icon" href="/icons/Logo_Apps3.png?v=3" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#1E3A8A" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="PVT&amp;T Factory" />
     <link
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
@@ -17,8 +21,31 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="../css/pr-form.css">
-</head>
+    <link rel="stylesheet" href="/css/responsive.css" />
+      <link rel="stylesheet" href="/css/splash.css" />
+  </head>
 <body>
+    <!-- หน้าเปิดแอป (แบบเดียวกันทั้งแอป — ดู css/splash.css) -->
+    <div id="splash-screen" class="pvt-splash" role="status" aria-label="กำลังเปิดแอป">
+      <div class="pvt-splash-mark" aria-hidden="true">
+        <span class="pvt-splash-glow"></span>
+        <svg class="pvt-splash-ring" viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="pvtSplashRing" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ff8a3d" />
+              <stop offset="0.55" stop-color="#f26a1b" />
+              <stop offset="1" stop-color="#1e3a8a" />
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="60" cy="60" r="54" />
+          <circle class="arc" cx="60" cy="60" r="54" />
+        </svg>
+        <img class="pvt-splash-logo" src="/icons/Logo_Apps3.png?v=3" alt="" />
+      </div>
+      <div class="pvt-splash-title">PVT&amp;T Factory</div>
+      <div class="pvt-splash-sub">กำลังเตรียมแบบฟอร์ม PR</div>
+    </div>
+
 
     <div class="form-container">
         <div class="pr-top-hero" style="display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 24px; margin-bottom: 24px; background: linear-gradient(135deg, #f0f4f8 0%, #e8f1ff 46%, #f0f4f8 100%); border: 1px solid rgba(30, 58, 138, 0.12); border-radius: 28px; box-shadow: 0 8px 20px rgba(30, 58, 138, 0.12);">
@@ -55,7 +82,7 @@
             </div>
         </div>
 
-        <table id="items-table">
+        <table id="items-table" data-rt="cards">
             <thead>
                 <tr>
                     <th style="width: 5%;">ลำดับ</th>
@@ -125,6 +152,8 @@
         </div>
     </div>
 
-    <script src="/js/pr-form.js"></script>
-</body>
+    <script src="/js/pr/pr-form.js"></script>
+    <script src="/core/responsiveTables.js"></script>
+      <script src="/services/loadingService.js"></script>
+  </body>
 </html>

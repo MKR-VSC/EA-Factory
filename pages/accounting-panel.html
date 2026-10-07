@@ -19,13 +19,42 @@
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#1E3A8A" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="PVT&amp;T Factory" />
 
     <link rel="stylesheet" href="/css/ea-go-live.css" />
     <link rel="stylesheet" href="/css/accounting-panel.css" />
     
+      <link rel="stylesheet" href="/css/responsive.css" />
+    <link rel="stylesheet" href="/css/accounting-nav.css" />
+    <link rel="stylesheet" href="/css/accounting-dashboard.css" />
+      <link rel="stylesheet" href="/css/splash.css" />
   </head>
 
   <body>
+    <!-- หน้าเปิดแอป (แบบเดียวกันทั้งแอป — ดู css/splash.css) -->
+    <div id="splash-screen" class="pvt-splash" role="status" aria-label="กำลังเปิดแอป">
+      <div class="pvt-splash-mark" aria-hidden="true">
+        <span class="pvt-splash-glow"></span>
+        <svg class="pvt-splash-ring" viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="pvtSplashRing" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ff8a3d" />
+              <stop offset="0.55" stop-color="#f26a1b" />
+              <stop offset="1" stop-color="#1e3a8a" />
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="60" cy="60" r="54" />
+          <circle class="arc" cx="60" cy="60" r="54" />
+        </svg>
+        <img class="pvt-splash-logo" src="/icons/Logo_Apps3.png?v=3" alt="" />
+      </div>
+      <div class="pvt-splash-title">PVT&amp;T Factory</div>
+      <div class="pvt-splash-sub">กำลังโหลดข้อมูลฝ่ายบัญชี</div>
+    </div>
+
     <main class="page">
       <header class="topbar">
 
@@ -76,7 +105,7 @@
 
 </header>
 
-      <section class="panel">
+      <section class="panel acc-list-view">
         <div class="filter-grid">
           <div class="form-group">
             <label for="filterMonthSelect">เลือกเดือน</label>
@@ -114,7 +143,7 @@
             <select id="filterStatus">
               <option value="all">ทั้งหมด</option>
               <option value="sent_accounting">รอตรวจสอบ</option>
-              <option value="accounting_checked">ตรวจแล้วสอบแล้ว</option>
+              <option value="accounting_checked">ตรวจสอบแล้ว</option>
               <option value="accounting_cancelled">ยกเลิกรายการ</option>
             </select>
           </div>
@@ -131,26 +160,30 @@
         </div>
       </section>
 
-      <div style="margin-top: 20px; margin-bottom: 12px; padding: 0 4px;">
+      <div class="acc-list-view" style="margin-top: 20px; margin-bottom: 12px; padding: 0 4px;">
         <h2 style="font-size: 16px; margin: 0; color: #334155; font-weight: 700;">ภาพรวมข้อมูล</h2>
       </div>
-      <section class="summary-grid">
+      <section class="summary-grid acc-list-view">
         <div class="summary-card">
           <span>จำนวนรายการ</span>
           <strong id="sumCount">0</strong>
+        </div>
+        <div class="summary-card warning">
+          <span>รอบัญชีตรวจ</span>
+          <strong id="sumPending">0</strong>
         </div>
         <div class="summary-card danger">
           <span>น้ำหนักสูญเสียรวม</span>
           <strong id="sumWaste">0.00</strong>
         </div>
         <div class="summary-card success">
-          <span>น้ำหนักผลิตรวม</span>
+          <span>น้ำหนักผลิตดีรวม</span>
           <strong id="sumProduction">0.00</strong>
         </div>
       </section>
 
       <!-- ตารางสรุปผลรวมแยกตามแผนก / สินค้า / เครื่องจักร / ประเภทปัญหา -->
-      <section class="panel" style="margin-top: 24px; margin-bottom: 24px; background-color: #eff5ff;">
+      <section class="panel acc-list-view" style="margin-top: 24px; margin-bottom: 24px; background-color: #eff5ff;">
         <div class="table-head" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
           <h2 id="summaryTableTitle" style="color: #0031b7;">สรุปผลรวมแยกตามแผนก / สินค้า</h2>
           <div style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0;">
@@ -163,7 +196,7 @@
           </div>
         </div>
         <div class="table-responsive">
-          <table class="data-table">
+          <table class="data-table summary-month-table" id="summaryTable">
             <thead id="summaryTableHead">
               <tr>
                 <th style="background-color: #afdeff; color: #0200bf;">แผนก / สินค้า</th>
@@ -179,14 +212,22 @@
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel acc-list-view">
         <div class="table-head" style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 16px; flex-wrap: wrap;">
           <div>
             <h2>รายการข้อมูลของเสียจากหน้างาน</h2>
-            <p class="muted">กรอกน้ำหนักผลิต แล้วบันทึกเพื่อปิดรายการบัญชี</p>
+            <p class="muted">กรอกน้ำหนักผลิตดี (ไม่รวมของเสีย) แล้วบันทึก · กด Enter เพื่อไปช่องถัดไป · ผ่าน/เกินประเมินจากยอดรวมทั้งเดือน</p>
           </div>
           <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
             <span id="lastUpdate" style="margin-right: 8px; font-size: 13px; color: #ed7700; font-weight: 500;">-</span>
+            <button id="btnSaveAll" class="btn success btn-save-all" type="button" onclick="saveAllDrafts()" hidden>
+              <span class="material-symbols-outlined">done_all</span>
+              บันทึกทั้งหมด (<span class="save-all-count">0</span>)
+            </button>
+            <button onclick="exportAccountingExcel()" class="btn btn-excel" type="button" title="ส่งออกข้อมูลตามตัวกรองเป็นไฟล์ Excel (สร้างในเครื่องนี้ ไม่ส่งข้อมูลออกนอกระบบ)">
+              <span class="material-symbols-outlined">table_view</span>
+              ส่งออก Excel
+            </button>
             <button onclick="exportAccountingSummaryPDF()" class="btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; border-radius: 8px; background: #0284c7; color: white; border: none; cursor: pointer; font-weight: 600; white-space: nowrap; height: fit-content; transition: background 0.15s ease;">
               <span class="material-symbols-outlined" style="font-size: 18px;">picture_as_pdf</span>
               ออกรายงาน PDF
@@ -198,8 +239,10 @@
           </div>
         </div>
 
+        <div id="periodLockBar" class="period-lock-bar" hidden></div>
+
         <div class="table-scroll">
-          <table class="data-table">
+          <table class="data-table" data-rt="cards">
             <thead>
               <tr>
                 <th></th>
@@ -210,9 +253,9 @@
                 <th>ผู้บันทึก</th>
                 <th class="text-right">ของเสีย kg</th>
                 <th>รายการปัญหา</th>
-                <th class="text-right col-production">ผลิต kg</th>
-                <th class="text-right">% Waste</th>
-                <th>ผลประเมิน</th>
+                <th class="text-right col-production" title="ยอดผลิตดี (ไม่รวมของเสีย)">ผลิตดี kg</th>
+                <th class="text-right" title="% ของเสียของวันนั้น = ของเสีย ÷ (ผลิตดี + ของเสีย) × 100">% เสีย (วัน)</th>
+                <th title="% ของเสียรวมทั้งเดือนของเครื่องนี้ เทียบเกณฑ์">ผลรายเดือน</th>
                 <th>สถานะ</th>
                 <th>จัดการ</th>
               </tr>
@@ -224,6 +267,109 @@
             </tbody>
           </table>
         </div>
+      </section>
+      <!-- ================= DASHBOARD ของเสีย (สลับจากเมนูซ้าย) ================= -->
+      <section id="accDashboard" class="acc-dash" hidden aria-labelledby="accDashTitle">
+        <div class="acc-dash-head">
+          <div>
+            <h2 id="accDashTitle">Dashboard ของเสีย</h2>
+            <p class="muted">สรุปน้ำหนักของเสีย น้ำหนักผลิต และ % Waste จากรายการที่หัวหน้างานส่งบัญชีแล้ว (ไม่รวมรายการที่ยกเลิก)</p>
+          </div>
+          <div class="acc-dash-controls">
+            <div class="acc-seg" role="tablist" aria-label="ช่วงเวลา">
+              <button type="button" role="tab" data-period="day">รายวัน</button>
+              <button type="button" role="tab" data-period="week">รายสัปดาห์</button>
+              <button type="button" role="tab" data-period="month">รายเดือน</button>
+              <button type="button" role="tab" data-period="year">รายปี</button>
+            </div>
+            <label class="acc-dash-field">
+              <span>แผนก</span>
+              <select id="dashDept"><option value="all">ทุกแผนก</option></select>
+            </label>
+            <label class="acc-dash-field">
+              <span>ถึงวันที่</span>
+              <input type="date" id="dashEndDate" />
+            </label>
+          </div>
+        </div>
+
+        <div class="acc-dash-period">
+          <span class="material-symbols-outlined" aria-hidden="true">event</span>
+          <strong id="dashPeriodLabel">-</strong>
+          <span class="muted" id="dashPeriodHint">กดที่แท่งกราฟเพื่อดูช่วงเวลาอื่น</span>
+        </div>
+
+        <div class="acc-kpis">
+          <article class="acc-kpi">
+            <span class="acc-kpi-label">น้ำหนักของเสีย</span>
+            <strong class="acc-kpi-value"><span id="kpiWaste">0.00</span> <small>kg</small></strong>
+            <span class="acc-kpi-delta" id="kpiWasteDelta"></span>
+          </article>
+          <article class="acc-kpi">
+            <span class="acc-kpi-label">น้ำหนักผลิต (บัญชีบันทึกแล้ว)</span>
+            <strong class="acc-kpi-value"><span id="kpiProd">0.00</span> <small>kg</small></strong>
+            <span class="acc-kpi-delta" id="kpiProdDelta"></span>
+          </article>
+          <article class="acc-kpi">
+            <span class="acc-kpi-label">% ของเสีย</span>
+            <strong class="acc-kpi-value"><span id="kpiPct">-</span></strong>
+            <span class="acc-kpi-delta" id="kpiPctDelta"></span>
+          </article>
+          <article class="acc-kpi">
+            <span class="acc-kpi-label">รายการ / รอบัญชีตรวจ</span>
+            <strong class="acc-kpi-value"><span id="kpiCount">0</span> <small id="kpiPendingWrap">/ <span id="kpiPending">0</span> รอตรวจ</small></strong>
+            <span class="acc-kpi-delta" id="kpiCountDelta"></span>
+          </article>
+        </div>
+
+        <div class="acc-dash-grid">
+          <article class="acc-card">
+            <header>
+              <h3>น้ำหนักของเสีย (kg)</h3>
+              <span class="muted" id="dashWasteSub">-</span>
+            </header>
+            <div class="acc-chart"><canvas id="dashWasteChart" aria-label="กราฟน้ำหนักของเสีย" role="img"></canvas></div>
+          </article>
+          <article class="acc-card">
+            <header>
+              <h3>% ของเสีย</h3>
+              <span class="muted" id="dashPctSub">คิดจากรายการที่บัญชีกรอกน้ำหนักผลิตแล้ว</span>
+            </header>
+            <div class="acc-chart"><canvas id="dashPctChart" aria-label="กราฟเปอร์เซ็นต์ของเสีย" role="img"></canvas></div>
+          </article>
+          <article class="acc-card">
+            <header>
+              <h3>ปัญหาที่พบมากที่สุด</h3>
+              <span class="muted" id="dashTopProblemSub">-</span>
+            </header>
+            <ol class="acc-rank" id="dashTopProblems"></ol>
+          </article>
+          <article class="acc-card">
+            <header>
+              <h3>เครื่องจักรที่มีของเสียมากที่สุด</h3>
+              <span class="muted" id="dashTopMachineSub">-</span>
+            </header>
+            <ol class="acc-rank" id="dashTopMachines"></ol>
+          </article>
+        </div>
+
+        <details class="acc-card acc-dash-table">
+          <summary>ดูข้อมูลเป็นตาราง</summary>
+          <div class="table-responsive">
+            <table class="acc-mini-table">
+              <thead>
+                <tr>
+                  <th>ช่วงเวลา</th>
+                  <th class="text-right">ของเสีย (kg)</th>
+                  <th class="text-right">ผลิต (kg)</th>
+                  <th class="text-right">% Waste</th>
+                  <th class="text-right">รายการ</th>
+                </tr>
+              </thead>
+              <tbody id="dashTableBody"></tbody>
+            </table>
+          </div>
+        </details>
       </section>
     </main>
 
@@ -250,6 +396,12 @@
     <script src="/core/autoRefresh.js"></script>
     <script src="/auth/authGuard.js"></script>
     <script src="/services/loadingService.js"></script>
+    <script src="/core/wasteFormula.js"></script>
+    <script src="/core/wasteStandardService.js"></script>
     <script src="/js/accounting/accounting-panel.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/accounting/accounting-dashboard.js"></script>
+      <script src="/core/responsiveTables.js"></script>
+    <script src="/core/accountingNav.js"></script>
   </body>
 </html>

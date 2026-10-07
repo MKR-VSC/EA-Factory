@@ -3175,3 +3175,9 @@ td select {
     padding-right: 16px;
   }
 }
+
+/* สถานะ "รอบัญชีตรวจ" (ส่งบัญชีแล้ว) */
+.status-sent {
+  color: #1e40af;
+  background: #dbeafe;
+}

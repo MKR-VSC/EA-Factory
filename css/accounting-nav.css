@@ -1,0 +1,290 @@
+/* ==========================================================
+   accounting-nav.css — แถบเมนูฝ่ายบัญชี (คู่กับ core/accountingNav.js)
+   สีเดียวกับแถบเมนูหน้าแอดมิน
+   ========================================================== */
+
+:root {
+  --acc-rail-w: 72px;
+  --acc-rail-open-w: 240px;
+  --acc-rail-bg: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  --acc-rail-active: #1e3a8a;
+}
+
+/* ปุ่มที่ย้ายมาอยู่ในเมนูแล้ว */
+.has-acc-nav .acc-nav-moved {
+  display: none !important;
+}
+
+/* ---------------- PC / Notebook: แถบไอคอนด้านซ้าย ---------------- */
+.acc-rail {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  width: var(--acc-rail-w);
+  padding: 14px 12px;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: #cbd5e1;
+  background: var(--acc-rail-bg);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: "Kanit", "Noto Sans Thai", sans-serif;
+  transition: width 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ชี้เมาส์ / กด Tab เข้ามา → กางออก (ทับเนื้อหา ไม่ดันตาราง) */
+.acc-rail:hover,
+.acc-rail:focus-within {
+  width: var(--acc-rail-open-w);
+  box-shadow: 12px 0 40px rgba(15, 23, 42, 0.28);
+}
+
+.acc-rail .acc-nav-label {
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.acc-rail:hover .acc-nav-label,
+.acc-rail:focus-within .acc-nav-label {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.05s;
+}
+
+.acc-rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 2px 14px;
+  margin-bottom: 10px;
+  color: #ffffff;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.acc-rail-brand img {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.acc-rail-brand strong,
+.acc-rail-brand small {
+  display: block;
+  line-height: 1.2;
+}
+
+.acc-rail-brand strong {
+  font-size: 15px;
+}
+
+.acc-rail-brand small {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.acc-rail-menu {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+.acc-rail-group {
+  display: grid;
+  gap: 4px;
+}
+
+.acc-rail-title {
+  height: 16px;
+  padding: 0 12px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* ตอนหุบ: หัวข้อกลุ่มเป็นเส้นคั่นสั้น ๆ */
+.acc-rail:not(:hover):not(:focus-within) .acc-rail-title {
+  font-size: 0;
+  height: 1px;
+  margin: 2px 10px 6px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.acc-rail-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 13px;
+  box-sizing: border-box;
+  color: #cbd5e1;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.acc-rail-item .material-symbols-outlined {
+  flex: none;
+  width: 22px;
+  font-size: 22px;
+}
+
+.acc-rail-item:hover,
+.acc-rail-item:focus-visible {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.acc-rail-item.is-active {
+  color: #ffffff;
+  background: var(--acc-rail-active);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
+}
+
+.acc-rail-logout {
+  margin-top: 10px;
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.25);
+  background: rgba(127, 29, 29, 0.25);
+}
+
+.acc-rail-logout:hover,
+.acc-rail-logout:focus-visible {
+  color: #ffffff;
+  background: #dc2626;
+}
+
+/* เว้นที่ด้านซ้ายให้แถบ */
+.has-acc-nav body {
+  padding-left: var(--acc-rail-w);
+  box-sizing: border-box;
+}
+
+/* แถบล่าง (มือถือ) ซ่อนบน PC */
+.acc-tabbar {
+  display: none;
+}
+
+/* ---------------- มือถือ / แท็บเล็ต: แถบเมนูด้านล่าง ---------------- */
+@media (max-width: 1024px) {
+  .acc-rail {
+    display: none;
+  }
+
+  .has-acc-nav body {
+    padding-left: 0;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .acc-tabbar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 900;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    min-height: 64px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: rgba(255, 255, 255, 0.96);
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(12px);
+    font-family: "Kanit", "Noto Sans Thai", sans-serif;
+  }
+
+  .acc-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 52px;
+    padding: 4px 2px;
+    color: #64748b;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    border-radius: 14px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .acc-tab .material-symbols-outlined {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 30px;
+    font-size: 23px;
+    border-radius: 999px;
+    transition: background 0.15s ease;
+  }
+
+  .acc-tab .acc-nav-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .acc-tab.is-active {
+    color: #1e3a8a;
+  }
+
+  .acc-tab.is-active .material-symbols-outlined {
+    background: rgba(30, 58, 138, 0.12);
+  }
+
+  .acc-tab:active .material-symbols-outlined {
+    background: rgba(30, 58, 138, 0.18);
+  }
+
+  .acc-tab[data-nav="logout"] {
+    color: #dc2626;
+  }
+
+  /* หัวหน้าบัญชี: เหลือปุ่ม "โหลดใหม่" ปุ่มเดียว ให้เต็มแถว */
+  .has-acc-nav .topbar .actions > .btn:not(.acc-nav-moved) {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* ปุ่ม DEV / toast ไม่ให้ทับแถบล่าง */
+  .has-acc-nav .toast,
+  .has-acc-nav .toast-container {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+@media print {
+  .acc-rail,
+  .acc-tabbar {
+    display: none !important;
+  }
+
+  .has-acc-nav body {
+    padding: 0 !important;
+  }
+}

@@ -1,0 +1,1034 @@
+/* ==========================================================
+   app-shell.css — หน้าตาแบบแอปมือถือ (ใช้คู่กับ core/appShell.js)
+   ทำงานเมื่อ <html class="app-mode"> (มือถือ/แท็บเล็ต) เท่านั้น
+   ========================================================== */
+
+:root {
+  /* สีของธีม (ค่าเริ่มต้น = น้ำเงิน PVT) — เปลี่ยนได้ด้วย html[data-app-theme] */
+  --app-primary: #1e3a8a;
+  --app-primary-dark: #0f2847;
+  --app-primary-rgb: 30, 58, 138;
+  --app-accent: #ea580c;
+  --app-accent-light: #f97316;
+  --app-accent-rgb: 234, 88, 12;
+  --app-navy: var(--app-primary);
+  --app-navy-dark: var(--app-primary-dark);
+  --app-orange: var(--app-accent);
+  --app-bg: #d1d5db; /* เทาเข้ม ทุกธีม ให้การ์ดขาวตัดชัด */
+  --app-surface: #ffffff;
+  --app-text: #0f172a;
+  --app-muted: #64748b;
+  --app-line: rgba(15, 23, 42, 0.08);
+  --app-topbar-h: 58px;
+  --app-tabbar-h: 64px;
+  --app-actionbar-h: 76px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* ---------- พฤติกรรมแบบแอป ---------- */
+/* ให้ทั้งหน้ามีตัวเลื่อนเดียว (ของจอ) เหมือนแอป
+   - เดิม html และ body ตั้ง overflow-x: hidden ทั้งคู่ ทำให้ body กลายเป็นกล่องเลื่อนซ้อน
+     บนมือถือบางรุ่นปัดแล้วหน้าไม่เลื่อน/ค้าง → ใช้ clip แทน (ตัดขอบเหมือนเดิมแต่ไม่สร้างกล่องเลื่อน)
+   - กันการเด้ง/ดึงรีเฟรชที่ระดับจอ (html) ไม่ใช่ที่ body */
+html.app-mode {
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: clip !important;
+  overflow-y: visible !important;
+  overscroll-behavior-y: none;
+}
+
+html.app-mode body {
+  overflow: visible !important;
+  overflow-x: clip !important;
+  height: auto !important;
+  background: var(--app-bg) !important;
+}
+
+html.app-mode body::before {
+  display: none !important;
+}
+
+html.app-mode :is(button, .btn, a.btn, [role="button"], .app-tab, .app-icon-btn, .app-action-btn) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* กดแล้วยุบเล็กน้อย ให้รู้สึกเหมือนแอป */
+html.app-mode :is(button, .btn, a.btn, [role="button"], .app-tab, .app-icon-btn, .app-action-btn):not(:disabled):active {
+  transform: scale(0.97);
+  transition: transform 0.08s ease;
+}
+
+html.app-mode .app-hidden {
+  display: none !important;
+}
+
+/* ---------- แถบหัวด้านบน ---------- */
+.app-topbar {
+  display: none;
+}
+
+html.app-mode .app-topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: calc(var(--app-topbar-h) + var(--safe-top));
+  padding: var(--safe-top) calc(8px + var(--safe-right)) 0 calc(8px + var(--safe-left));
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: "Kanit", "Noto Sans Thai", system-ui, sans-serif;
+}
+
+html.app-mode .app-topbar.is-scrolled {
+  border-bottom-color: var(--app-line);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+.app-topbar-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  margin: 0 4px 0 6px;
+  flex: 0 0 auto;
+}
+
+.app-topbar-titles {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 4px;
+}
+
+.app-topbar-title {
+  color: var(--app-text);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-topbar-subtitle {
+  margin-top: 1px;
+  color: var(--app-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-icon-btn {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--app-navy);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.app-icon-btn:hover,
+.app-icon-btn:focus-visible {
+  background: rgba(var(--app-primary-rgb), 0.08);
+}
+
+.app-icon-btn .material-symbols-outlined {
+  font-size: 26px;
+}
+
+.app-online-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  margin: 0 6px;
+  border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.16);
+}
+
+.app-online-dot.is-offline {
+  background: #dc2626;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.18);
+}
+
+html.app-mode body.has-app-topbar {
+  padding-top: calc(var(--app-topbar-h) + var(--safe-top) + 8px) !important;
+}
+
+/* ---------- แถบเมนูด้านล่าง (tab bar) ---------- */
+.app-tabbar,
+.app-actionbar {
+  display: none;
+}
+
+html.app-mode .app-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: stretch;
+  height: calc(var(--app-tabbar-h) + var(--safe-bottom));
+  padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
+  background: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  border-top: 1px solid var(--app-line);
+  box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.05);
+  font-family: "Kanit", "Noto Sans Thai", system-ui, sans-serif;
+}
+
+.app-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 6px 2px !important;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  text-decoration: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.app-tab .material-symbols-outlined {
+  font-size: 26px;
+  line-height: 1;
+  padding: 3px 16px;
+  border-radius: 999px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.app-tab-label {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.app-tab.is-active {
+  color: var(--app-navy);
+}
+
+.app-tab.is-active .material-symbols-outlined {
+  background: rgba(var(--app-primary-rgb), 0.12);
+  font-variation-settings: "FILL" 1;
+}
+
+/* ปุ่มสแกน QR ตรงกลาง: ใหญ่ สีเด่น ยกขึ้น */
+.app-tab.is-center {
+  color: var(--app-orange);
+}
+
+.app-tab.is-center .material-symbols-outlined {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin-top: -26px;
+  padding: 0;
+  border-radius: 50%;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--app-accent-light), var(--app-accent));
+  box-shadow: 0 8px 20px rgba(var(--app-accent-rgb), 0.38), 0 0 0 5px #ffffff;
+  font-size: 30px;
+}
+
+html.app-mode body.has-app-tabbar {
+  padding-bottom: calc(var(--app-tabbar-h) + var(--safe-bottom) + 16px) !important;
+}
+
+/* ---------- แถบปุ่มหลักด้านล่าง (ฟอร์ม) ---------- */
+html.app-mode .app-actionbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  gap: 10px;
+  padding: 10px calc(12px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(12px + var(--safe-left));
+  background: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  border-top: 1px solid var(--app-line);
+  box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.06);
+  font-family: "Kanit", "Noto Sans Thai", system-ui, sans-serif;
+}
+
+.app-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 54px !important;
+  padding: 0 18px;
+  border-radius: 16px;
+  border: 0;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.app-action-btn .material-symbols-outlined {
+  font-size: 24px;
+}
+
+.app-action-btn.is-ghost {
+  flex: 0 0 auto;
+  color: #334155;
+  background: #eef2f7;
+}
+
+.app-action-btn.is-primary {
+  flex: 1 1 auto;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--app-navy), var(--app-navy-dark));
+  box-shadow: 0 8px 20px rgba(var(--app-primary-rgb), 0.3);
+}
+
+.app-action-btn:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+
+.app-action-btn.is-busy .material-symbols-outlined {
+  animation: appSpin 0.9s linear infinite;
+}
+
+@keyframes appSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+html.app-mode body.has-app-actionbar {
+  padding-bottom: calc(var(--app-actionbar-h) + var(--safe-bottom) + 16px) !important;
+}
+
+/* แท็บเล็ต: จำกัดความกว้างปุ่มหลักให้อยู่กลางจอ */
+@media (min-width: 700px) {
+  html.app-mode .app-actionbar {
+    justify-content: center;
+  }
+
+  html.app-mode .app-actionbar .app-action-btn.is-primary {
+    flex: 0 1 420px;
+  }
+}
+
+/* ป้าย DEV (เฉพาะเว็บทดสอบ) ย้ายไปมุมล่างซ้าย ไม่ทับแถบหัว */
+html.app-mode .app-dev-badge {
+  top: auto !important;
+  right: auto !important;
+  left: 8px !important;
+  bottom: calc(var(--app-tabbar-h) + var(--safe-bottom) + 8px) !important;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* ==========================================================
+   ปรับเนื้อหาของแต่ละหน้าในโหมดแอป
+   ========================================================== */
+
+/* ฟอร์มบันทึกของเสีย: เนื้อหาเต็มจอ ไม่มีกรอบซ้อน */
+html.app-mode .main-content {
+  padding-top: 0 !important;
+}
+
+html.app-mode .form-page-card {
+  margin-top: 0 !important;
+}
+
+/* หัวหน้างาน: เนื้อหาชิดขอบแบบแอป */
+html.app-mode .page {
+  padding-top: 0 !important;
+}
+
+html.app-mode .page > .filter-card:first-of-type,
+html.app-mode .page > section:first-of-type {
+  margin-top: 0 !important;
+}
+
+/* ---------- หน้า Login / บันทึกสำเร็จ: เต็มจอแบบแอป ---------- */
+html.app-mode body:has(.success-card) {
+  min-height: 100dvh;
+  padding-top: calc(var(--safe-top) + 12px) !important;
+  padding-bottom: calc(var(--safe-bottom) + 12px) !important;
+}
+
+html.app-mode #loginForm .btn-scan-qr,
+html.app-mode #loginForm .btn-login {
+  min-height: 54px !important;
+  font-size: 17px !important;
+  border-radius: 16px !important;
+}
+
+html.app-mode #qrLoginBox .btn-qr,
+html.app-mode #qrLoginBox select {
+  min-height: 52px !important;
+  font-size: 17px !important;
+}
+
+/* ---------- กล้องสแกน QR: เต็มจอแบบแอปสแกน ---------- */
+html.app-mode #qrScannerModal:not(.hidden) {
+  padding: 0 !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  background: #000 !important;
+}
+
+html.app-mode #qrScannerModal .qr-modal-box {
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  display: flex !important;
+  flex-direction: column;
+  background: #000 !important;
+  color: #fff;
+  padding: 0 !important;
+}
+
+html.app-mode #qrScannerModal .qr-modal-header {
+  padding: calc(var(--safe-top) + 10px) 16px 10px !important;
+  background: rgba(0, 0, 0, 0.6) !important;
+  color: #fff !important;
+  border: 0 !important;
+}
+
+html.app-mode #qrScannerModal .qr-modal-header h3 {
+  color: #fff !important;
+}
+
+html.app-mode #qrScannerModal .qr-close {
+  width: 44px;
+  height: 44px;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #fff !important;
+  font-size: 20px;
+}
+
+html.app-mode #qrScannerModal #qr-reader {
+  flex: 1 1 auto;
+  width: 100% !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+html.app-mode #qrScannerModal #qr-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+
+html.app-mode #qrScannerModal .qr-hint {
+  margin: 0 !important;
+  padding: 16px 16px calc(var(--safe-bottom) + 20px) !important;
+  background: rgba(0, 0, 0, 0.6);
+  color: #e2e8f0 !important;
+  text-align: center;
+  font-size: 16px !important;
+}
+
+/* กล้องสแกน QR เครื่องจักร (หน้า Dashboard) */
+html.app-mode #qr-scan-modal[style*="flex"],
+html.app-mode #qr-scan-modal[style*="block"] {
+  padding: 0 !important;
+  align-items: stretch !important;
+}
+
+html.app-mode #qr-scan-modal .qr-scan-dialog {
+  max-width: none !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  overflow-y: auto;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+/* หน้าบันทึกสำเร็จ: กล้องสแกนเต็มความกว้าง */
+html.app-mode .success-card #qr-reader {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+html.app-mode .success-card .actions .btn {
+  min-height: 56px !important;
+  font-size: 17px !important;
+}
+
+/* แท็บเล็ต: แถบเมนูล่างไม่ยืดสุดขอบ ปุ่มอยู่กลางจอ */
+@media (min-width: 700px) {
+  html.app-mode .app-tabbar {
+    grid-auto-columns: minmax(0, 140px);
+    justify-content: center;
+  }
+}
+
+
+/* ==========================================================
+   ฟอร์มบันทึกของเสีย: หน้าตาแบบแอป (รายการเป็นกลุ่มบนพื้นเทา)
+   ========================================================== */
+html.app-mode #dept-body .app-shell {
+  width: 100% !important;
+  max-width: 760px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+
+html.app-mode #dept-body .main-content {
+  width: 100% !important;
+  max-width: 760px !important;
+  margin: 0 auto !important;
+  padding: 0 12px !important;
+}
+
+/* ยกกรอบการ์ดใหญ่ออก ให้แต่ละหัวข้อเป็นการ์ดของตัวเองบนพื้นเทา */
+html.app-mode #dept-body .form-page-card {
+  max-width: none !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+html.app-mode #dept-body .form-page-card::before,
+html.app-mode #dept-body .form-page-card::after {
+  display: none !important;
+}
+
+/* หัวฟอร์มและแถว "แผนกปัจจุบัน" ซ้ำกับแถบหัวด้านบน → ซ่อน */
+html.app-mode #dept-body .content-header,
+html.app-mode #dept-body .current-dept-box {
+  display: none !important;
+}
+
+html.app-mode #dept-body .mobile-form {
+  gap: 10px !important;
+  overflow: visible !important;
+}
+
+html.app-mode #dept-body .form-group,
+html.app-mode #dept-body .qr-context-card {
+  padding: 14px 14px 16px !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  background: var(--app-surface) !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
+}
+
+html.app-mode #dept-body .form-group label {
+  font-size: 15px !important;
+}
+
+html.app-mode #dept-body .form-group input,
+html.app-mode #dept-body .form-group select,
+html.app-mode #dept-body .form-group textarea {
+  min-height: 50px !important;
+  border-radius: 12px !important;
+}
+
+html.app-mode #dept-body .helper-text {
+  font-size: 12.5px !important;
+}
+
+/* ผลรวมน้ำหนัก: แถบสรุปชัด ๆ แบบแอป */
+html.app-mode #dept-body .problem-total-box {
+  border-radius: 14px !important;
+}
+
+/* ==========================================================
+   หน้าพนักงาน (ฟอร์มบันทึกของเสีย) — รอบปรับให้เหมือนแอปมากขึ้น
+   ========================================================== */
+
+/* ปุ่ม "บันทึก" กลางแถบล่าง: สีน้ำเงินหลัก */
+.app-tab.is-save {
+  color: var(--app-navy);
+}
+
+.app-tab.is-save .material-symbols-outlined {
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-dark));
+  box-shadow: 0 8px 20px rgba(var(--app-primary-rgb), 0.38), 0 0 0 5px #ffffff;
+}
+
+.app-tab.is-busy {
+  pointer-events: none;
+}
+
+.app-tab.is-busy .material-symbols-outlined {
+  animation: appPulse 0.9s ease-in-out infinite;
+}
+
+@keyframes appPulse {
+  50% {
+    opacity: 0.55;
+    transform: scale(0.94);
+  }
+}
+
+/* สถานะช่องกรอก: เหลือแค่ไอคอน (✓ เขียว / ! ส้ม) อยู่ท้ายหัวข้อ ไม่ดันบรรทัด */
+html.app-mode #dept-body .form-group > label,
+html.app-mode #dept-body .problem-mini-label {
+  display: flex !important;
+  align-items: center;
+  flex-wrap: nowrap !important;
+  gap: 6px;
+}
+
+html.app-mode #dept-body .field-status-pill,
+html.app-mode #dept-body .problem-field-pill {
+  margin-left: auto !important;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0 !important;
+  justify-content: center;
+  border-radius: 50% !important;
+  font-size: 0 !important;
+  gap: 0 !important;
+}
+
+html.app-mode #dept-body .field-status-pill .material-symbols-outlined,
+html.app-mode #dept-body .problem-field-pill .material-symbols-outlined {
+  font-size: 18px !important;
+  margin: 0 !important;
+}
+
+/* ช่องที่ยังไม่กรอก: เน้นแบบนุ่มขึ้น (ขอบส้มบาง พื้นขาว) */
+html.app-mode #dept-body .field-unfilled {
+  background-color: #ffffff !important;
+  border-width: 1.5px !important;
+  box-shadow: none !important;
+}
+
+/* หน้าต่างกรอกชื่อ / ปัญหาอื่น ๆ: แผ่นเลื่อนขึ้นจากด้านล่าง (bottom sheet) */
+html.app-mode .staff-name-modal:not(.hidden),
+html.app-mode .other-problem-modal:not(.hidden) {
+  align-items: flex-end !important;
+  padding: 0 !important;
+}
+
+html.app-mode .staff-name-box,
+html.app-mode .other-problem-box {
+  width: 100% !important;
+  max-width: 640px !important;
+  margin: 0 auto;
+  border-radius: 24px 24px 0 0 !important;
+  padding: 12px 20px calc(20px + var(--safe-bottom)) !important;
+  animation: appSheetUp 0.24s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+html.app-mode .staff-name-box::before,
+html.app-mode .other-problem-box::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 5px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+html.app-mode .staff-name-box button,
+html.app-mode .other-problem-box button {
+  min-height: 52px !important;
+  font-size: 17px !important;
+  border-radius: 14px !important;
+}
+
+@keyframes appSheetUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* ลิงก์ "กลับหน้าล็อกอินแบบปกติ" ในหน้าสแกน: พื้นที่กดใหญ่ขึ้น */
+html.app-mode #qr-reader a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+
+/* ==========================================================
+   ธีมสี (เลือกได้จากปุ่มจานสีบนแถบด้านบน — จำไว้ในเครื่อง)
+   สีหลักทุกธีมผ่านเกณฑ์ความคมชัดตัวอักษรขาว (WCAG AA ≥ 4.5:1)
+   ========================================================== */
+html[data-app-theme="ocean"] {
+  --app-primary: #0369a1;
+  --app-primary-dark: #0c4a6e;
+  --app-primary-rgb: 3, 105, 161;
+  --app-accent: #d97706;
+  --app-accent-light: #f59e0b;
+  --app-accent-rgb: 217, 119, 6;
+}
+
+html[data-app-theme="green"] {
+  --app-primary: #047857;
+  --app-primary-dark: #064e3b;
+  --app-primary-rgb: 4, 120, 87;
+  --app-accent: #ea580c;
+  --app-accent-light: #f97316;
+  --app-accent-rgb: 234, 88, 12;
+}
+
+html[data-app-theme="orange"] {
+  --app-primary: #c2410c;
+  --app-primary-dark: #7c2d12;
+  --app-primary-rgb: 194, 65, 12;
+  --app-accent: #1e3a8a;
+  --app-accent-light: #2f55c4;
+  --app-accent-rgb: 30, 58, 138;
+}
+
+html[data-app-theme="purple"] {
+  --app-primary: #6d28d9;
+  --app-primary-dark: #4c1d95;
+  --app-primary-rgb: 109, 40, 217;
+  --app-accent: #ea580c;
+  --app-accent-light: #f97316;
+  --app-accent-rgb: 234, 88, 12;
+}
+
+html[data-app-theme="slate"] {
+  --app-primary: #334155;
+  --app-primary-dark: #0f172a;
+  --app-primary-rgb: 51, 65, 85;
+  --app-accent: #ea580c;
+  --app-accent-light: #f97316;
+  --app-accent-rgb: 234, 88, 12;
+}
+
+/* ใช้สีธีมกับปุ่มหลักและช่องกรอกของหน้าเดิม (เฉพาะโหมดแอป) */
+html.app-mode .btn.primary,
+html.app-mode .btn-primary,
+html.app-mode .staff-name-box button:last-of-type {
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-dark)) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+
+html.app-mode :is(input, select, textarea):focus {
+  border-color: var(--app-primary) !important;
+  box-shadow: 0 0 0 3px rgba(var(--app-primary-rgb), 0.18) !important;
+  outline: none !important;
+}
+
+html.app-mode .app-topbar-title {
+  color: var(--app-primary-dark);
+}
+
+html.app-mode .app-topbar {
+  border-top: 3px solid var(--app-primary);
+}
+
+/* ---------- แผ่นเลือกธีม ---------- */
+.app-theme-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 100001;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.5);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  font-family: "Kanit", "Noto Sans Thai", system-ui, sans-serif;
+}
+
+.app-theme-panel {
+  width: 100%;
+  max-width: 640px;
+  padding: 12px 20px calc(22px + var(--safe-bottom));
+  border-radius: 24px 24px 0 0;
+  background: #ffffff;
+  animation: appSheetUp 0.24s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.app-theme-panel::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 5px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.app-theme-panel h3 {
+  margin: 0 0 4px;
+  color: #0f172a;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.app-theme-panel p {
+  margin: 0 0 16px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.app-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.app-theme-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 6px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app-theme-option[aria-checked="true"] {
+  border-color: var(--swatch-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--swatch-primary) 22%, transparent);
+}
+
+.app-theme-swatch {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--swatch-primary) 0 58%, var(--swatch-accent) 58% 100%);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+
+.app-theme-option[aria-checked="true"] .app-theme-swatch::after {
+  content: "check";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  font-family: "Material Symbols Outlined";
+  font-size: 26px;
+  -webkit-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+}
+
+.app-theme-close {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 16px;
+  border: 0;
+  border-radius: 14px;
+  background: #eef2f7;
+  color: #334155;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ==========================================================
+   การ์ด "รายการปัญหาที่พบ" — ใช้สีธีมแบบอ่อน
+   (เฉพาะโหมดแอป; สถานะเตือนสีส้มและกล่องน้ำหนักรวมสีแดงคงไว้ตามความหมาย)
+   ========================================================== */
+html.app-mode #dept-body .problem-items-card {
+  background: #ffffff !important;
+}
+
+html.app-mode #dept-body .problem-item {
+  border: 1px solid rgba(var(--app-primary-rgb), 0.18) !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(var(--app-primary-rgb), 0.06) !important;
+}
+
+html.app-mode #dept-body .problem-item::before {
+  background: rgba(var(--app-primary-rgb), 0.3) !important;
+}
+
+html.app-mode #dept-body .problem-item-head strong {
+  color: var(--app-primary-dark) !important;
+}
+
+/* กำลังกรอก: พื้นสีธีมอ่อน ขอบและแถบซ้ายสีธีม */
+html.app-mode #dept-body .problem-item.is-active {
+  border-color: rgba(var(--app-primary-rgb), 0.45) !important;
+  background: linear-gradient(180deg, rgba(var(--app-primary-rgb), 0.08) 0%, #ffffff 70%) !important;
+  box-shadow:
+    0 0 0 3px rgba(var(--app-primary-rgb), 0.1),
+    0 8px 20px rgba(var(--app-primary-rgb), 0.1) !important;
+}
+
+html.app-mode #dept-body .problem-item.is-active::before {
+  background: var(--app-primary) !important;
+}
+
+html.app-mode #dept-body .problem-item.is-active .problem-item-status {
+  background: rgba(var(--app-primary-rgb), 0.12) !important;
+  color: var(--app-primary) !important;
+}
+
+/* กรอกครบแล้ว: สีธีมจางลง (ป้าย "กรอกแล้ว" สีเขียวคงเดิม) */
+html.app-mode #dept-body .problem-item.is-complete:not(.is-active) {
+  background: rgba(var(--app-primary-rgb), 0.025) !important;
+}
+
+html.app-mode #dept-body .problem-item.is-complete:not(.is-active)::before {
+  background: rgba(var(--app-primary-rgb), 0.55) !important;
+}
+
+/* ยังไม่ครบ (ไม่ได้กำลังกรอก) */
+html.app-mode #dept-body .problem-item.is-incomplete:not(.is-active) {
+  background: rgba(var(--app-primary-rgb), 0.04) !important;
+}
+
+/* กดเพิ่มทั้งที่ยังกรอกไม่ครบ: คงสีส้มเตือนไว้ */
+html.app-mode #dept-body .problem-item.needs-attention {
+  border-color: #f97316 !important;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.14) !important;
+}
+
+html.app-mode #dept-body .problem-item.needs-attention::before {
+  background: #f97316 !important;
+}
+
+/* ปุ่ม "เพิ่มปัญหา": สีธีมอ่อน เส้นประ */
+html.app-mode #dept-body .btn-add-problem {
+  width: 100%;
+  min-height: 50px !important;
+  border: 1.5px dashed rgba(var(--app-primary-rgb), 0.45) !important;
+  background: rgba(var(--app-primary-rgb), 0.06) !important;
+  color: var(--app-primary) !important;
+  box-shadow: none !important;
+}
+
+/* ==========================================================
+   แถบบนและแถบล่าง: สีธีมอ่อน ๆ (เปลี่ยนตามธีมที่เลือก)
+   ========================================================== */
+:root {
+  --app-bar-tint: 0.09;
+  /* สีทึบโดยประมาณของแถบ (ใช้กับวงรอบปุ่มกลม) */
+  --app-bar-solid: #edf0f7;
+}
+
+@supports (background: color-mix(in srgb, red 10%, white)) {
+  :root {
+    --app-bar-solid: color-mix(in srgb, var(--app-primary) 9%, #ffffff);
+  }
+}
+
+html.app-mode .app-topbar {
+  background:
+    linear-gradient(rgba(var(--app-primary-rgb), var(--app-bar-tint)), rgba(var(--app-primary-rgb), var(--app-bar-tint))),
+    rgba(255, 255, 255, 0.94);
+  border-bottom-color: rgba(var(--app-primary-rgb), 0.12);
+}
+
+html.app-mode .app-topbar.is-scrolled {
+  border-bottom-color: rgba(var(--app-primary-rgb), 0.18);
+}
+
+html.app-mode .app-tabbar {
+  background:
+    linear-gradient(rgba(var(--app-primary-rgb), var(--app-bar-tint)), rgba(var(--app-primary-rgb), var(--app-bar-tint))),
+    rgba(255, 255, 255, 0.96);
+  border-top-color: rgba(var(--app-primary-rgb), 0.14);
+}
+
+/* ปุ่มกลมตรงกลาง: วงรอบเป็นสีเดียวกับแถบ (ไม่เป็นวงขาวลอย) */
+.app-tab.is-center .material-symbols-outlined {
+  box-shadow: 0 8px 20px rgba(var(--app-accent-rgb), 0.38), 0 0 0 5px var(--app-bar-solid);
+}
+
+.app-tab.is-save .material-symbols-outlined {
+  box-shadow: 0 8px 20px rgba(var(--app-primary-rgb), 0.38), 0 0 0 5px var(--app-bar-solid);
+}
+
+/* แท็บที่เลือก: พื้นเข้มขึ้นเล็กน้อยให้ยังเด่นบนแถบที่มีสี */
+.app-tab.is-active .material-symbols-outlined {
+  background: rgba(var(--app-primary-rgb), 0.16);
+}
+
+/* ปุ่มไอคอนบนแถบบน: พื้นตอนกด/ชี้ ให้เห็นบนแถบสี */
+.app-icon-btn:hover,
+.app-icon-btn:focus-visible {
+  background: rgba(var(--app-primary-rgb), 0.12);
+}
+
+
+/* ==========================================================
+   การ์ดให้ตัดกับพื้นหลัง: เส้นขอบบาง + เงาชัดขึ้นเล็กน้อย
+   (พื้นหลังเป็นสีเทาเข้ม #d1d5db ทุกธีม ดู --app-bg ด้านบน)
+   ========================================================== */
+html.app-mode #dept-body .form-group,
+html.app-mode #dept-body .qr-context-card {
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 2px 6px rgba(15, 23, 42, 0.08) !important;
+}
+
+html.app-mode #dept-body .problem-items-card {
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 2px 6px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* หน้าหัวหน้า: การ์ดหลักเด่นขึ้นบนพื้นหลังใหม่ */
+html.app-mode .page .filter-card,
+html.app-mode .page .table-card,
+html.app-mode .page .summary-card,
+html.app-mode .page .kpi-card,
+html.app-mode .page .chart-card {
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.05),
+    0 2px 8px rgba(15, 23, 42, 0.08) !important;
+}

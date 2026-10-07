@@ -83,8 +83,9 @@ async function loadDepartmentStandards() {
     const c = normalizeDept(d.department_code);
     state.standards[c] = {
       name: d.department_name,
-      max: Number(d.max_waste_percent || 3),
-      warning: Number(d.warning_percent || 0),
+      // ไม่ได้ตั้งไว้ → ค่าตั้งต้นโรงงาน 2% / เตือน 1.5% ต่อเดือน
+      max: Number(d.max_waste_percent) || 2,
+      warning: Number(d.warning_percent) || 1.5,
     };
   });
 }
@@ -164,6 +165,9 @@ async function loadPageData() {
 
     // โหลดรายการเครื่องทั้งหมดของแผนก + สถานะที่หัวหน้ายืนยัน
     await loadMachineDailyCheck(dateRows, date);
+
+    // เตือนวันที่ยังไม่ได้ส่งบัญชี (ไม่ให้ค้างข้ามวัน)
+    checkUnsentDays();
   } catch (err) {
     console.error(err);
     if (tbody)
@@ -1374,3 +1378,111 @@ window.toggleSentDetail = toggleSentDetail;
 window.setMachineDailyStatus = setMachineDailyStatus;
 window.setAllPendingMachineStatus = setAllPendingMachineStatus;
 window.sendDailyToAccounting = sendDailyToAccounting;
+
+/* ======================================================
+   เตือนวันที่ยังไม่ได้ส่งบัญชี
+   - ดูย้อนหลัง 14 วัน (ไม่รวมวันนี้) ว่ามีรายการ "รอหัวหน้าตรวจ" ค้างอยู่ไหม
+   - วันนี้: เตือนเมื่อเลย 16:00 น. และยังมีรายการรอตรวจ
+   - กดวันที่ในแถบเตือน → เปิดวันนั้นทันที
+====================================================== */
+const UNSENT_LOOKBACK_DAYS = 14;
+const UNSENT_TODAY_AFTER_HOUR = 16;
+const UNSENT_VISIBLE = 4; // แสดงวันเก่าสุดก่อน 4 วัน ที่เหลือกด "ดูทั้งหมด"
+
+async function checkUnsentDays() {
+  const host = ensureUnsentReminder();
+  if (!host) return;
+
+  const today = todayString();
+  const from = new Date();
+  from.setDate(from.getDate() - UNSENT_LOOKBACK_DAYS);
+  const fromStr = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, "0")}-${String(from.getDate()).padStart(2, "0")}`;
+
+  try {
+    const { data, error } = await state.supabase
+      .from(REPORT_TABLE)
+      .select("report_date, department_code, department, status")
+      .gte("report_date", fromStr)
+      .lte("report_date", today);
+    if (error) throw error;
+
+    const rows = filterByDept(Array.isArray(data) ? data : []).filter((r) =>
+      PENDING_STATUS_SET.has(normalizeText(r.status || STATUS_PENDING)),
+    );
+
+    const byDate = new Map();
+    rows.forEach((r) => {
+      const d = String(r.report_date || "").slice(0, 10);
+      if (!d) return;
+      byDate.set(d, (byDate.get(d) || 0) + 1);
+    });
+
+    const lateToday = new Date().getHours() >= UNSENT_TODAY_AFTER_HOUR;
+    const days = [...byDate.entries()]
+      .filter(([d]) => d < today || (d === today && lateToday))
+      .sort((a, b) => a[0].localeCompare(b[0]));
+
+    if (!days.length) {
+      host.hidden = true;
+      return;
+    }
+
+    const total = days.reduce((s, [, n]) => s + n, 0);
+    const current = getValue("filterDate");
+    host.hidden = false;
+    host.innerHTML = `
+      <span class="material-symbols-outlined unsent-icon" aria-hidden="true">notification_important</span>
+      <div class="unsent-body">
+        <strong>ยังไม่ได้ส่งบัญชี ${days.length.toLocaleString("th-TH")} วัน (${total.toLocaleString("th-TH")} รายการ)</strong>
+        <span>กดวันที่เพื่อเปิดตรวจและส่งบัญชี</span>
+        <div class="unsent-days${days.length > UNSENT_VISIBLE ? " is-collapsed" : ""}">
+          ${days
+            .map(([d, n], idx) => {
+              const label = d === today ? "วันนี้" : formatShortThaiDate(d);
+              const extra = idx >= UNSENT_VISIBLE ? " is-extra" : "";
+              return `<button type="button" class="unsent-day${extra}${d === current ? " is-current" : ""}" data-date="${safeAttr(d)}">
+                ${safeText(label)} <small>${n} รายการ</small>
+              </button>`;
+            })
+            .join("")}
+          ${days.length > UNSENT_VISIBLE ? `<button type="button" class="unsent-more">ดูทั้งหมด ${days.length} วัน</button>` : ""}
+        </div>
+      </div>`;
+
+    host.querySelector(".unsent-more")?.addEventListener("click", (e) => {
+      e.currentTarget.closest(".unsent-days")?.classList.remove("is-collapsed");
+      e.currentTarget.remove();
+    });
+
+    host.querySelectorAll(".unsent-day").forEach((btn) =>
+      btn.addEventListener("click", () => {
+        setValue("filterDate", btn.dataset.date);
+        loadPageData();
+        document.querySelector(".filter-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }),
+    );
+  } catch (err) {
+    console.warn("ตรวจวันที่ยังไม่ส่งบัญชีไม่สำเร็จ:", err);
+    host.hidden = true;
+  }
+}
+
+function ensureUnsentReminder() {
+  let host = document.getElementById("unsentReminder");
+  if (host) return host;
+  const anchor = document.querySelector(".filter-card");
+  if (!anchor) return null;
+  host = document.createElement("section");
+  host.id = "unsentReminder";
+  host.className = "unsent-reminder";
+  host.setAttribute("role", "status");
+  host.hidden = true;
+  anchor.parentNode.insertBefore(host, anchor);
+  return host;
+}
+
+function formatShortThaiDate(ymd) {
+  const d = new Date(`${ymd}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return ymd;
+  return d.toLocaleDateString("th-TH", { weekday: "short", day: "numeric", month: "short" });
+}

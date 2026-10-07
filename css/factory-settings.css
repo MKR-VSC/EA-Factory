@@ -1453,3 +1453,32 @@ input:checked + .slider:before {
   outline: none;
   box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.15);
 }
+
+/* มือถือ: หัวหน้าเรียงแนวตั้ง — เดิม flex-basis 500px กลายเป็นความสูง ทำให้มีช่องว่างใหญ่ */
+@media (max-width: 1024px) {
+  .settings-header .header-left {
+    flex: 0 0 auto !important;
+  }
+}
+
+/* สูตรคำนวณ / หมายเหตุที่เก็บเกณฑ์รายเครื่อง */
+.formula-desc strong:first-child {
+  display: inline-block;
+  margin-bottom: 2px;
+  color: #0f172a;
+}
+
+.machine-std-note {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  color: #92400e;
+  background: #fffbeb;
+  font-size: 13px;
+}
+
+.machine-std-note code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #fef3c7;
+}

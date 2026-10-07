@@ -2,7 +2,7 @@
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Login | PVT&T FACTORY</title>
 
     <!-- Fonts -->
@@ -18,11 +18,21 @@
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#1E3A8A" />
+    <meta name="theme-color" content="#13265C" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="PVT&amp;T Factory" />
 
     <!-- CSS -->
     <link rel="stylesheet" href="/css/loadingService.css" />
     <link rel="stylesheet" href="/css/login.css" />
+    <link rel="stylesheet" href="/css/responsive.css" />
+    <link rel="stylesheet" href="/css/splash.css" />
+    <link rel="stylesheet" href="/css/offline-queue.css" />
+    <link rel="stylesheet" href="/css/app-shell.css" />
+    <link rel="stylesheet" href="/css/login-app.css" />
+    <script src="/core/appShell.js"></script>
   </head>
 
   <body>
@@ -31,33 +41,45 @@
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/activityLogger.js"></script>
     <!-- Splash Screen -->
-    <div id="splash-screen">
-      <div class="splash-bg-glow"></div>
-      <div class="splash-card">
-        <div class="splash-loader">
-          <div class="orbit-ring ring-1"></div>
-          <div class="orbit-ring ring-2"></div>
-          <img src="/icons/Logo_Apps3.png?v=3" alt="PVT&T FACTORY Logo" class="splash-logo-img" />
-          <div class="splash-logo-glow"></div>
-        </div>
-        <div class="splash-title">PVT&T FACTORY</div>
-        <div class="splash-sub">ศูนย์รวมข้อมูลและระบบงาน</div>
+    <div id="splash-screen" class="pvt-splash" role="status" aria-label="กำลังเปิดแอป">
+      <div class="pvt-splash-mark" aria-hidden="true">
+        <span class="pvt-splash-glow"></span>
+        <svg class="pvt-splash-ring" viewBox="0 0 120 120">
+          <defs>
+            <linearGradient id="pvtSplashRing" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ff8a3d" />
+              <stop offset="0.55" stop-color="#f26a1b" />
+              <stop offset="1" stop-color="#1e3a8a" />
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="60" cy="60" r="54" />
+          <circle class="arc" cx="60" cy="60" r="54" />
+        </svg>
+        <img class="pvt-splash-logo" src="/icons/Logo_Apps3.png?v=3" alt="" />
       </div>
+      <div class="pvt-splash-title">PVT&amp;T Factory</div>
+      <div class="pvt-splash-sub">ระบบบันทึกข้อมูลของเสียจากการผลิต</div>
     </div>
 
     <!-- Login Overlay -->
-    <div id="login-overlay" class="hidden">
-      <div class="overlay-box">
-        <div class="loading-spinner-wrap">
-          <div class="spinner-outer"></div>
-          <div class="spinner-inner"></div>
-          <div class="spinner-core"></div>
+    <div id="login-overlay" class="pvt-loader hidden" role="status" aria-live="polite">
+      <div class="pvt-loader-card">
+        <div class="pvt-loader-mark" aria-hidden="true">
+          <svg class="pvt-loader-ring" viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="pvtLoaderRing" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ff8a3d" />
+              <stop offset="0.55" stop-color="#f26a1b" />
+              <stop offset="1" stop-color="#1e3a8a" />
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="60" cy="60" r="54" />
+          <circle class="arc" cx="60" cy="60" r="54" />
+        </svg>
+          <img class="pvt-loader-logo" src="/icons/Logo_Apps3.png?v=3" alt="" />
         </div>
-        <h3>กำลังเข้าสู่ระบบ...</h3>
-        <p>กรุณารอสักครู่</p>
-        <div class="loading-bar-wrap">
-          <div class="loading-bar-glow"></div>
-        </div>
+        <h3 class="pvt-loader-title">กำลังเข้าสู่ระบบ...</h3>
+        <p class="pvt-loader-text">กรุณารอสักครู่</p>
       </div>
     </div>
 
@@ -78,6 +100,7 @@
 
       <h1>ระบบบันทึกข้อมูลของเสียจากการผลิต</h1>
       <p>บริษัท พี.วี.ที.แอนด์ ที.พลาส จำกัด</p>
+
     </div>
     <!-- Main Login -->
     <main class="login-page">
@@ -178,5 +201,7 @@
     <script src="/auth/authGuard.js"></script>
     <script src="/services/loadingService.js"></script>
     <script src="/auth/login.js"></script>
+    <script src="/js/department/offlineQueue.js"></script>
+      <script src="/core/responsiveTables.js"></script>
   </body>
 </html>

@@ -1,0 +1,749 @@
+/* ==========================================================
+   responsive.css — ชั้นปรับ UX/UI ให้ใช้ได้ดีทุกอุปกรณ์
+   มือถือ (≤600) · แท็บเล็ต (601–1024) · โน้ตบุ๊ก (1025–1440) · PC (≥1441)
+
+   โหลดเป็นไฟล์ CSS สุดท้ายของทุกหน้า (ทับค่าเดิมเฉพาะจุดที่จำเป็น)
+   ========================================================== */
+
+/* ---------- พื้นฐานที่ใช้ทุกหน้า ---------- */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* ให้ attribute hidden ซ่อนจริงเสมอ
+   (เดิม CSS บางตัวตั้ง display:flex ทับ ทำให้แถบแจ้งเตือนว่าง ๆ /
+   แบนเนอร์ "มีการเปลี่ยนแปลงที่ยังไม่บันทึก" โผล่ทั้งที่ยังไม่ได้แก้อะไร) */
+[hidden] {
+  display: none !important;
+}
+
+/* วงโฟกัสชัดเจนเวลาใช้คีย์บอร์ด (PC / โน้ตบุ๊ก) */
+:where(button, a, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+  outline: 3px solid rgba(2, 132, 199, 0.55);
+  outline-offset: 2px;
+}
+
+/* ตัวเลขในตาราง/การ์ดให้ความกว้างเท่ากัน อ่านเทียบง่าย */
+td.text-right, th.text-right, .text-right {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ลดแอนิเมชันสำหรับผู้ที่ตั้งค่าลดการเคลื่อนไหว */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- จอสัมผัส: ปุ่ม/ช่องกรอกต้องกดง่าย (≥40px) ---------- */
+@media (pointer: coarse) {
+  button:not(.btn-clear-search):not(.ui-copy-icon),
+  .btn,
+  a.btn,
+  [role="button"],
+  select,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="hidden"]) {
+    min-height: 40px !important;
+  }
+
+  /* ปุ่ม/ช่องกรอกในตาราง (หน้าบัญชี / ตรวจรายวัน) ที่ถูกล็อกความสูงไว้ */
+  table.data-table td:nth-child(n) .btn,
+  table.data-table td:nth-child(n) button,
+  table.data-table td:nth-child(n) .cell-input {
+    min-height: 40px !important;
+  }
+
+  table .expand-btn,
+  table.data-table .expand-btn {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+  }
+
+  .breadcrumb-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+  }
+
+  button:not(.btn-clear-search),
+  [role="button"] {
+    min-width: 40px;
+    touch-action: manipulation;
+  }
+
+  /* ปุ่มไอคอนคัดลอกเล็ก ๆ ในรายการเครื่องจักร */
+  button[id^="copy-btn-"] {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .btn-clear-search {
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  /* สวิตช์รีเฟรชอัตโนมัติ: ขยายพื้นที่กด */
+  .auto-refresh-switch {
+    padding: 6px 0;
+  }
+}
+
+/* ---------- มือถือ/แท็บเล็ต: กัน iPhone ซูมเองตอนแตะช่องกรอก ---------- */
+@media (max-width: 1024px) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+}
+
+/* ---------- ปุ่มลอย "สแกน QR เครื่อง" ---------- */
+@media (max-width: 768px) {
+  .floating-scan-qr-btn {
+    right: calc(16px + env(safe-area-inset-right, 0px)) !important;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+    width: 58px !important;
+    height: 58px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+
+  .floating-scan-qr-btn .scan-qr-label {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    white-space: nowrap !important;
+  }
+
+  .floating-scan-qr-btn .scan-qr-icon-wrap {
+    width: 40px !important;
+    height: 40px !important;
+    background: transparent !important;
+  }
+
+  .floating-scan-qr-btn .scan-icon {
+    font-size: 28px !important;
+  }
+
+  /* เผื่อพื้นที่ท้ายหน้า ไม่ให้ปุ่มลอยบังเนื้อหาสุดท้าย */
+  body:has(.floating-scan-qr-btn) {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* ==========================================================
+   ตารางแบบ "การ์ด" บนมือถือ
+   ใช้กับตารางที่มี data-rt="cards" (core/responsiveTables.js
+   ใส่ชื่อคอลัมน์ให้แต่ละช่องอัตโนมัติ)
+   ใช้ได้ทั้งมือถือและแท็บเล็ตแนวตั้ง (≤900px) เพราะตาราง 9–13 คอลัมน์
+   บีบจนอ่านยากบนจอขนาดนั้น
+   ========================================================== */
+@media (max-width: 900px) {
+  table[data-rt="cards"] {
+    display: block !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  table[data-rt="cards"] > thead {
+    display: none !important;
+  }
+
+  table[data-rt="cards"] > tbody,
+  table[data-rt="cards"] > tfoot {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  table[data-rt="cards"] > tbody > tr:not(.hidden) {
+    display: block !important;
+    position: relative;
+    margin: 0 0 12px !important;
+    padding: 12px 14px !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05) !important;
+  }
+
+  table[data-rt="cards"] > tbody > tr:not(.hidden) > td {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 7px 0 !important;
+    border: 0 !important;
+    border-bottom: 1px dashed #e2e8f0 !important;
+    background: transparent !important;
+    text-align: right !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: anywhere !important;
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+    position: static !important;
+  }
+
+  table[data-rt="cards"] > tbody > tr:not(.hidden) > td:last-child {
+    border-bottom: 0 !important;
+  }
+
+  /* ป้ายชื่อคอลัมน์ลอยซ้าย ค่าชิดขวา (รองรับค่าหลายบรรทัด เช่น รหัส + ชื่อแผนก) */
+  table[data-rt="cards"] > tbody > tr > td[data-label]::before {
+    content: attr(data-label);
+    float: left;
+    width: 38%;
+    margin-right: 10px;
+    text-align: left;
+    color: #64748b;
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
+  table[data-rt="cards"] > tbody > tr > td[data-label]::after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+
+  /* ช่องที่ไม่มีหัวคอลัมน์ (เช่นปุ่มขยาย ▼) → ลอยมุมขวาบนของการ์ด */
+  table[data-rt="cards"] > tbody > tr > td.rt-corner {
+    position: absolute !important;
+    top: 8px;
+    right: 10px;
+    width: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    display: block !important;
+  }
+
+  /* เว้นที่ให้ปุ่ม ▼ มุมขวาบน ไม่ให้ทับข้อความแถวแรกของการ์ด */
+  table[data-rt="cards"] > tbody > tr:not(.hidden):has(> td.rt-corner) {
+    padding-top: 46px !important;
+  }
+
+  table[data-rt="cards"] > tbody > tr > td.rt-corner {
+    top: 6px !important;
+  }
+
+  /* ช่องปุ่มจัดการ: ปุ่มเต็มความกว้าง กดง่าย */
+  table[data-rt="cards"] > tbody > tr > td.rt-actions {
+    display: block !important;
+    padding-top: 10px !important;
+  }
+
+  table[data-rt="cards"] > tbody > tr > td.rt-actions::before {
+    float: none !important;
+    display: block;
+    width: auto !important;
+    margin-bottom: 6px;
+  }
+
+  table[data-rt="cards"] > tbody > tr > td.rt-actions > div,
+  table[data-rt="cards"] > tbody > tr > td.rt-actions:not(:has(> div)) {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 8px !important;
+    justify-content: stretch;
+  }
+
+  table[data-rt="cards"] > tbody > tr > td.rt-actions .btn,
+  table[data-rt="cards"] > tbody > tr > td.rt-actions button {
+    flex: 1 1 0;
+    min-height: 42px !important;
+    font-size: 14px !important;
+  }
+
+  /* ช่องกรอกในการ์ด (เช่นน้ำหนักผลิต ในหน้าบัญชี / รายการใน PR) */
+  table[data-rt="cards"] > tbody > tr > td[data-label] > input:not([type="checkbox"]),
+  table[data-rt="cards"] > tbody > tr > td[data-label] > select {
+    display: inline-block;
+    width: 58% !important;
+    max-width: 58% !important;
+    min-height: 42px !important;
+    text-align: right;
+  }
+
+  /* แถวรายละเอียด / แถวว่าง (colspan) → เต็มการ์ด ไม่มีป้ายชื่อ */
+  table[data-rt="cards"] > tbody > tr > td[colspan] {
+    display: block !important;
+    text-align: left !important;
+    border-bottom: 0 !important;
+    padding: 4px 0 !important;
+  }
+
+  table[data-rt="cards"] > tbody > tr:has(> td[colspan]:only-child) {
+    padding: 10px !important;
+  }
+
+  table[data-rt="cards"] > tbody > tr.detail-row,
+  table[data-rt="cards"] > tbody > tr[id^="detail-"] {
+    margin-top: -8px !important;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    background: #f8fafc !important;
+  }
+
+  /* แถวรายละเอียด: ห้ามดันการ์ดให้กว้างเกินจอ */
+  table[data-rt="cards"] > tbody > tr > td[colspan] {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+  }
+
+  table[data-rt="cards"] td[colspan] table,
+  table[data-rt="cards"] td[colspan] .problem-table {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  table[data-rt="cards"] td[colspan] table th,
+  table[data-rt="cards"] td[colspan] table td {
+    padding: 8px 6px !important;
+    white-space: normal !important;
+    font-size: 13px !important;
+  }
+
+  table[data-rt="cards"] td[colspan] textarea,
+  table[data-rt="cards"] td[colspan] input,
+  table[data-rt="cards"] td[colspan] select {
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  /* กล่องเลื่อนตารางเดิมไม่ต้องมีกรอบซ้อนเมื่อเป็นการ์ด */
+  .table-scroll:has(> table[data-rt="cards"]),
+  .supervisor-table-scroll:has(> table[data-rt="cards"]),
+  .table-wrap:has(> table[data-rt="cards"]) {
+    overflow: visible !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* ป้าย "ปัดซ้าย-ขวาเพื่อดูข้อมูล" ไม่จำเป็นเมื่อเป็นการ์ด */
+  .table-swipe-hint:has(+ .table-scroll > table[data-rt="cards"]),
+  .table-swipe-hint:has(+ .supervisor-table-scroll > table[data-rt="cards"]),
+  .table-swipe-hint:has(+ table[data-rt="cards"]) {
+    display: none !important;
+  }
+}
+
+/* แท็บเล็ต: ข้อมูลในการ์ดแบ่ง 2 คอลัมน์ ใช้พื้นที่จอให้คุ้ม */
+@media (min-width: 641px) and (max-width: 900px) {
+  table[data-rt="cards"] > tbody > tr:not(.hidden):not(:has(> td[colspan])) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 28px;
+    padding: 14px 18px !important;
+  }
+
+  table[data-rt="cards"] > tbody > tr > td.rt-actions,
+  table[data-rt="cards"] > tbody > tr > td:has(.problem-inline),
+  table[data-rt="cards"] > tbody > tr > td:has(.problem-table) {
+    grid-column: 1 / -1;
+  }
+
+  table[data-rt="cards"] > tbody > tr > td.rt-actions button,
+  table[data-rt="cards"] > tbody > tr > td.rt-actions .btn {
+    flex: 0 1 160px;
+  }
+}
+
+/* ==========================================================
+   ตารางที่ยังเลื่อนซ้าย-ขวา (มือถือ/แท็บเล็ต):
+   หัวคอลัมน์ไม่ตัดคำกลางคำ
+   ========================================================== */
+@media (max-width: 1024px) {
+  .table-scroll,
+  .supervisor-table-scroll,
+  .table-wrap {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  .table-scroll th,
+  .supervisor-table-scroll th {
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+  }
+}
+
+/* ==========================================================
+   ปรับเฉพาะหน้า
+   ========================================================== */
+
+/* ---------- index.html (สรุปภาพรวมของเสีย) ---------- */
+@media (max-width: 720px) {
+  .exec-header .header-actions {
+    gap: 8px !important;
+  }
+
+  .exec-header .header-actions > .user-chip,
+  .exec-header .header-actions > .auto-refresh-widget,
+  .exec-header .header-actions > .dashboard-update {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    justify-content: space-between;
+  }
+
+  .exec-header .header-actions > .user-chip strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* ---------- accounting-panel.html ---------- */
+@media (max-width: 760px) {
+  .topbar .actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .topbar .actions > .auto-refresh-widget {
+    grid-column: 1 / -1 !important;
+    justify-content: space-between;
+  }
+
+  .topbar .actions > .btn {
+    width: 100% !important;
+    min-height: 44px;
+    margin: 0 !important;
+  }
+
+  .topbar .header-brand {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+
+  .topbar .logo-icon img {
+    width: 56px !important;
+    height: auto !important;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1000px) {
+  .topbar .actions {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .topbar .actions > .auto-refresh-widget {
+    grid-column: 1 / -1 !important;
+    justify-self: start;
+  }
+
+  .topbar .actions > .btn {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}
+
+/* ---------- supervisor-daily-review.html (แท็บเล็ต/โน้ตบุ๊กเล็ก) ---------- */
+@media (min-width: 601px) and (max-width: 1100px) {
+  .page-header.supervisor-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+    row-gap: 14px !important;
+  }
+
+  .supervisor-hero .header-col-left,
+  .supervisor-hero .header-col-right {
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .supervisor-hero .header-col-right {
+    align-items: stretch !important;
+  }
+
+  .supervisor-hero .header-actions {
+    justify-content: flex-start !important;
+    flex-wrap: wrap;
+  }
+}
+
+/* ---------- admin-panel.html ---------- */
+@media (max-width: 700px) {
+  .workspace-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .workspace-heading h1 {
+    font-size: 20px !important;
+    line-height: 1.35 !important;
+  }
+
+  .workspace-actions {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .workspace-actions {
+    flex-wrap: nowrap !important;
+    align-items: stretch;
+  }
+
+  .workspace-actions > .auto-refresh-widget {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: space-between;
+  }
+
+  /* ปุ่มโหลดใหม่บนมือถือเป็นปุ่มไอคอน วางข้างสวิตช์รีเฟรช */
+  .workspace-actions > #btn-refresh {
+    flex: 0 0 48px !important;
+    width: 48px !important;
+    padding: 0 !important;
+    justify-content: center;
+  }
+
+  /* แถบเมนูเลื่อนแนวนอน: ไม่ตัดคำ + เงาจาง ๆ บอกว่าเลื่อนได้ */
+  body.admin-ui-v2 aside.sidebar .sidebar-menu {
+    scroll-snap-type: x proximity;
+    -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
+    mask-image: linear-gradient(90deg, #000 88%, transparent);
+  }
+
+  body.admin-ui-v2 aside.sidebar .sidebar-menu .sidebar-item {
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+}
+
+/* ---------- factory-settings.html ---------- */
+@media (max-width: 768px) {
+  .settings-header .header-left {
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .settings-header .header-logo-badge {
+    width: 52px !important;
+    height: 52px !important;
+    flex: 0 0 52px;
+  }
+
+  .settings-header .page-title {
+    font-size: 20px !important;
+    line-height: 1.35 !important;
+  }
+
+  .settings-header .breadcrumb-nav {
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+
+  .settings-header .header-right {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .settings-header .header-actions {
+    display: flex;
+    flex: 1 1 100%;
+    gap: 8px;
+  }
+
+  .settings-header .header-actions > .btn {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
+  /* แท็บ: เลื่อนแนวนอน ไม่ตัดคำทีละคำ */
+  .settings-tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 12px !important;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
+    mask-image: linear-gradient(90deg, #000 85%, transparent);
+  }
+
+  .settings-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .settings-tabs .tab-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 12px 14px !important;
+    scroll-snap-align: start;
+  }
+}
+
+/* ---------- form-department.html (แท็บเล็ต 601–900px) ----------
+   เดิมบีบเหลือคอลัมน์กว้าง 420px เท่ามือถือ ทำให้แท็บเล็ตเหลือพื้นที่ว่างครึ่งจอ */
+@media (min-width: 601px) and (max-width: 900px) {
+  .app-hero,
+  .main-content,
+  .form-page-card {
+    max-width: 760px !important;
+  }
+
+  .header-status-buttons {
+    max-width: 100% !important;
+  }
+
+  .mobile-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+
+  .mobile-form > .form-group:nth-child(1),
+  .mobile-form > .form-group:nth-child(2) {
+    grid-column: auto !important;
+  }
+}
+
+/* ---------- pr-form.html (ใบขอซื้อ) ---------- */
+.signature-section .sig-pad-wrapper {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  aspect-ratio: 280 / 120;
+}
+
+.signature-section .sig-actions {
+  width: 100%;
+  max-width: 320px;
+}
+
+@media (max-width: 760px) {
+  body:has(#items-table) {
+    padding: 12px 10px !important;
+  }
+
+  .form-container {
+    padding: 18px 14px !important;
+    border-radius: 16px !important;
+  }
+
+  .pr-top-hero {
+    padding: 14px !important;
+    border-radius: 18px !important;
+    gap: 10px !important;
+  }
+
+  .pr-top-hero h2 {
+    font-size: 19px !important;
+  }
+
+  .pr-top-hero > a.btn {
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .pr-top-hero img {
+    height: 40px !important;
+  }
+
+  .form-header {
+    flex-direction: column;
+    gap: 14px !important;
+  }
+
+  .signature-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 22px !important;
+  }
+
+  .signature-section .sig-container {
+    align-items: center;
+  }
+
+  #items-table {
+    border: 0;
+  }
+
+
+
+  .btn-lg {
+    width: 100%;
+  }
+}
+
+/* ---------- supervisor-dashboard.html ---------- */
+@media (max-width: 600px) {
+  /* ข้อความเปรียบเทียบใต้ตัวเลข KPI ไม่ให้ถูกตัดหาย */
+  .kpi-compare-badge {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    max-width: 100% !important;
+    height: auto !important;
+    line-height: 1.35 !important;
+    align-items: flex-start !important;
+  }
+}
+
+/* ==========================================================
+   PC จอใหญ่ (≥1600px): ไม่ให้เนื้อหายืดกว้างเกินจนอ่านยาก
+   ========================================================== */
+@media (min-width: 1600px) {
+  .form-container {
+    max-width: 1100px;
+  }
+}
+
+/* ==========================================================
+   ความอ่านง่าย: ข้อความรองภาษาไทยไม่เล็กกว่า ~11.5px
+   (สระ/วรรณยุกต์ไทยที่ 9–10px อ่านยากมากบนจอจริง)
+   ========================================================== */
+small,
+.user-label,
+.header-kicker,
+.dashboard-eyebrow,
+.workspace-eyebrow,
+.sidebar-section-label,
+.kpi-compare-badge,
+.th-sub,
+.machine-mini-pill,
+.dashboard-status,
+.threshold-labels span,
+.admin-ui-v2 .sidebar-section-label,
+.machine-dept,
+.review-ready span {
+  font-size: max(11.5px, 0.72rem) !important;
+}
+
+#machineDoneCount,
+#machinePendingCount {
+  font-size: inherit !important;
+}
+
+/* ปุ่ม "ค้นหา" หน้า Dashboard หัวหน้า: ไอคอนเดิมใหญ่ 50px ล้นปุ่มและทับตัวหนังสือ */
+.btn-search .material-symbols-outlined {
+  font-size: 20px !important;
+  width: auto !important;
+  height: auto !important;
+}

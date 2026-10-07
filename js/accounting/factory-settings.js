@@ -170,8 +170,8 @@ async function loadDepartments(isManualRefresh = false) {
     state.departments.forEach((dept) => {
       const code = normalizeCode(dept.department_code);
       state.originalData[code] = {
-        max: toNumber(dept.max_waste_percent || 1),
-        warning: toNumber(dept.warning_percent || 0.7),
+        max: toNumber(dept.max_waste_percent || 2),
+        warning: toNumber(dept.warning_percent || 1.5),
       };
     });
 
@@ -231,8 +231,8 @@ function renderTable(rows) {
     .map((dept, index) => {
       const code = normalizeCode(dept.department_code || "");
       const name = dept.department_name || code || "-";
-      const max = toNumber(dept.max_waste_percent ?? 1);
-      const warning = toNumber(dept.warning_percent ?? 0.7);
+      const max = toNumber(dept.max_waste_percent ?? 2);
+      const warning = toNumber(dept.warning_percent ?? 1.5);
       const active = dept.is_active !== false;
       const deptColor = DEPT_COLORS[code] || "#0284c7";
 
@@ -526,7 +526,11 @@ async function logoutSettings() {
   } catch (err) {
     console.warn("Supabase signOut warning:", err);
   } finally {
+    // ล้างข้อมูลเข้าสู่ระบบ แต่เก็บรายการที่รอส่ง (บันทึกตอนเน็ตหลุด) และธีมสีไว้
+    const keepKeys = ["pvtOfflineQueue", "pvtOfflineFailed", "pvtAppTheme"];
+    const kept = keepKeys.map((k) => [k, localStorage.getItem(k)]);
     localStorage.clear();
+    kept.forEach(([k, v]) => v !== null && localStorage.setItem(k, v));
     sessionStorage.clear();
     window.location.replace("/login.html");
   }
@@ -1069,6 +1073,17 @@ async function initMachineWasteTab() {
     state.selectedMachineWasteDept = dropdown.value;
   }
 
+  // โหลดเกณฑ์รายเครื่องจากฐานข้อมูล (ทุกเครื่องเห็นค่าเดียวกัน)
+  await window.WasteStandardService?.loadMachineStandards(true);
+  const note = document.getElementById("machine-std-storage-note");
+  if (note) {
+    const ready = window.WasteStandardService?.isDatabaseReady?.();
+    note.hidden = !!ready;
+    note.innerHTML = ready
+      ? ""
+      : `⚠️ ยังไม่ได้รัน <code>database/10-machine-waste-standards.sql</code> — เกณฑ์รายเครื่องจะถูกเก็บไว้แค่ในเบราว์เซอร์นี้ชั่วคราว (เครื่องอื่นและหน้าบัญชีจะไม่เห็น)`;
+  }
+
   await loadMachineWasteStandards();
 }
 
@@ -1080,19 +1095,31 @@ async function loadMachineWasteStandards() {
 
   try {
     const deptCode = (state.selectedMachineWasteDept || "blow").toLowerCase();
-    
-    // Find department baseline standard
-    const currentDeptObj = state.departments.find(d => normalizeCode(d.department_code) === deptCode);
+    const deptUpper = normalizeCode(deptCode);
+
+    // Find department baseline standard (เดิมเทียบตัวพิมพ์เล็กกับตัวพิมพ์ใหญ่ จึงไม่เคยเจอ → ใช้ 2% ตลอด)
+    const currentDeptObj = state.departments.find(d => normalizeCode(d.department_code) === deptUpper);
     const deptMax = Number(currentDeptObj?.max_waste_percent || 2.0);
     const deptWarn = Number(currentDeptObj?.warning_percent || 1.5);
 
     // Fetch machines belonging to this department
-    const { data: machines, error } = await state.supabase
+    // ใช้ department_code (ต้องรัน SQL 09) ถ้ายังไม่มี ค่อยใช้ department แบบเดิม
+    let machines = null;
+    let error = null;
+    ({ data: machines, error } = await state.supabase
       .from("master_machines")
       .select("*")
-      .eq("department", deptCode)
+      .eq("department_code", deptUpper.replace(/[\s-]+/g, "_"))
       .order("sort_order", { ascending: true })
-      .order("machine_no", { ascending: true });
+      .order("machine_no", { ascending: true }));
+    if (error || !machines?.length) {
+      ({ data: machines, error } = await state.supabase
+        .from("master_machines")
+        .select("*")
+        .eq("department", deptCode)
+        .order("sort_order", { ascending: true })
+        .order("machine_no", { ascending: true }));
+    }
 
     if (error) throw error;
 
@@ -1106,7 +1133,7 @@ async function loadMachineWasteStandards() {
 
     tbody.innerHTML = machines.map((mac, idx) => {
       const cleanMachineNo = String(mac.machine_no).trim().toUpperCase();
-      const customKey = `${deptCode}__${cleanMachineNo}`;
+      const customKey = `${deptUpper.replace(/[\s-]+/g, "_")}__${cleanMachineNo}`;
       const customConfig = allCustomStandards[customKey];
 
       const isCustom = Boolean(customConfig && customConfig.is_custom);
@@ -1263,14 +1290,24 @@ function bindMachineWasteRowEvents(deptMax, deptWarn) {
         return;
       }
 
-      await window.WasteStandardService?.saveMachineStandard(deptCode, machineNo, {
-        max_waste_percent: max,
-        warning_percent: warn,
-        monthly_target_percent: max,
-        isInherited: !isCustom
-      });
-
-      showToast(`บันทึกเกณฑ์ของเสียสำหรับเครื่อง ${machineNo} (${max.toFixed(2)}%) เรียบร้อย`, "success");
+      try {
+        if (!window.WasteStandardService) throw new Error("ไม่พบระบบเกณฑ์ของเสีย (wasteStandardService.js)");
+        const res = await window.WasteStandardService.saveMachineStandard(deptCode, machineNo, {
+          max_waste_percent: max,
+          warning_percent: warn,
+          monthly_target_percent: max,
+          isInherited: !isCustom
+        });
+        showToast(
+          res?.stored === "database"
+            ? `บันทึกเกณฑ์ของเครื่อง ${machineNo} (${max.toFixed(2)}%) ลงฐานข้อมูลแล้ว`
+            : `บันทึกเกณฑ์ของเครื่อง ${machineNo} ไว้ในเบราว์เซอร์นี้ชั่วคราว (ยังไม่ได้รัน SQL ไฟล์ 10)`,
+          res?.stored === "database" ? "success" : "info",
+        );
+      } catch (err) {
+        console.error(err);
+        showToast(`บันทึกไม่สำเร็จ: ${err.message || err}`, "error");
+      }
     });
   });
 }
@@ -1359,8 +1396,14 @@ async function handleSaveAllMachineWaste() {
   if (btn) btn.disabled = true;
 
   try {
-    await window.WasteStandardService?.saveAllMachineStandardsForDept(deptCode, machineConfigs);
-    showToast(`บันทึกการตั้งค่าเกณฑ์ของเสียรายเครื่องจักรทุกเครื่องในแผนก ${deptCode.toUpperCase()} เรียบร้อยแล้ว!`, "success");
+    if (!window.WasteStandardService) throw new Error("ไม่พบระบบเกณฑ์ของเสีย (wasteStandardService.js)");
+    const res = await window.WasteStandardService.saveAllMachineStandardsForDept(deptCode, machineConfigs);
+    showToast(
+      res?.stored === "database"
+        ? `บันทึกเกณฑ์รายเครื่องของแผนก ${deptCode.toUpperCase()} ลงฐานข้อมูลแล้ว`
+        : `บันทึกไว้ในเบราว์เซอร์นี้ชั่วคราว (ยังไม่ได้รัน SQL ไฟล์ 10)`,
+      res?.stored === "database" ? "success" : "info",
+    );
     await loadMachineWasteStandards();
   } catch (err) {
     console.error(err);

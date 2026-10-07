@@ -1015,3 +1015,381 @@ textarea:focus {
   }
 }
 
+
+/* =========================================================
+   ปรับปรุงการใช้งาน (บัญชีกรอกน้ำหนักผลิต)
+========================================================= */
+
+/* การ์ดสรุป 4 ใบ (เพิ่ม "รอบัญชีตรวจ") */
+.summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.summary-card.warning strong { color: #d97706; }
+.summary-card.warning::after { background: rgba(217, 119, 6, 0.10); }
+
+@media (max-width: 900px) {
+  .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* รหัสแผนก/เครื่องไม่ตัดกลางคำ */
+/* (ตัดบรรทัดได้เฉพาะที่ขีด "-" เช่น CUT_PUNCH- / 01) */
+.data-table .code-text {
+  word-break: normal;
+  overflow-wrap: normal;
+  font-size: 12.5px;
+}
+
+/* รวมความกว้างทุกคอลัมน์ ~1,240px ให้พอดีจอโน้ตบุ๊ก 1366px (มีแถบเมนูซ้าย 72px) โดยไม่ต้องเลื่อนซ้ายขวา */
+.data-table[data-rt="cards"] { min-width: 1180px; }
+.data-table[data-rt="cards"] th:nth-child(3),
+.data-table[data-rt="cards"] td:nth-child(3) { width: 88px !important; }
+.data-table[data-rt="cards"] th:nth-child(5),
+.data-table[data-rt="cards"] td:nth-child(5) { width: 98px !important; }
+.data-table[data-rt="cards"] th:nth-child(6),
+.data-table[data-rt="cards"] td:nth-child(6) { width: 70px !important; }
+.data-table[data-rt="cards"] th:nth-child(7),
+.data-table[data-rt="cards"] td:nth-child(7) { width: 72px !important; }
+.data-table[data-rt="cards"] th:nth-child(2),
+.data-table[data-rt="cards"] td:nth-child(2) { width: 78px !important; }
+@media (min-width: 901px) {
+  .data-table[data-rt="cards"] th:nth-child(13),
+  .data-table[data-rt="cards"] td:nth-child(13) { width: 184px !important; }
+}
+.data-table[data-rt="cards"] th:nth-child(8),
+.data-table[data-rt="cards"] td:nth-child(8) { width: 168px !important; }
+.data-table[data-rt="cards"] th:nth-child(10),
+.data-table[data-rt="cards"] td:nth-child(10) { width: 66px !important; }
+
+/* ช่องผลิตของงวดที่ปิดแล้ว: สีเทา อ่านได้อย่างเดียว */
+.data-table td .cell-input.cell-input-production.is-locked {
+  color: #64748b !important;
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}
+
+/* ช่องผลิตที่พิมพ์แล้วแต่ยังไม่บันทึก */
+.data-table td .cell-input.cell-input-production.is-dirty:not(:disabled) {
+  border-color: #f59e0b !important;
+  background: #fffbeb !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.16) !important;
+}
+
+/* ปุ่มขยายรายละเอียด: หมุนเมื่อเปิด */
+.expand-btn {
+  transition: transform 0.15s ease;
+}
+
+.expand-btn.is-open {
+  transform: rotate(180deg);
+}
+
+/* ปุ่มบันทึกทั้งหมด */
+.btn-save-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  border-radius: 8px;
+  white-space: nowrap;
+  animation: saveAllIn 0.2s ease-out;
+}
+
+.btn-save-all[hidden] {
+  display: none !important;
+}
+
+.btn-save-all .material-symbols-outlined {
+  font-size: 18px;
+}
+
+@keyframes saveAllIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* PC: หัวตารางติดด้านบนเมื่อเลื่อนดูรายการยาว ๆ */
+@media (min-width: 1025px) {
+  .table-scroll {
+    max-height: calc(100vh - 120px);
+    overscroll-behavior: contain;
+  }
+}
+
+/* ตารางสรุปผลรวม: ชื่อแผนก/เครื่อง/ปัญหา ชิดซ้าย */
+.table-responsive .data-table th:first-child,
+.table-responsive .data-table td:first-child {
+  text-align: left !important;
+  padding-left: 18px;
+}
+
+/* =========================================================
+   ปิดงวดบัญชี / ประวัติการแก้ยอดผลิต / ส่งออก Excel
+========================================================= */
+.btn.btn-excel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #ffffff;
+  background: #15803d;
+  border: none;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.btn.btn-excel:hover {
+  background: #166534;
+}
+
+.btn.btn-excel .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.period-lock-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 22px 4px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 14px;
+}
+
+.period-lock-bar[hidden] {
+  display: none !important;
+}
+
+.period-lock-bar > span:nth-child(2) {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.period-lock-bar small {
+  color: #64748b;
+  font-size: 12.5px;
+}
+
+.period-lock-bar > .material-symbols-outlined {
+  font-size: 24px;
+}
+
+.period-lock-bar .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.period-lock-bar .btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.period-lock-bar.is-open > .material-symbols-outlined {
+  color: #0284c7;
+}
+
+.period-lock-bar.is-locked {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+
+.period-lock-bar.is-locked > .material-symbols-outlined {
+  color: #3730a3;
+}
+
+.period-lock-bar.is-info > .material-symbols-outlined {
+  color: #94a3b8;
+}
+
+.period-lock-bar code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #e2e8f0;
+  font-size: 12.5px;
+}
+
+.lock-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #3730a3;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lock-pill .material-symbols-outlined {
+  font-size: 15px;
+}
+
+.lock-warn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  color: #92400e;
+  background: #fffbeb;
+}
+
+.lock-note {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.lock-note input {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font: inherit;
+}
+
+.prod-history {
+  text-align: left;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+}
+
+.prod-history-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: #334155;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.prod-history-head .material-symbols-outlined {
+  font-size: 18px;
+  color: #64748b;
+}
+
+.prod-history-body {
+  font-size: 13px;
+}
+
+.prod-history-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prod-history-list li {
+  display: grid;
+  grid-template-columns: 170px 150px 1fr;
+  gap: 10px;
+  color: #475569;
+}
+
+.prod-history-list .ph-what strong {
+  color: #0f172a;
+}
+
+@media (max-width: 760px) {
+  .period-lock-bar {
+    flex-wrap: wrap;
+    margin: 12px 0 4px;
+  }
+
+  .period-lock-bar .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .prod-history-list li {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+}
+
+/* =========================================================
+   ตารางสรุปรายเดือน — คอลัมน์ชัดเจน เส้นแบ่งช่อง ป้ายผลประเมินอยู่กลางช่อง
+   (ล้างความกว้างคอลัมน์ของตารางรายการ 13 คอลัมน์ที่ติดมา)
+========================================================= */
+.data-table.summary-month-table {
+  min-width: 760px;
+  table-layout: fixed;
+  border: 1px solid #dbe7f5;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.data-table.summary-month-table th,
+.data-table.summary-month-table td {
+  width: auto !important;
+  padding: 12px 14px;
+  vertical-align: middle;
+  border-right: 1px solid #e6eef8;
+}
+
+.data-table.summary-month-table th:last-child,
+.data-table.summary-month-table td:last-child {
+  border-right: 0;
+}
+
+.data-table.summary-month-table tbody tr:nth-child(even) td {
+  background: #f8fbff;
+}
+
+/* 7 คอลัมน์: ชื่อ | ผลิตดี | ของเสีย | % | เกณฑ์ | ผลประเมิน | กรอกแล้ว */
+.data-table.summary-month-table:not(.is-problem) th:nth-child(1),
+.data-table.summary-month-table:not(.is-problem) td:nth-child(1) { width: 22% !important; }
+.data-table.summary-month-table:not(.is-problem) th:nth-child(2),
+.data-table.summary-month-table:not(.is-problem) td:nth-child(2) { width: 13% !important; }
+.data-table.summary-month-table:not(.is-problem) th:nth-child(3),
+.data-table.summary-month-table:not(.is-problem) td:nth-child(3) { width: 13% !important; }
+.data-table.summary-month-table:not(.is-problem) th:nth-child(4),
+.data-table.summary-month-table:not(.is-problem) td:nth-child(4) { width: 11% !important; }
+.data-table.summary-month-table:not(.is-problem) th:nth-child(5),
+.data-table.summary-month-table:not(.is-problem) td:nth-child(5) { width: 11% !important; }
+.data-table.summary-month-table:not(.is-problem) th:nth-child(6),
+.data-table.summary-month-table:not(.is-problem) td:nth-child(6) { width: 18% !important; }
+.data-table.summary-month-table:not(.is-problem) th:nth-child(7),
+.data-table.summary-month-table:not(.is-problem) td:nth-child(7) { width: 12% !important; }
+
+/* แยกตามประเภทปัญหา: 3 คอลัมน์ */
+.data-table.summary-month-table.is-problem th:nth-child(1),
+.data-table.summary-month-table.is-problem td:nth-child(1) { width: 60% !important; }
+.data-table.summary-month-table.is-problem th:nth-child(2),
+.data-table.summary-month-table.is-problem td:nth-child(2),
+.data-table.summary-month-table.is-problem th:nth-child(3),
+.data-table.summary-month-table.is-problem td:nth-child(3) { width: 20% !important; }
+
+.data-table.summary-month-table .col-center {
+  text-align: center !important;
+}
+
+.data-table.summary-month-table .result-pill {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 96px;
+}
+
+.data-table.summary-month-table td small.muted {
+  font-size: 11.5px;
+}

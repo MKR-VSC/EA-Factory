@@ -2,7 +2,7 @@
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>ตรวจสอบข้อมูลรายวัน | PVT&T FACTORY</title>
 
     <link
@@ -22,14 +22,43 @@
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#1E3A8A" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="PVT&amp;T Factory" />
     <!-- ใช้หัว/ธีมเดิม -->
     <link rel="stylesheet" href="/css/loadingService.css" />
     <link rel="stylesheet" href="/css/supervisor-daily-review.css" />
     <!-- CSS เสริมเฉพาะตาราง Go Live -->
     <link rel="stylesheet" href="/css/supervisor-daily-review-table-addon.css" />
+      <link rel="stylesheet" href="/css/responsive.css" />
+    <link rel="stylesheet" href="/css/app-shell.css" />
+    <script src="/core/appShell.js"></script>
+      <link rel="stylesheet" href="/css/splash.css" />
   </head>
 
   <body>
+    <!-- หน้าเปิดแอป (แบบเดียวกันทั้งแอป — ดู css/splash.css) -->
+    <div id="splash-screen" class="pvt-splash" role="status" aria-label="กำลังเปิดแอป">
+      <div class="pvt-splash-mark" aria-hidden="true">
+        <span class="pvt-splash-glow"></span>
+        <svg class="pvt-splash-ring" viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="pvtSplashRing" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ff8a3d" />
+              <stop offset="0.55" stop-color="#f26a1b" />
+              <stop offset="1" stop-color="#1e3a8a" />
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="60" cy="60" r="54" />
+          <circle class="arc" cx="60" cy="60" r="54" />
+        </svg>
+        <img class="pvt-splash-logo" src="/icons/Logo_Apps3.png?v=3" alt="" />
+      </div>
+      <div class="pvt-splash-title">PVT&amp;T Factory</div>
+      <div class="pvt-splash-sub">กำลังโหลดรายการตรวจสอบรายวัน</div>
+    </div>
+
     <main class="page">
       <!-- HEADER: 2-Column Layout -->
       <header class="page-header supervisor-hero">
@@ -130,7 +159,7 @@
         </div>
 
         <div class="table-scroll supervisor-table-scroll">
-          <table class="data-table supervisor-data-table">
+          <table class="data-table supervisor-data-table" data-rt="cards">
             <thead>
               <tr>
                 <th></th>
@@ -161,7 +190,7 @@
         </div>
 
         <div class="table-scroll supervisor-table-scroll">
-          <table class="data-table supervisor-data-table">
+          <table class="data-table supervisor-data-table" data-rt="cards">
             <thead>
               <tr>
                 <th></th>
@@ -209,7 +238,9 @@
     <script src="/core/tableSwipeDetector.js"></script>
     <script src="/core/counterAnimation.js"></script>
     <script src="/core/autoRefresh.js"></script>
+    <script src="/auth/authGuard.js"></script>
     <script src="/services/loadingService.js"></script>
     <script src="/js/dashboard/supervisor-daily-review.js?v=old-header-table-v1"></script>
+      <script src="/core/responsiveTables.js"></script>
   </body>
 </html>

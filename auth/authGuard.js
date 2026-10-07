@@ -37,10 +37,13 @@ async function getCurrentProfile() {
         is_system_owner
       `)
       .eq("id", authUser.id)
-      .eq("status", "active")
       .maybeSingle();
 
     if (error || !profile) return null;
+
+    // status ว่าง / null ถือว่าใช้งานได้ ปิดเฉพาะที่ระบุไว้ชัดเจน
+    const status = String(profile.status || "").trim().toLowerCase();
+    if (status && status !== "active") return null;
 
     return profile;
   } catch (err) {

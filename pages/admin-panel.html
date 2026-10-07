@@ -31,6 +31,10 @@
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#1E3A8A" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="PVT&amp;T Factory" />
 
 
     <!-- admin-panel.css เวอร์ชันปรับ Layout / UI แล้ว -->
@@ -183,9 +187,33 @@
         grid-column: 1 / -1;
       }
     </style>
+      <link rel="stylesheet" href="/css/responsive.css" />
+    <link rel="stylesheet" href="/css/admin-desktop.css" />
+      <link rel="stylesheet" href="/css/splash.css" />
   </head>
 
   <body class="admin-ui-v2">
+    <!-- หน้าเปิดแอป (แบบเดียวกันทั้งแอป — ดู css/splash.css) -->
+    <div id="splash-screen" class="pvt-splash" role="status" aria-label="กำลังเปิดแอป">
+      <div class="pvt-splash-mark" aria-hidden="true">
+        <span class="pvt-splash-glow"></span>
+        <svg class="pvt-splash-ring" viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="pvtSplashRing" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ff8a3d" />
+              <stop offset="0.55" stop-color="#f26a1b" />
+              <stop offset="1" stop-color="#1e3a8a" />
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="60" cy="60" r="54" />
+          <circle class="arc" cx="60" cy="60" r="54" />
+        </svg>
+        <img class="pvt-splash-logo" src="/icons/Logo_Apps3.png?v=3" alt="" />
+      </div>
+      <div class="pvt-splash-title">PVT&amp;T Factory</div>
+      <div class="pvt-splash-sub">กำลังเปิดหน้าผู้ดูแลระบบ</div>
+    </div>
+
     <div class="app-shell">
       <!-- ======================================================
         SIDEBAR MENU
@@ -348,9 +376,10 @@
 
               <select id="status-filter" aria-label="กรองตามสถานะ">
                 <option value="all">ทุกสถานะ</option>
-                <option value="pending">รอตรวจสอบ</option>
-                <option value="approved">ตรวจสอบแล้ว</option>
-                <option value="rejected">ไม่ผ่าน</option>
+                <option value="pending">รอหัวหน้าตรวจ</option>
+                <option value="sent">รอบัญชีตรวจ</option>
+                <option value="approved">บัญชีตรวจแล้ว</option>
+                <option value="rejected">ยกเลิก</option>
               </select>
 
               <button class="btn btn-secondary" type="button" id="btn-export-reports" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background 0.15s ease;">
@@ -360,7 +389,7 @@
             </div>
 
             <div class="table-scroll">
-              <table>
+              <table data-rt="cards" data-pager="25">
                 <thead>
                   <tr>
                     <th>วันที่</th>
@@ -868,7 +897,7 @@
             </div>
 
             <div class="table-scroll">
-              <table>
+              <table data-pager="50">
                 <thead>
                   <tr>
                     <th>เวลา</th>
@@ -913,7 +942,7 @@
             </div>
 
             <div class="table-scroll">
-              <table>
+              <table data-pager="50">
                 <thead>
                   <tr>
                     <th>เวลา</th>
@@ -1085,5 +1114,7 @@
         </div>
       </div>
     </div>
+      <script src="/core/responsiveTables.js"></script>
+    <script src="/core/adminDesktop.js"></script>
   </body>
 </html>

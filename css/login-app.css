@@ -1,0 +1,469 @@
+/* ==========================================================
+   login-app.css — หน้า Login (มือถือ/แท็บเล็ต)
+   ใช้โครงหน้าและพื้นหลังเดิม + แถบโค้งสีพีช: โลโก้ → ชื่อระบบ → การ์ดเข้าสู่ระบบ
+   จัดวางการ์ดใหม่ด้วยสีแบรนด์ PVT&T (คงที่ ไม่เปลี่ยนตามธีม)
+   บน PC หน้าตาเหมือนเดิมทุกอย่าง
+   ========================================================== */
+
+:root {
+  --pvt-navy-deep: #13265c;
+  --pvt-navy: #1e3a8a;
+  --pvt-orange: #f26a1b;
+  --pvt-orange-light: #ff8a3d;
+  --pvt-mist: #f1f4fa;
+  --pvt-ink: #0f1b3d;
+  --pvt-slate: #5b6782;
+  --pvt-line: #e3e8f2;
+}
+
+/* ---------- พื้นหลังทั้งหน้า: ใช้พื้นหลังเดิมของหน้า Login (พื้นสว่าง + ลายตาราง) ---------- */
+html.app-mode body:has(#loginForm) {
+  min-height: 100dvh;
+  padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 28px) !important;
+  background: var(--body-bg) !important;
+  color: var(--pvt-ink);
+}
+
+/* คืนลายตารางพื้นหลังเดิม (โหมดแอปหน้าอื่นซ่อนไว้) */
+html.app-mode body:has(#loginForm)::before {
+  display: block !important;
+}
+
+/* ---------- ส่วนหัว: แถบโค้งสีพีช + โลโก้ (ไม่มีวงกลมรอง) ----------
+   พีชเข้มกว่าพื้นหลังพอให้เห็นขอบโค้งชัด แต่ยังไม่กลืนกับโลโก้/ปุ่มสีส้ม */
+html.app-mode body:has(#loginForm) .pvt-top-header {
+  max-width: none;
+  margin: 0;
+  padding: calc(env(safe-area-inset-top, 0px) + 30px) 24px 78px;
+  text-align: center;
+  border-radius: 0 0 32px 32px;
+  /* ลายตารางเหมือนพื้นหลังเดิมของหน้า บนพื้นสีพีช */
+  background:
+    linear-gradient(rgba(122, 62, 22, 0.07) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, rgba(122, 62, 22, 0.07) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(165deg, #ffd7ba 0%, #ffbe93 100%);
+  box-shadow: 0 12px 28px rgba(242, 106, 27, 0.18);
+}
+
+html.app-mode body:has(#loginForm) .pvt-top-header .logo {
+  position: relative;
+  isolation: isolate;
+  margin: 0 auto 12px;
+}
+
+/* แสงขาวฟุ้ง ๆ หลังโลโก้ (ไม่มีขอบวงกลม) */
+html.app-mode body:has(#loginForm) .pvt-top-header .logo::before {
+  content: "";
+  position: absolute;
+  inset: -34px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.75) 38%, rgba(255, 255, 255, 0) 70%);
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+html.app-mode body:has(#loginForm) .pvt-top-header .logo img {
+  width: 100px !important;
+  height: 100px !important;
+  max-width: 100px !important;
+  max-height: 100px !important;
+}
+
+html.app-mode body:has(#loginForm) .pvt-top-header h1 {
+  margin: 0 0 6px;
+  color: var(--pvt-navy-deep);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+html.app-mode body:has(#loginForm) .pvt-top-header p {
+  margin: 0;
+  color: #7a3e16;
+  font-size: 13.5px;
+}
+
+/* ---------- การ์ดเข้าสู่ระบบ ซ้อนทับแถบโค้ง ---------- */
+html.app-mode body:has(#loginForm) .login-page {
+  width: 100%;
+  max-width: 520px;
+  margin: -52px auto 0;
+  padding: 0 16px;
+}
+
+html.app-mode body:has(#loginForm) .login-card,
+html.app-mode body:has(#loginForm) .qr-login-box {
+  padding: 24px 20px 22px;
+  border: 0;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(19, 38, 92, 0.14), 0 2px 6px rgba(19, 38, 92, 0.06);
+}
+
+html.app-mode body:has(#loginForm) .login-card::before,
+html.app-mode body:has(#loginForm) .qr-login-box::before {
+  display: none !important;
+}
+
+/* จัดลำดับในการ์ดใหม่: สแกน QR ขึ้นก่อน (พนักงานหน้างานใช้เป็นหลัก) */
+html.app-mode #loginForm {
+  display: flex;
+  flex-direction: column;
+}
+
+html.app-mode #loginForm > h2 { order: 0; }
+html.app-mode #loginForm > .btn-scan-qr { order: 1; }
+html.app-mode #loginForm > .form-group:first-of-type { order: 2; }
+html.app-mode #loginForm > .form-group:nth-of-type(2) { order: 3; }
+html.app-mode #loginForm > .remember-row { order: 4; }
+html.app-mode #loginForm > .btn-login { order: 5; }
+
+html.app-mode body:has(#loginForm) #loginForm > h2,
+html.app-mode body:has(#loginForm) .qr-login-box > h2 {
+  margin: 0 0 18px;
+  color: var(--pvt-ink);
+  font-size: 21px;
+  font-weight: 700;
+}
+
+/* ปุ่มสแกน QR: ปุ่มหลักสีส้มขนาดใหญ่ */
+html.app-mode body:has(#loginForm) #loginForm > .btn-scan-qr {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 60px !important;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 18px !important;
+  background: linear-gradient(135deg, var(--pvt-orange-light), var(--pvt-orange)) !important;
+  color: #ffffff !important;
+  font-size: 18px !important;
+  font-weight: 700;
+  box-shadow: 0 12px 24px rgba(242, 106, 27, 0.32) !important;
+}
+
+html.app-mode body:has(#loginForm) #loginForm > .btn-scan-qr .material-symbols-outlined {
+  font-size: 28px;
+}
+
+/* เส้นคั่น "หรือ" ระหว่าง QR กับชื่อผู้ใช้ */
+html.app-mode #loginForm > .form-group:first-of-type::before {
+  content: "หรือเข้าสู่ระบบด้วยชื่อผู้ใช้";
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 16px;
+  color: var(--pvt-slate);
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  background:
+    linear-gradient(var(--pvt-line), var(--pvt-line)) left center / 18% 1px no-repeat,
+    linear-gradient(var(--pvt-line), var(--pvt-line)) right center / 18% 1px no-repeat;
+  justify-content: center;
+}
+
+html.app-mode body:has(#loginForm) #loginForm label,
+html.app-mode body:has(#loginForm) .qr-login-box label {
+  color: var(--pvt-slate);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+html.app-mode body:has(#loginForm) .form-control {
+  min-height: 52px !important;
+  border: 1.5px solid transparent !important;
+  border-radius: 14px !important;
+  background: var(--pvt-mist) !important;
+  color: var(--pvt-ink) !important;
+  box-shadow: none !important;
+}
+
+html.app-mode body:has(#loginForm) .form-control:focus {
+  border-color: var(--pvt-navy) !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.14) !important;
+}
+
+html.app-mode body:has(#loginForm) .btn-eye {
+  width: 52px !important;
+  min-width: 52px !important;
+  height: 52px !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: var(--pvt-mist) !important;
+  color: var(--pvt-navy) !important;
+}
+
+html.app-mode body:has(#loginForm) .remember-row {
+  min-height: 44px;
+  margin: 4px 0 6px;
+  color: var(--pvt-slate);
+  font-size: 15px;
+}
+
+html.app-mode body:has(#loginForm) #loginForm > .btn-login,
+html.app-mode body:has(#loginForm) .btn-qr {
+  width: 100%;
+  min-height: 54px !important;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 16px !important;
+  background: var(--pvt-navy) !important;
+  color: #ffffff !important;
+  font-size: 17px !important;
+  font-weight: 700;
+  box-shadow: 0 10px 22px rgba(30, 58, 138, 0.24) !important;
+}
+
+/* ---------- หลังสแกน QR แผนก: เหลือการ์ดเลือกชื่อ ---------- */
+html.app-mode body:has(#qrLoginBox:not(.hidden)) .login-card {
+  display: none !important;
+}
+
+html.app-mode body:has(#loginForm) #qrLoginBox .subtitle {
+  margin: -8px 0 18px;
+  color: var(--pvt-slate);
+  font-size: 15px;
+}
+
+html.app-mode body:has(#loginForm) #qrDeptName {
+  color: var(--pvt-orange);
+  font-size: 18px;
+}
+
+/* ---------- แท็บเล็ต ---------- */
+@media (min-width: 700px) {
+  html.app-mode body:has(#loginForm) .pvt-top-header {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 48px);
+    padding-bottom: 92px;
+    border-radius: 0 0 44px 44px;
+  }
+
+  html.app-mode body:has(#loginForm) .login-page {
+    margin-top: -64px;
+  }
+
+  html.app-mode body:has(#loginForm) .pvt-top-header h1 {
+    font-size: 26px;
+  }
+
+  html.app-mode body:has(#loginForm) .login-card,
+  html.app-mode body:has(#loginForm) .qr-login-box {
+    padding: 30px 32px 28px;
+  }
+}
+
+
+/* ==========================================================
+   หน้า Login บน PC / Notebook (จอใหญ่ ไม่ใช่โหมดแอป)
+   การ์ดใบเดียวกลางจอ แบ่งสองฝั่ง: ซ้าย = โลโก้บนพื้นพีช + ลายตาราง
+   (ต่อเนื่องกับแถบโค้งบนมือถือ) / ขวา = ฟอร์มเข้าสู่ระบบ
+   ========================================================== */
+/* หลังสแกน QR แผนก: เหลือการ์ดเลือกชื่อใบเดียว */
+html:not(.app-mode) body:has(#qrLoginBox:not(.hidden)) .login-card { display: none !important; }
+
+html:not(.app-mode) body:has(#loginForm) .pvt-top-header .logo {
+  position: relative;
+  isolation: isolate;
+}
+
+html:not(.app-mode) body:has(#loginForm) .pvt-top-header .logo::before {
+  content: "";
+  position: absolute;
+  inset: -30px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.75) 38%, rgba(255, 255, 255, 0) 70%);
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+html:not(.app-mode) body:has(#loginForm) .login-card,
+html:not(.app-mode) body:has(#loginForm) .qr-login-box {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(19, 38, 92, 0.12), 0 2px 8px rgba(19, 38, 92, 0.06);
+}
+
+html:not(.app-mode) body:has(#loginForm) .login-card { padding: 30px 30px 28px; }
+html:not(.app-mode) body:has(#loginForm) .qr-login-box { padding: 26px 30px; }
+
+/* แบบ: การ์ดใบเดียวกลางจอ แบ่งสองฝั่ง (ซ้ายแบรนด์สีพีช / ขวาฟอร์ม) */
+html:not(.app-mode) body:has(#loginForm) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+html:not(.app-mode) body:has(#loginForm) .pvt-top-header,
+html:not(.app-mode) body:has(#loginForm) .login-page {
+  min-height: 520px;
+  box-sizing: border-box;
+}
+
+html:not(.app-mode) body:has(#loginForm) .pvt-top-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 420px;
+  max-width: none;
+  margin: 0;
+  padding: 36px 28px;
+  text-align: center;
+  border-radius: 24px 0 0 24px;
+  background:
+    linear-gradient(rgba(122, 62, 22, 0.07) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(90deg, rgba(122, 62, 22, 0.07) 1px, transparent 1px) 0 0 / 28px 28px,
+    radial-gradient(70% 45% at 50% 32%, rgba(255, 244, 234, 0.9) 0%, rgba(255, 244, 234, 0) 70%),
+    linear-gradient(165deg, #ffd7ba 0%, #ffbe93 100%);
+  box-shadow: 0 24px 60px rgba(19, 38, 92, 0.12);
+}
+
+html:not(.app-mode) body:has(#loginForm) .pvt-top-header .logo { margin: 0 auto 12px; }
+
+html:not(.app-mode) body:has(#loginForm) .pvt-top-header .logo img {
+  width: 92px !important; height: 92px !important; max-width: 92px !important; max-height: 92px !important;
+}
+
+html:not(.app-mode) body:has(#loginForm) .pvt-top-header h1 {
+  margin: 4px 0 6px;
+  color: var(--pvt-navy-deep);
+  font-size: 19px;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+html:not(.app-mode) body:has(#loginForm) .pvt-top-header > p {
+  color: #7a3e16;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+html:not(.app-mode) body:has(#loginForm) .login-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 420px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border-radius: 0 24px 24px 0;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(19, 38, 92, 0.12);
+}
+
+html:not(.app-mode) body:has(#loginForm) .login-card,
+html:not(.app-mode) body:has(#loginForm) .qr-login-box {
+  max-width: none;
+  border-radius: 0 24px 24px 0;
+  box-shadow: none;
+  padding: 36px 40px;
+}
+
+html:not(.app-mode) body:has(#loginForm) .login-card::before { display: none; }
+
+/* หัวการ์ดชิดซ้าย พร้อมคำอธิบายสั้น */
+html:not(.app-mode) body:has(#loginForm) #loginForm > h2 {
+  justify-content: flex-start;
+  margin: 0 0 4px;
+  color: var(--pvt-ink);
+  font-size: 21px;
+}
+
+html:not(.app-mode) body:has(#loginForm) #loginForm > h2::after {
+  content: none;
+}
+
+html:not(.app-mode) body:has(#loginForm) #loginForm > .form-group:first-of-type::before {
+  content: "กรอกชื่อผู้ใช้และรหัสผ่านเพื่อใช้งานระบบ";
+  display: block;
+  margin: 0 0 18px;
+  color: var(--pvt-slate);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+html:not(.app-mode) body:has(#loginForm) #loginForm label {
+  color: var(--pvt-slate);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+html:not(.app-mode) body:has(#loginForm) .form-control {
+  min-height: 44px;
+  height: 44px;
+  font-size: 14.5px;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  background: var(--pvt-mist);
+  color: var(--pvt-ink);
+  box-shadow: none;
+}
+
+html:not(.app-mode) body:has(#loginForm) .form-control:hover {
+  border-color: var(--pvt-line);
+}
+
+html:not(.app-mode) body:has(#loginForm) .form-control:focus {
+  border-color: var(--pvt-navy);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.12);
+}
+
+html:not(.app-mode) body:has(#loginForm) .btn-eye {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--pvt-mist);
+  color: var(--pvt-navy);
+}
+
+html:not(.app-mode) body:has(#loginForm) #loginForm > .btn-login {
+  min-height: 46px;
+  height: 46px;
+  font-size: 15px;
+  border-radius: 12px;
+  background: var(--pvt-navy);
+  box-shadow: 0 10px 22px rgba(30, 58, 138, 0.22);
+}
+
+/* เส้นคั่น "หรือ" ก่อนปุ่มสแกน QR */
+html:not(.app-mode) body:has(#loginForm) #loginForm > .btn-scan-qr {
+  position: relative;
+  min-height: 46px;
+  height: 46px;
+  font-size: 15px;
+  margin-top: 40px;
+  border-radius: 12px;
+  overflow: visible;
+}
+
+html:not(.app-mode) body:has(#loginForm) #loginForm > .btn-scan-qr::before {
+  content: "หรือ";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -29px;
+  color: var(--pvt-slate);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: center;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--pvt-line), var(--pvt-line)) left center / calc(50% - 28px) 1px no-repeat,
+    linear-gradient(var(--pvt-line), var(--pvt-line)) right center / calc(50% - 28px) 1px no-repeat;
+}

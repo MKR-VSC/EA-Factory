@@ -9,7 +9,7 @@
       โดยเฉพาะกรณีเข้าผ่าน QR
     ======================================================= -->
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <title>บันทึกสำเร็จ | PVT&T FACTORY</title>
 <!-- Favicon -->
@@ -20,6 +20,10 @@
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#1E3A8A" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="PVT&amp;T Factory" />
     <link
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
@@ -208,6 +212,9 @@
         background: #0f172a;
       }
     </style>
+      <link rel="stylesheet" href="/css/responsive.css" />
+    <link rel="stylesheet" href="/css/app-shell.css" />
+    <script src="/core/appShell.js"></script>
   </head>
 
   <body>
@@ -369,6 +376,9 @@
       }
 
       function handleQrResult(decodedText) {
+        try {
+          navigator.vibrate && navigator.vibrate(60);
+        } catch (_) {}
         const text = String(decodedText || "").trim();
 
         if (!text) {
@@ -378,7 +388,14 @@
 
         // ถ้า QR เป็นลิงก์เต็ม
         if (text.includes("form-department.html")) {
-          window.location.href = text;
+          try {
+            const url = new URL(text, window.location.origin);
+            if (url.protocol === "http:" || url.protocol === "https:") {
+              window.location.href = url.href;
+              return;
+            }
+          } catch (_) {}
+          alert("QR Code นี้ไม่ใช่ลิงก์ที่ถูกต้อง");
           return;
         }
 
@@ -416,5 +433,6 @@
 
       resetIdleTimer();
     </script>
+      <script src="/core/responsiveTables.js"></script>
   </body>
 </html>

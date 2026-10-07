@@ -32,6 +32,28 @@ const ROLE_OPTIONS = [
 ];
 const STATUS_OPTIONS = ["active", "inactive"];
 
+const ROLE_LABEL_TH = {
+  staff: "พนักงาน (staff)",
+  supervisor: "หัวหน้างาน (supervisor)",
+  accounting: "ฝ่ายบัญชี (accounting)",
+  management: "ผู้บริหาร (management)",
+  admin: "ผู้ดูแลระบบ (admin)",
+};
+
+const STATUS_LABEL_TH = {
+  active: "ใช้งาน (active)",
+  inactive: "ปิดใช้งาน (inactive)",
+};
+
+function getUserDisplayName(userId) {
+  const u = (state.users || []).find((x) => String(x.id) === String(userId));
+  return u ? u.display_name || u.full_name || u.username || "ผู้ใช้" : "ผู้ใช้";
+}
+
+function isCurrentUser(userId) {
+  return String(userId) === String(localStorage.getItem("activeUserId"));
+}
+
 /* =========================================================
    FALLBACK MASTER DATA
    ---------------------------------------------------------
@@ -350,7 +372,36 @@ function showSection(section, activeBtn) {
    LOAD DATA
 ========================================================= */
 
+// ผู้ใช้กำลังทำงานค้างอยู่หรือไม่ (กันรีเฟรชอัตโนมัติทุก 30 วิ ล้างสิ่งที่กรอก/ติ๊กไว้)
+function isAdminBusy() {
+  const active = document.activeElement;
+  if (active && active.matches?.("main input, main textarea, main select, .modal input, .modal select, .modal textarea")) {
+    return true;
+  }
+  const editOpen = document.getElementById("edit-user-modal");
+  if (editOpen && !editOpen.classList.contains("hidden") && editOpen.style.display !== "none" &&
+      getComputedStyle(editOpen).display !== "none") {
+    return true;
+  }
+  const confirmOpen = document.getElementById("app-confirm");
+  if (confirmOpen && !confirmOpen.classList.contains("hidden")) return true;
+
+  const createPanel = document.getElementById("user-create-panel");
+  if (createPanel && !createPanel.classList.contains("is-collapsed")) {
+    const typed = [...createPanel.querySelectorAll("input:not([type=checkbox]):not([type=radio]), textarea, #user-department")]
+      .some((el) => String(el.value || "").trim() !== "");
+    const ticked = createPanel.querySelector('input[type="checkbox"]:checked');
+    if (typed || ticked) return true;
+  }
+  return false;
+}
+
 async function loadAll(showLoading = false) {
+  // เรียกจากรีเฟรชอัตโนมัติ (ไม่ส่งพารามิเตอร์) → ข้ามรอบนี้ถ้าผู้ใช้กำลังกรอกข้อมูล
+  if (showLoading === undefined && isAdminBusy()) return;
+  if (state.loadingAll) return;
+  state.loadingAll = true;
+
   hideAlert();
 
   if (showLoading) {
@@ -447,7 +498,6 @@ async function loadAll(showLoading = false) {
             .select(`
               id,
               username,
-              password,
               role,
               department,
               department_code,
@@ -536,6 +586,7 @@ async function loadAll(showLoading = false) {
     if (btn) {
       btn.disabled = false;
     }
+    state.loadingAll = false;
   }
 }
 
@@ -611,7 +662,6 @@ async function loadUsers() {
       .select(`
         id,
         username,
-        password,
         role,
         department,
         department_code,
@@ -818,8 +868,10 @@ function renderReports() {
 function updateSummary() {
   const rows = state.reports;
 
+  // รายการที่ยังต้องดำเนินการ = รอหัวหน้าตรวจ + รอบัญชีตรวจ
   const pending = rows.filter((row) => {
-    return normalizeStatus(row.status || "pending") === "pending";
+    const s = normalizeStatus(row.status || "pending");
+    return s === "pending" || s === "sent";
   }).length;
 
   const totalWeight = rows.reduce((sum, row) => {
@@ -929,7 +981,7 @@ function renderDepartments() {
 
                   <button
                     type="button"
-                    class="btn btn-icon btn-edit"
+                    class="btn btn-icon btn-edit" title="แก้ไข" aria-label="แก้ไข"
                     onclick="editDepartment('${escapeAttr(id)}')"
                   >
                     <span class="material-symbols-outlined">edit</span>
@@ -937,7 +989,7 @@ function renderDepartments() {
 
                   <button
                     type="button"
-                    class="btn btn-icon btn-sort"
+                    class="btn btn-icon btn-sort" title="เปลี่ยนลำดับการแสดง" aria-label="เปลี่ยนลำดับการแสดง"
                     onclick="editDepartmentOrder('${escapeAttr(id)}', ${sortOrder})"
                   >
                     <span class="material-symbols-outlined">sort</span>
@@ -956,7 +1008,7 @@ function renderDepartments() {
 
                   <button
                     type="button"
-                    class="btn btn-icon btn-delete"
+                    class="btn btn-icon btn-delete" title="ลบ" aria-label="ลบ"
                     onclick="deleteDepartment('${escapeAttr(id)}')"
                   >
                     <span class="material-symbols-outlined">delete</span>
@@ -1038,10 +1090,15 @@ function renderUserDepartmentPermissionBoxes() {
 function renderDepartmentCheckboxGroup(
   containerId,
   inputName,
-  selectedCodes = [],
+  selectedCodes = null,
 ) {
   const container = document.getElementById(containerId);
   if (!container) return;
+
+  // ไม่ได้ระบุแผนกที่เลือก (เช่นตอนโหลดข้อมูลใหม่) → คงช่องที่ติ๊กไว้เดิม ไม่ล้างทิ้ง
+  if (selectedCodes === null) {
+    selectedCodes = getCheckedDepartmentCodes(inputName);
+  }
 
   const departments = getQrDepartments();
   const selectedSet = new Set(
@@ -1108,19 +1165,17 @@ function updatePermissionCounterByInput(inputName) {
 }
 
 function bindDepartmentPermissionCounters() {
-  ["user_dept_permissions", "edit_user_dept_permissions"].forEach(
-    (inputName) => {
-      document
-        .querySelectorAll(`input[name="${inputName}"]`)
-        .forEach((input) => {
-          input.addEventListener("change", () =>
-            updatePermissionCounterByInput(inputName),
-          );
-        });
-
-      updatePermissionCounterByInput(inputName);
-    },
-  );
+  // ผูก event ครั้งเดียวที่ระดับ document (เดิมผูกซ้ำทุกครั้งที่โหลดข้อมูลใหม่)
+  if (!state.permissionCounterBound) {
+    state.permissionCounterBound = true;
+    document.addEventListener("change", (event) => {
+      const name = event.target?.name;
+      if (name === "user_dept_permissions" || name === "edit_user_dept_permissions") {
+        updatePermissionCounterByInput(name);
+      }
+    });
+  }
+  ["user_dept_permissions", "edit_user_dept_permissions"].forEach(updatePermissionCounterByInput);
 }
 
 function getRoleLabel(role) {
@@ -1379,13 +1434,13 @@ function renderShifts() {
             id && state.shiftTable
               ? `
                 <div class="master-actions">
-                  <button type="button" class="btn btn-icon btn-edit" onclick="editShift('${escapeAttr(id)}')">
+                  <button type="button" class="btn btn-icon btn-edit" title="แก้ไข" aria-label="แก้ไข" onclick="editShift('${escapeAttr(id)}')">
                     <span class="material-symbols-outlined">edit</span>
                   </button>
-                  <button type="button" class="btn btn-icon btn-sort" onclick="editShiftOrder('${escapeAttr(id)}', ${sortOrder})">
+                  <button type="button" class="btn btn-icon btn-sort" title="เปลี่ยนลำดับการแสดง" aria-label="เปลี่ยนลำดับการแสดง" onclick="editShiftOrder('${escapeAttr(id)}', ${sortOrder})">
                     <span class="material-symbols-outlined">sort</span>
                   </button>
-                  <button type="button" class="btn btn-icon btn-delete" onclick="deleteShift('${escapeAttr(id)}')">
+                  <button type="button" class="btn btn-icon btn-delete" title="ลบ" aria-label="ลบ" onclick="deleteShift('${escapeAttr(id)}')">
                     <span class="material-symbols-outlined">delete</span>
                   </button>
                 </div>
@@ -1850,11 +1905,11 @@ function renderUsers() {
           user.display_name || user.full_name || "-",
         );
         const department = escapeHtml(
-          getDepartmentName(user.department || user.department_code),
+          getDepartmentName(user.department_code || user.department),
         );
         const responsibleDepartments = getUserDepartmentTagsHtml(
           user.id,
-          user.department || user.department_code,
+          user.department_code || user.department,
         );
         const role = String(user.role || "staff").toLowerCase();
         const status = String(user.status || "active").toLowerCase();
@@ -1888,17 +1943,17 @@ function renderUsers() {
           `${String(user.username || "user").toLowerCase()}@pvt.local`,
       );
       const department = escapeHtml(
-        getDepartmentName(user.department || user.department_code) || "-",
+        getDepartmentName(user.department_code || user.department) || "-",
       );
       const responsibleDepartments = getUserDepartmentTagsHtml(
         user.id,
-        user.department || user.department_code,
+        user.department_code || user.department,
       );
       const role = String(user.role || "staff").toLowerCase();
       const status = String(user.status || "active").toLowerCase();
       const deptCount =
         getUserDepartmentCodes(user.id).length ||
-        (user.department || user.department_code ? 1 : 0);
+        (user.department_code || user.department ? 1 : 0);
 
       return `
         <article class="user-card role-${escapeAttr(role)} status-${escapeAttr(status)}">
@@ -1948,10 +2003,10 @@ function renderUsers() {
 
 function getRoleSelectHtml(userId, role) {
   return `
-    <select class="mini-select" data-user-role="${escapeAttr(userId)}" onchange="updateUserRole('${escapeAttr(userId)}', this.value)">
+    <select class="mini-select" data-user-role="${escapeAttr(userId)}" data-current="${escapeAttr(role)}" aria-label="บทบาท" onchange="updateUserRole('${escapeAttr(userId)}', this.value, this)">
       ${ROLE_OPTIONS.map(
         (r) => `
-        <option value="${escapeAttr(r)}" ${r === role ? "selected" : ""}>${escapeHtml(r)}</option>
+        <option value="${escapeAttr(r)}" ${r === role ? "selected" : ""}>${escapeHtml(ROLE_LABEL_TH[r] || r)}</option>
       `,
       ).join("")}
     </select>
@@ -1960,10 +2015,10 @@ function getRoleSelectHtml(userId, role) {
 
 function getStatusSelectHtml(userId, status) {
   return `
-    <select class="mini-select" data-user-status="${escapeAttr(userId)}" onchange="updateUserStatus('${escapeAttr(userId)}', this.value)">
+    <select class="mini-select" data-user-status="${escapeAttr(userId)}" data-current="${escapeAttr(status)}" aria-label="สถานะบัญชี" onchange="updateUserStatus('${escapeAttr(userId)}', this.value, this)">
       ${STATUS_OPTIONS.map(
         (s) => `
-        <option value="${escapeAttr(s)}" ${s === status ? "selected" : ""}>${escapeHtml(s)}</option>
+        <option value="${escapeAttr(s)}" ${s === status ? "selected" : ""}>${escapeHtml(STATUS_LABEL_TH[s] || s)}</option>
       `,
       ).join("")}
     </select>
@@ -2054,8 +2109,26 @@ async function addUser() {
   }
 }
 
-async function updateUserRole(userId, role) {
+async function updateUserRole(userId, role, selectEl = null) {
   if (!userId || !role) return;
+  const previous = selectEl?.dataset.current || "";
+  const revert = () => { if (selectEl && previous) selectEl.value = previous; };
+
+  // กันแอดมินเปลี่ยนสิทธิ์ตัวเองจนเข้าหน้านี้ไม่ได้
+  if (isCurrentUser(userId) && role !== "admin") {
+    revert();
+    showAlert("ไม่สามารถลดสิทธิ์ของบัญชีที่กำลังใช้งานอยู่ได้ (จะเข้าหน้า Admin ไม่ได้อีก)");
+    return;
+  }
+
+  const ok = await showConfirm(
+    `เปลี่ยนบทบาทของ "${getUserDisplayName(userId)}" เป็น ${ROLE_LABEL_TH[role] || role} ใช่ไหม?`,
+    "ยืนยันเปลี่ยนบทบาท",
+  );
+  if (!ok) {
+    revert();
+    return;
+  }
 
   const { error } = await state.supabase
     .from(PROFILE_TABLE)
@@ -2070,11 +2143,31 @@ async function updateUserRole(userId, role) {
   }
 
   addLog("INFO", `เปลี่ยน Role สำเร็จ`);
+  showAlert(`เปลี่ยนบทบาทเป็น ${ROLE_LABEL_TH[role] || role} แล้ว`, "success");
   await loadUsers();
 }
 
-async function updateUserStatus(userId, status) {
+async function updateUserStatus(userId, status, selectEl = null) {
   if (!userId || !status) return;
+  const previous = selectEl?.dataset.current || "";
+  const revert = () => { if (selectEl && previous) selectEl.value = previous; };
+
+  if (isCurrentUser(userId) && status !== "active") {
+    revert();
+    showAlert("ไม่สามารถปิดใช้งานบัญชีที่กำลังใช้งานอยู่ได้");
+    return;
+  }
+
+  const ok = await showConfirm(
+    status === "active"
+      ? `เปิดใช้งานบัญชี "${getUserDisplayName(userId)}" ใช่ไหม?`
+      : `ปิดใช้งานบัญชี "${getUserDisplayName(userId)}" ใช่ไหม? ผู้ใช้นี้จะเข้าสู่ระบบไม่ได้จนกว่าจะเปิดใหม่`,
+    "ยืนยันเปลี่ยนสถานะบัญชี",
+  );
+  if (!ok) {
+    revert();
+    return;
+  }
 
   const { error } = await state.supabase
     .from(PROFILE_TABLE)
@@ -2089,6 +2182,7 @@ async function updateUserStatus(userId, status) {
   }
 
   addLog("INFO", `เปลี่ยน Status สำเร็จ`);
+  showAlert(status === "active" ? "เปิดใช้งานบัญชีแล้ว" : "ปิดใช้งานบัญชีแล้ว", "success");
   await loadUsers();
 }
 
@@ -2136,59 +2230,10 @@ async function deleteUser(userId) {
     addLog("ERROR", err.message || String(err));
   }
 }
+// เดิมฟังก์ชันนี้เขียน password ลงตาราง profiles ตรง ๆ (ไม่เปลี่ยนรหัสผ่านจริงใน Supabase Auth)
+// ให้ใช้หน้าต่างแก้ไขที่เรียก Edge Function admin-update-user แทน
 async function editUser(userId) {
-  const user = state.users.find((u) => u.id === userId);
-
-  if (!user) {
-    alert("ไม่พบข้อมูลผู้ใช้งาน");
-    return;
-  }
-
-  const displayName = prompt("ชื่อแสดงผล", user.display_name || "");
-
-  if (displayName === null) return;
-
-  const department = prompt(
-    "แผนก",
-    user.department || user.department_code || "",
-  );
-
-  if (department === null) return;
-
-  const role = prompt(
-    "Role (staff/supervisor/accounting/management/admin)",
-    user.role || "staff",
-  );
-
-  if (role === null) return;
-
-  const password = prompt("Password ใหม่ (เว้นว่างหากไม่เปลี่ยน)", "");
-
-  const payload = {
-    display_name: displayName,
-    full_name: displayName,
-    department,
-    department_code: department,
-    role,
-  };
-
-  if (password.trim()) {
-    payload.password = password.trim();
-  }
-
-  const { error } = await state.supabase
-    .from(PROFILE_TABLE)
-    .update(payload)
-    .eq("id", userId);
-
-  if (error) {
-    showAlert(`แก้ไข User ไม่สำเร็จ : ${error.message}`);
-    return;
-  }
-
-  addLog("INFO", `แก้ไข User ${user.username}`);
-
-  await loadUsers();
+  openEditUserModal(userId);
 }
 
 function openEditUserModal(userId) {
@@ -2202,7 +2247,7 @@ function openEditUserModal(userId) {
   setValue("edit-user-id", user.id);
   setValue("edit-username", user.username || "");
   setValue("edit-display-name", user.display_name || user.full_name || "");
-  setValue("edit-department", user.department || user.department_code || "");
+  setValue("edit-department", normalizeDept(user.department_code || user.department || ""));
   setValue("edit-role", String(user.role || "staff").toLowerCase());
   setValue("edit-status", String(user.status || "active").toLowerCase());
   setValue("edit-password", "");
@@ -2212,7 +2257,7 @@ function openEditUserModal(userId) {
     "edit_user_dept_permissions",
     getUserDepartmentCodes(user.id).length
       ? getUserDepartmentCodes(user.id)
-      : [user.department || user.department_code].filter(Boolean),
+      : [user.department_code || user.department].filter(Boolean),
   );
   bindDepartmentPermissionCounters();
 
@@ -2271,7 +2316,10 @@ async function saveEditUser() {
       department_code: primaryDepartment,
       role,
       status,
-      email: `${username.toLowerCase()}@pvt.local`,
+      // ใช้อีเมลเดิมของผู้ใช้ (ถ้ามี) — ไม่งั้นอีเมลล็อกอินจริงจะถูกเขียนทับเป็น @pvt.local
+      email:
+        state.users.find((u) => String(u.id) === String(userId))?.email ||
+        `${username.toLowerCase()}@pvt.local`,
     };
 
     if (password) {
@@ -2332,6 +2380,7 @@ function clearUserForm() {
     .forEach((input) => {
       input.checked = false;
     });
+  updatePermissionCounterByInput("user_dept_permissions");
 }
 
 /* =========================================================
@@ -2896,8 +2945,17 @@ function sortRowsByOrder(rows) {
   });
 }
 
+// สถานะรายงานของระบบนี้:
+//   pending / pending_supervisor → รอหัวหน้าตรวจ
+//   sent_accounting              → รอบัญชีตรวจ
+//   accounting_checked           → บัญชีตรวจแล้ว
+//   accounting_cancelled         → ยกเลิก
 function normalizeStatus(value) {
-  const status = String(value || "").toLowerCase();
+  const status = String(value || "").toLowerCase().trim();
+
+  if (status === "sent_accounting") return "sent";
+  if (status === "accounting_checked") return "approved";
+  if (status === "accounting_cancelled") return "rejected";
 
   if (
     [
@@ -2932,9 +2990,10 @@ function normalizeStatus(value) {
 function statusText(status) {
   return (
     {
-      pending: "รอตรวจสอบ",
-      approved: "ตรวจสอบแล้ว",
-      rejected: "ไม่ผ่าน",
+      pending: "รอหัวหน้าตรวจ",
+      sent: "รอบัญชีตรวจ",
+      approved: "บัญชีตรวจแล้ว",
+      rejected: "ยกเลิก",
     }[status] || status
   );
 }
@@ -3296,12 +3355,9 @@ function exportReportsCSV() {
     r => r.shift || r.work_shift || "",
     r => r.machine_no || r.machine || "",
     r => (r.problem_items || []).map(p => `${p.problem_type}: ${p.detail}`).join("; ") || r.problem_type || "",
-    r => r.total_waste_weight || r.waste_weight || 0,
+    r => getWasteWeight(r),
     r => r.reported_by || r.reporter_name || "",
-    r => {
-      const s = normalizeStatus(r.status || "pending");
-      return s === "approved" ? "ตรวจสอบแล้ว" : (s === "rejected" ? "ไม่ผ่าน" : "รอตรวจสอบ");
-    }
+    r => statusText(normalizeStatus(r.status || "pending"))
   ];
 
   exportToCSV("Daily_Waste_Reports.csv", headers, rows, keyMap);

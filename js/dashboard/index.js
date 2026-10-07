@@ -18,10 +18,12 @@ const LOGIN_PAGE = "/login.html";
 const REPORT_TABLE = "daily_waste_reports";
 const MASTER_DEPARTMENT_TABLE = "master_departments";
 const ITEM_TABLE = "daily_waste_report_items";
-const MACHINE_LIMIT_PERCENT = 1;
-const MACHINE_WARNING_PERCENT = 0.7;
-const FACTORY_LIMIT_PERCENT = 1;
-const FACTORY_WARNING_PERCENT = 0.7;
+// เกณฑ์ตั้งต้นโรงงาน: % ของเสียต่อเดือนไม่เกิน 2.00% (เตือน 1.50%)
+// ถ้าตั้งเกณฑ์ของแผนกไว้ในหน้า "ตั้งค่าเกณฑ์" จะใช้ค่าของแผนกแทน
+const MACHINE_LIMIT_PERCENT = window.WASTE_FORMULA?.DEFAULT_LIMIT ?? 2;
+const MACHINE_WARNING_PERCENT = window.WASTE_FORMULA?.DEFAULT_WARNING ?? 1.5;
+const FACTORY_LIMIT_PERCENT = window.WASTE_FORMULA?.DEFAULT_LIMIT ?? 2;
+const FACTORY_WARNING_PERCENT = window.WASTE_FORMULA?.DEFAULT_WARNING ?? 1.5;
 
 const ALLOWED_ROLES = ["admin", "management", "manager", "executive"];
 const ACCOUNTING_CHECKED_STATUS = [
@@ -204,7 +206,11 @@ async function handleDashboardLogout() {
   } catch (error) {
     console.warn("Supabase signOut ไม่สำเร็จ:", error);
   } finally {
+    // ล้างข้อมูลเข้าสู่ระบบ แต่เก็บรายการที่รอส่ง (บันทึกตอนเน็ตหลุด) และธีมสีไว้
+    const keepKeys = ["pvtOfflineQueue", "pvtOfflineFailed", "pvtAppTheme"];
+    const kept = keepKeys.map((k) => [k, localStorage.getItem(k)]);
     localStorage.clear();
+    kept.forEach(([k, v]) => v !== null && localStorage.setItem(k, v));
     sessionStorage.clear();
     window.location.href = LOGIN_PAGE;
   }
@@ -592,8 +598,14 @@ async function loadAndProcessDashboardData() {
       .filter(isAccountingChecked)
       .filter((row) => !isCancelledRow(row));
 
-    const rowsWithItems = await attachProblemItemsToReports(checkedRows);
-    const prevRowsWithItems = await attachProblemItemsToReports(prevCheckedRows);
+    const rowsWithItems = [
+      ...(await attachProblemItemsToReports(checkedRows)),
+      ...(await loadNoWasteProduction(client, range)),
+    ];
+    const prevRowsWithItems = [
+      ...(await attachProblemItemsToReports(prevCheckedRows)),
+      ...(await loadNoWasteProduction(client, prevRange)),
+    ];
 
     dashboardDataCache = rowsWithItems;
     filteredDataCache =
@@ -614,6 +626,36 @@ async function loadAndProcessDashboardData() {
     console.error("โหลดข้อมูลไม่สำเร็จ:", error);
     alert("โหลดข้อมูลไม่สำเร็จ: " + (error.message || error));
     renderAllDashboard([], [], range, prevRange);
+  }
+}
+
+// เครื่องที่ "เดินเครื่องแต่ไม่มีของเสีย" และบัญชีกรอกยอดผลิตแล้ว
+// ต้องนับยอดผลิตดีของวันนั้นด้วย (ของเสีย 0) ไม่งั้น % ทั้งเดือนจะสูงเกินจริง
+async function loadNoWasteProduction(client, range) {
+  try {
+    const { data, error } = await client
+      .from("daily_machine_status")
+      .select("work_date, department_code, machine_no, production_kg, operation_status, accounting_checked_at")
+      .eq("operation_status", "no_waste")
+      .gte("work_date", range.start)
+      .lte("work_date", range.end);
+    if (error) throw error;
+    return (data || [])
+      .filter((r) => Number(r.production_kg) > 0 && r.accounting_checked_at)
+      .map((r) => ({
+        id: `ms-${r.work_date}-${r.department_code}-${r.machine_no}`,
+        report_date: r.work_date,
+        department_code: r.department_code,
+        machine_no: r.machine_no,
+        production_kg: Number(r.production_kg),
+        waste_weight_kg: 0,
+        status: "accounting_checked",
+        problem_items: [],
+        is_machine_status: true,
+      }));
+  } catch (err) {
+    console.warn("โหลดยอดผลิตของเครื่องที่ไม่มีของเสียไม่สำเร็จ:", err?.message || err);
+    return [];
   }
 }
 
@@ -736,7 +778,13 @@ function updateMetricCards(records, prevRecords = [], machineSummary, deptSummar
 
   const pill = document.getElementById("overall-result-pill");
   if (pill) {
-    const result = getResultByPercent(wastePercent, FACTORY_WARNING_PERCENT, FACTORY_LIMIT_PERCENT);
+    const selDept = document.getElementById("sel-dept-filter")?.value || "all";
+    const std = selDept !== "all" ? departmentMasters[selDept] : null;
+    const result = getResultByPercent(
+      wastePercent,
+      std?.warningPercent ?? FACTORY_WARNING_PERCENT,
+      std?.maxWastePercent ?? FACTORY_LIMIT_PERCENT,
+    );
     pill.textContent = result.label;
     pill.className = `status-pill ${result.className}`;
   }
@@ -758,9 +806,11 @@ function renderExecutiveInsight(records, machineSummary) {
   const totalWaste = sumWaste(records);
   const totalProduction = sumProductionUnique(records);
   const wastePercent = calcWastePercent(totalWaste, totalProduction);
-  const overLimit = machineSummary.filter((item) => item.percent >= MACHINE_LIMIT_PERCENT);
+  const limitOf = (item) => departmentMasters[item.departmentCode]?.maxWastePercent ?? MACHINE_LIMIT_PERCENT;
+  const warnOf = (item) => departmentMasters[item.departmentCode]?.warningPercent ?? MACHINE_WARNING_PERCENT;
+  const overLimit = machineSummary.filter((item) => item.percent > limitOf(item));
   const warning = machineSummary.filter(
-    (item) => item.percent >= MACHINE_WARNING_PERCENT && item.percent < MACHINE_LIMIT_PERCENT
+    (item) => item.percent >= warnOf(item) && item.percent <= limitOf(item)
   );
 
   box.innerHTML = `
@@ -913,12 +963,13 @@ function addProductionOnce(target, row) {
 }
 
 function getProductionUniqueKey(row) {
+  // บัญชีบันทึกยอดผลิตดี "ต่อเครื่องต่อวัน" ลงทุกแถวของวันนั้น (ทุกกะ)
+  // จึงนับครั้งเดียวต่อ วัน+แผนก+เครื่อง (เดิมนับแยกกะ ทำให้ยอดผลิตซ้ำ)
   const dept = getDepartmentInfo(row);
   const date = row.report_date || toDateInputValue(new Date(getRowDate(row)));
-  const shift = row.work_shift || row.shift || "-";
   const machine = row.machine_no || "-";
 
-  return `${date}|${dept.code}|${shift}|${machine}`;
+  return `${date}|${dept.code}|${machine}`;
 }
 
 /* =========================================================
@@ -937,9 +988,9 @@ function renderDepartmentSummaryTable(rows, machineSummary = []) {
   // Render or remove the blinking notification badge
   const alarmContainer = document.getElementById("scrap-alarm-container");
   if (alarmContainer) {
-    if (overallPercent > 2.5) {
+    if (overallPercent > FACTORY_LIMIT_PERCENT) {
       alarmContainer.innerHTML = `
-        <span class="scrap-alarm-badge" title="อัตราของเสียรวมสูงเกิน 2.5% (ปัจจุบัน: ${formatNumber(overallPercent)}%)">
+        <span class="scrap-alarm-badge" title="% ของเสียรวมเกิน ${formatNumber(FACTORY_LIMIT_PERCENT)}% (ปัจจุบัน: ${formatNumber(overallPercent)}%)">
           <span class="material-symbols-outlined">warning</span>
           <span>ALERT: อัตราของเสียสะสมรวมเกินเกณฑ์กำหนด (${formatNumber(overallPercent)}%)</span>
         </span>
@@ -957,8 +1008,10 @@ function renderDepartmentSummaryTable(rows, machineSummary = []) {
   tbody.innerHTML = rows
     .sort((a, b) => a.department.localeCompare(b.department, "th"))
     .map((item) => {
-      const result = getResultByPercent(item.percent, FACTORY_WARNING_PERCENT, FACTORY_LIMIT_PERCENT);
-      const isAttention = item.percent > 2.5;
+      const deptStd = departmentMasters[item.code];
+      const deptMax = deptStd?.maxWastePercent ?? FACTORY_LIMIT_PERCENT;
+      const result = getResultByPercent(item.percent, deptStd?.warningPercent ?? FACTORY_WARNING_PERCENT, deptMax);
+      const isAttention = item.percent > deptMax;
       const attentionClass = isAttention ? " dept-row-attention" : "";
 
       return `
@@ -1213,7 +1266,12 @@ async function openMachineInfoModal(machineName, deptCode) {
   const totalWaste = sumWaste(machineRecords);
   const wastePercent = calcWastePercent(totalWaste, totalProduction);
   const totalRecords = machineRecords.length;
-  const result = getResultByPercent(wastePercent, MACHINE_WARNING_PERCENT, MACHINE_LIMIT_PERCENT);
+  const machineStd = departmentMasters[deptInfo.code];
+  const result = getResultByPercent(
+    wastePercent,
+    machineStd?.warningPercent ?? MACHINE_WARNING_PERCENT,
+    machineStd?.maxWastePercent ?? MACHINE_LIMIT_PERCENT,
+  );
 
   // Update Header
   const iconBadge = document.getElementById("modal-dept-icon-badge");
@@ -1445,7 +1503,7 @@ function renderMachineHistoryChart(records, machineName, deptColor) {
     const shiftLabel = r.shift === "day" ? "กะวัน" : r.shift === "night" ? "กะคืน" : (r.shift ? `กะ ${r.shift}` : "");
     labels.push(shiftLabel ? `${dStr} (${shiftLabel})` : dStr);
 
-    const prod = toNumber(r.production_weight_kg || r.production_weight || r.production_kg || 0);
+    const prod = getProductionWeight(r);
     const waste = getWasteWeight(r);
     const pct = calcWastePercent(waste, prod);
 
@@ -1946,14 +2004,14 @@ function replaceChart(oldChart, canvasId, config) {
 
 function getRiskColor(percent) {
   const value = toNumber(percent);
-  if (value >= MACHINE_LIMIT_PERCENT) return CHART_COLORS.red;
+  if (value > MACHINE_LIMIT_PERCENT) return CHART_COLORS.red;
   if (value >= MACHINE_WARNING_PERCENT) return CHART_COLORS.amber;
   return CHART_COLORS.green;
 }
 
 function getRiskBorderColor(percent) {
   const value = toNumber(percent);
-  if (value >= MACHINE_LIMIT_PERCENT) return "#991b1b";
+  if (value > MACHINE_LIMIT_PERCENT) return "#991b1b";
   if (value >= MACHINE_WARNING_PERCENT) return "#92400e";
   return "#166534";
 }
@@ -2178,15 +2236,10 @@ function getWasteWeight(row) {
   return itemWaste || toNumber(row.waste_weight_kg || row.waste_qty || row.total_waste_kg || 0);
 }
 
+// ยอดผลิตดีที่ฝ่ายบัญชีกรอก (ไม่ใช้ total_qty / production_qty
+// เพราะฟอร์มหน้างานเก็บน้ำหนักของเสียไว้ในช่องนั้น ทำให้ % เพี้ยนไปเกือบ 100%)
 function getProductionWeight(row) {
-  return toNumber(
-    row.production_kg ||
-      row.production_weight_kg ||
-      row.total_qty ||
-      row.produced_weight_kg ||
-      row.production_qty ||
-      0
-  );
+  return toNumber(row.production_kg || row.production_weight_kg || row.produced_weight_kg || 0);
 }
 
 function getProblemFromHeader(row) {
@@ -2217,21 +2270,24 @@ function sumProductionUnique(records) {
   return box.production;
 }
 
+// % ของเสีย = ของเสีย ÷ (ผลิตดี + ของเสีย) × 100  (core/wasteFormula.js)
 function calcWastePercent(waste, production) {
-  if (!production) return 0;
-  return (toNumber(waste) / toNumber(production)) * 100;
+  if (!toNumber(production)) return 0;
+  if (window.WASTE_FORMULA) return window.WASTE_FORMULA.percent(waste, production) ?? 0;
+  return (toNumber(waste) / (toNumber(production) + toNumber(waste))) * 100;
 }
 
 function getResultByPercent(percent, warning, max) {
   if (!percent && percent !== 0) return { label: "รอข้อมูล", className: "result-none" };
 
-  if (percent >= max) return { label: "เกินเกณฑ์", className: "result-danger" };
+  // "ห้ามเกิน" → เท่ากับเกณฑ์ยังผ่าน, มากกว่าเกณฑ์ถึงจะเกิน
+  if (percent > max) return { label: "เกินเกณฑ์", className: "result-danger" };
   if (percent >= warning) return { label: "เริ่มสูง", className: "result-warning" };
   return { label: "อยู่ในเกณฑ์", className: "result-success" };
 }
 
 function getMachineRowClass(percent) {
-  if (percent >= MACHINE_LIMIT_PERCENT) return "machine-danger";
+  if (percent > MACHINE_LIMIT_PERCENT) return "machine-danger";
   if (percent >= MACHINE_WARNING_PERCENT) return "machine-warning";
   return "machine-normal";
 }

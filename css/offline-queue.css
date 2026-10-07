@@ -1,0 +1,56 @@
+/* ==========================================================
+   offline-queue.css — ป้าย "รอส่ง n รายการ" (คู่กับ js/department/offlineQueue.js)
+   ========================================================== */
+.offline-queue-chip {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 99990;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100vw - 24px);
+  padding: 8px 10px 8px 14px;
+  transform: translateX(-50%);
+  color: #ffffff;
+  background: #1e3a8a;
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.28);
+  font-family: "Kanit", "Noto Sans Thai", sans-serif;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.offline-queue-chip.is-offline {
+  background: #92400e;
+}
+
+.offline-queue-chip.is-failed {
+  background: #b91c1c;
+}
+
+.offline-queue-chip .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.offline-queue-chip button {
+  min-height: 32px;
+  padding: 0 12px;
+  color: #1e3a8a;
+  background: #ffffff;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.offline-queue-chip.is-failed button {
+  color: #b91c1c;
+}
+
+/* หน้าฟอร์มบนมือถือมีแถบเมนูล่าง → ยกป้ายขึ้นเหนือแถบ */
+html.app-mode .offline-queue-chip {
+  bottom: calc(var(--app-tabbar-h, 64px) + 30px + env(safe-area-inset-bottom, 0px));
+}

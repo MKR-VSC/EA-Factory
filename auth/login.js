@@ -46,10 +46,16 @@ window.addEventListener("DOMContentLoaded", async () => {
 ====================================================== */
 
 function hideSplash() {
+  // ใช้จังหวะเดียวกันทั้งแอป (services/loadingService.js):
+  // เปิดแอปครั้งแรกเล่นแอนิเมชันเต็ม, เปลี่ยนหน้าครั้งต่อไปแสดงสั้น ๆ
+  if (window.LoadingService?.hideSplash) {
+    window.LoadingService.hideSplash();
+    return;
+  }
   setTimeout(() => {
     const splash = document.getElementById("splash-screen");
     if (splash) splash.classList.add("hide");
-  }, 700);
+  }, 1150);
 }
 
 /* ======================================================
@@ -106,6 +112,14 @@ function togglePasswordVisibility() {
    หมายเหตุ: วิธีนี้ใช้ได้ แต่ถ้าต้องการปลอดภัยขึ้นควรย้ายไปใช้ Supabase Auth
 ====================================================== */
 
+class LoginError extends Error {}
+
+// status ว่าง / null ถือว่าใช้งานได้ (ข้อมูลเก่าบางแถวไม่มีค่า) — ปิดเฉพาะที่ระบุไว้ชัดเจน
+function isInactiveStatus(status) {
+  const s = String(status || "").trim().toLowerCase();
+  return s !== "" && s !== "active";
+}
+
 async function handlePasswordLogin(event) {
   event.preventDefault();
 
@@ -136,40 +150,72 @@ async function handlePasswordLogin(event) {
 
     showLoginOverlay();
 
+    // 1) หา email จาก username
+    //    - escape อักขระ _ และ % (ใน ilike เป็น wildcard ทำให้เจอหลายแถวแล้วหาไม่เจอ)
+    //    - ถ้าเจอหลายแถว เลือกแถวที่ชื่อตรงกันพอดีก่อน
+    const usernamePattern = usernameInput.replace(/[\\%_]/g, (c) => "\\" + c);
     let userProfile = null;
     try {
       const res = await sb
         .from("profiles")
-        .select("email")
-        .ilike("username", usernameInput)
-        .maybeSingle();
-      userProfile = res.data;
+        .select("id, email, username, status")
+        .ilike("username", usernamePattern)
+        .limit(5);
+      const rows = Array.isArray(res.data) ? res.data : [];
+      userProfile =
+        rows.find((r) => String(r.username || "") === usernameInput) ||
+        rows.find((r) => String(r.username || "").toUpperCase() === usernameInput) ||
+        rows[0] ||
+        null;
+      if (res.error) console.warn("Profile lookup error:", res.error);
     } catch (e) {
       console.warn("Profile query error:", e);
     }
 
-    let loginEmail = userProfile?.email || `${usernameInput.toLowerCase()}@pvt.local`;
-    let authData = null;
-    let authError = null;
-
-    try {
-      const resAuth = await sb.auth.signInWithPassword({
-        email: loginEmail,
-        password: passwordInput,
-      });
-      authData = resAuth.data;
-      authError = resAuth.error;
-    } catch (e) {
-      console.warn("Auth sign-in error:", e);
+    if (userProfile && isInactiveStatus(userProfile.status)) {
+      throw new LoginError("บัญชีนี้ถูกปิดใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
     }
 
-    let profile = null;
-    if (authData?.user) {
-      try {
-        const resProf = await sb
-          .from("profiles")
-          .select(
-            `
+    // ลองอีเมลใน profiles ก่อน แล้วค่อยลองรูปแบบ username@pvt.local
+    const candidateEmails = [
+      String(userProfile?.email || "").trim().toLowerCase(),
+      `${usernameInput.toLowerCase()}@pvt.local`,
+    ].filter((v, i, arr) => v && arr.indexOf(v) === i);
+
+    // 2) ตรวจรหัสผ่านกับ Supabase Auth — ถ้าไม่ผ่านต้องหยุด (ห้ามเข้าแบบไม่ตรวจรหัส)
+    let authData = null;
+    let authError = null;
+    for (const email of candidateEmails) {
+      const res = await sb.auth.signInWithPassword({
+        email,
+        password: passwordInput,
+      });
+      authData = res.data;
+      authError = res.error;
+      if (!authError && authData?.user) break;
+      console.warn("Sign-in failed for", email, authError?.message);
+    }
+
+    if (authError || !authData?.user) {
+      const msg = String(authError?.message || "");
+      if (/email not confirmed/i.test(msg)) {
+        throw new LoginError("บัญชียังไม่ได้ยืนยันอีเมล กรุณาให้ผู้ดูแลระบบเปิดใช้งานบัญชี");
+      }
+      if (/fetch|network/i.test(msg)) {
+        throw new LoginError("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต");
+      }
+      throw new LoginError(
+        userProfile
+          ? "รหัสผ่านไม่ถูกต้อง หรือบัญชีนี้ยังไม่มีในระบบ Login (Supabase Auth) — ให้ผู้ดูแลระบบตั้งรหัสผ่านใหม่ในหน้า Admin"
+          : "ไม่พบ Username นี้ หรือรหัสผ่านไม่ถูกต้อง",
+      );
+    }
+
+    // 3) โหลด profile ของบัญชีที่ล็อกอินสำเร็จ
+    const { data: profile, error: profileError } = await sb
+      .from("profiles")
+      .select(
+        `
           id,
           email,
           username,
@@ -181,35 +227,23 @@ async function handlePasswordLogin(event) {
           status,
           is_system_owner
         `,
-          )
-          .eq("id", authData.user.id)
-          .maybeSingle();
-        profile = resProf.data;
-      } catch (e) {
-        console.warn("Profile fetch error after auth:", e);
+      )
+      .eq("id", authData.user.id)
+      .maybeSingle();
+
+    if (profileError || !profile || isInactiveStatus(profile.status)) {
+      try {
+        await sb.auth.signOut();
+      } catch (_) {}
+      if (profileError) {
+        throw new LoginError("อ่านข้อมูลผู้ใช้ไม่ได้: " + profileError.message);
       }
-    }
-
-    if (!profile) {
-      // Fallback mock profile so login never fails with "ไม่พบ Username"
-      let assignedRole = "staff";
-      let assignedDept = "BLOW";
-      const uUp = usernameInput.toUpperCase();
-      if (uUp.includes("ADMIN")) assignedRole = "admin";
-      else if (uUp.includes("ACCOUNT")) assignedRole = "accounting";
-      else if (uUp.includes("MANAGE")) assignedRole = "management";
-      else if (uUp.includes("SUPER")) assignedRole = "supervisor";
-
-      profile = {
-        id: "mock-id-" + Date.now(),
-        email: loginEmail,
-        username: usernameInput,
-        full_name: usernameInput,
-        display_name: usernameInput,
-        role: assignedRole,
-        department_code: assignedDept,
-        status: "active"
-      };
+      if (!profile) {
+        throw new LoginError(
+          "รหัสผ่านถูกต้อง แต่ไม่พบข้อมูลผู้ใช้ในตาราง profiles ที่ id ตรงกับบัญชี Login — กรุณาติดต่อผู้ดูแลระบบ",
+        );
+      }
+      throw new LoginError("บัญชีนี้ถูกปิดใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
     }
 
     if (rememberMeChecked) {
@@ -227,7 +261,11 @@ async function handlePasswordLogin(event) {
     redirectByRole(profile.role || "staff");
   } catch (err) {
     console.error("Login Error:", err);
-    alert("Username หรือ Password ไม่ถูกต้อง หรือบัญชีถูกปิดใช้งาน");
+    alert(
+      err instanceof LoginError
+        ? err.message
+        : "เข้าสู่ระบบไม่สำเร็จ: " + (err?.message || err),
+    );
   } finally {
     hideLoginOverlay();
 
@@ -536,6 +574,11 @@ function closeQrScanner() {
 function onQrScanSuccess(decodedText) {
   console.log("QR =", decodedText);
 
+  // สั่นสั้น ๆ ให้รู้ว่าสแกนติดแล้ว (มือถือที่รองรับ)
+  try {
+    navigator.vibrate && navigator.vibrate(60);
+  } catch (_) {}
+
   if (qrScanner) {
     qrScanner.stop();
   }
@@ -546,5 +589,17 @@ function onQrScanSuccess(decodedText) {
     https://prod-ea-factory.pages.dev/login?dept=blow&token=BLOW001
   */
 
-  window.location.href = decodedText;
+  let target = null;
+  try {
+    target = new URL(String(decodedText || "").trim(), window.location.origin);
+  } catch (_) {
+    target = null;
+  }
+
+  if (!target || !["http:", "https:"].includes(target.protocol)) {
+    alert("QR Code นี้ไม่ใช่ลิงก์เข้าสู่ระบบที่ถูกต้อง");
+    return;
+  }
+
+  window.location.href = target.href;
 }

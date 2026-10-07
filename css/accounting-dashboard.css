@@ -1,0 +1,420 @@
+/* ==========================================================
+   accounting-dashboard.css — Dashboard ของเสีย (หน้าบัญชี)
+   ========================================================== */
+
+/* สลับมุมมอง: ซ่อนส่วนรายการบัญชีเมื่อเปิด Dashboard */
+html.acc-view-dashboard .acc-list-view {
+  display: none !important;
+}
+
+.acc-dash[hidden] {
+  display: none !important;
+}
+
+.acc-dash {
+  display: grid;
+  gap: 18px;
+  margin-top: 4px;
+  font-family: "Kanit", "Noto Sans Thai", sans-serif;
+  color: #0f172a;
+}
+
+/* ---------- หัว + ตัวควบคุม (แถวเดียว) ---------- */
+.acc-dash-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px 22px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+.acc-dash-head h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.acc-dash-head .muted {
+  margin: 0;
+  color: #64748b;
+  font-size: 13.5px;
+  max-width: 560px;
+}
+
+.acc-dash-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.acc-seg {
+  display: inline-flex;
+  padding: 4px;
+  gap: 2px;
+  background: #f1f5f9;
+  border-radius: 12px;
+}
+
+.acc-seg button {
+  min-height: 38px;
+  padding: 0 14px;
+  color: #475569;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.acc-seg button:hover {
+  color: #0f172a;
+}
+
+.acc-seg button.is-active {
+  color: #ffffff;
+  background: #1e3a8a;
+  box-shadow: 0 4px 10px rgba(30, 58, 138, 0.25);
+}
+
+.acc-dash-field {
+  display: grid;
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.acc-dash-field select,
+.acc-dash-field input {
+  min-height: 42px;
+  min-width: 160px;
+  padding: 0 12px;
+  color: #0f172a;
+  font: inherit;
+  font-size: 14px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 11px;
+}
+
+/* ---------- ช่วงที่เลือก ---------- */
+.acc-dash-period {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 4px;
+  font-size: 15px;
+}
+
+.acc-dash-period .material-symbols-outlined {
+  color: #ea580c;
+  font-size: 22px;
+}
+
+.acc-dash-period .muted {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* ---------- KPI ---------- */
+.acc-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.acc-kpi {
+  display: grid;
+  gap: 6px;
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+.acc-kpi-label {
+  color: #64748b;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.acc-kpi-value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.acc-kpi-value small {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* % Waste เทียบเกณฑ์ (มีไอคอน+ข้อความกำกับใน ::after ไม่ใช้สีอย่างเดียว) */
+.acc-kpi.is-over {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.acc-kpi.is-over .acc-kpi-label::after {
+  content: " · เกินเกณฑ์";
+  color: #b91c1c;
+}
+
+.acc-kpi.is-warn {
+  border-color: #fde68a;
+  background: #fffdf5;
+}
+
+.acc-kpi.is-warn .acc-kpi-label::after {
+  content: " · เริ่มสูง";
+  color: #b45309;
+}
+
+.acc-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.acc-delta .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.acc-delta small {
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.acc-delta.is-bad {
+  color: #b91c1c;
+}
+
+.acc-delta.is-good {
+  color: #047857;
+}
+
+/* ---------- การ์ดกราฟ / อันดับ ---------- */
+.acc-dash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.acc-card {
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  min-width: 0;
+}
+
+.acc-card header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 12px;
+}
+
+.acc-card h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.acc-card header .muted {
+  color: #94a3b8;
+  font-size: 12.5px;
+}
+
+.acc-chart {
+  position: relative;
+  height: 260px;
+}
+
+.acc-chart-fallback {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+}
+
+/* อันดับปัญหา / เครื่อง */
+.acc-rank {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: rank;
+}
+
+.acc-rank li {
+  counter-increment: rank;
+}
+
+.acc-rank-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.acc-rank-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.acc-rank-name::before {
+  content: counter(rank) ". ";
+  color: #94a3b8;
+}
+
+.acc-rank-val {
+  flex: none;
+  color: #475569;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.acc-rank-val strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.acc-rank-val small {
+  color: #94a3b8;
+}
+
+.acc-rank-bar {
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.acc-rank-bar span {
+  display: block;
+  height: 100%;
+  background: #1e3a8a;
+  border-radius: 999px;
+}
+
+.acc-rank-empty {
+  padding: 24px 0;
+  color: #94a3b8;
+  text-align: center;
+}
+
+/* ---------- ตาราง ---------- */
+.acc-dash-table summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.acc-dash-table[open] summary {
+  margin-bottom: 12px;
+}
+
+.acc-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.acc-mini-table th,
+.acc-mini-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+}
+
+.acc-mini-table th {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  background: #f8fafc;
+}
+
+.acc-mini-table .text-right {
+  text-align: right;
+}
+
+/* ---------- จอเล็ก ---------- */
+@media (max-width: 1100px) {
+  .acc-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .acc-dash-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .acc-dash-controls {
+    width: 100%;
+  }
+
+  .acc-seg {
+    width: 100%;
+  }
+
+  .acc-seg button {
+    flex: 1;
+    padding: 0 6px;
+  }
+
+  .acc-dash-field {
+    flex: 1 1 140px;
+  }
+
+  .acc-dash-field select,
+  .acc-dash-field input {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .acc-kpi {
+    padding: 14px;
+  }
+
+  .acc-kpi-value {
+    font-size: 22px;
+  }
+
+  .acc-chart {
+    height: 220px;
+  }
+
+  .acc-delta small {
+    display: none;
+  }
+}

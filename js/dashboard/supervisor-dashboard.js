@@ -163,8 +163,9 @@ async function loadDepartmentStandards() {
     departmentStandards[code] = {
       code,
       name: dept.department_name,
-      maxWastePercent: toNumber(dept.max_waste_percent || 3),
-      warningPercent: toNumber(dept.warning_percent || 0),
+      // ไม่ได้ตั้งไว้ → ค่าตั้งต้นโรงงาน 2% / เตือน 1.5% ต่อเดือน
+      maxWastePercent: toNumber(dept.max_waste_percent) || (window.WASTE_FORMULA?.DEFAULT_LIMIT ?? 2),
+      warningPercent: toNumber(dept.warning_percent) || (window.WASTE_FORMULA?.DEFAULT_WARNING ?? 1.5),
     };
   });
 }
@@ -541,12 +542,12 @@ function renderDashboard(rows, prevRows = [], meta = {}) {
   const totalRecords = rows.length;
   const totalWaste = sumWaste(rows);
   const totalProduction = sumProduction(rows);
-  const wastePercent = calcWastePercent(totalWaste, totalProduction);
+  const wastePercent = percentOfRows(rows);
 
   const prevRecordsCount = prevRows ? prevRows.length : 0;
   const prevWaste = prevRows ? sumWaste(prevRows) : 0;
   const prevProduction = prevRows ? sumProduction(prevRows) : 0;
-  const prevWastePercent = calcWastePercent(prevWaste, prevProduction);
+  const prevWastePercent = prevRows ? percentOfRows(prevRows) : 0;
 
   const problemCountMap = groupProblemCount(rows);
   const statusMap = groupStatusCount(rows);
@@ -664,29 +665,44 @@ function getWasteValue(row) {
   return itemWaste || toNumber(row.waste_weight_kg || row.waste_qty || 0);
 }
 
+// ยอดผลิตดีที่ฝ่ายบัญชีกรอก (ไม่ใช้ total_qty — ฟอร์มหน้างานเก็บน้ำหนักของเสียไว้ในช่องนั้น)
 function getProductionWeight(row) {
-  return toNumber(
-    row.production_kg ||
-      row.production_weight_kg ||
-      row.total_qty ||
-      row.produced_weight_kg ||
-      row.production_qty ||
-      row.produced_qty ||
-      0
-  );
+  return toNumber(row.production_kg || row.production_weight_kg || row.produced_weight_kg || 0);
 }
 
 function sumWaste(rows) {
   return rows.reduce((sum, row) => sum + getWasteValue(row), 0);
 }
 
+// บัญชีบันทึกยอดผลิตดีต่อ "เครื่องต่อวัน" ซ้ำลงทุกแถวของวันนั้น → นับครั้งเดียว
+function productionKey(row) {
+  return `${row.report_date || ""}|${normalizeDepartmentCode(row.department_code || row.department || "")}|${row.machine_no || "-"}`;
+}
+
 function sumProduction(rows) {
-  return rows.reduce((sum, row) => sum + getProductionWeight(row), 0);
+  const seen = new Set();
+  let total = 0;
+  rows.forEach((row) => {
+    const p = getProductionWeight(row);
+    if (p <= 0) return;
+    const key = productionKey(row);
+    if (seen.has(key)) return;
+    seen.add(key);
+    total += p;
+  });
+  return total;
+}
+
+// % ของเสีย = ของเสีย ÷ (ผลิตดี + ของเสีย) × 100 — คิดเฉพาะรายการที่บัญชีกรอกยอดผลิตแล้ว
+function percentOfRows(rows) {
+  const counted = rows.filter((row) => getProductionWeight(row) > 0);
+  return calcWastePercent(sumWaste(counted), sumProduction(counted));
 }
 
 function calcWastePercent(waste, production) {
-  if (!production) return 0;
-  return (toNumber(waste) / toNumber(production)) * 100;
+  if (!toNumber(production)) return 0;
+  if (window.WASTE_FORMULA) return window.WASTE_FORMULA.percent(waste, production) ?? 0;
+  return (toNumber(waste) / (toNumber(production) + toNumber(waste))) * 100;
 }
 
 /* ======================================================
@@ -890,16 +906,18 @@ function renderTopList(rows) {
       map[key] = {
         machine,
         department: dept.name,
+        deptCode: dept.code,
         count: 0,
         waste: 0,
         production: 0,
+        rows: [],
         problems: {},
       };
     }
 
     map[key].count += 1;
     map[key].waste += getWasteValue(row);
-    map[key].production += getProductionWeight(row);
+    map[key].rows.push(row);
 
     items.forEach((item) => {
       const problem = item.problem_type || "ไม่ระบุปัญหา";
@@ -908,9 +926,14 @@ function renderTopList(rows) {
     });
   });
 
+  Object.values(map).forEach((item) => {
+    item.production = sumProduction(item.rows);
+    item.percent = percentOfRows(item.rows);
+  });
+
   const list = Object.values(map).sort((a, b) => {
-    const percentA = calcWastePercent(a.waste, a.production);
-    const percentB = calcWastePercent(b.waste, b.production);
+    const percentA = a.percent;
+    const percentB = b.percent;
 
     return (
       percentB - percentA ||
@@ -939,13 +962,16 @@ topList.innerHTML = Object.entries(groupedByDept)
   .map(([deptName, machines]) => {
     const machineHtml = machines
       .map((item) => {
-        const percent = calcWastePercent(item.waste, item.production);
+        const percent = item.percent;
         const topProblem = Object.entries(item.problems).sort((a, b) => b[1] - a[1])[0];
+        const std = departmentStandards[item.deptCode] || {};
+        const limit = std.maxWastePercent ?? (window.WASTE_FORMULA?.DEFAULT_LIMIT ?? 2);
+        const warn = std.warningPercent ?? (window.WASTE_FORMULA?.DEFAULT_WARNING ?? 1.5);
 
         const rowClass =
-          percent >= 1
+          percent > limit
             ? "machine-danger"
-            : percent >= 0.7
+            : percent >= warn
               ? "machine-warning"
               : "machine-normal";
 
@@ -1022,22 +1048,25 @@ function renderPriorityArea(rows, meta = {}) {
         count: 0,
         waste: 0,
         production: 0,
+        rows: [],
       };
     }
 
     summary[key].count += 1;
     summary[key].waste += getWasteValue(row);
-    summary[key].production += getProductionWeight(row);
+    summary[key].rows.push(row);
+  });
+
+  Object.values(summary).forEach((item) => {
+    item.production = sumProduction(item.rows);
+    item.percent = percentOfRows(item.rows);
   });
 
   const top = Object.values(summary).sort((a, b) => {
-    const percentA = calcWastePercent(a.waste, a.production);
-    const percentB = calcWastePercent(b.waste, b.production);
-
-    return percentB - percentA || b.waste - a.waste || b.count - a.count;
+    return b.percent - a.percent || b.waste - a.waste || b.count - a.count;
   })[0];
 
-  const percent = calcWastePercent(top.waste, top.production);
+  const percent = top.percent;
 
   area.innerHTML = `
     <div class="priority-result">
@@ -1048,7 +1077,7 @@ function renderPriorityArea(rows, meta = {}) {
           แผนก: <b>${safeText(top.department)}</b><br />
           ปัญหา: <b>${safeText(top.problem)}</b><br />
           เกิด ${formatNumber(top.count)} ครั้ง / ของเสียรวม ${formatNumber(top.waste)} kg<br />
-          น้ำหนักผลิต ${formatNumber(top.production)} kg / Waste ${formatNumber(percent)}%
+          ผลิตดี ${formatNumber(top.production)} kg / ของเสีย ${formatNumber(percent)}%
         </p>
       </div>
     </div>

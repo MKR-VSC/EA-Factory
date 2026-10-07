@@ -20,7 +20,21 @@ let state = {
   machineStatuses: [],
   groups: [],
   standards: {},
+  // น้ำหนักผลิตที่พิมพ์ไว้แต่ยังไม่บันทึก (key กลุ่ม → ข้อความที่พิมพ์)
+  // เก็บไว้ไม่ให้หายตอนรีเฟรชอัตโนมัติ / เปลี่ยนตัวกรอง
+  drafts: new Map(),
+  // แถวรายละเอียดที่เปิดค้างไว้ (key กลุ่ม)
+  openDetails: new Set(),
+  loading: false,
+  // งวดบัญชีที่ปิดแล้ว: "YYYY-MM" → { locked_by_name, locked_at }
+  locks: new Map(),
+  locksAvailable: false, // false = ยังไม่ได้รัน database/09-accounting-controls.sql
 };
+
+const LOCK_TABLE = "accounting_period_locks";
+const PRODUCTION_LOG_TABLE = "accounting_production_log";
+
+const ROLES_WITH_DASHBOARD = ["admin", "management", "manager", "executive"];
 
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -39,8 +53,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     return showToast("ไม่พบ Supabase Client", "error");
   }
 
+  // ปุ่ม "ย้อนกลับ" ไปหน้า Dashboard ใช้ได้เฉพาะผู้บริหาร/แอดมิน
+  // (ฝ่ายบัญชีเข้า Dashboard ไม่ได้ ระบบจะเด้งออกไปหน้า Login)
+  const role = normalizeText(profile.role || localStorage.getItem("activeRole"));
+  if (!ROLES_WITH_DASHBOARD.includes(role)) {
+    document.querySelector('.topbar a[href="/index.html"]')?.remove();
+  }
+
+  // เตือนก่อนออกจากหน้า ถ้ามีน้ำหนักผลิตที่ยังไม่ได้บันทึก
+  window.addEventListener("beforeunload", (e) => {
+    if (state.drafts.size === 0) return;
+    e.preventDefault();
+    e.returnValue = "";
+  });
+
   setDefaultMonth();
   bindEvents();
+  await window.WasteStandardService?.loadMachineStandards();
   await loadStandards();
   await loadAccountingData();
 });
@@ -196,8 +225,9 @@ async function loadStandards() {
     const c = normalizeDept(d.department_code);
     state.standards[c] = {
       name: d.department_name,
-      max: Number(d.max_waste_percent || 3),
-      warning: Number(d.warning_percent || 0),
+      // ไม่ได้ตั้งไว้ → ค่าตั้งต้นโรงงาน 2% / เตือน 1.5% ต่อเดือน
+      max: Number(d.max_waste_percent) || window.WASTE_FORMULA.DEFAULT_LIMIT,
+      warning: Number(d.warning_percent) || window.WASTE_FORMULA.DEFAULT_WARNING,
     };
   });
   renderDeptFilter();
@@ -215,8 +245,16 @@ function renderDeptFilter() {
       .join("");
 }
 async function loadAccountingData() {
+  // กันรีเฟรช (รวมถึงรีเฟรชอัตโนมัติทุก 30 วิ) ระหว่างที่ผู้ใช้กำลังพิมพ์หรือเปิดหน้าต่างอยู่
+  const active = document.activeElement;
+  const typing = active && active.matches?.(".cell-input-production:not([readonly]):not([disabled])");
+  const modalOpen = !document.getElementById("appModal")?.classList.contains("hidden");
+  if (typing || modalOpen || state.loading) return;
+
+  state.loading = true;
   const body = document.getElementById("accountingBody");
-  if (body)
+  // โหลดครั้งแรกเท่านั้นที่ล้างตารางเป็น "กำลังโหลด" — ครั้งต่อไปคงตารางเดิมไว้จนข้อมูลใหม่มาถึง
+  if (body && !state.groups.length)
     body.innerHTML = `<tr><td colspan="13" class="empty">กำลังโหลดข้อมูล...</td></tr>`;
 
   try {
@@ -260,6 +298,8 @@ async function loadAccountingData() {
       ? machineResult.data
       : [];
 
+    await loadPeriodLocks();
+
     // หากเดือนปัจจุบันที่ระบบตั้งไว้ไม่มีข้อมูล แต่ในระบบมีข้อมูลเดือนอื่น ให้ปรับตัวเลือกเดือนไปยังเดือนล่าสุดที่มีข้อมูล
     adjustMonthToAvailableData();
 
@@ -269,10 +309,13 @@ async function loadAccountingData() {
     );
 
     applyFilters();
+    window.renderAccountingDashboard?.();
   } catch (e) {
     console.error(e);
     if (body)
       body.innerHTML = `<tr><td colspan="13" class="empty">โหลดข้อมูลไม่สำเร็จ: ${safeText(e.message || e)}</td></tr>`;
+  } finally {
+    state.loading = false;
   }
 }
 
@@ -493,9 +536,33 @@ function applyFilters() {
   const unsorted = [...reportGroups, ...machineGroups];
   const consolidated = consolidateGroups(unsorted);
   state.groups = consolidated.sort(sortAccountingGroups);
+  applyDrafts(state.groups);
+  state.monthlyMachine = buildMonthlyMachineIndex();
 
   renderSummary(state.groups);
   renderTable(state.groups);
+  updateSaveAllButton();
+  renderPeriodLockBar(month);
+}
+
+// ใส่ค่าที่พิมพ์ค้างไว้กลับเข้าไปในกลุ่ม (หลังโหลดข้อมูลใหม่/เปลี่ยนตัวกรอง)
+function applyDrafts(groups) {
+  // ค่าที่ซ่อนอยู่เพราะตัวกรองยังคงเก็บไว้ จะหายก็ต่อเมื่อบันทึกสำเร็จเท่านั้น
+  groups.forEach((g) => {
+    if (!state.drafts.has(g.key)) return;
+    if (isGroupLocked(g)) {
+      state.drafts.delete(g.key); // งวดปิดแล้ว แก้ไม่ได้ ทิ้งค่าที่พิมพ์ค้างไว้
+      return;
+    }
+    const n = parseNumber(state.drafts.get(g.key));
+    g.production = n > 0 ? n : 0;
+    g.dirty = true;
+  });
+}
+
+function parseNumber(v) {
+  const n = Number(String(v ?? "").replace(/,/g, "").trim());
+  return Number.isFinite(n) ? n : 0;
 }
 
 function buildGroups(rows) {
@@ -638,6 +705,10 @@ function renderSummary(groups) {
   });
   
   setText("sumCount", activeGroups.length.toLocaleString("th-TH"));
+  const pending = activeGroups.filter(
+    (g) => normalizeText(g.status) === STATUS_SENT,
+  ).length;
+  setText("sumPending", pending.toLocaleString("th-TH"));
   setText("sumWaste", formatNumber(waste));
   setText("sumProduction", formatNumber(prod));
 
@@ -658,89 +729,162 @@ function renderSummary(groups) {
     }
   }
 
-  // คำนวณสรุปแยกตามประเภทที่เลือก (แผนก, เครื่องจักร, ปัญหา)
-  const groupType = document.getElementById("summaryGroupType")?.value || "dept";
-  const summaryMap = {};
-  const countedMachineKeys = new Set();
-  const countedDeptKeys = new Set();
+  renderSummaryTable(activeGroups);
+}
 
-  activeGroups.forEach(g => {
+/* ======================================================
+   สรุปรายเดือน: รวมยอดก่อนแล้วค่อยคิด % (ไม่ใช่เฉลี่ย % รายวัน)
+   % ของเสีย = ของเสีย ÷ (ผลิตดี + ของเสีย) × 100
+   คิดเฉพาะรายการที่บัญชีกรอกยอดผลิตแล้ว
+====================================================== */
+function buildSummaryRows(activeGroups, groupType) {
+  const map = new Map();
+  const add = (key, init) => {
+    if (!map.has(key)) map.set(key, { ...init, rows: [], problemWaste: 0 });
+    return map.get(key);
+  };
+
+  activeGroups.forEach((g) => {
+    if (normalizeText(g.status) === MACHINE_STATUS_NOT_RUNNING) return;
     if (groupType === "problem") {
-      if (g.items && g.items.length > 0) {
-        g.items.forEach(item => {
-          const pType = item.problem_type || "ไม่ระบุ";
-          if (!summaryMap[pType]) summaryMap[pType] = { name: pType, production: 0, waste: 0 };
-          summaryMap[pType].waste += Number(item.waste_weight_kg || 0);
-        });
-      } else if (g.waste > 0) {
-        const pType = "ไม่ระบุ";
-        if (!summaryMap[pType]) summaryMap[pType] = { name: pType, production: 0, waste: 0 };
-        summaryMap[pType].waste += g.waste;
-      }
-    } else if (groupType === "machine") {
-      const mCode = g.machine || "ไม่ระบุ";
-      if (!summaryMap[mCode]) summaryMap[mCode] = { name: mCode, production: 0, waste: 0 };
-      
-      const machineKey = `${g.date}|${g.dept}|${g.machine}`;
-      if (!countedMachineKeys.has(machineKey)) {
-        countedMachineKeys.add(machineKey);
-        summaryMap[mCode].production += (g.production || 0);
-      }
-      summaryMap[mCode].waste += (g.waste || 0);
-    } else {
-      const deptCode = g.dept;
-      const deptName = getDeptName(deptCode) || deptCode;
-      if (!summaryMap[deptCode]) {
-        summaryMap[deptCode] = { name: deptName, production: 0, waste: 0 };
-      }
-      
-      const deptKey = `${g.date}|${g.dept}|${g.machine}`;
-      if (!countedDeptKeys.has(deptKey)) {
-        countedDeptKeys.add(deptKey);
-        summaryMap[deptCode].production += (g.production || 0);
-      }
-      summaryMap[deptCode].waste += (g.waste || 0);
+      const items = g.items && g.items.length ? g.items : g.waste > 0 ? [{ problem_type: "ไม่ระบุ", waste_weight_kg: g.waste }] : [];
+      items.forEach((it) => {
+        const name = it.problem_type || "ไม่ระบุ";
+        add(name, { name, sub: "" }).problemWaste += Number(it.waste_weight_kg || 0);
+      });
+      return;
     }
+    const key = groupType === "machine" ? `${g.dept}|${g.machine}` : g.dept;
+    const entry = add(key, {
+      name: groupType === "machine" ? g.machine : getDeptName(g.dept),
+      sub: groupType === "machine" ? getDeptName(g.dept) : g.dept,
+      dept: g.dept,
+      machine: groupType === "machine" ? g.machine : null,
+    });
+    entry.rows.push({ waste: g.waste || 0, production: g.production || 0 });
   });
+
+  return [...map.values()].map((e) => {
+    if (groupType === "problem") {
+      return { ...e, waste: e.problemWaste, good: null, pct: null, evaluation: null };
+    }
+    const agg = window.WASTE_FORMULA.aggregate(e.rows);
+    const std = standardFor(e.dept, e.machine);
+    return { ...e, ...agg, std, evaluation: window.WASTE_FORMULA.evaluate(agg.pct, std) };
+  });
+}
+
+function renderSummaryTable(activeGroups) {
+  const groupType = document.getElementById("summaryGroupType")?.value || "dept";
+  const rows = buildSummaryRows(activeGroups, groupType).sort((a, b) => b.waste - a.waste);
+  const month = getValue("filterMonth");
 
   const headTitle = document.getElementById("summaryTableTitle");
   if (headTitle) {
-    headTitle.textContent = groupType === "problem" ? "สรุปผลรวมแยกตามประเภทปัญหา" 
-                          : groupType === "machine" ? "สรุปผลรวมแยกตามเครื่องจักร" 
-                          : "สรุปผลรวมแยกตามแผนก / สินค้า";
+    const base =
+      groupType === "problem" ? "สรุปผลรวมแยกตามประเภทปัญหา"
+      : groupType === "machine" ? "สรุปรายเดือนแยกตามเครื่องจักร"
+      : "สรุปรายเดือนแยกตามแผนก / สินค้า";
+    headTitle.textContent = month ? `${base} · ${formatThaiMonthYearAccounting(month)}` : base;
   }
 
-  const thCol = document.querySelector("#summaryTableHead th:first-child");
-  if (thCol) {
-    thCol.textContent = groupType === "problem" ? "ประเภทปัญหา" 
-                      : groupType === "machine" ? "เครื่องจักร" 
-                      : "แผนก / สินค้า";
+  const head = document.getElementById("summaryTableHead");
+  const thStyle = 'style="background-color: #afdeff; color: #0200bf;"';
+  if (head) {
+    head.innerHTML =
+      groupType === "problem"
+        ? `<tr><th ${thStyle}>ประเภทปัญหา</th><th class="text-right" ${thStyle}>น้ำหนักของเสีย (kg)</th><th class="text-right" ${thStyle}>สัดส่วน</th></tr>`
+        : `<tr>
+            <th ${thStyle}>${groupType === "machine" ? "เครื่องจักร" : "แผนก / สินค้า"}</th>
+            <th class="text-right" ${thStyle}>ผลิตดี (kg)</th>
+            <th class="text-right" ${thStyle}>ของเสีย (kg)</th>
+            <th class="text-right" ${thStyle}>% ของเสีย</th>
+            <th class="col-center" ${thStyle}>เกณฑ์ไม่เกิน</th>
+            <th class="col-center" ${thStyle}>ผลประเมินรายเดือน</th>
+            <th class="col-center" ${thStyle}>กรอกผลิตแล้ว</th>
+          </tr>`;
   }
 
-  const summaryBody = document.getElementById("summaryDeptBody");
-  if (summaryBody) {
-    const keys = Object.keys(summaryMap);
-    if (keys.length === 0) {
-      summaryBody.innerHTML = `<tr><td colspan="4" class="empty">ไม่พบข้อมูลตามตัวกรอง</td></tr>`;
-    } else {
-      const sortedValues = Object.values(summaryMap).sort((a, b) => b.waste - a.waste);
-      summaryBody.innerHTML = sortedValues.map(d => {
-        const pct = d.production > 0 ? (d.waste / d.production) * 100 : 0;
-        const prodText = groupType === "problem" ? "-" : formatNumber(d.production);
-        const pctText = groupType === "problem" ? "-" : `${formatNumber(pct)}%`;
-        const pctColor = groupType === "problem" ? 'inherit' : (pct > 0 ? (pct > 3 ? '#dc2626' : '#1e40af') : 'inherit');
-        return `
-          <tr>
-            <td style="font-weight: 600;">${safeText(d.name)}</td>
-            <td class="text-right" style="color: #16a34a; font-weight: 500;">${prodText}</td>
-            <td class="text-right" style="color: #dc2626; font-weight: 500;">${formatNumber(d.waste)}</td>
-            <td class="text-right font-bold" style="color: ${pctColor}">${pctText}</td>
-          </tr>
-        `;
-      }).join("");
-    }
+  document.getElementById("summaryTable")?.classList.toggle("is-problem", groupType === "problem");
+
+  const body = document.getElementById("summaryDeptBody");
+  if (!body) return;
+  const cols = groupType === "problem" ? 3 : 7;
+
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="${cols}" class="empty">ไม่พบข้อมูลตามตัวกรอง</td></tr>`;
+    return;
   }
+
+  if (groupType === "problem") {
+    const total = rows.reduce((s, r) => s + r.waste, 0) || 1;
+    body.innerHTML = rows
+      .map(
+        (r) => `<tr>
+          <td style="font-weight: 600;">${safeText(r.name)}</td>
+          <td class="text-right" style="color: #dc2626; font-weight: 500;">${formatNumber(r.waste)}</td>
+          <td class="text-right">${formatNumber((r.waste / total) * 100)}%</td>
+        </tr>`,
+      )
+      .join("");
+    return;
+  }
+
+  body.innerHTML = rows
+    .map((r) => {
+      const ev = r.evaluation;
+      const pctText = r.pct === null ? "-" : `${formatNumber(r.pct)}%`;
+      const partial = r.withProduction < r.count;
+      const pending = r.wasteCounted < r.waste;
+      return `<tr>
+        <td style="font-weight: 600;">${safeText(r.name)}<br><small class="muted">${safeText(r.sub || "")}</small></td>
+        <td class="text-right" style="color: #16a34a; font-weight: 500;">${r.good ? formatNumber(r.good) : "-"}</td>
+        <td class="text-right" style="color: #dc2626; font-weight: 500;" title="${pending ? `ใช้คิด % ${formatNumber(r.wasteCounted)} kg (เฉพาะรายการที่กรอกผลิตแล้ว)` : ""}">${formatNumber(r.waste)}${pending ? `<br><small class="muted">คิด % ${formatNumber(r.wasteCounted)}</small>` : ""}</td>
+        <td class="text-right font-bold">${pctText}</td>
+        <td class="col-center">${formatNumber(r.std.max)}%</td>
+        <td class="col-center"><span class="result-pill ${ev.className}">${safeText(ev.label)}</span>${partial && r.pct !== null ? `<br><small class="muted">ยังไม่ครบ (ผลชั่วคราว)</small>` : ""}</td>
+        <td class="col-center">${r.withProduction}/${r.count}</td>
+      </tr>`;
+    })
+    .join("");
 }
+
+// เกณฑ์ของแผนก/เครื่อง: รายเครื่อง (ถ้าตั้งไว้) → รายแผนก → ค่าตั้งต้นโรงงาน 2%
+function standardFor(dept, machine) {
+  const deptStd = state.standards[normalizeDept(dept)];
+  if (window.WasteStandardService?.resolve) {
+    return window.WasteStandardService.resolve(deptStd, dept, machine);
+  }
+  return window.WASTE_FORMULA.standard(deptStd);
+}
+
+/* ผลรายเดือนของเครื่อง (ใช้ในคอลัมน์ "ผลรายเดือน" ของแต่ละแถว)
+   คิดจากข้อมูลทั้งเดือนของเครื่องนั้น ไม่ขึ้นกับตัวกรองสถานะ/คำค้น */
+function buildMonthlyMachineIndex() {
+  const index = new Map();
+  if (typeof buildGroups !== "function") return index;
+  const reports = (state.reports || []).filter((r) => getAccountingStatus(r) !== STATUS_CANCELLED);
+  const groups = consolidateGroups([
+    ...buildGroups(reports),
+    ...buildMachineStatusGroups(state.machineStatuses || []),
+  ]);
+  groups.forEach((g) => {
+    const st = normalizeText(g.status);
+    if (st === STATUS_CANCELLED || st === MACHINE_STATUS_NOT_RUNNING) return;
+    const key = `${periodOf(g.date)}|${g.dept}|${g.machine}`;
+    if (!index.has(key)) index.set(key, []);
+    index.get(key).push({ waste: g.waste || 0, production: g.production || 0, date: g.date });
+  });
+  const out = new Map();
+  index.forEach((rows, key) => {
+    const [month, dept, machine] = key.split("|");
+    const agg = window.WASTE_FORMULA.aggregate(rows);
+    const std = standardFor(dept, machine);
+    out.set(key, { ...agg, std, month, evaluation: window.WASTE_FORMULA.evaluate(agg.pct, std) });
+  });
+  return out;
+}
+
 function renderTable(groups) {
   const body = document.getElementById("accountingBody");
   if (!body) return;
@@ -749,6 +893,7 @@ function renderTable(groups) {
     return;
   }
   body.innerHTML = groups.map((g, i) => renderGroup(g, i)).join("");
+  state.openDetails.forEach((key) => loadProductionHistory(key));
 }
 function renderGroup(g, i) {
   const isMachineStatus = g.sourceType === "machine_status";
@@ -762,20 +907,25 @@ function renderGroup(g, i) {
   const isCancelled = normalizeText(g.status) === STATUS_CANCELLED;
   const isDone = normalizeText(g.status) === STATUS_DONE;
 
-  const percent =
-    !isCancelled && !isNotRunning && g.production
-      ? (g.waste / g.production) * 100
-      : 0;
+  // % ของเสียของวันนั้น (แสดงไว้ดู) — ผ่าน/เกิน ประเมินจากยอดรวมทั้งเดือน
+  const dailyPct =
+    !isCancelled && !isNotRunning ? window.WASTE_FORMULA.percent(g.waste, g.production) : null;
 
   let result;
+  let resultTitle = "";
   if (isCancelled) {
     result = { label: "ยกเลิก", className: "result-none" };
   } else if (isNotRunning) {
     result = { label: "ไม่ได้เดินเครื่อง", className: "result-none" };
-  } else if (isNoWaste && g.production) {
-    result = { label: "ไม่มีของเสีย", className: "result-success" };
   } else {
-    result = getResult(g.dept, percent, !!g.production, g.machine);
+    const m = state.monthlyMachine?.get(`${periodOf(g.date)}|${g.dept}|${g.machine}`);
+    if (!m || m.pct === null) {
+      result = { label: "รอน้ำหนักผลิต", className: "result-none" };
+    } else {
+      const ev = m.evaluation;
+      result = { label: `${ev.level === "over" ? "เกิน" : ev.level === "warn" ? "ใกล้เกณฑ์" : "ผ่าน"} ${formatNumber(m.pct)}%`, className: ev.className };
+      resultTitle = `${formatThaiMonthYearAccounting(m.month)} เครื่อง ${g.machine}: ของเสีย ${formatNumber(m.wasteCounted)} kg / ผลิตดี ${formatNumber(m.good)} kg = ${formatNumber(m.pct)}% (เกณฑ์ไม่เกิน ${formatNumber(m.std.max)}%) · กรอกผลิตแล้ว ${m.withProduction}/${m.count} วัน`;
+    }
   }
 
   let status;
@@ -791,17 +941,21 @@ function renderGroup(g, i) {
     status = `<span class="status-pill status-sent">รอบัญชีตรวจ</span>`;
   }
 
-  const productionInputAttr = isCancelled
+  const isLocked = isGroupLocked(g);
+  const isDirty = !!g.dirty && !isLocked;
+  const productionInputAttr = isLocked && !isCancelled && !isNotRunning
+    ? "readonly"
+    : isCancelled
     ? "disabled"
     : isNotRunning
       ? "disabled"
-      : isDone
+      : isDone && !isDirty
         ? "readonly"
         : "";
 
   const rowClass = isCancelled ? ` class="row-cancelled"` : "";
 
-  const expandCell = `<button class="expand-btn" onclick="toggleDetail(${i})">▼</button>`;
+  const expandCell = `<button class="expand-btn${state.openDetails.has(g.key) ? " is-open" : ""}" type="button" onclick="toggleDetail(${i})" aria-label="ดูรายละเอียดปัญหา" aria-expanded="${state.openDetails.has(g.key)}">▼</button>`;
 
   const wasteCell = isNotRunning ? "-" : formatNumber(g.waste);
 
@@ -811,29 +965,31 @@ function renderGroup(g, i) {
       ? `<span class="status-pill" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;">ไม่ได้เดินเครื่อง</span>`
       : renderProblemInline(g.items);
 
-  const formattedProdVal = g.production ? formatQtyNumber(g.production) : "";
+  const formattedProdVal = isDirty
+    ? state.drafts.get(g.key) || ""
+    : g.production
+      ? formatQtyNumber(g.production)
+      : "";
   const productionCell = isNotRunning
     ? `<span class="muted cell-production-empty">-</span>`
-    : `<input class="cell-input cell-input-production text-right" type="text" inputmode="decimal" autocomplete="off"
+    : `<input class="cell-input cell-input-production text-right${isDirty ? " is-dirty" : ""}${isLocked ? " is-locked" : ""}" type="text" inputmode="decimal" autocomplete="off"
         value="${safeAttr(formattedProdVal)}"
         data-prod="${safeAttr(g.key)}"
         placeholder="0.00"
         onfocus="handleProductionFocus(this)"
         onblur="formatProductionInput(this)"
         oninput="handleProductionInput(this, '${safeAttr(g.key)}')"
-        onkeydown="if(event.key==='Enter'){ this.blur(); }"
+        onkeydown="handleProductionKeydown(event, this)"
+        aria-label="น้ำหนักผลิต (kg) ${safeAttr(g.machine)} ${safeAttr(formatDate(g.date))}"
         ${productionInputAttr}>`;
 
-  const percentCell =
-    isCancelled || isNotRunning
-      ? "-"
-      : g.production
-        ? formatPercent(percent)
-        : "-";
+  const percentCell = dailyPct === null ? "-" : formatPercent(dailyPct);
 
   let actions;
-  if (isNotRunning) {
+  if (isNotRunning || isCancelled) {
     actions = `<span class="muted">-</span>`;
+  } else if (isLocked) {
+    actions = `<span class="lock-pill" title="งวดนี้ปิดบัญชีแล้ว แก้ไขไม่ได้"><span class="material-symbols-outlined">lock</span>ปิดงวดแล้ว</span>`;
   } else if (isMachineStatus) {
     actions = `
       <div class="action-stack">
@@ -843,7 +999,7 @@ function renderGroup(g, i) {
         >แก้ไข</button>
 
         <button
-          class="btn success${isDone ? " hidden" : ""}"
+          class="btn success${isDone && !isDirty ? " hidden" : ""}"
           data-save="${safeAttr(g.key)}"
           onclick="saveGroup('${safeAttr(g.key)}')"
         >บันทึก</button>
@@ -865,7 +1021,7 @@ function renderGroup(g, i) {
         >ยกเลิก</button>
 
         <button
-          class="btn success${isDone ? " hidden" : ""}"
+          class="btn success${isDone && !isDirty ? " hidden" : ""}"
           data-save="${safeAttr(g.key)}"
           onclick="saveGroup('${safeAttr(g.key)}')"
           ${disabledAttr}
@@ -877,17 +1033,17 @@ function renderGroup(g, i) {
     <td>${expandCell}</td>
     <td>${safeText(formatDate(g.date))}</td>
     <td>
-      <strong>${safeText(g.dept)}</strong><br>
+      <strong class="code-text">${safeText(g.dept)}</strong><br>
       <small>${safeText(getDeptName(g.dept))}</small>
     </td>
     <td>${safeText(g.shift)}</td>
-    <td><strong>${safeText(g.machine)}</strong></td>
+    <td><strong class="code-text">${safeText(g.machine)}</strong></td>
     <td>${safeText([...g.reporter].join(", "))}</td>
     <td class="text-right"><strong>${wasteCell}</strong></td>
     <td>${problemCell}</td>
     <td class="text-right cell-production-col">${productionCell}</td>
     <td class="text-right">${percentCell}</td>
-    <td><span class="result-pill ${result.className}">${safeText(result.label)}</span></td>
+    <td><span class="result-pill ${result.className}" title="${safeAttr(resultTitle)}">${safeText(result.label)}</span></td>
     <td>${status}</td>
     <td>${actions}</td>
   </tr>`;
@@ -895,7 +1051,7 @@ function renderGroup(g, i) {
   return `${mainRow}
   <tr
     id="detail-${i}"
-    class="detail-row hidden${isCancelled ? " row-cancelled" : ""}"
+    class="detail-row${state.openDetails.has(g.key) ? "" : " hidden"}${isCancelled ? " row-cancelled" : ""}"
   >
     <td colspan="13">${renderProblemTable(g.items || [], g.waste || 0, g.key)}</td>
   </tr>`;
@@ -904,6 +1060,7 @@ function renderGroup(g, i) {
 function editGroup(key) {
   const g = state.groups.find((x) => x.key === key);
   if (!g) return;
+  if (isGroupLocked(g)) return showToast(lockedMessage(g.date), "error");
 
   const input = document.querySelector(`[data-prod="${cssEscape(g.key)}"]`);
   if (input) {
@@ -915,6 +1072,11 @@ function editGroup(key) {
   document
     .querySelector(`[data-save="${cssEscape(g.key)}"]`)
     ?.classList.remove("hidden");
+  if (input && !state.drafts.has(g.key)) {
+    state.drafts.set(g.key, input.value);
+    g.dirty = true;
+    input.classList.add("is-dirty");
+  }
 
   showToast("แก้ไขน้ำหนักผลิตรวมประจำวัน แล้วกดบันทึกอีกครั้ง", "success");
 }
@@ -936,8 +1098,9 @@ function renderProblemTable(items, total, groupKey) {
   const isCancelled = g ? normalizeText(g.status) === STATUS_CANCELLED : false;
   const isDone = g ? normalizeText(g.status) === STATUS_DONE : false;
 
+  const isLocked = g ? isGroupLocked(g) : false;
   let actionHtml = "";
-  if (!isCancelled && !isDone) {
+  if (!isCancelled && !isDone && !isLocked) {
     actionHtml = `
       <div style="margin-top: 14px; display: flex; justify-content: flex-start; padding: 0 4px;">
         <button class="btn primary" onclick="showAddScrapModal('${safeAttr(groupKey)}')" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; border-radius: 8px; font-weight: 600; cursor: pointer; background: #0284c7; color: white; border: none; height: 38px; transition: background 0.15s ease;">
@@ -1001,15 +1164,44 @@ function renderProblemTable(items, total, groupKey) {
         ` : ""}
       </table>
       ${actionHtml}
+      ${g && !isCancelled && g.machine && g.machine !== "-" ? `
+      <div class="prod-history" data-history="${safeAttr(groupKey)}">
+        <div class="prod-history-head">
+          <span class="material-symbols-outlined">history</span>
+          ประวัติการแก้น้ำหนักผลิต
+        </div>
+        <div class="prod-history-body muted">กำลังโหลด...</div>
+      </div>` : ""}
     </div>
   `;
 }
 function toggleDetail(i) {
-  document.getElementById(`detail-${i}`)?.classList.toggle("hidden");
+  const row = document.getElementById(`detail-${i}`);
+  if (!row) return;
+  const open = row.classList.toggle("hidden") === false;
+  const key = state.groups[i]?.key;
+  if (key) open ? state.openDetails.add(key) : state.openDetails.delete(key);
+  if (open && key) loadProductionHistory(key);
+  const btn = row.previousElementSibling?.querySelector(".expand-btn");
+  if (btn) {
+    btn.classList.toggle("is-open", open);
+    btn.setAttribute("aria-expanded", String(open));
+  }
 }
 async function saveGroup(key) {
+  const result = await saveGroupCore(key);
+  if (!result.ok) return showToast(result.message, "error");
+  state.drafts.delete(key);
+  showToast("บันทึกน้ำหนักผลิตรวม 1 วัน เรียบร้อยแล้ว", "success");
+  await loadAccountingData();
+}
+
+// บันทึกน้ำหนักผลิตของกลุ่มเดียว (ไม่โหลดตารางใหม่) — ใช้ร่วมกับ "บันทึกทั้งหมด"
+async function saveGroupCore(key) {
   const g = state.groups.find((x) => x.key === key);
-  if (!g) return;
+  if (!g) return { ok: false, message: "ไม่พบรายการ" };
+  if (isGroupLocked(g)) return { ok: false, message: lockedMessage(g.date) };
+  const showToast = (message) => ({ ok: false, message });
 
   if (
     g.sourceType === "machine_status" &&
@@ -1072,11 +1264,62 @@ async function saveGroup(key) {
   const results = await Promise.all(promises);
   const failed = results.find((r) => r.error);
   if (failed) {
-    return showToast(`บันทึกไม่สำเร็จ: ${failed.error.message}`, "error");
+    return showToast(`บันทึกไม่สำเร็จ: ${friendlyDbError(failed.error)}`, "error");
+  }
+  return { ok: true };
+}
+
+// บันทึกทุกแถวที่กรอกน้ำหนักผลิตไว้แล้วแต่ยังไม่บันทึก
+async function saveAllDrafts() {
+  const keys = state.groups
+    .filter((g) => state.drafts.has(g.key) && parseNumber(state.drafts.get(g.key)) > 0)
+    .map((g) => g.key);
+  if (!keys.length) return showToast("ยังไม่มีน้ำหนักผลิตที่กรอกไว้", "error");
+
+  const btn = document.getElementById("btnSaveAll");
+  if (btn) {
+    btn.disabled = true;
+    btn.dataset.label = btn.innerHTML;
+    btn.innerHTML = `<span class="material-symbols-outlined">hourglass_top</span> กำลังบันทึก...`;
   }
 
-  showToast("บันทึกน้ำหนักผลิตรวม 1 วัน เรียบร้อยแล้ว", "success");
+  let okCount = 0;
+  const errors = [];
+  for (const key of keys) {
+    const r = await saveGroupCore(key);
+    if (r.ok) {
+      okCount += 1;
+      state.drafts.delete(key);
+    } else {
+      const g = state.groups.find((x) => x.key === key);
+      errors.push(`${g ? `${g.machine} (${formatDate(g.date)})` : key}: ${r.message}`);
+    }
+  }
+
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = btn.dataset.label || btn.innerHTML;
+  }
+
+  if (errors.length) {
+    showToast(`บันทึกสำเร็จ ${okCount} รายการ, ไม่สำเร็จ ${errors.length} รายการ`, "error");
+    console.warn("saveAllDrafts errors:", errors);
+  } else {
+    showToast(`บันทึกน้ำหนักผลิตแล้ว ${okCount} รายการ`, "success");
+  }
   await loadAccountingData();
+}
+
+function updateSaveAllButton() {
+  const btn = document.getElementById("btnSaveAll");
+  if (!btn) return;
+  const visibleKeys = new Set(state.groups.map((g) => g.key));
+  const n = [...state.drafts.entries()].filter(
+    ([k, v]) => visibleKeys.has(k) && parseNumber(v) > 0,
+  ).length;
+  btn.hidden = n === 0;
+  const count = btn.querySelector(".save-all-count");
+  if (count) count.textContent = n.toLocaleString("th-TH");
 }
 
 async function cancelGroup(key) {
@@ -1086,6 +1329,7 @@ async function cancelGroup(key) {
   if (g.sourceType === "machine_status") {
     return showToast("สถานะเครื่องจากหัวหน้างานไม่สามารถยกเลิกจากหน้าบัญชีได้", "error");
   }
+  if (isGroupLocked(g)) return showToast(lockedMessage(g.date), "error");
 
   const ok = await askCancelConfirm(g);
   if (!ok) return;
@@ -1099,7 +1343,7 @@ async function cancelGroup(key) {
     })
     .in("id", g.ids);
 
-  if (error) return showToast(`ยกเลิกไม่สำเร็จ: ${error.message}`, "error");
+  if (error) return showToast(`ยกเลิกไม่สำเร็จ: ${friendlyDbError(error)}`, "error");
   showToast("ยกเลิกรายการแล้ว รายการเดิมจะแสดงเป็นสีเทา", "success");
   await loadAccountingData();
 }
@@ -1141,41 +1385,16 @@ function askCancelConfirm(g) {
   });
 }
 
+// ประเมินผลจาก % ที่คิดแล้ว (ใช้กับยอดรายเดือน)
 function getResult(dept, percent, hasProd, machineNo = "") {
   if (!hasProd) return { label: "รอน้ำหนักผลิต", className: "result-none" };
-
-  // Check machine-specific standard first
-  let maxStd = null;
-  let warnStd = null;
-
-  if (machineNo && window.WasteStandardService?.getMachineStandard) {
-    const customMachine = window.WasteStandardService.getMachineStandard(dept, machineNo);
-    if (customMachine && customMachine.is_custom) {
-      maxStd = Number(customMachine.max_waste_percent);
-      warnStd = Number(customMachine.warning_percent);
-    }
-  }
-
-  // Fallback to department standard
-  const s = state.standards[dept];
-  if (maxStd === null) {
-    if (!s) return { label: "ไม่พบเกณฑ์", className: "result-none" };
-    maxStd = s.max;
-    warnStd = s.warning;
-  }
-
-  if (percent > maxStd)
-    return {
-      label: `เกิน ${formatPercent(percent - maxStd)}`,
-      className: "result-danger",
-    };
-  if (warnStd > 0 && percent >= warnStd)
-    return { label: "เริ่มสูง", className: "result-warning" };
-  return { label: "ผ่าน", className: "result-success" };
+  const ev = window.WASTE_FORMULA.evaluate(percent, standardFor(dept, machineNo));
+  return { label: ev.label, className: ev.className };
 }
 
+// ยอดผลิตดีที่ฝ่ายบัญชีกรอก (ไม่ใช้ total_qty เพราะฟอร์มหน้างานเก็บน้ำหนักของเสียไว้ในช่องนั้น)
 function getProduction(r) {
-  return Number(r.production_kg ?? r.total_qty ?? 0) || 0;
+  return Number(r.production_kg ?? 0) || 0;
 }
 
 function getAccountingStatus(r) {
@@ -1265,6 +1484,8 @@ function formatProductionInput(input) {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
+    const key = input.dataset.prod;
+    if (key && state.drafts.has(key)) state.drafts.set(key, input.value);
   }
 }
 function handleProductionFocus(input) {
@@ -1286,43 +1507,40 @@ function handleProductionInput(input, key) {
 
   // Update in state
   g.production = cleanNum;
+  g.dirty = true;
+  state.drafts.set(key, input.value);
+  input.classList.add("is-dirty");
+  document.querySelector(`[data-save="${cssEscape(key)}"]`)?.classList.remove("hidden");
+  updateSaveAllButton();
 
+  // อัปเดต % ของวันนั้นทันที (ผลรายเดือนจะคำนวณใหม่หลังกดบันทึก)
   const row = input.closest("tr");
   if (row) {
     const pctTd = row.children[9];
-    const evalTd = row.children[10];
-
-    if (!isNaN(cleanNum) && cleanNum > 0) {
-      const isNoWaste =
-        g.sourceType === "machine_status" &&
-        normalizeText(g.operationStatus) === MACHINE_STATUS_NO_WASTE;
-      const isCancelled = normalizeText(g.status) === STATUS_CANCELLED;
-      const isNotRunning =
-        g.sourceType === "machine_status" &&
-        normalizeText(g.operationStatus) === MACHINE_STATUS_NOT_RUNNING;
-
-      let percent = 0;
-      if (isNoWaste) {
-        percent = 0;
-      } else if (!isCancelled && !isNotRunning) {
-        percent = (g.waste / cleanNum) * 100;
-      }
-      const result = getResult(g.dept, percent, true, g.machine);
-      if (pctTd) pctTd.textContent = formatPercent(percent);
-      if (evalTd)
-        evalTd.innerHTML = `<span class="result-pill ${result.className}">${safeText(result.label)}</span>`;
-    } else {
-      if (pctTd) pctTd.textContent = "-";
-      if (evalTd) {
-        const result = getResult(g.dept, 0, false, g.machine);
-        evalTd.innerHTML = `<span class="result-pill ${result.className}">${safeText(result.label)}</span>`;
-      }
-    }
+    const isNotRunning =
+      g.sourceType === "machine_status" &&
+      normalizeText(g.operationStatus) === MACHINE_STATUS_NOT_RUNNING;
+    const pct = isNotRunning ? null : window.WASTE_FORMULA.percent(g.waste, cleanNum);
+    if (pctTd) pctTd.textContent = pct === null ? "-" : formatPercent(pct);
   }
 
   // Update summary counts instantly
   renderSummary(state.groups);
 }
+// Enter = ไปช่องน้ำหนักผลิตถัดไป (Shift+Enter = ย้อนกลับ) กรอกต่อเนื่องได้เหมือน Excel
+function handleProductionKeydown(event, input) {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  const all = [...document.querySelectorAll(".cell-input-production:not([readonly]):not([disabled])")];
+  const idx = all.indexOf(input);
+  const next = all[idx + (event.shiftKey ? -1 : 1)];
+  input.blur();
+  if (next) {
+    next.focus();
+    next.scrollIntoView({ block: "nearest" });
+  }
+}
+
 function formatPercent(v) {
   return `${formatNumber(v)}%`;
 }
@@ -1383,11 +1601,381 @@ async function logoutAccounting() {
   } catch (e) {
     console.warn("ออกจากระบบไม่สมบูรณ์:", e);
   } finally {
+    // ล้างข้อมูลเข้าสู่ระบบ แต่เก็บรายการที่รอส่ง (บันทึกตอนเน็ตหลุด) และธีมสีไว้
+    const keepKeys = ["pvtOfflineQueue", "pvtOfflineFailed", "pvtAppTheme"];
+    const kept = keepKeys.map((k) => [k, localStorage.getItem(k)]);
     localStorage.clear();
+    kept.forEach(([k, v]) => v !== null && localStorage.setItem(k, v));
     sessionStorage.clear();
     window.location.href = "/login.html";
   }
 }
+
+/* ======================================================
+   ปิดงวดบัญชีรายเดือน
+   (บังคับจริงที่ฐานข้อมูลด้วย trigger ใน database/09-accounting-controls.sql)
+====================================================== */
+async function loadPeriodLocks() {
+  try {
+    const { data, error } = await state.supabase
+      .from(LOCK_TABLE)
+      .select("period, locked_by_name, locked_at, note");
+    if (error) throw error;
+    state.locks = new Map((data || []).map((r) => [r.period, r]));
+    state.locksAvailable = true;
+  } catch (err) {
+    // ยังไม่ได้รัน SQL 09 → ใช้งานส่วนอื่นได้ตามปกติ แค่ยังปิดงวดไม่ได้
+    console.warn("โหลดงวดที่ปิดแล้วไม่สำเร็จ:", err?.message || err);
+    state.locks = new Map();
+    state.locksAvailable = false;
+  }
+}
+
+function periodOf(date) {
+  return String(date || "").slice(0, 7);
+}
+
+function isGroupLocked(g) {
+  return !!g && state.locks.has(periodOf(g.date));
+}
+
+function lockedMessage(date) {
+  return `งวด ${formatThaiMonthYearAccounting(periodOf(date))} ปิดบัญชีแล้ว แก้ไขไม่ได้ (เปิดงวดก่อนถ้าจำเป็นต้องแก้)`;
+}
+
+function friendlyDbError(err) {
+  const msg = String(err?.message || err || "");
+  if (msg.includes("PERIOD_LOCKED")) {
+    return msg.replace(/^.*PERIOD_LOCKED:\s*/, "");
+  }
+  return msg;
+}
+
+function renderPeriodLockBar(month) {
+  const bar = document.getElementById("periodLockBar");
+  if (!bar) return;
+
+  if (!month) {
+    bar.hidden = false;
+    bar.className = "period-lock-bar is-info";
+    bar.innerHTML = `<span class="material-symbols-outlined">info</span>
+      <span>เลือกเดือนในตัวกรองด้านบน เพื่อดูหรือปิดงวดบัญชีของเดือนนั้น</span>`;
+    return;
+  }
+
+  const label = formatThaiMonthYearAccounting(month);
+  const lock = state.locks.get(month);
+  bar.hidden = false;
+
+  if (!state.locksAvailable) {
+    bar.className = "period-lock-bar is-info";
+    bar.innerHTML = `<span class="material-symbols-outlined">info</span>
+      <span>ยังปิดงวดบัญชีไม่ได้ — ต้องรันไฟล์ <code>database/09-accounting-controls.sql</code> ใน Supabase ก่อน</span>`;
+    return;
+  }
+
+  if (lock) {
+    const when = lock.locked_at ? new Date(lock.locked_at).toLocaleString("th-TH") : "-";
+    bar.className = "period-lock-bar is-locked";
+    bar.innerHTML = `<span class="material-symbols-outlined">lock</span>
+      <span><strong>งวด ${safeText(label)} ปิดบัญชีแล้ว</strong>
+      <small>โดย ${safeText(lock.locked_by_name || "-")} · ${safeText(when)} — ข้อมูลเดือนนี้แก้ไขไม่ได้ทั้งระบบ</small></span>
+      <button type="button" class="btn light" onclick="unlockPeriod('${safeAttr(month)}')">
+        <span class="material-symbols-outlined">lock_open</span> เปิดงวดอีกครั้ง
+      </button>`;
+    return;
+  }
+
+  const pending = state.groups.filter(
+    (g) => periodOf(g.date) === month && normalizeText(g.status) === STATUS_SENT,
+  ).length;
+  bar.className = "period-lock-bar is-open";
+  bar.innerHTML = `<span class="material-symbols-outlined">lock_open</span>
+    <span><strong>งวด ${safeText(label)} ยังเปิดอยู่</strong>
+    <small>${pending ? `เหลือรอตรวจ ${pending.toLocaleString("th-TH")} รายการ` : "ตรวจครบทุกรายการแล้ว พร้อมปิดงวด"}</small></span>
+    <button type="button" class="btn primary" onclick="lockPeriod('${safeAttr(month)}')">
+      <span class="material-symbols-outlined">lock</span> ปิดงวดเดือนนี้
+    </button>`;
+}
+
+function askConfirm({ title, html, okText = "ยืนยัน", okClass = "primary" }) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("appModal");
+    const titleEl = document.getElementById("modalTitle");
+    const body = document.getElementById("modalBody");
+    const actions = document.getElementById("modalActions");
+    if (!modal || !titleEl || !body || !actions) {
+      resolve(confirm(title));
+      return;
+    }
+    titleEl.textContent = title;
+    body.innerHTML = html;
+    actions.innerHTML = `
+      <button class="btn light" id="askNoBtn" type="button">ยกเลิก</button>
+      <button class="btn ${okClass}" id="askYesBtn" type="button">${safeText(okText)}</button>`;
+    modal.classList.remove("hidden");
+    const done = (v) => {
+      modal.classList.add("hidden");
+      resolve(v);
+    };
+    document.getElementById("askNoBtn")?.addEventListener("click", () => done(false), { once: true });
+    document.getElementById("askYesBtn")?.addEventListener("click", () => done(true), { once: true });
+  });
+}
+
+async function lockPeriod(month) {
+  if (!month) return;
+  const label = formatThaiMonthYearAccounting(month);
+  const pending = state.groups.filter(
+    (g) => periodOf(g.date) === month && normalizeText(g.status) === STATUS_SENT,
+  ).length;
+  const draftsInMonth = [...state.drafts.keys()].filter((k) => k.startsWith(month)).length;
+
+  const ok = await askConfirm({
+    title: `ปิดงวด ${label}`,
+    okText: "ปิดงวด",
+    okClass: "primary",
+    html: `
+      <p>หลังปิดงวด ข้อมูลของเสียเดือนนี้จะ<strong>แก้ไข เพิ่ม หรือลบไม่ได้ทั้งระบบ</strong>
+      (หน้างาน หัวหน้างาน และบัญชี) จนกว่าจะเปิดงวดอีกครั้ง</p>
+      ${pending ? `<p class="lock-warn">⚠️ ยังมีรายการ <strong>รอบัญชีตรวจ ${pending} รายการ</strong> ที่ยังไม่ได้กรอกน้ำหนักผลิต</p>` : ""}
+      ${draftsInMonth ? `<p class="lock-warn">⚠️ มีน้ำหนักผลิตที่พิมพ์ไว้แต่ยังไม่บันทึก ${draftsInMonth} รายการ จะถูกทิ้ง</p>` : ""}
+      <label class="lock-note">หมายเหตุ (ถ้ามี)<input id="lockNoteInput" type="text" maxlength="200" placeholder="เช่น ปิดงวดหลังกระทบยอดกับคลังแล้ว" /></label>`,
+  });
+  if (!ok) return;
+  const note = document.getElementById("lockNoteInput")?.value?.trim() || null;
+
+  const { error } = await state.supabase.from(LOCK_TABLE).insert({ period: month, note });
+  if (error) {
+    const denied = /row-level security|permission/i.test(error.message || "");
+    return showToast(
+      denied ? "บัญชีนี้ไม่มีสิทธิ์ปิดงวด (เฉพาะฝ่ายบัญชีและแอดมิน)" : `ปิดงวดไม่สำเร็จ: ${error.message}`,
+      "error",
+    );
+  }
+  showToast(`ปิดงวด ${label} แล้ว`, "success");
+  await loadAccountingData();
+}
+
+async function unlockPeriod(month) {
+  if (!month) return;
+  const label = formatThaiMonthYearAccounting(month);
+  const ok = await askConfirm({
+    title: `เปิดงวด ${label} อีกครั้ง`,
+    okText: "เปิดงวด",
+    okClass: "warning",
+    html: `<p>เมื่อเปิดงวด ข้อมูลเดือนนี้จะกลับมาแก้ไขได้ ระบบจะบันทึกไว้ว่าใครเปิดงวดและเมื่อไร</p>
+      <p class="muted">ควรเปิดเฉพาะเมื่อต้องแก้ข้อมูลจริง แล้วปิดงวดอีกครั้งหลังแก้เสร็จ</p>`,
+  });
+  if (!ok) return;
+
+  const { error, count } = await state.supabase
+    .from(LOCK_TABLE)
+    .delete({ count: "exact" })
+    .eq("period", month);
+  if (error || count === 0) {
+    return showToast(
+      error ? `เปิดงวดไม่สำเร็จ: ${error.message}` : "บัญชีนี้ไม่มีสิทธิ์เปิดงวด (เฉพาะฝ่ายบัญชีและแอดมิน)",
+      "error",
+    );
+  }
+  showToast(`เปิดงวด ${label} แล้ว`, "success");
+  await loadAccountingData();
+}
+
+/* ======================================================
+   ประวัติการแก้น้ำหนักผลิต (บันทึกอัตโนมัติโดยฐานข้อมูล)
+====================================================== */
+async function loadProductionHistory(key) {
+  const g = state.groups.find((x) => x.key === key);
+  const box = document.querySelector(`[data-history="${cssEscape(key)}"] .prod-history-body`);
+  if (!g || !box) return;
+
+  const { data, error } = await state.supabase
+    .from(PRODUCTION_LOG_TABLE)
+    .select("changed_at, changed_by_name, old_production, new_production")
+    .eq("work_date", g.date)
+    .eq("department_code", String(g.dept || "").toUpperCase())
+    .eq("machine_no", g.machine)
+    .order("changed_at", { ascending: false })
+    .limit(30);
+
+  if (error) {
+    box.innerHTML = /does not exist|PGRST205|schema cache/i.test(error.message || "")
+      ? `ยังไม่ได้เปิดใช้ — รันไฟล์ <code>database/09-accounting-controls.sql</code> ใน Supabase`
+      : `โหลดประวัติไม่สำเร็จ: ${safeText(error.message)}`;
+    return;
+  }
+
+  // หนึ่งครั้งที่กดบันทึกอาจแก้หลายแถวพร้อมกัน (หลายกะ) → รวมเป็นรายการเดียว
+  const seen = new Set();
+  const rows = (data || []).filter((r) => {
+    const k = `${String(r.changed_at).slice(0, 19)}|${r.changed_by_name}|${r.old_production}|${r.new_production}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+
+  if (!rows.length) {
+    box.textContent = "ยังไม่มีการบันทึกหรือแก้ไขน้ำหนักผลิต";
+    return;
+  }
+
+  box.classList.remove("muted");
+  box.innerHTML = `<ol class="prod-history-list">${rows
+    .map((r) => {
+      const from = r.old_production == null ? "ว่าง" : `${formatNumber(r.old_production)} kg`;
+      const to = r.new_production == null ? "ว่าง" : `${formatNumber(r.new_production)} kg`;
+      return `<li>
+        <span class="ph-when">${safeText(new Date(r.changed_at).toLocaleString("th-TH"))}</span>
+        <span class="ph-who">${safeText(r.changed_by_name || "-")}</span>
+        <span class="ph-what">${safeText(from)} → <strong>${safeText(to)}</strong></span>
+      </li>`;
+    })
+    .join("")}</ol>`;
+}
+
+/* ======================================================
+   ส่งออก Excel (.xlsx)
+   สร้างไฟล์ในเครื่องของผู้ใช้เท่านั้น — ไม่ส่งข้อมูลออกไปที่ใด
+====================================================== */
+const XLSX_CDN = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+
+function loadXlsxLib() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = XLSX_CDN;
+    s.onload = () => (window.XLSX ? resolve(window.XLSX) : reject(new Error("โหลดตัวสร้าง Excel ไม่สำเร็จ")));
+    s.onerror = () => reject(new Error("โหลดตัวสร้าง Excel ไม่สำเร็จ (ตรวจสอบอินเทอร์เน็ต)"));
+    document.head.appendChild(s);
+  });
+}
+
+function groupStatusText(g) {
+  const st = normalizeText(g.status);
+  if (st === STATUS_CANCELLED) return "ยกเลิกรายการ";
+  if (st === MACHINE_STATUS_NOT_RUNNING) return "ไม่ได้เดินเครื่อง";
+  if (st === STATUS_DONE) return "บัญชีตรวจแล้ว";
+  return "รอบัญชีตรวจ";
+}
+
+async function exportAccountingExcel() {
+  const groups = state.groups || [];
+  if (!groups.length) return showToast("ไม่มีข้อมูลตามตัวกรองให้ส่งออก", "error");
+
+  let XLSX;
+  try {
+    window.LoadingService?.show("กำลังสร้างไฟล์ Excel", "กรุณารอสักครู่");
+    XLSX = await loadXlsxLib();
+  } catch (err) {
+    window.LoadingService?.hide();
+    return showToast(err.message, "error");
+  }
+
+  try {
+    const num = (v) => Math.round(Number(v || 0) * 100) / 100;
+    const month = getValue("filterMonth");
+    const dept = getValue("filterDept");
+
+    // แผ่น 1: รายการ (ตามตัวกรองบนหน้าจอ)
+    const detail = groups.map((g) => {
+      const st = normalizeText(g.status);
+      const active = st !== STATUS_CANCELLED && st !== MACHINE_STATUS_NOT_RUNNING;
+      const pct = active ? window.WASTE_FORMULA.percent(g.waste, g.production) : null;
+      const m = active ? state.monthlyMachine?.get(`${periodOf(g.date)}|${g.dept}|${g.machine}`) : null;
+      return {
+        "วันที่": g.date,
+        "รหัสแผนก": g.dept,
+        "แผนก": getDeptName(g.dept),
+        "กะ": g.shift,
+        "เครื่อง": g.machine,
+        "ผู้บันทึก": [...(g.reporter || [])].join(", "),
+        "ของเสีย (kg)": num(g.waste),
+        "ผลิตดี (kg)": g.production ? num(g.production) : null,
+        "% ของเสีย (วันนั้น)": pct === null ? null : num(pct),
+        "% ของเสียทั้งเดือน (เครื่อง)": m && m.pct !== null ? num(m.pct) : null,
+        "ผลรายเดือน (เครื่อง)": !active ? "" : m && m.pct !== null ? m.evaluation.label : "รอน้ำหนักผลิต",
+        "สถานะ": groupStatusText(g),
+        "งวด": isGroupLocked(g) ? "ปิดงวดแล้ว" : "เปิดอยู่",
+      };
+    });
+
+    // แผ่น 2: รายการปัญหา (ทีละปัญหา)
+    const problems = [];
+    groups.forEach((g) => {
+      if (normalizeText(g.status) === STATUS_CANCELLED) return;
+      (g.items || []).forEach((it) => {
+        problems.push({
+          "วันที่": g.date,
+          "รหัสแผนก": g.dept,
+          "แผนก": getDeptName(g.dept),
+          "เครื่อง": g.machine,
+          "กะ": it.shift || g.shift,
+          "ปัญหา": it.problem_type || "",
+          "น้ำหนักของเสีย (kg)": num(it.waste_weight_kg),
+          "รายละเอียด": it.detail || "",
+          "ผู้บันทึก": it.reported_by || "",
+        });
+      });
+    });
+
+    // แผ่น 3: สรุปรายเดือนแยกตามแผนก (สูตรเดียวกับหน้าจอ)
+    const activeForSum = groups.filter((g) => normalizeText(g.status) !== STATUS_CANCELLED);
+    const pendingByDept = new Map();
+    activeForSum.forEach((g) => {
+      if (normalizeText(g.status) === STATUS_SENT) pendingByDept.set(g.dept, (pendingByDept.get(g.dept) || 0) + 1);
+    });
+    const summary = buildSummaryRows(activeForSum, "dept").map((r) => ({
+      "รหัสแผนก": r.dept,
+      "แผนก": getDeptName(r.dept),
+      "จำนวนรายการ": r.count,
+      "รอบัญชีตรวจ": pendingByDept.get(r.dept) || 0,
+      "กรอกผลิตแล้ว": `${r.withProduction}/${r.count}`,
+      "ของเสียรวม (kg)": num(r.waste),
+      "ของเสียที่ใช้คิด % (kg)": num(r.wasteCounted),
+      "ผลิตดีรวม (kg)": num(r.good),
+      "% ของเสีย": r.pct === null ? null : num(r.pct),
+      "เกณฑ์ไม่เกิน (%)": num(r.std.max),
+      "ผลประเมินรายเดือน": r.evaluation.label,
+    }));
+
+    const info = [
+      { "รายการ": "รายงาน", "ค่า": "ข้อมูลของเสียจากการผลิต (ฝ่ายบัญชี)" },
+      { "รายการ": "เดือน", "ค่า": formatThaiMonthYearAccounting(month) },
+      { "รายการ": "แผนก", "ค่า": dept === "all" ? "ทุกแผนก" : getDeptName(dept) },
+      { "รายการ": "สถานะ", "ค่า": document.getElementById("filterStatus")?.selectedOptions?.[0]?.textContent || "ทั้งหมด" },
+      { "รายการ": "สูตร", "ค่า": "% ของเสีย = ของเสีย ÷ (ผลิตดี + ของเสีย) × 100 · ประเมินรายเดือน (เฉพาะรายการที่กรอกผลิตแล้ว)" },
+      { "รายการ": "ส่งออกเมื่อ", "ค่า": new Date().toLocaleString("th-TH") },
+      { "รายการ": "ส่งออกโดย", "ค่า": state.currentUser?.display_name || state.currentUser?.full_name || state.currentUser?.username || "-" },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const add = (rows, name, widths) => {
+      const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ "ข้อมูล": "ไม่มีข้อมูล" }]);
+      if (widths) ws["!cols"] = widths.map((w) => ({ wch: w }));
+      XLSX.utils.book_append_sheet(wb, ws, name);
+    };
+    add(summary, "สรุปแผนก", [10, 16, 12, 12, 12, 16, 20, 16, 12, 14, 18]);
+    add(detail, "รายการ", [12, 10, 14, 10, 14, 18, 12, 12, 16, 22, 20, 14, 12]);
+    add(problems, "รายการปัญหา", [12, 10, 14, 14, 8, 22, 16, 30, 16]);
+    add(info, "ข้อมูลรายงาน", [14, 40]);
+
+    const fileMonth = month || "ทุกเดือน";
+    const fileDept = dept && dept !== "all" ? `_${dept}` : "";
+    XLSX.writeFile(wb, `ของเสีย_บัญชี_${fileMonth}${fileDept}.xlsx`);
+    showToast("ส่งออก Excel แล้ว", "success");
+  } catch (err) {
+    console.error(err);
+    showToast(`ส่งออก Excel ไม่สำเร็จ: ${err.message || err}`, "error");
+  } finally {
+    window.LoadingService?.hide();
+  }
+}
+
+window.lockPeriod = lockPeriod;
+window.unlockPeriod = unlockPeriod;
+window.exportAccountingExcel = exportAccountingExcel;
 
 window.loadAccountingData = loadAccountingData;
 window.applyFilters = applyFilters;
@@ -1401,6 +1989,8 @@ window.formatProductionInput = formatProductionInput;
 window.handleProductionFocus = handleProductionFocus;
 window.handleProductionInput = handleProductionInput;
 window.formatQtyNumber = formatQtyNumber;
+window.handleProductionKeydown = handleProductionKeydown;
+window.saveAllDrafts = saveAllDrafts;
 
 function exportAccountingSummaryPDF() {
   const printWindow = window.open("", "_blank");
@@ -1438,63 +2028,21 @@ function generateAccountingReportHTML(isPrintImmediate = false) {
     filterDesc += ` | สถานะ: ${statusText}`;
   }
 
-  // Calculate Summary based on selected group type
+  // สรุปรายเดือน (สูตรเดียวกับหน้าจอ: ของเสีย ÷ (ผลิตดี + ของเสีย) × 100)
   const groupType = document.getElementById("summaryGroupType")?.value || "dept";
   const activeGroups = (state.groups || []).filter(g => normalizeText(g.status) !== STATUS_CANCELLED);
-  const summaryMap = {};
-  const countedMachineKeys = new Set();
-  const countedDeptKeys = new Set();
-
-  activeGroups.forEach(g => {
-    if (groupType === "problem") {
-      if (g.items && g.items.length > 0) {
-        g.items.forEach(item => {
-          const pType = item.problem_type || "ไม่ระบุ";
-          if (!summaryMap[pType]) summaryMap[pType] = { name: pType, production: 0, waste: 0 };
-          summaryMap[pType].waste += Number(item.waste_weight_kg || 0);
-        });
-      } else if (g.waste > 0) {
-        const pType = "ไม่ระบุ";
-        if (!summaryMap[pType]) summaryMap[pType] = { name: pType, production: 0, waste: 0 };
-        summaryMap[pType].waste += g.waste;
-      }
-    } else if (groupType === "machine") {
-      const mCode = g.machine || "ไม่ระบุ";
-      if (!summaryMap[mCode]) summaryMap[mCode] = { name: mCode, production: 0, waste: 0 };
-      
-      const machineKey = `${g.date}|${g.dept}|${g.machine}`;
-      if (!countedMachineKeys.has(machineKey)) {
-        countedMachineKeys.add(machineKey);
-        summaryMap[mCode].production += (g.production || 0);
-      }
-      summaryMap[mCode].waste += (g.waste || 0);
-    } else {
-      const deptCode = g.dept;
-      const deptName = getDeptName(deptCode) || deptCode;
-      if (!summaryMap[deptCode]) {
-        summaryMap[deptCode] = { name: deptName, production: 0, waste: 0 };
-      }
-      
-      const deptKey = `${g.date}|${g.dept}|${g.machine}`;
-      if (!countedDeptKeys.has(deptKey)) {
-        countedDeptKeys.add(deptKey);
-        summaryMap[deptCode].production += (g.production || 0);
-      }
-      summaryMap[deptCode].waste += (g.waste || 0);
-    }
-  });
-
-  const sortedValues = Object.values(summaryMap).sort((a, b) => b.waste - a.waste);
-  const deptRowsHTML = sortedValues.map(d => {
-    const pct = d.production > 0 ? (d.waste / d.production) * 100 : 0;
-    const prodText = groupType === "problem" ? "-" : `${formatNumber(d.production)} kg`;
-    const pctText = groupType === "problem" ? "-" : `${formatNumber(pct)}%`;
+  const sumRows = buildSummaryRows(activeGroups, groupType).sort((a, b) => b.waste - a.waste);
+  const td = 'style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: right;"';
+  const deptRowsHTML = sumRows.map(d => {
+    const isProblem = groupType === "problem";
     return `
       <tr>
-        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-weight: 600; text-align: left;">${safeText(d.name)}</td>
-        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${prodText}</td>
-        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${formatNumber(d.waste)} kg</td>
-        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${pctText}</td>
+        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-weight: 600; text-align: left;">${safeText(d.name)}${d.sub && !isProblem ? `<br><small style="color:#64748b;font-weight:400">${safeText(d.sub)}</small>` : ""}</td>
+        <td ${td}>${isProblem || !d.good ? "-" : `${formatNumber(d.good)} kg`}</td>
+        <td ${td}>${formatNumber(d.waste)} kg</td>
+        <td ${td}><strong>${isProblem || d.pct === null ? "-" : `${formatNumber(d.pct)}%`}</strong></td>
+        <td ${td}>${isProblem ? "-" : `${formatNumber(d.std.max)}%`}</td>
+        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: center;">${isProblem ? "-" : safeText(d.evaluation.label)}${!isProblem && d.withProduction < d.count && d.pct !== null ? "<br><small style='color:#64748b'>ยังกรอกผลิตไม่ครบ</small>" : ""}</td>
       </tr>
     `;
   }).join("");
@@ -1510,16 +2058,16 @@ function generateAccountingReportHTML(isPrintImmediate = false) {
   // Detailed rows HTML
   const detailedRowsHTML = (state.groups || []).map(g => {
     const isCancelled = normalizeText(g.status) === STATUS_CANCELLED;
-    const pct = g.production ? (g.waste / g.production) * 100 : 0;
-    const formattedPct = isCancelled ? "-" : formatNumber(pct) + "%";
+    const pct = window.WASTE_FORMULA.percent(g.waste, g.production);
+    const formattedPct = isCancelled || pct === null ? "-" : formatNumber(pct) + "%";
     const statusText = isCancelled ? "ยกเลิกรายการ" : (normalizeText(g.status) === STATUS_DONE ? "บัญชีตรวจแล้ว" : "รอบัญชีตรวจ");
     
     return `
       <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 13px;">${g.date || "-"}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 13px;">${safeText(g.date ? formatDate(g.date) : "-")}</td>
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 13px;">${safeText(getDeptName(g.dept))}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 13px;">${g.shift || "-"}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 13px;">${g.machine || "-"}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 13px;">${safeText(g.shift || "-")}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 13px;">${safeText(g.machine || "-")}</td>
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 13px;">${formatNumber(g.waste)} kg</td>
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 13px;">${g.production ? formatNumber(g.production) + " kg" : "-"}</td>
         <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 13px; font-weight: 600;">${formattedPct}</td>
@@ -1633,7 +2181,8 @@ function generateAccountingReportHTML(isPrintImmediate = false) {
       </div>
       
       <div class="meta-info">
-        <strong>ช่วงเวลาและตัวกรอง:</strong> ${filterDesc}
+        <strong>ช่วงเวลาและตัวกรอง:</strong> ${filterDesc}<br>
+        <strong>สูตร:</strong> % ของเสีย = ของเสีย ÷ (ผลิตดี + ของเสีย) × 100 · ประเมินผ่าน/เกินจากยอดรวมทั้งเดือน (เฉพาะรายการที่บัญชีกรอกผลิตแล้ว)
       </div>
 
       <div class="section-title">1. ${summaryTitle}</div>
@@ -1641,13 +2190,15 @@ function generateAccountingReportHTML(isPrintImmediate = false) {
         <thead>
           <tr>
             <th style="text-align: left;">${summaryColName}</th>
-            <th style="text-align: right;">ผลิตรวม (kg)</th>
+            <th style="text-align: right;">ผลิตดีรวม (kg)</th>
             <th style="text-align: right;">ของเสียรวม (kg)</th>
-            <th style="text-align: right;">อัตราของเสีย (% Waste)</th>
+            <th style="text-align: right;">% ของเสีย</th>
+            <th style="text-align: right;">เกณฑ์ไม่เกิน</th>
+            <th style="text-align: center;">ผลประเมินรายเดือน</th>
           </tr>
         </thead>
         <tbody>
-          ${deptRowsHTML || '<tr><td colspan="4" style="padding: 15px; text-align: center; color: #64748b;">ไม่มีข้อมูล</td></tr>'}
+          ${deptRowsHTML || '<tr><td colspan="6" style="padding: 15px; text-align: center; color: #64748b;">ไม่มีข้อมูล</td></tr>'}
         </tbody>
       </table>
 
@@ -1660,8 +2211,8 @@ function generateAccountingReportHTML(isPrintImmediate = false) {
             <th style="text-align: center;">กะ</th>
             <th style="text-align: left;">เครื่อง</th>
             <th style="text-align: right;">ของเสีย (kg)</th>
-            <th style="text-align: right;">ยอดผลิต (kg)</th>
-            <th style="text-align: right;">% Waste</th>
+            <th style="text-align: right;">ผลิตดี (kg)</th>
+            <th style="text-align: right;">% ของเสีย (วันนั้น)</th>
             <th style="text-align: center;">สถานะ</th>
           </tr>
         </thead>
@@ -1739,6 +2290,7 @@ async function fetchProblemTypesForDept(dept) {
 async function showAddScrapModal(groupKey) {
   const g = state.groups.find((x) => x.key === groupKey);
   if (!g) return;
+  if (isGroupLocked(g)) return showToast(lockedMessage(g.date), "error");
 
   const modal = document.getElementById("appModal");
   const title = document.getElementById("modalTitle");
@@ -1838,7 +2390,7 @@ async function showAddScrapModal(groupKey) {
       await loadAccountingData();
     } catch (err) {
       console.error(err);
-      showToast(`เกิดข้อผิดพลาด: ${err.message || err}`, "error");
+      showToast(`เกิดข้อผิดพลาด: ${friendlyDbError(err)}`, "error");
       submitBtn.disabled = false;
       submitBtn.textContent = "บันทึกของเสีย";
     }
@@ -1874,7 +2426,11 @@ async function appendScrapItem(g, shift, problemType, weight, detail) {
       machine_no: g.machine,
       shift: shift,
       work_shift: shift,
-      reported_by: state.currentUser?.name || state.currentUser?.username || 'บัญชี',
+      reported_by:
+        state.currentUser?.full_name ||
+        state.currentUser?.display_name ||
+        state.currentUser?.username ||
+        "บัญชี",
       status: reportStatus,
       waste_weight_kg: weight,
       reason_detail: problemType,
@@ -1937,5 +2493,3 @@ async function appendScrapItem(g, shift, problemType, weight, detail) {
 }
 
 window.showAddScrapModal = showAddScrapModal;
-
-
