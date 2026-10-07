@@ -310,9 +310,11 @@
       bodyFont: { family: "Kanit", size: 12.5 },
       displayColors: false,
       callbacks: {
-        title: (items) => dash.buckets[items[0].dataIndex]?.full || "",
+        // กันกรณีชี้ที่เส้นเกณฑ์ (ถูกกรองออก) แล้วไม่มีรายการ → เดิม error "reading 'dataIndex'"
+        title: (items) => (items && items.length ? dash.buckets[items[0].dataIndex]?.full || "" : ""),
         label: (item) => {
-          const b = dash.buckets[item.dataIndex];
+          const b = dash.buckets[item?.dataIndex];
+          if (!b) return "";
           return [
             `ของเสีย ${fmt(b.waste)} kg`,
             `ผลิต ${b.production ? `${fmt(b.production)} kg` : "-"}`,

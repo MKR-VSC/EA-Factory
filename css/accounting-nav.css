@@ -288,3 +288,42 @@
     padding: 0 !important;
   }
 }
+
+/* ---------- แถบเมนูตอนหุบ: ไม่ให้เส้นใต้โลโก้ซ้อนกับเส้นคั่นกลุ่มแรก ---------- */
+.acc-rail:not(:hover):not(:focus-within) .acc-rail-group:first-child .acc-rail-title {
+  display: none;
+}
+
+/* ---------- ส่วนหัวหน้าบัญชี: แถบยาวเต็มความกว้าง (PC / Notebook) ---------- */
+.topbar.acc-topbar-full {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  min-height: 0;
+  margin: 0;
+  padding: 14px max(24px, calc((100% - 1540px) / 2));
+  border: 0;
+  border-bottom: 1px solid rgba(30, 58, 138, 0.12);
+  border-radius: 0;
+  background: linear-gradient(90deg, #f0f4f8 0%, #e8f1ff 50%, #f0f4f8 100%);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+}
+
+.topbar.acc-topbar-full .logo-icon img {
+  width: 56px;
+  height: 56px;
+  max-width: 56px;
+  max-height: 56px;
+}
+
+.topbar.acc-topbar-full .title h1 {
+  font-size: clamp(20px, 1.8vw, 26px);
+}
+
+/* มือถือ / แท็บเล็ต: ส่วนหัวไม่ติดด้านบน เว้นขอบเท่าเนื้อหา */
+@media (max-width: 1024px) {
+  .topbar.acc-topbar-full {
+    position: static;
+    padding: 16px;
+  }
+}

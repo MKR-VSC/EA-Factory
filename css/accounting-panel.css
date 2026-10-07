@@ -1114,7 +1114,7 @@ textarea:focus {
 /* PC: หัวตารางติดด้านบนเมื่อเลื่อนดูรายการยาว ๆ */
 @media (min-width: 1025px) {
   .table-scroll {
-    max-height: calc(100vh - 120px);
+    max-height: calc(100vh - 200px); /* เผื่อส่วนหัวที่ติดด้านบน */
     overscroll-behavior: contain;
   }
 }

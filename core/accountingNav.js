@@ -23,7 +23,9 @@
   /* ---------- การทำงานของแต่ละเมนู ---------- */
   function scrollToEl(el) {
     if (!el) return;
-    const top = el.getBoundingClientRect().top + window.scrollY - 16;
+    const header = document.querySelector(".acc-topbar-full");
+    const offset = header && getComputedStyle(header).position === "sticky" ? header.offsetHeight : 0;
+    const top = el.getBoundingClientRect().top + window.scrollY - offset - 12;
     window.scrollTo({ top, behavior: "smooth" });
   }
 
@@ -236,7 +238,18 @@
 
   window.AccountingNav = { setActive, setView };
 
+  // หน้าบัญชี: ย้ายส่วนหัวออกมานอกกรอบเนื้อหา ให้เป็นแถบยาวเต็มความกว้าง (ไม่ใช่การ์ด)
+  function makeFullWidthHeader() {
+    if (!isAccounting) return;
+    const header = document.querySelector("main.page > header.topbar");
+    const page = header?.parentElement;
+    if (!header || !page) return;
+    header.classList.add("acc-topbar-full");
+    page.parentNode.insertBefore(header, page);
+  }
+
   function mount() {
+    makeFullWidthHeader();
     document.documentElement.classList.add("has-acc-nav");
     document.body.appendChild(buildRail());
     document.body.appendChild(buildTabbar());
