@@ -747,3 +747,48 @@ small,
   width: auto !important;
   height: auto !important;
 }
+
+/* =========================================================
+   ช่องวันที่ / เวลา บนมือถือจริง (iOS Safari / Android Chrome)
+   เบราว์เซอร์มือถือกำหนดความกว้างขั้นต่ำของช่อง datetime-local เอง
+   ทำให้ช่องล้นออกนอกการ์ด → บังคับให้กว้างไม่เกินกรอบ
+========================================================= */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"] {
+  display: block;
+  width: 100%;
+  min-width: 0 !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1024px), (pointer: coarse) {
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="month"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-height: 48px;
+    line-height: normal;
+  }
+
+  /* iOS: ข้อความวันที่ชิดซ้าย และไม่ดันช่องให้กว้างเกิน */
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value,
+  input[type="datetime-local"]::-webkit-date-and-time-value,
+  input[type="month"]::-webkit-date-and-time-value {
+    min-width: 0;
+    text-align: left;
+  }
+
+  /* กล่องที่ครอบช่องวันที่ ต้องยอมให้หดได้ (flex/grid child) */
+  .form-group,
+  .form-group > *,
+  .field-wrap,
+  .input-wrap {
+    min-width: 0;
+  }
+}
