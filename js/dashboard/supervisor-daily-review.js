@@ -56,6 +56,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   setValue("filterDate", todayString());
   ensureMachineCheckUI();
+  setupTabletLayout();
   await loadDepartmentStandards();
   await loadAllowedDepartments();
   renderUserInfo();
@@ -1485,4 +1486,53 @@ function formatShortThaiDate(ymd) {
   const d = new Date(`${ymd}T00:00:00`);
   if (Number.isNaN(d.getTime())) return ymd;
   return d.toLocaleDateString("th-TH", { weekday: "short", day: "numeric", month: "short" });
+}
+
+/* ======================================================
+   แท็บเล็ต: จัดหน้า 2 ฝั่ง (แนวนอน) / การ์ด 2 คอลัมน์ (แนวตั้ง)
+   ห่อส่วนต่าง ๆ ไว้ใน .sdr-col-main (ค้นหา/สรุป/ตรวจเครื่อง) และ
+   .sdr-col-side (รายการรายงาน) — บนมือถือ/PC กล่องห่อเป็น display: contents
+   จึงแสดงผลเหมือนเดิมทุกอย่าง
+====================================================== */
+function setupTabletLayout() {
+  const filter = document.querySelector("main.page > .filter-card");
+  if (!filter || document.querySelector(".sdr-layout")) return;
+
+  const layout = document.createElement("div");
+  layout.className = "sdr-layout";
+  const mainCol = document.createElement("div");
+  mainCol.className = "sdr-col sdr-col-main";
+  const sideCol = document.createElement("div");
+  sideCol.className = "sdr-col sdr-col-side";
+  filter.parentNode.insertBefore(layout, filter);
+  layout.append(mainCol, sideCol);
+
+  const pick = (sel) => document.querySelector(`main.page ${sel}`);
+  [pick(".filter-card"), pick(".summary-grid"), document.getElementById("machineDailyCheckCard")]
+    .filter(Boolean)
+    .forEach((el) => mainCol.appendChild(el));
+  [document.getElementById("reportBody")?.closest("section"), document.getElementById("sentReportBody")?.closest("section")]
+    .filter(Boolean)
+    .forEach((el) => sideCol.appendChild(el));
+
+  const root = document.documentElement;
+  const tabletMq = window.matchMedia("(min-width: 700px) and (max-width: 1366px)");
+  const landscapeMq = window.matchMedia("(min-width: 1000px) and (max-width: 1366px)");
+
+  const apply = () => {
+    const app = root.classList.contains("app-mode");
+    const tablet = app && tabletMq.matches;
+    const landscape = tablet && landscapeMq.matches;
+    root.classList.toggle("sdr-tablet", tablet);
+    root.classList.toggle("sdr-tablet-landscape", landscape);
+    // ตารางเป็นการ์ดเองแล้วที่ ≤900px; แนวนอนฝั่งขวาแคบ จึงบังคับเป็นการ์ดด้วย
+    root.classList.toggle("sdr-cards-wide", landscape && window.innerWidth > 900);
+  };
+
+  apply();
+  tabletMq.addEventListener?.("change", apply);
+  landscapeMq.addEventListener?.("change", apply);
+  window.addEventListener("resize", apply);
+  // appShell สลับ app-mode ภายหลังได้ (หมุนจอ) → ตามดูคลาสของ <html>
+  new MutationObserver(apply).observe(root, { attributes: true, attributeFilter: ["class"] });
 }
