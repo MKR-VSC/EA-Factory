@@ -18,6 +18,8 @@
 - [ ] รัน `09-accounting-controls.sql` → ไม่มี error สีแดง
 - [ ] รัน `09` ซ้ำอีกครั้ง → ยังไม่มี error (ยืนยันว่ารันซ้ำได้)
 - [ ] เช็ก: `select machine_no, department, department_code from master_machines limit 5;` → department_code เป็นตัวพิมพ์ใหญ่ เช่น `BLOW`
+- [ ] รัน `10-machine-waste-standards.sql` แล้ว `11-security-hardening.sql` → ไม่มี error สีแดง (ตารางสุดท้ายแสดงรายการ policy ใหม่)
+- [ ] Deploy Edge Functions ใหม่: `supabase functions deploy admin-create-user admin-update-user admin-delete-user`
 - [ ] อัปโหลดไฟล์เว็บชุดใหม่ แล้วเปิดเว็บด้วย Ctrl+Shift+R (มือถือ: ล้างแคช)
 
 ## 1. พนักงานหน้างาน (มือถือ)
@@ -73,6 +75,16 @@
 - [ ] เปลี่ยนบทบาทผู้ใช้อื่น → มีหน้าต่างยืนยัน → กดยกเลิกแล้วค่ากลับเหมือนเดิม
 - [ ] ลองลดสิทธิ์ตัวเอง → ระบบไม่ยอม
 - [ ] ส่งออก CSV รายงาน → คอลัมน์น้ำหนักมีตัวเลขจริง (ไม่เป็น 0)
+
+## 4.1 ทดสอบสิทธิ์ (หลังรัน 11)
+
+- [ ] QR Login → เลือกชื่อหัวหน้า → ได้หน้าฟอร์มบันทึก (ไม่ใช่หน้า Dashboard) และบันทึกได้
+- [ ] พนักงาน (staff) ล็อกอินด้วยรหัส → พิมพ์ `/index.html` ในช่อง URL → ระบบแจ้งไม่มีสิทธิ์
+- [ ] เปิด DevTools → Console ที่หน้า Login (ยังไม่ล็อกอิน) รัน
+      `await supabaseClient.from('daily_waste_reports').delete().neq('id','00000000-0000-0000-0000-000000000000')`
+      → ต้องได้ error "permission denied" และข้อมูลไม่หาย
+- [ ] รัน `await supabaseClient.from('profiles').select('password')` → ต้องได้ error permission denied
+- [ ] หัวหน้าส่งบัญชี / บัญชีกรอกยอดผลิต / Admin เปลี่ยนบทบาท ยังทำได้ตามปกติ
 
 ## 5. หลังทดสอบ
 

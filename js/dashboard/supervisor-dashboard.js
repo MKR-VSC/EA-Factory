@@ -66,6 +66,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     initDateRange();
 
+    // ตรวจ session จริงกับ Supabase Auth + role จากตาราง profiles ก่อน
+    // (เดิมเช็กแค่ localStorage ซึ่งแก้เองได้ หรือได้มาจากการเลือกชื่อผ่าน QR โดยไม่ใส่รหัสผ่าน)
+    if (window.AUTH_GUARD?.requireLogin) {
+      const verified = await window.AUTH_GUARD.requireLogin(ALLOW_ROLES);
+      if (!verified) return;
+    }
+
     currentProfile = getLocalProfile();
 
     if (!currentProfile) {
@@ -395,6 +402,8 @@ function getPreviousMonthRange(startStr, endStr) {
   };
 }
 
+const KPI_ARROWS = { trending_flat: "→", trending_down: "↓", trending_up: "↑" };
+
 function renderKPIComparison(elementId, current, previous, unit = "kg", higherIsBetter = false) {
   const el = document.getElementById(elementId);
   if (!el) return;
@@ -420,12 +429,12 @@ function renderKPIComparison(elementId, current, previous, unit = "kg", higherIs
     icon = "trending_up";
   } else {
     el.className = "kpi-compare-badge neutral";
-    el.innerHTML = `<span class="material-symbols-outlined">trending_flat</span> เท่ากับเดือนก่อน`;
+    el.innerHTML = `<span class="kpi-arrow" aria-hidden="true">→</span> เท่ากับเดือนก่อน`;
     return;
   }
 
   el.className = `kpi-compare-badge ${statusClass}`;
-  el.innerHTML = `<span class="material-symbols-outlined">${icon}</span> ${formattedDiff} ${unit} (${formattedPct}) เทียบเดือนก่อน`;
+  el.innerHTML = `<span class="kpi-arrow" aria-hidden="true">${KPI_ARROWS[icon] || ""}</span> ${formattedDiff} ${unit} (${formattedPct}) เทียบเดือนก่อน`;
 }
 
 function renderKPIPercentComparison(elementId, currentPct, previousPct) {
@@ -451,12 +460,12 @@ function renderKPIPercentComparison(elementId, currentPct, previousPct) {
     icon = "trending_up";
   } else {
     el.className = "kpi-compare-badge neutral";
-    el.innerHTML = `<span class="material-symbols-outlined">trending_flat</span> เท่ากับเดือนก่อน (${previousPct.toFixed(2)}%)`;
+    el.innerHTML = `<span class="kpi-arrow" aria-hidden="true">→</span> เท่ากับเดือนก่อน (${previousPct.toFixed(2)}%)`;
     return;
   }
 
   el.className = `kpi-compare-badge ${statusClass}`;
-  el.innerHTML = `<span class="material-symbols-outlined">${icon}</span> ${formattedDiff} เทียบเดือนก่อน (${previousPct.toFixed(2)}%)`;
+  el.innerHTML = `<span class="kpi-arrow" aria-hidden="true">${KPI_ARROWS[icon] || ""}</span> ${formattedDiff} เทียบเดือนก่อน (${previousPct.toFixed(2)}%)`;
 }
 
 /* ======================================================
@@ -482,19 +491,27 @@ async function loadDashboard() {
   try {
     showLoadingText();
 
+    // ดึงทุกหน้า (Supabase ส่งได้ครั้งละ 1,000 แถว ถ้าไม่แบ่งหน้า ยอดรวมจะขาดหาย)
+    const fetchAll = (build) => (window.SB_FETCH ? window.SB_FETCH.all(build) : build());
     const [currRes, prevRes] = await Promise.all([
-      supabaseClient
-        .from(REPORT_TABLE)
-        .select("*")
-        .gte("report_date", startDate)
-        .lte("report_date", endDate)
-        .order("report_date", { ascending: true })
-        .order("created_at", { ascending: true }),
-      supabaseClient
-        .from(REPORT_TABLE)
-        .select("*")
-        .gte("report_date", prevRange.start)
-        .lte("report_date", prevRange.end)
+      fetchAll(() =>
+        supabaseClient
+          .from(REPORT_TABLE)
+          .select("*")
+          .gte("report_date", startDate)
+          .lte("report_date", endDate)
+          .order("report_date", { ascending: true })
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true }),
+      ),
+      fetchAll(() =>
+        supabaseClient
+          .from(REPORT_TABLE)
+          .select("*")
+          .gte("report_date", prevRange.start)
+          .lte("report_date", prevRange.end)
+          .order("id", { ascending: true }),
+      ),
     ]);
 
     if (currRes.error) throw currRes.error;
@@ -588,12 +605,17 @@ async function attachProblemItemsToReports(rows) {
   if (!reportIds.length) return rows.map(normalizeReportItemsFallback);
 
   try {
-    const { data, error } = await supabaseClient
-      .from(ITEM_TABLE)
-      .select("id, report_id, item_no, problem_type, waste_weight_kg, detail, created_at")
-      .in("report_id", reportIds)
-      .order("item_no", { ascending: true })
-      .order("created_at", { ascending: true });
+    const buildItems = (chunk) =>
+      supabaseClient
+        .from(ITEM_TABLE)
+        .select("id, report_id, item_no, problem_type, waste_weight_kg, detail, created_at")
+        .in("report_id", chunk)
+        .order("item_no", { ascending: true })
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true });
+    const { data, error } = window.SB_FETCH
+      ? await window.SB_FETCH.inChunks(reportIds, buildItems)
+      : await buildItems(reportIds);
 
     if (error) {
       console.warn("โหลด daily_waste_report_items ไม่สำเร็จ ใช้ข้อมูลหัวรายงานแทน:", error);
@@ -837,6 +859,37 @@ function renderStatusChart(map) {
   });
 }
 
+// สีกราฟแบบเรียบ (สีหลักสีเดียว ไม่ลายตา) — ใช้ฟอนต์เดียวกับหน้า
+const CHART_PRIMARY = "#1e3a8a";
+const CHART_SOFT = "rgba(30, 58, 138, 0.12)";
+const CHART_DOUGHNUT = ["#1e3a8a", "#2e7d32", "#e0a63b", "#9ca3af", "#c62828", "#64748b"];
+
+function applyPlainChartStyle(config) {
+  if (typeof Chart !== "undefined") {
+    Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+    Chart.defaults.color = "#6b7280";
+    Chart.defaults.borderColor = "#eef0f3";
+  }
+  (config.data?.datasets || []).forEach((ds) => {
+    if (config.type === "doughnut") {
+      ds.backgroundColor ??= CHART_DOUGHNUT;
+      ds.borderColor ??= "#ffffff";
+      return;
+    }
+    if (config.type === "line") {
+      ds.borderColor ??= CHART_PRIMARY;
+      ds.backgroundColor ??= CHART_SOFT;
+      ds.pointRadius ??= 2;
+      ds.cubicInterpolationMode = "monotone"; // เส้นไม่โค้งเกินจริงจนติดลบ
+      ds.borderWidth ??= 2;
+      return;
+    }
+    ds.backgroundColor ??= CHART_PRIMARY;
+    ds.borderRadius ??= 4;
+    ds.maxBarThickness ??= 28;
+  });
+}
+
 function replaceChart(oldChart, canvasId, config) {
   if (oldChart) oldChart.destroy();
 
@@ -848,14 +901,28 @@ function replaceChart(oldChart, canvasId, config) {
     return null;
   }
 
+  applyPlainChartStyle(config);
+
+  // กราฟแท่งเป็นแนวนอน: ชื่อเครื่อง/ปัญหายาว ๆ อ่านง่ายบนมือถือ
+  const horizontal = config.type === "bar";
+  const valueAxis = {
+    beginAtZero: true,
+    ticks: {
+      callback(value) {
+        return formatNumber(value);
+      },
+    },
+  };
+
   return new Chart(canvas, {
     ...config,
     options: {
       responsive: true,
       maintainAspectRatio: false,
       resizeDelay: 200,
+      indexAxis: horizontal ? "y" : "x",
       plugins: {
-        legend: { display: true },
+        legend: { display: config.type === "doughnut", position: "bottom" },
         tooltip: {
           callbacks: {
             label(context) {
@@ -869,16 +936,9 @@ function replaceChart(oldChart, canvasId, config) {
       scales:
         config.type === "doughnut"
           ? {}
-          : {
-              y: {
-                beginAtZero: true,
-                ticks: {
-                  callback(value) {
-                    return formatNumber(value);
-                  },
-                },
-              },
-            },
+          : horizontal
+            ? { x: valueAxis, y: { ticks: { autoSkip: false } } }
+            : { y: valueAxis },
     },
   });
 }
@@ -990,7 +1050,7 @@ topList.innerHTML = Object.entries(groupedByDept)
               <small>
                 เสีย ${formatNumber(item.waste)} kg |
                 ผลิต ${formatNumber(item.production)} kg |
-                ${formatNumber(item.count)} รายการ
+                ${Number(item.count || 0).toLocaleString("th-TH")} รายการ
               </small>
             </div>
           </div>

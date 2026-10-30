@@ -104,9 +104,11 @@
     return `${formatNumber(value, 2, 2)}%`;
   }
 
+  // สูตรกลางของระบบ (core/wasteFormula.js): ของเสีย ÷ (ผลิตดี + ของเสีย) × 100
   function calcWastePercent(waste, production) {
     const p = toNumber(production);
-    return p > 0 ? (toNumber(waste) / p) * 100 : 0;
+    const w = toNumber(waste);
+    return p > 0 ? (w / (p + w)) * 100 : 0;
   }
 
   function safeText(value) {

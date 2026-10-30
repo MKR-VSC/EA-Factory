@@ -1,0 +1,295 @@
+/* ==========================================================
+   production-entry.css — กรอกยอดผลิตทั้งใบ (pages/production-entry.html)
+   ========================================================== */
+.pe-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+}
+
+.pe-field {
+  display: grid;
+  gap: 4px;
+  min-width: 170px;
+  margin: 0;
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.pe-field input,
+.pe-field select {
+  min-height: 42px;
+}
+
+.pe-ctl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pe-hint {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.pe-alert {
+  padding: 8px 14px;
+  color: #92400e;
+  background: #fffbea;
+  border: 1px solid #f1dfa6;
+  border-radius: 10px;
+}
+
+.pe-alert[hidden] {
+  display: none;
+}
+
+.pe-list {
+  display: grid;
+  gap: 14px;
+}
+
+.pe-empty {
+  margin: 0;
+  padding: 32px 8px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.pe-dept {
+  padding-top: 10px;
+}
+
+.pe-dept-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--line);
+}
+
+.pe-dept-head h2 {
+  margin: 0;
+  font-size: calc(17px * var(--fs, 1));
+}
+
+.pe-dept-head h2 small {
+  color: var(--muted);
+  font-size: 0.75em;
+  font-weight: 400;
+}
+
+.pe-dept-sum {
+  color: var(--muted);
+  font-size: calc(14px * var(--fs, 1));
+}
+
+/* ---------- เครื่อง ---------- */
+.pe-machine {
+  display: grid;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.pe-machine:last-child {
+  border-bottom: 0;
+}
+
+.pe-machine.is-dirty {
+  margin: 0 -10px;
+  padding: 12px 10px;
+  background: #fffdf3;
+  border-radius: 10px;
+}
+
+.pe-m-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.pe-m-info strong {
+  font-size: calc(16px * var(--fs, 1));
+}
+
+.pe-m-info small {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.pe-chip {
+  padding: 1px 8px;
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+  white-space: nowrap;
+  background: #f1f3f6;
+  border-radius: 999px;
+}
+
+.pe-chip.ok { color: var(--ok); background: #eef8ef; }
+.pe-chip.warn { color: #b45309; background: #fff6e0; }
+.pe-chip.off { color: #6b7280; background: #eceef1; }
+
+.pe-m-lines {
+  display: grid;
+  gap: 6px;
+}
+
+.pe-line {
+  display: grid;
+  grid-template-columns: 1fr 1fr 34px;
+  grid-template-areas:
+    "spec spec spec"
+    "shift unit del"
+    "qty weight weight";
+  gap: 6px;
+}
+
+.pe-line.is-invalid input {
+  border-color: var(--danger);
+  background: #fff5f5;
+}
+
+.pe-line input,
+.pe-line select {
+  width: 100%;
+  min-height: 40px;
+}
+
+.pe-shift { grid-area: shift; }
+.pe-spec { grid-area: spec; }
+.pe-qty { grid-area: qty; text-align: right; }
+.pe-unit { grid-area: unit; }
+.pe-weight { grid-area: weight; text-align: right; font-weight: 600; }
+
+.pe-del {
+  grid-area: del;
+  align-self: center;
+  width: 34px;
+  height: 34px;
+  color: var(--danger);
+  font-size: 20px;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.pe-add {
+  justify-self: start;
+  padding: 4px 10px;
+  color: var(--primary);
+  font-size: calc(13px * var(--fs, 1));
+  background: none;
+  border: 1px dashed #c7d0e6;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.pe-m-sum {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+
+.pe-m-sum strong {
+  font-size: calc(16px * var(--fs, 1));
+}
+
+.pe-m-sum small {
+  color: var(--muted);
+}
+
+.pe-m-sum em {
+  color: #b45309;
+  font-size: calc(12px * var(--fs, 1));
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* ---------- แถบบันทึก ---------- */
+.pe-savebar {
+  position: sticky;
+  bottom: calc(12px + var(--safe-b, 0px));
+  z-index: 60;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid #e0a63b;
+  border-radius: 14px;
+  box-shadow: 0 6px 24px rgba(17, 24, 39, 0.16);
+}
+
+.pe-savebar[hidden] {
+  display: none;
+}
+
+.pe-savebar > div {
+  flex: 1 1 200px;
+}
+
+.pe-savebar small {
+  display: block;
+  color: var(--muted);
+}
+
+.pe-toasts {
+  position: fixed;
+  top: 70px;
+  right: 16px;
+  z-index: 120;
+  display: grid;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 32px));
+}
+
+.pe-toast {
+  position: static !important;
+  transform: none !important;
+  transition: opacity 0.3s;
+}
+
+.toast-success { background: var(--ok); }
+.toast-error { background: var(--danger); }
+.toast-info { background: #374151; }
+
+@media (min-width: 760px) {
+  .pe-machine {
+    grid-template-columns: 170px minmax(0, 1fr) 170px;
+    align-items: start;
+    gap: 12px;
+  }
+
+  .pe-m-info {
+    display: grid;
+    gap: 2px;
+    justify-items: start;
+  }
+
+  .pe-line {
+    grid-template-columns: 88px minmax(0, 1fr) 90px 84px 120px 34px;
+    grid-template-areas: none;
+  }
+
+  .pe-line > * {
+    grid-area: auto;
+  }
+
+  .pe-m-sum {
+    display: grid;
+    justify-items: end;
+    text-align: right;
+  }
+}

@@ -403,7 +403,9 @@ function handleQrLogin() {
   }
 
   const selected = select.options[select.selectedIndex];
-  const userRole = selected.dataset.role || "staff";
+  // QR Login ไม่มีการตรวจรหัสผ่าน จึงให้สิทธิ์ "บันทึกของเสีย" เท่านั้นเสมอ
+  // (เดิมใช้ role จริงของคนที่เลือก → เลือกชื่อหัวหน้า/ผู้บริหารแล้วเข้าหน้า Dashboard ได้โดยไม่ต้องใส่รหัสผ่าน)
+  const userRole = "staff";
 
   AUTH_GUARD.saveProfileSession(
     {
@@ -468,12 +470,8 @@ function toggleGuidePanel() {
 }
 
 function openQrScanner() {
-  alert("กรุณาสแกน QR Code ด้วยกล้องมือถือ หรือเปิดลิงก์ QR ที่เตรียมไว้");
-
-  // ถ้าต้องการให้ไปหน้าสแกน QR แยก
-  // window.location.href = "/html/qr-scanner.html";
-  window.location.href =
-    "https://ea-factory-2sx.pages.dev/pages/form-department.html?dept=SHEET";
+  // เดิมส่งไปเว็บทดสอบ (ea-factory-2sx.pages.dev) แผนก SHEET ตายตัว — ให้เปิดตัวสแกน QR ในหน้านี้แทน
+  showQrScanner();
 }
 
 let qrScanner = null;

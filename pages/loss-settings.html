@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>อาการเสีย &amp; ประเภท - PVT&amp;T FACTORY</title>
+
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="icon" type="image/png" href="/icons/logo-header.png" />
+    <link rel="apple-touch-icon" href="/icons/Logo_Apps3.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#ffffff" />
+
+    <link rel="stylesheet" href="/css/form-mobile.css" />
+    <link rel="stylesheet" href="/css/review-simple.css" />
+    <link rel="stylesheet" href="/css/accounting-simple.css" />
+    <link rel="stylesheet" href="/css/settings-simple.css" />
+    <link rel="stylesheet" href="/css/loss-settings.css" />
+    <script src="/js/department/formSettings.js"></script>
+  </head>
+
+  <body class="rv acc fs ls">
+    <header class="fm-top rv-top acc-top">
+      <img class="fm-logo" src="/icons/logo-header.png" width="42" height="37" alt="PVT&amp;T FACTORY" />
+      <div class="fm-top-title">
+        <h1>อาการเสีย &amp; ประเภท</h1>
+        <p><span id="lbl-active-user">-</span> · <span id="lbl-active-role">-</span></p>
+      </div>
+      <button type="button" id="btn-refresh" class="fm-icon-btn" aria-label="โหลดข้อมูลล่าสุด" title="โหลดข้อมูลล่าสุด">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5" /></svg>
+      </button>
+      <button type="button" class="fm-icon-btn" onclick="FORM_SETTINGS.open()" aria-label="ตั้งค่าตัวอักษร" title="ตั้งค่าตัวอักษร">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19l5-14h2l5 14M6.5 13h7" /><path d="M17 11h4M19 9v4" /></svg>
+      </button>
+    </header>
+
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <div class="acc-layout">
+      <nav class="acc-side" aria-label="เมนูฝ่ายบัญชี">
+        <div class="acc-side-group">
+          <span class="acc-side-title">เมนูหลัก</span>
+          <button type="button" class="acc-side-item" data-nav="data"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span>ข้อมูลของเสีย</span></button>
+          <button type="button" class="acc-side-item" data-nav="dash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16v-5M12 16V7M17 16v-8" /></svg><span>Dashboard ของเสีย</span></button>
+          <button type="button" class="acc-side-item" data-nav="summary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 10h16M4 15h10M4 20h7" /></svg><span>สรุปผลรวม</span></button>
+          <button type="button" class="acc-side-item" data-nav="pending"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z" /></svg><span>รายการรอตรวจ</span></button>
+          <a class="acc-side-item" href="/pages/production-entry.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M9 10v9M15 10v9" /></svg><span>กรอกยอดผลิตทั้งใบ</span></a>
+          <a class="acc-side-item" href="/pages/daily-report.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7" /></svg><span>รายงานประจำวัน</span></a>
+          <a class="acc-side-item" data-role-only="admin accounting" href="/pages/factory-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 5v4M8 15v4" /></svg><span>ตั้งค่าเกณฑ์ของเสีย</span></a>
+          <a class="acc-side-item is-active" aria-current="page" href="/pages/loss-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M4 12h10M4 18h10M17 5l3 3-3 3M20 16h-3" /></svg><span>อาการเสีย &amp; ประเภท</span></a>
+        </div>
+        <div class="acc-side-group" id="accSideOther" hidden>
+          <span class="acc-side-title">ไปหน้าอื่น</span>
+          <a class="acc-side-item" data-role-only="admin management manager executive" href="/index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" /></svg><span>Dashboard ผู้บริหาร</span></a>
+          <a class="acc-side-item" data-role-only="admin" href="/pages/admin-panel.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg><span>หน้าแอดมิน</span></a>
+        </div>
+        <button type="button" class="acc-side-item acc-side-logout" id="btn-logout-side"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg><span>ออกจากระบบ</span></button>
+      </nav>
+
+      <main class="acc-main" id="loss-app">
+        <section class="fs-info ls-info">
+          <div class="rv-stat ls-type-card is-production">
+            <span>ประเภท 1</span>
+            <strong>สูญเสียจากการผลิต</strong>
+            <small>ของเสียจากปัญหาระหว่างผลิต เช่น ทะลุ ตกใบมีด น้ำหนักไม่ถึง</small>
+          </div>
+          <div class="rv-stat ls-type-card is-forced">
+            <span>ประเภท 2</span>
+            <strong>สูญเสียบังคับ</strong>
+            <small>ของเสียที่เลี่ยงไม่ได้จากการทำงาน เช่น เปลี่ยนไซร้ เดินเครื่องใหม่ ไฟดับ</small>
+          </div>
+          <div class="rv-stat">
+            <span>เมื่อเปลี่ยนประเภท</span>
+            <strong>มีผลกับรายการใหม่</strong>
+            <small>รายงานที่บันทึกไปแล้วคงประเภทเดิม · หัวหน้าเปลี่ยนรายรายการได้ที่หน้าตรวจสอบรายวัน</small>
+          </div>
+        </section>
+
+        <div id="alert-box" class="alert-box" hidden></div>
+
+        <section class="rv-card ls-panel">
+          <div class="ls-depts" id="dept-chips" role="tablist" aria-label="เลือกแผนก">
+            <span class="ls-muted">กำลังโหลดแผนก...</span>
+          </div>
+
+          <div class="ls-toolbar">
+            <div class="ls-filter" role="group" aria-label="กรองตามประเภท">
+              <button type="button" class="ls-filter-btn is-active" data-filter="all">ทั้งหมด <b id="cnt-all">0</b></button>
+              <button type="button" class="ls-filter-btn" data-filter="production">การผลิต <b id="cnt-production">0</b></button>
+              <button type="button" class="ls-filter-btn" data-filter="forced">บังคับ <b id="cnt-forced">0</b></button>
+            </div>
+            <div class="fs-search ls-search">
+              <input type="search" id="input-search" placeholder="ค้นหาอาการ..." autocomplete="off" aria-label="ค้นหาอาการ" />
+            </div>
+          </div>
+
+          <form class="ls-add" id="form-add" autocomplete="off">
+            <input type="text" id="new-name" placeholder="ชื่ออาการใหม่ เช่น หลอดสั้น" maxlength="120" required aria-label="ชื่ออาการใหม่" />
+            <select id="new-type" aria-label="ประเภทของอาการใหม่">
+              <option value="production">สูญเสียจากการผลิต</option>
+              <option value="forced">สูญเสียบังคับ</option>
+            </select>
+            <button type="submit" class="btn primary" id="btn-add">เพิ่มอาการ</button>
+          </form>
+
+          <div class="ls-head" aria-hidden="true">
+            <span>ลำดับ</span><span>อาการ</span><span>ประเภท</span><span>ใช้งาน</span><span></span>
+          </div>
+          <div class="ls-list" id="problem-list">
+            <p class="ls-empty">กำลังโหลด...</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <nav class="fm-tabbar acc-tabbar" aria-label="เมนูฝ่ายบัญชี">
+      <button type="button" class="fm-tab" data-nav="data"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span class="fm-tab-label">ข้อมูล</span></button>
+      <button type="button" class="fm-tab" data-nav="dash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16v-5M12 16V7M17 16v-8" /></svg><span class="fm-tab-label">Dashboard</span></button>
+      <a class="fm-tab" data-role-only="admin accounting" href="/pages/factory-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 5v4M8 15v4" /></svg><span class="fm-tab-label">เกณฑ์</span></a>
+      <a class="fm-tab is-active" aria-current="page" href="/pages/loss-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M4 12h10M4 18h10M17 5l3 3-3 3M20 16h-3" /></svg><span class="fm-tab-label">อาการ</span></a>
+      <button type="button" class="fm-tab" id="btn-logout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg><span class="fm-tab-label">ออก</span></button>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/core/supabaseClient.js"></script>
+    <script src="/auth/authGuard.js"></script>
+    <script src="/core/roleConfig.js"></script>
+    <script src="/js/accounting/loss-settings.js"></script>
+    <script src="/js/accounting/accountingSimpleNav.js"></script>
+  </body>
+</html>

@@ -2,377 +2,132 @@
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-    />
-    <title>ระบบบันทึกข้อมูลปัญหาการผลิตส่วนกลาง - PVT&T FACTORY</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>บันทึกของเสีย - PVT&amp;T FACTORY</title>
 
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-      rel="stylesheet"
-    />
-
-<!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/Logo_Apps3.png?v=3" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icons/Logo_Apps3.png?v=3" />
+    <!-- โหลดเร็ว: ไม่ใช้ Google Fonts / ไอคอนฟอนต์ ใช้ฟอนต์ไทยที่มีในเครื่องอยู่แล้ว -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="icon" type="image/png" href="/icons/logo-header.png" />
     <link rel="apple-touch-icon" href="/icons/Logo_Apps3.png" />
-
-    <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#1E3A8A" />
+    <meta name="theme-color" content="#ffffff" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="PVT&amp;T Factory" />
 
-
-    <link rel="icon" href="data:;base64,=" />
-    <link rel="stylesheet" href="/css/form-department.css" />
-      <link rel="stylesheet" href="/css/responsive.css" />
-    <link rel="stylesheet" href="/css/splash.css" />
-    <link rel="stylesheet" href="/css/offline-queue.css" />
-    <link rel="stylesheet" href="/css/app-shell.css" />
-    <script src="/core/appShell.js"></script>
+    <link rel="stylesheet" href="/css/form-mobile.css" />
+    <!-- ใช้ฟอนต์/ขนาดที่ตั้งไว้ตั้งแต่ก่อนหน้าแสดง -->
+    <script src="/js/department/formSettings.js"></script>
   </head>
 
   <body>
-    <!-- หน้ารอโหลดตอนเปิดฟอร์ม -->
-    <div id="splash-screen" class="pvt-splash" role="status" aria-label="กำลังเปิดแอป">
-      <div class="pvt-splash-mark" aria-hidden="true">
-        <span class="pvt-splash-glow"></span>
-        <svg class="pvt-splash-ring" viewBox="0 0 120 120">
-          <defs>
-            <linearGradient id="pvtSplashRing" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#ff8a3d" />
-              <stop offset="0.55" stop-color="#f26a1b" />
-              <stop offset="1" stop-color="#1e3a8a" />
-            </linearGradient>
-          </defs>
-          <circle class="track" cx="60" cy="60" r="54" />
-          <circle class="arc" cx="60" cy="60" r="54" />
-        </svg>
-        <img class="pvt-splash-logo" src="/icons/Logo_Apps3.png?v=3" alt="" />
+    <!-- แถบหัว -->
+    <header class="fm-top">
+      <button type="button" class="fm-icon-btn" id="btn-back" aria-label="ย้อนกลับ">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+      </button>
+      <img class="fm-logo" src="/icons/logo-header.png" width="42" height="37" alt="PVT&amp;T FACTORY" />
+      <div class="fm-top-title">
+        <h1>บันทึกของเสีย</h1>
+        <p><span id="current-dept-label">-</span></p>
       </div>
-      <div class="pvt-splash-title">PVT&amp;T Factory</div>
-      <div class="pvt-splash-sub">กำลังเตรียมฟอร์มบันทึกข้อมูล</div>
-    </div>
+      <span class="fm-net" id="network-status-text" aria-live="polite">ออนไลน์</span>
+      <button type="button" class="fm-icon-btn" id="btn-settings" aria-label="ตั้งค่าตัวอักษร" title="ตั้งค่าตัวอักษร">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19l5-14h2l5 14M6.5 13h7" /><path d="M17 11h4M19 9v4" /></svg>
+      </button>
+    </header>
 
-    <!-- Overlay ตอนบันทึกข้อมูล -->
-    <div id="login-overlay" class="pvt-loader hidden" role="status" aria-live="polite">
-      <div class="pvt-loader-card">
-        <div class="pvt-loader-mark" aria-hidden="true">
-          <svg class="pvt-loader-ring" viewBox="0 0 120 120" aria-hidden="true">
-          <defs>
-            <linearGradient id="pvtLoaderRing" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#ff8a3d" />
-              <stop offset="0.55" stop-color="#f26a1b" />
-              <stop offset="1" stop-color="#1e3a8a" />
-            </linearGradient>
-          </defs>
-          <circle class="track" cx="60" cy="60" r="54" />
-          <circle class="arc" cx="60" cy="60" r="54" />
-        </svg>
-          <img class="pvt-loader-logo" src="/icons/Logo_Apps3.png?v=3" alt="" />
-        </div>
-        <h3 class="pvt-loader-title">กำลังบันทึกข้อมูล...</h3>
-        <p class="pvt-loader-text">กรุณารอสักครู่</p>
+    <main class="fm-main" id="dept-body">
+      <!-- ผู้บันทึก -->
+      <button type="button" class="fm-user" onclick="openStaffNameModal(true)">
+        <span class="fm-user-label">ผู้บันทึก</span>
+        <strong id="display-username">ยังไม่ได้ระบุชื่อ</strong>
+        <span class="fm-link">เปลี่ยน</span>
+      </button>
+
+      <!-- แสดงเฉพาะตอนเปิดจาก QR -->
+      <div id="qr-context-card" class="fm-qr" style="display: none">
+        <div><span>แผนก</span><strong id="qr-dept-label">-</strong></div>
+        <div><span>เครื่องจักร</span><strong id="qr-machine-label">-</strong></div>
       </div>
-    </div>
 
-    <!-- Modal กรอกชื่อก่อนใช้งาน -->
-    <div id="staff-name-modal" class="staff-name-modal hidden">
-      <div class="staff-name-box">
-        <div class="staff-name-icon">
-          <span class="material-symbols-outlined">badge</span>
-        </div>
-        <h3>ระบุชื่อผู้บันทึกข้อมูล</h3>
-        <p>
-          กรุณากรอกชื่อก่อนเข้าใช้งาน
-          เพื่อให้ตรวจสอบย้อนหลังได้ว่าใครเป็นผู้บันทึกข้อมูล
-        </p>
-
-        <label for="staff-name-input">ชื่อผู้บันทึกข้อมูล</label>
-        <input
-          id="staff-name-input"
-          type="text"
-          placeholder="เช่น สมชาย / พนักงานเครื่อง F1"
-          autocomplete="name"
-        />
-
-        <button
-          type="button"
-          class="btn-start-form"
-          onclick="confirmStaffName()"
-        >
-          เริ่มกรอกข้อมูล
-        </button>
-        <small>ระบบจะใช้ชื่อนี้เช็กการบันทึกซ้ำในแผนกเดิมของวันเดียวกัน</small>
-      </div>
-    </div>
-
-    <!-- MAIN APP: JS จะเติม class แผนกลงที่ div นี้ -->
-    <div class="dept-default" id="dept-body">
-      <div class="app-shell">
-        <!-- ส่วนหัวระบบ -->
-        <aside class="sidebar app-hero">
-          <div class="pvt-top-header">
-            <div class="brand-text">
-              <img src="/icons/Logo_Apps3.png?v=3" alt="PVT&T FACTORY Logo" style="width: 74px !important; height: 74px !important; max-width: 74px !important; max-height: 74px !important;" />
-              <div class="title-copy">
-                <h3>ระบบบันทึกข้อมูลของเสียจากการผลิต</h3>
-                <p>บริษัท พี.วี.ที.แอนด์ ที.พลาส จำกัด</p>
-              </div>
-            </div>
-
-            <div class="user-profile-box">
-              <div class="user-info">
-                <span class="material-symbols-outlined user-icon">account_circle</span>
-                <div class="user-copy">
-                  <span>ผู้บันทึกข้อมูล</span>
-                  <strong id="display-username">ยังไม่ได้ระบุชื่อ</strong>
-                </div>
-              </div>
-            </div>
+      <form id="department-waste-form" novalidate>
+        <div class="fm-card">
+          <div class="fm-field">
+            <label for="incident-datetime">วัน-เวลาที่พบปัญหา <b>*</b></label>
+            <input type="datetime-local" id="incident-datetime" required />
           </div>
 
-          <nav class="sidebar-menu hero-panel">
-            <div class="hero-actions">
-              <button type="button" class="btn-back" onclick="history.back()">
-                <span class="material-symbols-outlined">arrow_back</span>
-                ย้อนกลับ
-              </button>
+          <div class="fm-field">
+            <label for="work-shift">กะ <b>*</b></label>
+            <select id="work-shift" required>
+              <option value="">เลือกกะ</option>
+            </select>
+          </div>
 
-              <div class="status-buttons header-status-buttons">
-                <button type="button" class="status-btn dept-btn">
-                  <span class="material-symbols-outlined">my_location</span>
-                  <span id="dept-badge-text">: MONO</span>
-                </button>
+          <div class="fm-field">
+            <label for="machine-no">เครื่องจักร <b>*</b></label>
+            <select id="machine-no" required>
+              <option value="">กำลังโหลด...</option>
+            </select>
+          </div>
+        </div>
 
-                <button type="button" class="status-btn online-btn">
-                  <span class="material-symbols-outlined">wifi</span>
-                  <span id="network-status-text">: ONLINE</span>
-                </button>
-              </div>
+        <h2 class="fm-section">รายการปัญหา</h2>
+        <div id="problem-items" class="fm-problems"></div>
 
-              <button type="button" class="btn-logout" onclick="handleLogout()">
-                <span class="material-symbols-outlined">logout</span>
-                ออกจากระบบ
-              </button>
-            </div>
-          </nav>
-        </aside>
+        <button type="button" id="btn-add-problem" class="fm-btn fm-btn-outline">+ เพิ่มปัญหา</button>
 
-        <!-- ฟอร์มหลัก -->
-        <main class="main-content">
-          <section class="form-page-card">
-            <header class="content-header">
-              <div class="header-title-area">
-                <div class="title-icon">
-                  <span class="material-symbols-outlined">assignment</span>
-                </div>
-                <div>
-                  <h1 id="dept-title-main">ฟอร์มบันทึกข้อมูลปัญหาประจำแผนก</h1>
-                  <p class="subtitle">
-                    กรุณากรอกข้อมูลปัญหาที่พบให้ครบถ้วน
-                    เพื่อความถูกต้องในการส่ง
-                  </p>
-                </div>
-              </div>
-            </header>
+        <div class="fm-total">
+          <span>น้ำหนักของเสียรวม</span>
+          <strong><span id="total-waste-kg">0.00</span> kg</strong>
+        </div>
+      </form>
+    </main>
 
-            <!-- แสดงเฉพาะตอนเปิดจาก QR -->
-            <div
-              id="qr-context-card"
-              class="qr-context-card"
-              style="display: none"
-            >
-              <div>
-                <strong
-                  ><span class="material-symbols-outlined">place</span>
-                  แผนก</strong
-                >
-                <span id="qr-dept-label">-</span>
-              </div>
-              <div>
-                <strong
-                  ><span class="material-symbols-outlined">settings</span>
-                  เครื่องจักร</strong
-                >
-                <span id="qr-machine-label">-</span>
-              </div>
-            </div>
+    <!-- แถบไอคอนด้านล่าง -->
+    <nav class="fm-tabbar" aria-label="เมนูหลัก">
+      <button type="button" class="fm-tab btn-clear" onclick="resetFormWithConfirm()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
+        <span class="fm-tab-label">ล้างข้อมูล</span>
+      </button>
+      <a class="fm-tab" href="/login.html#scan">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M4 12h16" /></svg>
+        <span class="fm-tab-label">สแกน QR</span>
+      </a>
+      <button type="submit" form="department-waste-form" class="fm-tab fm-tab-save btn-submit">
+        <span class="fm-tab-save-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6" /></svg>
+        </span>
+        <span class="fm-tab-label">บันทึก</span>
+      </button>
+      <button type="button" class="fm-tab" onclick="openStaffNameModal(true)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4-6 8-6s7 2 8 6" /></svg>
+        <span class="fm-tab-label">ผู้บันทึก</span>
+      </button>
+      <button type="button" class="fm-tab" onclick="handleLogout()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg>
+        <span class="fm-tab-label">ออก</span>
+      </button>
+    </nav>
 
-            <!-- แผนกปัจจุบัน แสดงชัดเพื่อกันกรอกผิดแผนก -->
-            <div class="current-dept-box">
-              <span class="material-symbols-outlined">location_on</span>
-              <strong>แผนกปัจจุบัน :</strong>
-              <span id="current-dept-label">-</span>
-            </div>
-
-            <form id="department-waste-form" class="mobile-form">
-              <div class="form-group">
-                <label for="incident-datetime">
-                  <span class="material-symbols-outlined label-icon blue"
-                    >calendar_month</span
-                  >
-                  วัน-เวลาที่เกิดเหตุปัญหาการผลิต
-                  <span class="required">*</span>
-                </label>
-                <input type="datetime-local" id="incident-datetime" required />
-                <small class="helper-text"
-                  >กรุณาระบุวันและเวลาจริงที่พบปัญหาในการทำงานของท่าน</small
-                >
-              </div>
-
-              <div class="form-group">
-                <label for="work-shift">
-                  <span class="material-symbols-outlined label-icon amber"
-                    >schedule</span
-                  >
-                  กะการทำงาน (Shift)
-                  <span class="required">*</span>
-                </label>
-                <select id="work-shift" required>
-                  <option value="">-- โปรดเลือกกะการทำงาน --</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label for="machine-no">
-                  <span class="material-symbols-outlined label-icon blue"
-                    >precision_manufacturing</span
-                  >
-                  เครื่องจักร / ไลน์การผลิต
-                  <span class="required">*</span>
-                </label>
-                <select id="machine-no" required>
-                  <option value="">-- กำลังโหลดรายการเครื่อง --</option>
-                </select>
-              </div>
-
-              <!-- รายการปัญหาแบบหลายข้อ
-                   1 เครื่องสามารถมีได้หลายปัญหาใน 1 ครั้งบันทึก
-                   แต่ละปัญหาระบุน้ำหนักแยกกัน และระบบจะรวมให้อัตโนมัติ -->
-              <section class="form-group problem-items-card">
-
-  <div class="problem-items-header">
-    <label>
-      <span class="material-symbols-outlined label-icon red">error</span>
-      รายการปัญหาที่พบ
-      <span class="required">*</span>
-    </label>
-  </div>
-
-  <div id="problem-items" class="problem-items-list">
-    <!-- JS จะสร้างรายการปัญหาตรงนี้ -->
-  </div>
-
-  <!-- ย้ายปุ่มเพิ่มปัญหามาไว้ตรงนี้ -->
-  <button
-    type="button"
-    id="btn-add-problem"
-    class="btn-add-problem"
-    style="width:100%; margin-top:12px;"
-  >
-    <span class="material-symbols-outlined">add_circle</span>
-    เพิ่มปัญหา
-  </button>
-
-  <div class="problem-total-box">
-    <span class="material-symbols-outlined">scale</span>
-    <span>น้ำหนักของเสียรวม</span>
-    <strong><span id="total-waste-kg">0.00</span> kg</strong>
-  </div>
-
-  <small class="helper-text">
-    เลือกปัญหาได้หลายข้อในเครื่องเดียว แล้วกรอกน้ำหนักแยกตามปัญหา
-  </small>
-
-</section>
-
-              <!-- <div class="form-group full-textarea">
-                <label for="problem-description">
-                  <span class="material-symbols-outlined label-icon blue"
-                    >edit_note</span
-                  >
-                  รายละเอียดปัญหา / หมายเหตุ
-                  <span class="required">*</span>
-                </label>
-                <textarea
-                  id="problem-description"
-                  rows="4"
-                  placeholder="กรุณาระบุรายละเอียดของปัญหาที่เกิดขึ้น"
-                  required
-                ></textarea>
-              </div> -->
-
-              <div class="form-actions">
-                <button
-                  type="button"
-                  class="btn-clear"
-                  onclick="resetFormWithConfirm()"
-                >
-                  <span class="material-symbols-outlined"
-                    >cleaning_services</span
-                  >
-                  ล้างข้อมูล
-                </button>
-                <button type="submit" class="btn-submit">
-                  <span class="material-symbols-outlined">save</span>
-                  บันทึกข้อมูล
-                </button>
-              </div>
-            </form>
-          </section>
-        </main>
+    <!-- ระบุชื่อผู้บันทึก -->
+    <div id="staff-name-modal" class="fm-modal hidden">
+      <div class="fm-modal-box">
+        <h3>ชื่อผู้บันทึก</h3>
+        <p>ใช้ตรวจสอบย้อนหลังว่าใครเป็นผู้บันทึก</p>
+        <input id="staff-name-input" type="text" placeholder="เช่น สมชาย" autocomplete="name" enterkeyhint="done" />
+        <button type="button" class="fm-btn fm-btn-primary" onclick="confirmStaffName()">เริ่มกรอกข้อมูล</button>
       </div>
     </div>
 
-    <!-- Modal ระบุรายละเอียดเมื่อเลือกปัญหาอื่นๆ -->
-    <div id="other-problem-modal" class="other-problem-modal hidden">
-      <div class="other-problem-box">
-        <div class="other-problem-icon">
-          <span class="material-symbols-outlined">help</span>
-        </div>
-        <h3>ระบุรายละเอียดปัญหาอื่นๆ</h3>
-        <p>
-          กรุณาอธิบายว่า “อื่นๆ” คือปัญหาอะไร
-          เพื่อให้นำข้อมูลไปวิเคราะห์ต่อได้แม่นยำขึ้น
-        </p>
-
-        <label for="other-problem-input">รายละเอียดปัญหาอื่นๆ</label>
-        <textarea
-          id="other-problem-input"
-          rows="4"
-          placeholder="เช่น ฟิล์มย่นช่วงเริ่มเดินเครื่อง / เครื่องสะดุดเป็นช่วง..."
-        ></textarea>
-
-        <div class="other-problem-actions">
-          <button
-            type="button"
-            class="btn-other-cancel"
-            onclick="cancelOtherProblem()"
-          >
-            ยกเลิก
-          </button>
-          <button
-            type="button"
-            class="btn-other-save"
-            onclick="confirmOtherProblem()"
-          >
-            บันทึกรายละเอียด
-          </button>
-        </div>
-
-        <small
-          >ระบบจะเก็บรายละเอียดนี้ไว้ในรายงาน
-          เพื่อสรุปสาเหตุของปัญหาอื่นๆ</small
-        >
+    <!-- กำลังบันทึก -->
+    <div id="login-overlay" class="fm-loading hidden" role="status" aria-live="polite">
+      <div class="fm-loading-box">
+        <span class="fm-spinner" aria-hidden="true"></span>
+        <h3>กำลังบันทึกข้อมูล...</h3>
+        <p>กรุณารอสักครู่</p>
       </div>
     </div>
 
@@ -380,11 +135,7 @@
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/activityLogger.js"></script>
     <script src="/core/ea-common.js"></script>
-    <script src="/core/tableSwipeDetector.js"></script>
-    <script src="/core/counterAnimation.js"></script>
-    <script src="/services/loadingService.js"></script>
     <script src="/js/department/form-department.js"></script>
     <script src="/js/department/offlineQueue.js"></script>
-      <script src="/core/responsiveTables.js"></script>
   </body>
 </html>

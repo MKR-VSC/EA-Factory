@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>รายงานการผลิตและของเสีย - PVT&amp;T FACTORY</title>
+
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="icon" type="image/png" href="/icons/logo-header.png" />
+    <link rel="apple-touch-icon" href="/icons/Logo_Apps3.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#ffffff" />
+
+    <link rel="stylesheet" href="/css/form-mobile.css" />
+    <link rel="stylesheet" href="/css/review-simple.css" />
+    <link rel="stylesheet" href="/css/accounting-simple.css" />
+    <link rel="stylesheet" href="/css/daily-report.css" />
+    <script src="/js/department/formSettings.js"></script>
+  </head>
+
+  <body class="rv acc dr">
+    <header class="fm-top rv-top acc-top">
+      <img class="fm-logo" src="/icons/logo-header.png" width="42" height="37" alt="PVT&amp;T FACTORY" />
+      <div class="fm-top-title">
+        <h1>รายงานการผลิตและของเสีย</h1>
+        <p><span id="lbl-user">-</span> · แบบใบรายงานประจำวัน</p>
+      </div>
+      <button type="button" id="btn-refresh" class="fm-icon-btn" aria-label="โหลดข้อมูลล่าสุด" title="โหลดข้อมูลล่าสุด">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5" /></svg>
+      </button>
+      <button type="button" class="fm-icon-btn" onclick="FORM_SETTINGS.open()" aria-label="ตั้งค่าตัวอักษร" title="ตั้งค่าตัวอักษร">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19l5-14h2l5 14M6.5 13h7" /><path d="M17 11h4M19 9v4" /></svg>
+      </button>
+    </header>
+
+    <div class="acc-layout">
+      <nav class="acc-side" aria-label="เมนูฝ่ายบัญชี">
+        <div class="acc-side-group">
+          <span class="acc-side-title">เมนูหลัก</span>
+          <button type="button" class="acc-side-item" data-nav="data" data-role-only="admin accounting management"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span>ข้อมูลของเสีย</span></button>
+          <a class="acc-side-item" data-role-only="admin accounting management" href="/pages/production-entry.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M9 10v9M15 10v9" /></svg><span>กรอกยอดผลิตทั้งใบ</span></a>
+          <button type="button" class="acc-side-item" data-nav="summary" data-role-only="admin accounting management"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 10h16M4 15h10M4 20h7" /></svg><span>สรุปผลรวม</span></button>
+          <a class="acc-side-item is-active" aria-current="page" href="/pages/daily-report.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7" /></svg><span>รายงานประจำวัน</span></a>
+          <a class="acc-side-item" data-role-only="admin accounting" href="/pages/factory-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 5v4M8 15v4" /></svg><span>ตั้งค่าเกณฑ์ของเสีย</span></a>
+          <a class="acc-side-item" data-role-only="admin accounting management" href="/pages/loss-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M4 12h10M4 18h10M17 5l3 3-3 3M20 16h-3" /></svg><span>อาการเสีย &amp; ประเภท</span></a>
+        </div>
+        <div class="acc-side-group" id="accSideOther" hidden>
+          <span class="acc-side-title">ไปหน้าอื่น</span>
+          <a class="acc-side-item" data-role-only="supervisor admin" href="/pages/supervisor-daily-review.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3 8-8M20 12v8H4V4h11" /></svg><span>ตรวจสอบรายวัน</span></a>
+          <a class="acc-side-item" data-role-only="admin management manager executive" href="/index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" /></svg><span>Dashboard ผู้บริหาร</span></a>
+          <a class="acc-side-item" data-role-only="admin" href="/pages/admin-panel.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg><span>หน้าแอดมิน</span></a>
+        </div>
+        <button type="button" class="acc-side-item acc-side-logout" id="btn-logout-side"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg><span>ออกจากระบบ</span></button>
+      </nav>
+
+      <main class="acc-main">
+        <section class="rv-card dr-controls no-print">
+          <div class="dr-mode" role="group" aria-label="ช่วงรายงาน">
+            <button type="button" class="dr-mode-btn is-active" data-mode="day">รายวัน</button>
+            <button type="button" class="dr-mode-btn" data-mode="month">รายเดือน</button>
+          </div>
+          <label class="dr-field" id="wrap-day">
+            <span>วันที่</span>
+            <input type="date" id="in-day" />
+          </label>
+          <label class="dr-field" id="wrap-month" hidden>
+            <span>เดือน</span>
+            <input type="month" id="in-month" />
+          </label>
+          <label class="dr-field">
+            <span>แผนก</span>
+            <select id="in-dept"><option value="all">ทุกแผนก</option></select>
+          </label>
+          <div class="dr-actions">
+            <button type="button" class="btn light" id="btn-prev" aria-label="ก่อนหน้า">‹</button>
+            <button type="button" class="btn light" id="btn-next" aria-label="ถัดไป">›</button>
+            <button type="button" class="btn primary" id="btn-print">พิมพ์ / PDF</button>
+          </div>
+        </section>
+
+        <div id="dr-alert" class="dr-alert no-print" hidden></div>
+
+        <article class="dr-sheet" id="dr-sheet" aria-live="polite">
+          <p class="dr-empty">กำลังโหลด...</p>
+        </article>
+      </main>
+    </div>
+
+    <nav class="fm-tabbar acc-tabbar no-print" aria-label="เมนู">
+      <button type="button" class="fm-tab" data-nav="data" data-role-only="admin accounting management"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span class="fm-tab-label">ข้อมูล</span></button>
+      <a class="fm-tab is-active" aria-current="page" href="/pages/daily-report.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7" /></svg><span class="fm-tab-label">รายงาน</span></a>
+      <a class="fm-tab" data-role-only="supervisor" href="/pages/supervisor-daily-review.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3 8-8M20 12v8H4V4h11" /></svg><span class="fm-tab-label">ตรวจสอบ</span></a>
+      <button type="button" class="fm-tab" id="btn-logout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg><span class="fm-tab-label">ออก</span></button>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/core/supabaseClient.js"></script>
+    <script src="/core/supabaseFetch.js"></script>
+    <script src="/auth/authGuard.js"></script>
+    <script src="/core/roleConfig.js"></script>
+    <script src="/core/wasteFormula.js"></script>
+    <script src="/js/accounting/daily-report.js"></script>
+    <script src="/js/accounting/accountingSimpleNav.js"></script>
+  </body>
+</html>

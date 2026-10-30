@@ -20,10 +20,13 @@
     year: { count: 5, label: "รายปี", unit: "ปี" },
   };
 
+  // ฟอนต์กราฟ = ฟอนต์ของหน้า (ตั้งค่าตัวอักษรได้) แทน Kanit ที่ต้องโหลดจากเน็ต
+  const chartFont = () => getComputedStyle(document.body).fontFamily;
+
   const COLOR = {
     bar: "#1e3a8a",
     barSelected: "#ea580c",
-    line: "#0284c7",
+    line: "#1e3a8a",
     limit: "#dc2626",
     grid: "rgba(15, 23, 42, 0.06)",
     tick: "#64748b",
@@ -306,8 +309,8 @@
       backgroundColor: "#0f172a",
       padding: 10,
       cornerRadius: 10,
-      titleFont: { family: "Kanit", size: 13, weight: "600" },
-      bodyFont: { family: "Kanit", size: 12.5 },
+      titleFont: { family: chartFont(), size: 13, weight: "600" },
+      bodyFont: { family: chartFont(), size: 12.5 },
       displayColors: false,
       callbacks: {
         // กันกรณีชี้ที่เส้นเกณฑ์ (ถูกกรองออก) แล้วไม่มีรายการ → เดิม error "reading 'dataIndex'"
@@ -328,7 +331,7 @@
     const scales = (yTitle, suggestedMax) => ({
       x: {
         grid: { display: false },
-        ticks: { color: COLOR.tick, font: { family: "Kanit", size: 11 }, maxRotation: 0, autoSkip: true, autoSkipPadding: 10 },
+        ticks: { color: COLOR.tick, font: { family: chartFont(), size: 11 }, maxRotation: 0, autoSkip: true, autoSkipPadding: 10 },
         border: { color: "rgba(15,23,42,0.15)" },
       },
       y: {
@@ -336,8 +339,8 @@
         suggestedMax,
         grid: { color: COLOR.grid },
         border: { display: false },
-        ticks: { color: COLOR.tick, font: { family: "Kanit", size: 11 }, maxTicksLimit: 5 },
-        title: { display: true, text: yTitle, color: COLOR.tick, font: { family: "Kanit", size: 11 } },
+        ticks: { color: COLOR.tick, font: { family: chartFont(), size: 11 }, maxTicksLimit: 5 },
+        title: { display: true, text: yTitle, color: COLOR.tick, font: { family: chartFont(), size: 11 } },
       },
     });
 

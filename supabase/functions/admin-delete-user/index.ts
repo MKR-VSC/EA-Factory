@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 import { corsHeaders } from "../_shared/cors.ts";
 import { ok, fail } from "../_shared/response.ts";
-import { requireAdmin } from "../_shared/auth.ts";
+import { requireAdmin, HttpError } from "../_shared/auth.ts";
 
 serve(async (req) => {
   try {
@@ -73,10 +73,8 @@ serve(async (req) => {
 
   } catch (err) {
     return fail(
-      err instanceof Error
-        ? err.message
-        : "เกิดข้อผิดพลาด",
-      500
+      err instanceof Error ? err.message : "เกิดข้อผิดพลาด",
+      err instanceof HttpError ? err.status : 500
     );
   }
 });

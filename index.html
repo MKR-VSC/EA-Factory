@@ -10,9 +10,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>PVT&T FACTORY | Dashboard สรุปภาพรวมของเสีย</title>
-    <meta name="description" content="Industrial production monitoring, scrap percentage tracking, PR management, and supervisory dashboard for PVT&T FACTORY with custom brand styling." />
+    <meta name="description" content="Industrial production monitoring, scrap percentage tracking, and supervisory dashboard for PVT&T FACTORY with custom brand styling." />
     <meta property="og:title" content="PVT&T FACTORY" />
-    <meta property="og:description" content="Industrial production monitoring, scrap percentage tracking, PR management, and supervisory dashboard for PVT&T FACTORY with custom brand styling." />
+    <meta property="og:description" content="Industrial production monitoring, scrap percentage tracking, and supervisory dashboard for PVT&T FACTORY with custom brand styling." />
 
     <!-- Fonts -->
     <link
@@ -30,6 +30,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/Logo_Icons3.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/Logo_Icons3.png" />
     <link rel="apple-touch-icon" href="/icons/Logo_Icons3.png" />
+    
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
@@ -646,10 +647,12 @@
     <div id="dashboard-toast" class="toast hidden"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script src="/js/vendor/html5-qrcode.min.js"></script>
     <script src="/core/supabaseClient.js"></script>
+    <script src="/core/supabaseFetch.js"></script>
+    <script src="/auth/authGuard.js"></script>
     <script src="/core/tableSwipeDetector.js"></script>
     <script src="/core/counterAnimation.js"></script>
     <script src="/core/autoRefresh.js"></script>

@@ -110,11 +110,15 @@ localStorage.setItem("activeDept", currentDept);
 function normalizeDept(dept) {
   // รับได้ทั้งรหัสเก่า / รหัสใหม่ / ชื่อไทย
   // แล้วแปลงให้เป็นรหัสมาตรฐานจาก master_departments.department_code เสมอ
+  // ไม่มีแผนก → คืนค่าว่าง ให้ระบบแจ้งเตือน
+  // (เดิมเติม "BLOW" ให้เอง → ผู้ใช้ที่ไม่ได้ตั้งแผนกจะบันทึกของเสียเข้าแผนกเป่าถุงโดยไม่รู้ตัว)
+  if (!String(dept || "").trim()) return "";
+
   if (window.EA_COMMON?.normalizeDepartmentCode) {
-    return window.EA_COMMON.normalizeDepartmentCode(dept || "BLOW");
+    return window.EA_COMMON.normalizeDepartmentCode(dept);
   }
 
-  const raw = String(dept || "BLOW").trim();
+  const raw = String(dept).trim();
   const key = raw.toLowerCase();
 
   const map = {
@@ -403,6 +407,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     renderDeptInfo();
     renderUserInfo();
+    setupSimpleHeader();
     setupStaffNameBeforeUse();
 
     setupQrContextCard();
@@ -445,6 +450,30 @@ window.addEventListener("DOMContentLoaded", async () => {
     hideSplash();
   }
 });
+// =========================================================
+// HEADER (ปุ่มย้อนกลับ + เมนู) สำหรับหน้าแบบใหม่
+// =========================================================
+
+function setupSimpleHeader() {
+  document.getElementById("btn-back")?.addEventListener("click", () => {
+    const fromThisSite = document.referrer.startsWith(location.origin);
+    if (fromThisSite && history.length > 1) history.back();
+    else window.location.href = "/login.html";
+  });
+
+  // ปุ่มตั้งค่าตัวอักษร (js/department/formSettings.js)
+  document.getElementById("btn-settings")?.addEventListener("click", () => {
+    window.FORM_SETTINGS?.open();
+  });
+
+  document.getElementById("staff-name-input")?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      confirmStaffName();
+    }
+  });
+}
+
 // =========================================================
 // STAFF NAME MODAL
 // =========================================================
@@ -645,6 +674,8 @@ function ensureQrContextCardExists() {
 // ถ้าวันหลังย้ายไปไฟล์ CSS หลักได้ ก็สามารถลบฟังก์ชันนี้ออกได้
 function ensureQrContextStyleExists() {
   if (document.getElementById("qr-context-style")) return;
+  // หน้าแบบใหม่มีสไตล์ใน css/form-mobile.css แล้ว
+  if (document.querySelector('link[href*="form-mobile.css"]')) return;
 
   const style = document.createElement("style");
   style.id = "qr-context-style";
@@ -768,9 +799,18 @@ function setupNetworkStatus() {
   if (!el) return;
 
   const parentBtn = el.closest(".status-btn");
+  const isSimpleBadge = el.classList.contains("fm-net");
 
   function updateStatus() {
     const isOnline = navigator.onLine;
+
+    // หน้าแบบใหม่ (form-mobile.css): ข้อความไทย + จุดสี
+    if (isSimpleBadge) {
+      el.textContent = isOnline ? "ออนไลน์" : "ออฟไลน์";
+      el.classList.toggle("is-offline", !isOnline);
+      return;
+    }
+
     el.innerHTML = isOnline ? `: ONLINE` : `: OFFLINE`;
 
     if (parentBtn) {
@@ -898,14 +938,10 @@ function addProblemItem(
 
       <div class="problem-item-head-actions">
         <span class="problem-item-status" aria-live="polite">
-          <span class="material-symbols-outlined">edit</span>
           <span class="problem-item-status-text">กำลังกรอก</span>
         </span>
 
-        <button type="button" class="btn-remove-problem" title="ลบปัญหานี้">
-          <span class="material-symbols-outlined">delete</span>
-          ลบ
-        </button>
+        <button type="button" class="btn-remove-problem" title="ลบปัญหานี้">ลบ</button>
       </div>
     </div>
 
@@ -913,7 +949,7 @@ function addProblemItem(
       <div>
         <label class="problem-mini-label">ประเภทปัญหา <span class="required">*</span></label>
         <select class="problem-type-select" required>
-          <option value="">-- เลือกปัญหา --</option>
+          <option value="">เลือกปัญหา</option>
           ${buildProblemOptionsHtml(defaultValue.problem_type || "")}
         </select>
       </div>
@@ -934,11 +970,11 @@ function addProblemItem(
     </div>
 
     <div class="problem-detail-wrap">
-      <label class="problem-mini-label">รายละเอียดปัญหานี้</label>
+      <label class="problem-mini-label">รายละเอียด</label>
       <textarea
         class="problem-detail-input"
-        rows="2"
-        placeholder="เช่น เริ่มเสียช่วงต้นม้วน / พบตอนเปลี่ยนงาน / ถ้าเลือกอื่นๆ ให้ระบุสาเหตุจริง"
+        rows="1"
+        placeholder="ไม่บังคับ (ถ้าเลือก อื่นๆ ต้องระบุ)"
       >${defaultValue.detail || ""}</textarea>
     </div>
 
@@ -1095,7 +1131,7 @@ function updateProblemItemState(row) {
 
   if (complete) {
     if (statusIcon) statusIcon.textContent = "check_circle";
-    if (statusText) statusText.textContent = "กรอกแล้ว";
+    if (statusText) statusText.textContent = "✓ ครบแล้ว";
   } else if (isActive) {
     if (statusIcon) statusIcon.textContent = "edit";
     if (statusText) statusText.textContent = "กำลังกรอก";
@@ -1145,8 +1181,7 @@ function updateProblemItemOtherHint(row) {
     detail.placeholder = "กรุณาระบุว่า อื่นๆ คือปัญหาอะไร";
     detail.classList.add("detail-required-hint");
   } else {
-    detail.placeholder =
-      "เช่น เริ่มเสียช่วงต้นม้วน / พบตอนเปลี่ยนงาน / รายละเอียดเพิ่มเติม";
+    detail.placeholder = "ไม่บังคับ (ถ้าเลือก อื่นๆ ต้องระบุ)";
     detail.classList.remove("detail-required-hint");
   }
 }
@@ -1329,6 +1364,7 @@ function clearOtherProblemSelection() {
 
 function ensureOtherProblemStyleExists() {
   if (document.getElementById("other-problem-style")) return;
+  if (!document.getElementById("other-problem-modal")) return;
 
   const style = document.createElement("style");
   style.id = "other-problem-style";
@@ -1620,7 +1656,7 @@ function renderMachineDropdown(machineList) {
   const select = document.getElementById("machine-no");
   if (!select) return;
 
-  select.innerHTML = `<option value="">-- โปรดเลือกเครื่องจักร --</option>`;
+  select.innerHTML = `<option value="">เลือกเครื่องจักร</option>`;
 
   machineList.forEach((machine) => {
     const option = document.createElement("option");
@@ -1696,6 +1732,13 @@ async function handleFormSubmit(event) {
 
   if (!validateCurrentDept()) return;
 
+  // หลังกดบันทึกครั้งแรก ช่องที่ยังไม่กรอกจะเป็นกรอบแดง
+  const formEl = document.getElementById("department-waste-form");
+  formEl?.classList.add("was-validated");
+  formEl
+    ?.querySelectorAll("#incident-datetime, #work-shift, #machine-no, .problem-type-select, .problem-weight-input, .problem-detail-input")
+    .forEach((el) => window.updateFieldHighlight?.(el));
+
   const reporterName = getActiveUserName();
 
   if (!reporterName) {
@@ -1727,14 +1770,25 @@ async function handleFormSubmit(event) {
     0,
   );
 
-  if (!dateInput?.value) return alert("กรุณาระบุวัน-เวลาเกิดเหตุ");
-  if (!finalShift) return alert("กรุณาเลือกกะการทำงาน");
-  if (!finalMachine) return alert("กรุณาเลือกหมายเลขเครื่องจักร");
-  if (!validateProblemItems(problemItems)) return;
+  if (!dateInput?.value) return focusMissingField(dateInput, "กรุณาระบุวัน-เวลาที่พบปัญหา");
+  if (!finalShift) return focusMissingField(shiftSelect, "กรุณาเลือกกะ");
+  if (!finalMachine) return focusMissingField(machineSelect, "กรุณาเลือกเครื่องจักร");
+  if (!validateProblemItems(problemItems)) {
+    const badRow = Array.from(document.querySelectorAll(".problem-item")).find(
+      (row) => getProblemItemMissingField(row),
+    );
+    if (badRow) {
+      setActiveProblemRow(badRow);
+      badRow.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    return;
+  }
   // if (!detailNote) return alert("กรุณากรอกรายละเอียดเหตุการณ์ / หมายเหตุรวม");
 
   const finalDateTime = new Date(dateInput.value).toISOString();
-  const reportDate = finalDateTime.slice(0, 10);
+  // วันที่รายงานต้องเป็น "วันที่ตามเวลาไทยที่กรอก" (ค่า datetime-local = YYYY-MM-DDTHH:mm)
+  // เดิมตัดจาก toISOString() ซึ่งเป็นเวลา UTC → เหตุการณ์ 00:00–06:59 น. ถูกบันทึกเป็น "เมื่อวาน"
+  const reportDate = String(dateInput.value).slice(0, 10);
 
   const payloadArgs = {
     finalDateTime,
@@ -1894,6 +1948,14 @@ async function handleFormSubmit(event) {
   }
 }
 
+// แจ้งเตือนแล้วพาไปที่ช่องที่ยังไม่กรอก
+function focusMissingField(field, message) {
+  alert(message);
+  if (!field) return;
+  field.scrollIntoView({ behavior: "smooth", block: "center" });
+  setTimeout(() => field.focus({ preventScroll: true }), 300);
+}
+
 // สร้างข้อมูลที่จะบันทึก (ใช้ทั้งตอนส่งทันทีและตอนเก็บไว้ส่งทีหลังเมื่อเน็ตหลุด)
 function buildSubmissionPayload({
   finalDateTime,
@@ -1983,6 +2045,16 @@ ${detailByItem}`;
 function setSubmitLoading(button, isLoading) {
   if (!button) return;
 
+  // ปุ่มบันทึกในแถบไอคอนด้านล่าง: เปลี่ยนเฉพาะข้อความใต้ไอคอน
+  const tabLabel = button.querySelector(".fm-tab-label");
+  if (tabLabel) {
+    button.disabled = isLoading;
+    button.classList.toggle("is-busy", isLoading);
+    tabLabel.dataset.originalText ||= tabLabel.textContent;
+    tabLabel.textContent = isLoading ? "กำลังบันทึก" : tabLabel.dataset.originalText;
+    return;
+  }
+
   button.disabled = isLoading;
   button.dataset.originalText ||= button.textContent;
 
@@ -1995,7 +2067,7 @@ async function loadShiftOptions() {
   const select = document.getElementById("work-shift");
   if (!select) return;
 
-  select.innerHTML = '<option value="">-- โปรดเลือกกะการทำงาน --</option>';
+  select.innerHTML = '<option value="">เลือกกะ</option>';
 
   const fallbackShifts = ["กะเช้า", "กะบ่าย", "กะดึก", "OT", "วันอาทิตย์"];
 
@@ -2040,7 +2112,10 @@ function renderShiftOptions(select, shiftList) {
 function resetFormAfterSubmit() {
   const form = document.getElementById("department-waste-form");
 
-  if (form) form.reset();
+  if (form) {
+    form.reset();
+    form.classList.remove("was-validated");
+  }
 
   // ถ้ามาจาก QR รายเครื่อง ต้องคงค่าเครื่องเดิมไว้
   // ไม่อย่างนั้นกดบันทึกเสร็จแล้ว dropdown จะว่าง ทั้งที่ QR ระบุเครื่องไว้แล้ว
@@ -2193,6 +2268,8 @@ function updateFieldHighlight(element) {
 }
 
 function updateLabelPill(element, isFilled, isNotRequired = false) {
+  // หน้าแบบใหม่ไม่แสดงป้าย "ระบุแล้ว/ต้องระบุ" ทุกช่อง (ลดสีลายตา) — ใช้กรอบแดงหลังกดบันทึกแทน
+  if (document.querySelector('link[href*="form-mobile.css"]')) return;
   let label = null;
   if (element.id) {
     label = document.querySelector(`label[for="${element.id}"]`);

@@ -1,316 +1,68 @@
 <!doctype html>
 <html lang="th">
   <head>
-    <!-- ======================================================
-      ADMIN PANEL HTML
-      Daily Defect System
-      ------------------------------------------------------
-      ไฟล์นี้เพิ่มเมนู QR รายเครื่องให้ Admin แล้ว
-      ใช้ร่วมกับ:
-      - /css/admin-panel.css
-      - /js/admin/admin-panel.js
-    ======================================================= -->
+    <!-- หน้าผู้ดูแลระบบ — แนวเดียวกับหน้าบัญชี (เรียบ ฟอนต์ในเครื่อง ไอคอน SVG เมนูซ้ายสีน้ำเงิน) ใช้บนคอมเป็นหลัก
+         ใช้ร่วมกับ /js/admin/admin-panel.js · /core/adminDesktop.js -->
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Panel | PVT&T FACTORY</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>ผู้ดูแลระบบ - PVT&amp;T FACTORY</title>
 
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-      rel="stylesheet"
-    />
-
-<!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/Logo_Apps3.png?v=3" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icons/Logo_Apps3.png?v=3" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="icon" type="image/png" href="/icons/logo-header.png" />
     <link rel="apple-touch-icon" href="/icons/Logo_Apps3.png" />
-
-    <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#1E3A8A" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="PVT&amp;T Factory" />
+    <meta name="theme-color" content="#ffffff" />
 
-
-    <!-- admin-panel.css เวอร์ชันปรับ Layout / UI แล้ว -->
-    <link rel="stylesheet" href="/css/admin-panel.css" />
-    <link rel="stylesheet" href="/css/loadingService.css" />
-
-    <!-- บังคับ Layout โลโก้ Sidebar: โลโก้อยู่ด้านบน, กระชับขึ้น และเอา EA Factory ออก -->
-    <style id="sidebar-logo-force-layout">
-      @media (min-width: 981px) {
-        body.admin-ui-v2 .app-shell {
-          grid-template-columns: 228px minmax(0, 1fr) !important;
-        }
-
-        body.admin-ui-v2 .sidebar {
-          padding: 14px 12px 16px !important;
-        }
-
-        body.admin-ui-v2 .sidebar-logo {
-          display: flex !important;
-          flex-direction: column !important;
-          align-items: center !important;
-          justify-content: flex-start !important;
-          gap: 8px !important;
-          padding: 8px 6px 14px !important;
-          margin: 0 0 10px !important;
-          text-align: center !important;
-          min-height: auto !important;
-        }
-
-        body.admin-ui-v2 .logo-icon {
-          width: 108px !important;
-          height: 108px !important;
-          flex: 0 0 108px !important;
-          margin: 0 auto !important;
-          border-radius: 22px !important;
-        }
-
-        body.admin-ui-v2 .logo-icon img {
-          width: 114px !important;
-          height: 114px !important;
-          max-width: none !important;
-          object-fit: contain !important;
-        }
-
-        body.admin-ui-v2 .logo-text {
-          width: 100% !important;
-          text-align: center !important;
-        }
-
-        body.admin-ui-v2 .logo-text strong {
-          display: none !important;
-        }
-
-        body.admin-ui-v2 .logo-text small {
-          display: block !important;
-          margin-top: 0 !important;
-          font-size: 0.80rem !important;
-          font-weight: 700 !important;
-          letter-spacing: 0.02em !important;
-          color: rgba(226, 232, 240, 0.84) !important;
-        }
-
-        body.admin-ui-v2 .sidebar-menu {
-          gap: 4px !important;
-        }
-
-        body.admin-ui-v2 .sidebar-section-label {
-          margin: 10px 8px 4px !important;
-          font-size: 9px !important;
-        }
-
-        body.admin-ui-v2 .sidebar-item {
-          min-height: 42px !important;
-          padding: 8px 10px !important;
-        }
-
-        body.admin-ui-v2 .sidebar-footer {
-          padding-top: 10px !important;
-          margin-top: 10px !important;
-        }
-      }
-    </style>
-
-    <link rel="icon" href="data:," />
-    <style>
-      .user-dept-permission-panel {
-        margin: 14px 0 18px;
-        padding: 16px;
-        border: 1px solid #e2e8f0;
-        border-radius: 18px;
-        background: #f8fafc;
-      }
-
-      .user-dept-permission-panel strong {
-        display: block;
-        margin-bottom: 4px;
-        color: #0f172a;
-      }
-
-      .user-dept-permission-panel .muted {
-        display: block;
-        margin-bottom: 12px;
-        color: #64748b;
-        font-size: 13px;
-      }
-
-      .dept-checkbox-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 10px;
-      }
-
-      .dept-check-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 12px;
-        border: 1px solid #cbd5e1;
-        border-radius: 14px;
-        background: #ffffff;
-        cursor: pointer;
-        font-weight: 700;
-      }
-
-      .dept-check-item input {
-        width: 18px;
-        height: 18px;
-        accent-color: #1E3A8A;
-      }
-
-      .user-dept-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-
-      .user-dept-tag {
-        display: inline-flex;
-        align-items: center;
-        padding: 4px 8px;
-        border-radius: 999px;
-        background: #e0f2fe;
-        color: #075985;
-        font-size: 12px;
-        font-weight: 800;
-        white-space: nowrap;
-      }
-
-      .modal-form-full {
-        grid-column: 1 / -1;
-      }
-    </style>
-      <link rel="stylesheet" href="/css/responsive.css" />
-    <link rel="stylesheet" href="/css/admin-desktop.css" />
-      <link rel="stylesheet" href="/css/splash.css" />
+    <link rel="stylesheet" href="/css/form-mobile.css" />
+    <link rel="stylesheet" href="/css/review-simple.css" />
+    <link rel="stylesheet" href="/css/accounting-simple.css" />
+    <link rel="stylesheet" href="/css/admin-simple.css" />
+    <script src="/js/department/formSettings.js"></script>
   </head>
 
-  <body class="admin-ui-v2">
-    <!-- หน้าเปิดแอป (แบบเดียวกันทั้งแอป — ดู css/splash.css) -->
-    <div id="splash-screen" class="pvt-splash" role="status" aria-label="กำลังเปิดแอป">
-      <div class="pvt-splash-mark" aria-hidden="true">
-        <span class="pvt-splash-glow"></span>
-        <svg class="pvt-splash-ring" viewBox="0 0 120 120" aria-hidden="true">
-          <defs>
-            <linearGradient id="pvtSplashRing" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#ff8a3d" />
-              <stop offset="0.55" stop-color="#f26a1b" />
-              <stop offset="1" stop-color="#1e3a8a" />
-            </linearGradient>
-          </defs>
-          <circle class="track" cx="60" cy="60" r="54" />
-          <circle class="arc" cx="60" cy="60" r="54" />
-        </svg>
-        <img class="pvt-splash-logo" src="/icons/Logo_Apps3.png?v=3" alt="" />
+  <body class="rv acc adm">
+    <header class="fm-top rv-top acc-top">
+      <img class="fm-logo" src="/icons/logo-header.png" width="42" height="37" alt="PVT&amp;T FACTORY" />
+      <div class="fm-top-title">
+        <h1>ผู้ดูแลระบบ</h1>
+        <p>ภาพรวมรายการของเสีย ข้อมูลพื้นฐาน ผู้ใช้งาน และ QR</p>
       </div>
-      <div class="pvt-splash-title">PVT&amp;T Factory</div>
-      <div class="pvt-splash-sub">กำลังเปิดหน้าผู้ดูแลระบบ</div>
-    </div>
+      <button type="button" class="fm-icon-btn" id="btn-refresh" aria-label="โหลดข้อมูลใหม่" title="โหลดข้อมูลใหม่">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5" /></svg>
+      </button>
+      <button type="button" class="fm-icon-btn" onclick="FORM_SETTINGS.open()" aria-label="ตั้งค่าตัวอักษร" title="ตั้งค่าตัวอักษร">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19l5-14h2l5 14M6.5 13h7" /><path d="M17 11h4M19 9v4" /></svg>
+      </button>
+    </header>
 
-    <div class="app-shell">
-      <!-- ======================================================
-        SIDEBAR MENU
-        ------------------------------------------------------
-        เพิ่มเมนู "QR รายเครื่อง" แล้ว
-        data-section="machine-qr" จะไปเปิด section-machine-qr
-      ======================================================= -->
-      <aside class="sidebar">
-        <div class="sidebar-logo">
-          <div class="logo-icon">
-            <img src="/icons/Logo_Apps3.png?v=3" alt="PVT&T FACTORY Logo" />
-          </div>
-
-          <div class="logo-text">
-            <small>Admin Console</small>
-          </div>
+    <div class="acc-layout">
+      <nav class="acc-side adm-side" aria-label="เมนูผู้ดูแลระบบ">
+        <div class="acc-side-group">
+          <span class="acc-side-title">ภาพรวม</span>
+          <button type="button" class="sidebar-item acc-side-item active" data-section="dashboard" title="Dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" /></svg><span>Dashboard</span></button>
         </div>
-
-        <nav class="sidebar-menu" aria-label="เมนูหลัก">
-          <span class="sidebar-section-label">ภาพรวม</span>
-          <button
-            class="sidebar-item active"
-            type="button"
-            data-section="dashboard"
-            title="Dashboard"
-          >
-            <span class="material-symbols-outlined">dashboard</span>
-            <span class="sidebar-item-text">Dashboard</span>
-          </button>
-
-          <span class="sidebar-section-label">จัดการข้อมูล</span>
-          <button class="sidebar-item" type="button" data-section="masters" title="Master Data">
-            <span class="material-symbols-outlined">database</span>
-            <span class="sidebar-item-text">Master Data</span>
-          </button>
-
-          <button class="sidebar-item" type="button" data-section="users" title="Users / Roles">
-            <span class="material-symbols-outlined">manage_accounts</span>
-            <span class="sidebar-item-text">Users / Roles</span>
-          </button>
-
-          <button
-            class="sidebar-item"
-            type="button"
-            data-section="department-qr"
-            title="QR แผนก"
-          >
-            <span class="material-symbols-outlined">qr_code_2</span>
-            <span class="sidebar-item-text">QR แผนก</span>
-          </button>
-
-          <button class="sidebar-item" type="button" data-section="machine-qr" title="QR รายเครื่อง">
-            <span class="material-symbols-outlined">precision_manufacturing</span>
-            <span class="sidebar-item-text">QR รายเครื่อง</span>
-          </button>
-
-          <span class="sidebar-section-label">ตรวจสอบระบบ</span>
-          <button class="sidebar-item" type="button" data-section="logs" title="System Logs">
-            <span class="material-symbols-outlined">terminal</span>
-            <span class="sidebar-item-text">System Logs</span>
-          </button>
-
-          <button
-            class="sidebar-item"
-            type="button"
-            data-section="activity-logs"
-            title="ประวัติการใช้งานระบบ"
-          >
-            <span class="material-symbols-outlined">history</span>
-            <span class="sidebar-item-text">การใช้งานระบบ</span>
-          </button>
-        </nav>
-
-        <div class="sidebar-footer">
-          <button id="btnLogout" class="btn-red" type="button">
-            <span class="material-symbols-outlined">logout</span>
-            <span>ออกจากระบบ</span>
-          </button>
+        <div class="acc-side-group">
+          <span class="acc-side-title">จัดการข้อมูล</span>
+          <button type="button" class="sidebar-item acc-side-item" data-section="masters" title="Master Data"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" /></svg><span>Master Data</span></button>
+          <button type="button" class="sidebar-item acc-side-item" data-section="users" title="Users / Roles"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21c1-4 4-6 7-6s6 2 7 6M17 11a3 3 0 1 0 0-6M22 21c-.6-2.6-2-4.3-4-5" /></svg><span>Users / Roles</span></button>
+          <button type="button" class="sidebar-item acc-side-item" data-section="department-qr" title="QR แผนก"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2" /></svg><span>QR แผนก</span></button>
+          <button type="button" class="sidebar-item acc-side-item" data-section="machine-qr" title="QR รายเครื่อง"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6" /></svg><span>QR รายเครื่อง</span></button>
         </div>
-      </aside>
+        <div class="acc-side-group">
+          <span class="acc-side-title">ตรวจสอบระบบ</span>
+          <button type="button" class="sidebar-item acc-side-item" data-section="logs" title="System Logs"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span>System Logs</span></button>
+          <button type="button" class="sidebar-item acc-side-item" data-section="activity-logs" title="การใช้งานระบบ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v5h5M12 8v4l3 2" /></svg><span>การใช้งานระบบ</span></button>
+        </div>
+        <div class="acc-side-group">
+          <span class="acc-side-title">ไปหน้าอื่น</span>
+          <a class="acc-side-item" href="/index.html" title="Dashboard ผู้บริหาร"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16v-5M12 16V7M17 16v-8" /></svg><span>Dashboard ผู้บริหาร</span></a>
+          <a class="acc-side-item" href="/pages/accounting-panel.html" title="หน้าบัญชี"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span>หน้าบัญชี</span></a>
+          <a class="acc-side-item" href="/pages/supervisor-daily-review.html" title="ตรวจสอบรายวัน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 9l2 2 4-4M8 15h8" /></svg><span>ตรวจสอบรายวัน</span></a>
+        </div>
+        <button id="btnLogout" type="button" class="acc-side-item acc-side-logout" title="ออกจากระบบ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg><span>ออกจากระบบ</span></button>
+      </nav>
 
-      <main class="main-workspace">
-        <header class="workspace-header">
-          <div class="workspace-heading">
-            <span class="workspace-eyebrow">ADMINISTRATION</span>
-            <h1>แผงควบคุมระบบของเสียรายวัน</h1>
-            <p>ภาพรวมรายการของเสีย ข้อมูลพื้นฐาน ผู้ใช้งาน และ QR ในจุดเดียว</p>
-          </div>
-
-          <div class="workspace-actions">
-            <button class="btn btn-secondary" type="button" id="btn-refresh">
-              <span class="material-symbols-outlined">refresh</span>
-              โหลดข้อมูลใหม่
-            </button>
-          </div>
-        </header>
-
+      <main class="acc-main adm-main">
         <div id="alert-box" class="alert" hidden></div>
 
         <!-- ======================================================
@@ -319,7 +71,6 @@
         <section id="section-dashboard" class="page-section active">
           <div class="metrics-grid">
             <article class="metric-card metric-api">
-              <span class="metric-icon material-symbols-outlined">cloud_done</span>
               <div class="metric-content">
                 <span class="metric-label">การเชื่อมต่อ Supabase</span>
                 <strong id="status-api">กำลังตรวจสอบ...</strong>
@@ -328,7 +79,6 @@
             </article>
 
             <article class="metric-card metric-total">
-              <span class="metric-icon material-symbols-outlined">inventory_2</span>
               <div class="metric-content">
                 <span class="metric-label">รายการทั้งหมด</span>
                 <strong id="dash-total-count">0</strong>
@@ -337,7 +87,6 @@
             </article>
 
             <article class="metric-card warning">
-              <span class="metric-icon material-symbols-outlined">pending_actions</span>
               <div class="metric-content">
                 <span class="metric-label">รอตรวจสอบ</span>
                 <strong id="dash-pending-count">0</strong>
@@ -346,7 +95,6 @@
             </article>
 
             <article class="metric-card success">
-              <span class="metric-icon material-symbols-outlined">scale</span>
               <div class="metric-content">
                 <span class="metric-label">น้ำหนักของเสียรวม</span>
                 <strong id="dash-total-weight">0.00</strong>
@@ -358,15 +106,13 @@
           <div class="panel">
             <div class="panel-head">
               <h2>
-                <span class="material-symbols-outlined">list_alt</span>
                 รายการของเสียล่าสุด
               </h2>
               <span id="last-update" class="muted">ยังไม่ได้โหลดข้อมูล</span>
             </div>
 
-            <div class="filter-row dashboard-filter-row" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-              <div class="search-field" style="flex: 1; min-width: 250px;">
-                <span class="material-symbols-outlined">search</span>
+            <div class="filter-row dashboard-filter-row">
+              <div class="search-field">
                 <input
                   id="search-input"
                   type="search"
@@ -382,8 +128,7 @@
                 <option value="rejected">ยกเลิก</option>
               </select>
 
-              <button class="btn btn-secondary" type="button" id="btn-export-reports" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background 0.15s ease;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">download</span>
+              <button class="btn btn-secondary" type="button" id="btn-export-reports">
                 ส่งออก CSV
               </button>
             </div>
@@ -417,8 +162,7 @@
         ======================================================= -->
         <section id="section-masters" class="page-section">
           <div class="master-helper">
-            <h2>
-              <span class="material-symbols-outlined">settings</span> Master
+            <h2> Master
               Data คืออะไร?
             </h2>
             <p>
@@ -433,7 +177,6 @@
               <div class="panel-head">
                 <div>
                   <h2>
-                    <span class="material-symbols-outlined">apartment</span>
                     จัดการแผนก
                   </h2>
                   <span class="muted"
@@ -465,7 +208,6 @@
               <div class="panel-head">
                 <div>
                   <h2>
-                    <span class="material-symbols-outlined">schedule</span>
                     จัดการกะการทำงาน
                   </h2>
                   <span class="muted">ใช้เป็นตัวเลือกกะในฟอร์มพนักงาน</span>
@@ -518,7 +260,6 @@
               <div class="panel-head">
                 <div>
                   <h2>
-                    <span class="material-symbols-outlined">settings</span>
                     จัดการเครื่องจักรตามแผนก
                   </h2>
                   <span class="muted">
@@ -550,7 +291,6 @@
               <div class="panel-head">
                 <div>
                   <h2>
-                    <span class="material-symbols-outlined">warning</span>
                     จัดการหัวข้ออาการเสียตามแผนก
                   </h2>
                   <span class="muted"
@@ -585,11 +325,7 @@
         <section id="section-users" class="page-section">
           <div class="users-hero-panel">
             <div>
-              <span class="eyebrow">User Administration</span>
               <h2>
-                <span class="material-symbols-outlined"
-                  >admin_panel_settings</span
-                >
                 จัดการ User และ Role
               </h2>
               <p>
@@ -603,32 +339,27 @@
               type="button"
               id="btn-toggle-user-form"
             >
-              <span class="material-symbols-outlined">person_add</span>
               เพิ่ม User ใหม่
             </button>
           </div>
 
           <div class="user-stat-grid">
             <article class="user-stat-card">
-              <span class="material-symbols-outlined">groups</span>
               <small>Users ทั้งหมด</small>
               <strong id="user-stat-total">0</strong>
             </article>
 
             <article class="user-stat-card supervisor">
-              <span class="material-symbols-outlined">supervisor_account</span>
               <small>Supervisor</small>
               <strong id="user-stat-supervisor">0</strong>
             </article>
 
             <article class="user-stat-card active">
-              <span class="material-symbols-outlined">verified_user</span>
               <small>Active</small>
               <strong id="user-stat-active">0</strong>
             </article>
 
             <article class="user-stat-card dept">
-              <span class="material-symbols-outlined">apartment</span>
               <small>Departments</small>
               <strong id="user-stat-dept">0</strong>
             </article>
@@ -641,7 +372,6 @@
             <div class="panel-head user-create-head">
               <div>
                 <h2>
-                  <span class="material-symbols-outlined">person_add</span>
                   เพิ่มผู้ใช้งานใหม่
                 </h2>
                 <span class="muted"
@@ -736,7 +466,6 @@
                   ล้างข้อมูล
                 </button>
                 <button class="btn btn-primary" type="button" id="btn-add-user">
-                  <span class="material-symbols-outlined">save</span>
                   บันทึก User
                 </button>
               </div>
@@ -747,7 +476,6 @@
             <div class="panel-head user-list-head">
               <div>
                 <h2>
-                  <span class="material-symbols-outlined">manage_accounts</span>
                   รายการผู้ใช้งาน
                 </h2>
                 <span class="muted"
@@ -756,12 +484,12 @@
               </div>
             </div>
 
-            <div class="filter-row user-filter-row" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <div class="filter-row user-filter-row">
               <input
                 id="user-search-input"
                 type="search"
                 placeholder="ค้นหา username / ชื่อ / แผนก / role..."
-                style="flex: 1; min-width: 200px;"
+               
               />
 
               <select id="user-role-filter">
@@ -779,8 +507,7 @@
                 <option value="inactive">inactive</option>
               </select>
 
-              <button class="btn btn-secondary" type="button" id="btn-export-users" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background 0.15s ease;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">download</span>
+              <button class="btn btn-secondary" type="button" id="btn-export-users">
                 ส่งออก CSV
               </button>
             </div>
@@ -802,8 +529,7 @@
           <div class="panel">
             <div class="panel-head">
               <div>
-                <h2>
-                  <span class="material-symbols-outlined">qr_code</span> จัดการ
+                <h2> จัดการ
                   QR แผนก
                 </h2>
                 <span class="muted">
@@ -827,8 +553,7 @@
           <div class="panel">
             <div class="panel-head">
               <div>
-                <h2>
-                  <span class="material-symbols-outlined">qr_code</span> จัดการ
+                <h2> จัดการ
                   QR รายเครื่อง
                 </h2>
                 <span class="muted">
@@ -842,8 +567,8 @@
               >
             </div>
 
-            <div class="qr-machine-toolbar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-              <select id="machine-qr-dept-filter" style="flex: 1; min-width: 200px;">
+            <div class="qr-machine-toolbar">
+              <select id="machine-qr-dept-filter">
                 <option value="">
                   -- เลือกแผนกเพื่อสร้าง QR รายเครื่อง --
                 </option>
@@ -853,7 +578,7 @@
                 id="machine-qr-search-input"
                 type="search"
                 placeholder="ค้นหาชื่อเครื่อง..."
-                style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; outline: none; flex: 1; min-width: 150px;"
+               
                 disabled
               />
 
@@ -862,7 +587,6 @@
                 type="button"
                 id="btn-refresh-machine-qr"
               >
-                <span class="material-symbols-outlined">refresh</span>
                 รีเฟรชรายการ
               </button>
 
@@ -870,8 +594,7 @@
                 class="btn btn-primary"
                 type="button"
                 id="btn-print-machine-qr"
-              >
-                <span class="material-symbols-outlined">print</span> พิมพ์ QR
+              > พิมพ์ QR
                 ทั้งแผนก
               </button>
             </div>
@@ -890,8 +613,7 @@
         <section id="section-logs" class="page-section">
           <div class="panel">
             <div class="panel-head">
-              <h2>
-                <span class="material-symbols-outlined">bug_report</span> System
+              <h2> System
                 Logs
               </h2>
             </div>
@@ -924,7 +646,6 @@
             <div class="panel-head">
               <div>
                 <h2>
-                  <span class="material-symbols-outlined">history</span>
                   ประวัติการใช้งานระบบ
                 </h2>
                 <span class="muted">
@@ -974,8 +695,7 @@
       <div class="modal-card">
         <div class="modal-head">
           <div>
-            <h2>
-              <span class="material-symbols-outlined">edit</span> แก้ไข User
+            <h2> แก้ไข User
             </h2>
             <p>แก้ไขข้อมูลผู้ใช้งานและสิทธิ์การเข้าใช้งาน</p>
           </div>
@@ -1077,14 +797,10 @@
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/roleConfig.js"></script>
     <script src="/core/departmentConfig.js"></script>
-    <script src="/core/tableSwipeDetector.js"></script>
-    <script src="/core/counterAnimation.js"></script>
-    <script src="/core/autoRefresh.js"></script>
     <script src="/auth/authGuard.js"></script>
 
     <!-- Services -->
     <script src="/services/popupService.js"></script>
-    <script src="/services/loadingService.js"></script>
 
     <!-- Page -->
     <script src="/js/admin/admin-panel.js"></script>
@@ -1114,7 +830,7 @@
         </div>
       </div>
     </div>
-      <script src="/core/responsiveTables.js"></script>
+    <script src="/core/responsiveTables.js"></script>
     <script src="/core/adminDesktop.js"></script>
   </body>
 </html>

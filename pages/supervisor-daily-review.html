@@ -3,116 +3,52 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>ตรวจสอบข้อมูลรายวัน | PVT&T FACTORY</title>
+    <title>ตรวจสอบรายวัน - PVT&amp;T FACTORY</title>
 
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-      rel="stylesheet"
-    />
-
-<!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/Logo_Apps3.png?v=3" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icons/Logo_Apps3.png?v=3" />
+    <!-- โหลดเร็ว: ไม่ใช้ Google Fonts / ฟอนต์ไอคอน (ฟอนต์อื่นโหลดเฉพาะเมื่อเลือกในตั้งค่าตัวอักษร) -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="icon" type="image/png" href="/icons/logo-header.png" />
     <link rel="apple-touch-icon" href="/icons/Logo_Apps3.png" />
-
-    <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#1E3A8A" />
+    <meta name="theme-color" content="#ffffff" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="PVT&amp;T Factory" />
-    <!-- ใช้หัว/ธีมเดิม -->
-    <link rel="stylesheet" href="/css/loadingService.css" />
-    <link rel="stylesheet" href="/css/supervisor-daily-review.css" />
-    <!-- CSS เสริมเฉพาะตาราง Go Live -->
-    <link rel="stylesheet" href="/css/supervisor-daily-review-table-addon.css" />
-      <link rel="stylesheet" href="/css/responsive.css" />
-    <link rel="stylesheet" href="/css/app-shell.css" />
-    <script src="/core/appShell.js"></script>
-      <link rel="stylesheet" href="/css/splash.css" />
+
+    <link rel="stylesheet" href="/css/form-mobile.css" />
+    <link rel="stylesheet" href="/css/review-simple.css" />
+    <script src="/js/department/formSettings.js"></script>
   </head>
 
-  <body>
-    <!-- หน้าเปิดแอป (แบบเดียวกันทั้งแอป — ดู css/splash.css) -->
-    <div id="splash-screen" class="pvt-splash" role="status" aria-label="กำลังเปิดแอป">
-      <div class="pvt-splash-mark" aria-hidden="true">
-        <span class="pvt-splash-glow"></span>
-        <svg class="pvt-splash-ring" viewBox="0 0 120 120" aria-hidden="true">
-          <defs>
-            <linearGradient id="pvtSplashRing" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#ff8a3d" />
-              <stop offset="0.55" stop-color="#f26a1b" />
-              <stop offset="1" stop-color="#1e3a8a" />
-            </linearGradient>
-          </defs>
-          <circle class="track" cx="60" cy="60" r="54" />
-          <circle class="arc" cx="60" cy="60" r="54" />
-        </svg>
-        <img class="pvt-splash-logo" src="/icons/Logo_Apps3.png?v=3" alt="" />
+  <body class="rv">
+    <!-- แถบหัว -->
+    <header class="fm-top rv-top">
+      <img class="fm-logo" src="/icons/logo-header.png" width="42" height="37" alt="PVT&amp;T FACTORY" />
+      <div class="fm-top-title">
+        <h1>ตรวจสอบรายวัน</h1>
+        <p><span id="userName">-</span> · <span id="userDept">-</span></p>
       </div>
-      <div class="pvt-splash-title">PVT&amp;T Factory</div>
-      <div class="pvt-splash-sub">กำลังโหลดรายการตรวจสอบรายวัน</div>
-    </div>
 
-    <main class="page">
-      <!-- HEADER: 2-Column Layout -->
-      <header class="page-header supervisor-hero">
-        <div class="header-col-left">
-          <div class="header-brand">
-            <div class="header-logo" aria-hidden="true">
-              <img src="/icons/Logo_Apps3.png?v=3" alt="PVT&T FACTORY Logo" width="64" height="64" style="width: 64px; height: 64px; max-width: 64px; max-height: 64px; object-fit: contain;" />
-            </div>
+      <!-- ปุ่มบนจอใหญ่ (มือถือ/แท็บเล็ตใช้แถบล่าง) -->
+      <nav class="rv-top-links" aria-label="เมนู">
+        <a class="rv-link" href="/pages/supervisor-dashboard.html">Dashboard</a>
+        <a class="rv-link" href="/pages/daily-report.html">รายงาน</a>
+        <a class="rv-link" href="/pages/supervisor-dashboard.html#scan">สแกน QR</a>
+        <button type="button" class="rv-link" onclick="logoutNow()">ออกจากระบบ</button>
+      </nav>
 
-            <div class="header-copy">
-              <span class="header-kicker">SUPERVISOR DAILY REVIEW</span>
-              <h1>ตรวจสอบข้อมูลรายวัน</h1>
-              <p>ตรวจสอบข้อมูลของเสียก่อนส่งเข้าฐานข้อมูล</p>
-            </div>
-          </div>
-        </div>
+      <button type="button" class="fm-icon-btn" onclick="loadRecords()" aria-label="รีเฟรช" title="รีเฟรช">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5" /></svg>
+      </button>
+      <button type="button" class="fm-icon-btn" onclick="FORM_SETTINGS.open()" aria-label="ตั้งค่าตัวอักษร" title="ตั้งค่าตัวอักษร">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19l5-14h2l5 14M6.5 13h7" /><path d="M17 11h4M19 9v4" /></svg>
+      </button>
+    </header>
 
-        <div class="header-col-right">
-          <div class="header-actions">
-            <a href="/pages/supervisor-dashboard.html" class="btn primary">
-              <span class="material-symbols-outlined">dashboard</span>
-              <span>Dashboard</span>
-            </a>
-            <button class="btn secondary" type="button" onclick="loadRecords()">
-              <span class="material-symbols-outlined">refresh</span>
-              <span>รีเฟรช</span>
-            </button>
-            <button class="btn danger" type="button" onclick="logoutNow()">
-              <span class="material-symbols-outlined">logout</span>
-              <span>ออกระบบ</span>
-            </button>
-          </div>
-
-          <div class="user-info-card">
-            <div class="user-avatar">
-              <span class="material-symbols-outlined">person</span>
-            </div>
-
-            <div class="user-copy">
-              <span class="user-label">ผู้ตรวจสอบข้อมูล</span>
-              <strong id="userName">-</strong>
-              <div id="userDept">-</div>
-            </div>
-
-            <div class="review-ready" aria-label="สถานะพร้อมตรวจสอบ">
-              <span class="ready-dot"></span>
-              <span>พร้อมตรวจสอบ</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <!-- FILTER เดิม -->
-      <section class="filter-card">
+    <main class="rv-main">
+      <!-- ตัวกรอง -->
+      <section class="filter-card rv-card">
         <div class="form-group">
           <label for="filterDate">วันที่</label>
           <input type="date" id="filterDate" />
@@ -122,44 +58,43 @@
           <select id="filterStatus">
             <option value="all">ทั้งหมด</option>
             <option value="pending_supervisor">รอตรวจสอบ</option>
-            <option value="sent_accounting">บันทึกลงระบบแล้ว</option>
-            <option value="accounting_checked">ผ่านการตรวจสอบแล้ว</option>
+            <option value="sent_accounting">ส่งบัญชีแล้ว</option>
+            <option value="accounting_checked">บัญชีตรวจแล้ว</option>
           </select>
         </div>
-        <button class="btn primary" type="button" onclick="loadRecords()">ค้นหา</button>
       </section>
 
-      <!-- KPI เดิม -->
-      <section class="summary-grid summary-grid-3">
-        <div class="summary-card warning">
+      <!-- สรุป -->
+      <section class="rv-stats">
+        <div class="rv-stat">
           <span>รอตรวจสอบ</span>
           <strong id="countPending">0</strong>
-          <small>กดตรวจแล้วจะหายจากรายการนี้</small>
+          <small>รายการ</small>
         </div>
-        <div class="summary-card success">
-          <span>จำนวนของเสียวันนี้ทั้งหมด</span>
+        <div class="rv-stat">
+          <span>ของเสียทั้งวัน</span>
           <strong id="todayWaste">0 kg</strong>
-          <small>รวมทุกสถานะของวันที่เลือก</small>
+          <small id="todayWasteSplit">รวมทุกสถานะ</small>
         </div>
-        <div class="summary-card danger">
-          <span>เครื่องที่เสียเยอะสุดวันนี้</span>
+        <div class="rv-stat">
+          <span>เครื่องที่เสียมากสุด</span>
           <strong id="topMachineToday">-</strong>
           <small id="topMachineTodaySub">-</small>
         </div>
       </section>
 
-      <!-- CONTENT ใหม่: ตารางแทน Card / ไม่มีอัปโหลดรูป -->
-      <section class="table-card supervisor-table-card">
+      <!-- (JS แทรก "ตรวจความครบถ้วนเครื่องจักร" ไว้ก่อนการ์ดนี้) -->
+      <section class="table-card supervisor-table-card rv-card">
         <div class="table-header">
           <div>
-            <h2>รายการรายงานของเสีย</h2>
-            <p class="muted">ตรวจสอบข้อมูลก่อนส่งให้บัญชีดำเนินการต่อ</p>
+            <h2>รายการรอตรวจสอบ</h2>
+            <p class="muted">แก้ไขหรือลบได้ก่อนส่งบัญชี</p>
           </div>
           <span id="rowCount" class="muted">-</span>
         </div>
 
-        <div class="table-scroll supervisor-table-scroll">
-          <table class="data-table supervisor-data-table" data-rt="cards">
+        <div class="table-scroll">
+          <table class="data-table" data-rt="cards">
             <thead>
               <tr>
                 <th></th>
@@ -167,8 +102,8 @@
                 <th>แผนก</th>
                 <th>เครื่องจักร</th>
                 <th>ผู้บันทึก</th>
-                <th class="text-right">น้ำหนักของเสีย</th>
-                <th>รายการปัญหา</th>
+                <th class="text-right">ของเสีย (kg)</th>
+                <th>ปัญหา</th>
                 <th>สถานะ</th>
                 <th>จัดการ</th>
               </tr>
@@ -180,17 +115,17 @@
         </div>
       </section>
 
-      <section class="table-card supervisor-table-card">
+      <section class="table-card supervisor-table-card rv-card">
         <div class="table-header">
           <div>
-            <h2>รายการที่บันทึกลงระบบแล้ว</h2>
-            <p class="muted">ดูย้อนหลังเท่านั้น ไม่สามารถแก้ไขหรือลบได้</p>
+            <h2>ส่งบัญชีแล้ว</h2>
+            <p class="muted">ดูย้อนหลังได้อย่างเดียว</p>
           </div>
           <span id="sentRowCount" class="muted">-</span>
         </div>
 
-        <div class="table-scroll supervisor-table-scroll">
-          <table class="data-table supervisor-data-table" data-rt="cards">
+        <div class="table-scroll">
+          <table class="data-table" data-rt="cards">
             <thead>
               <tr>
                 <th></th>
@@ -198,8 +133,8 @@
                 <th>แผนก</th>
                 <th>เครื่องจักร</th>
                 <th>ผู้บันทึก</th>
-                <th class="text-right">น้ำหนักของเสีย</th>
-                <th>รายการปัญหา</th>
+                <th class="text-right">ของเสีย (kg)</th>
+                <th>ปัญหา</th>
                 <th>สถานะ</th>
                 <th>จัดการ</th>
               </tr>
@@ -212,35 +147,70 @@
       </section>
     </main>
 
-    <!-- Popup กลางระบบ แทน alert/confirm -->
+    <!-- แถบไอคอนด้านล่าง (มือถือ/แท็บเล็ต) -->
+    <nav class="fm-tabbar rv-tabbar" aria-label="เมนูหลัก">
+      <a class="fm-tab is-active" href="/pages/supervisor-daily-review.html" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 9l2 2 4-4M8 15h8" /></svg>
+        <span class="fm-tab-label">ตรวจรายวัน</span>
+      </a>
+      <a class="fm-tab" href="/pages/supervisor-dashboard.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16v-5M12 16V7M17 16v-8" /></svg>
+        <span class="fm-tab-label">Dashboard</span>
+      </a>
+      <a class="fm-tab fm-tab-save" href="/pages/supervisor-dashboard.html#scan">
+        <span class="fm-tab-save-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M4 12h16" /></svg>
+        </span>
+        <span class="fm-tab-label">สแกน QR</span>
+      </a>
+      <button type="button" class="fm-tab" id="btn-history">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v5h5M12 8v4l3 2" /></svg>
+        <span class="fm-tab-label">ส่งแล้ว</span>
+      </button>
+      <button type="button" class="fm-tab" onclick="logoutNow()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg>
+        <span class="fm-tab-label">ออก</span>
+      </button>
+    </nav>
+
+    <!-- หน้าต่างกลาง (ยืนยัน / แก้ไข) -->
     <div id="appModal" class="modal-overlay app-modal" hidden>
-      <div class="modal-card app-modal-card">
+      <div class="modal-card app-modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-head">
           <div>
             <h2 id="modalTitle">แจ้งเตือน</h2>
             <p id="modalSubTitle"></p>
           </div>
-          <button type="button" class="modal-close" onclick="closeModal()">×</button>
+          <button type="button" class="modal-close" onclick="closeModal()" aria-label="ปิด">×</button>
         </div>
         <div id="modalBody" class="app-modal-body"></div>
         <div id="modalActions" class="modal-actions"></div>
       </div>
     </div>
 
-    <div id="toast" class="toast hidden"></div>
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/core/supabaseClient.js"></script>
+    <script src="/core/supabaseFetch.js"></script>
     <script src="/core/activityLogger.js"></script>
     <script src="/core/roleConfig.js"></script>
     <script src="/core/ea-common.js"></script>
     <script src="/core/departmentConfig.js"></script>
-    <script src="/core/tableSwipeDetector.js"></script>
-    <script src="/core/counterAnimation.js"></script>
-    <script src="/core/autoRefresh.js"></script>
     <script src="/auth/authGuard.js"></script>
-    <script src="/services/loadingService.js"></script>
-    <script src="/js/dashboard/supervisor-daily-review.js?v=old-header-table-v1"></script>
-      <script src="/core/responsiveTables.js"></script>
+    <script src="/js/dashboard/supervisor-daily-review.js"></script>
+    <script src="/core/responsiveTables.js"></script>
+    <script>
+      // ปุ่ม "ส่งแล้ว" เลื่อนไปที่รายการที่ส่งบัญชีแล้ว
+      document.getElementById("btn-history").addEventListener("click", function () {
+        var card = document.getElementById("sentReportBody");
+        card = card && card.closest("section");
+        if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      if (location.hash === "#history") {
+        history.replaceState(null, "", location.pathname + location.search);
+        setTimeout(function () { document.getElementById("btn-history").click(); }, 900);
+      }
+    </script>
   </body>
 </html>

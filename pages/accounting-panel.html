@@ -2,115 +2,74 @@
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>บัญชีตรวจสอบของเสีย | PVT&T FACTORY</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>บัญชีตรวจสอบของเสีย - PVT&amp;T FACTORY</title>
 
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-
-    <!-- Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/Logo_Icons3.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icons/Logo_Icons3.png" />
-    <link rel="apple-touch-icon" href="/icons/Logo_Icons3.png" />
-
-    <!-- PWA -->
+    <!-- แนวเดียวกับหน้าหน้างาน: เรียบ สีน้อย ฟอนต์ในเครื่อง ไอคอน SVG (ใช้บนคอมเป็นหลัก) -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="icon" type="image/png" href="/icons/logo-header.png" />
+    <link rel="apple-touch-icon" href="/icons/Logo_Apps3.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#1E3A8A" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="PVT&amp;T Factory" />
+    <meta name="theme-color" content="#ffffff" />
 
-    <link rel="stylesheet" href="/css/ea-go-live.css" />
-    <link rel="stylesheet" href="/css/accounting-panel.css" />
-    
-      <link rel="stylesheet" href="/css/responsive.css" />
-    <link rel="stylesheet" href="/css/accounting-nav.css" />
-    <link rel="stylesheet" href="/css/accounting-dashboard.css" />
-      <link rel="stylesheet" href="/css/splash.css" />
+    <link rel="stylesheet" href="/css/form-mobile.css" />
+    <link rel="stylesheet" href="/css/review-simple.css" />
+    <link rel="stylesheet" href="/css/accounting-simple.css" />
+    <script src="/js/department/formSettings.js"></script>
   </head>
 
-  <body>
-    <!-- หน้าเปิดแอป (แบบเดียวกันทั้งแอป — ดู css/splash.css) -->
-    <div id="splash-screen" class="pvt-splash" role="status" aria-label="กำลังเปิดแอป">
-      <div class="pvt-splash-mark" aria-hidden="true">
-        <span class="pvt-splash-glow"></span>
-        <svg class="pvt-splash-ring" viewBox="0 0 120 120" aria-hidden="true">
-          <defs>
-            <linearGradient id="pvtSplashRing" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#ff8a3d" />
-              <stop offset="0.55" stop-color="#f26a1b" />
-              <stop offset="1" stop-color="#1e3a8a" />
-            </linearGradient>
-          </defs>
-          <circle class="track" cx="60" cy="60" r="54" />
-          <circle class="arc" cx="60" cy="60" r="54" />
-        </svg>
-        <img class="pvt-splash-logo" src="/icons/Logo_Apps3.png?v=3" alt="" />
+  <body class="rv acc">
+    <!-- แถบหัว -->
+    <header class="fm-top rv-top acc-top">
+      <img class="fm-logo" src="/icons/logo-header.png" width="42" height="37" alt="PVT&amp;T FACTORY" />
+      <div class="fm-top-title">
+        <h1>ข้อมูลของเสียจากการผลิต</h1>
+        <p><span id="accUserName">ฝ่ายบัญชี</span> · เฉพาะรายการที่หัวหน้างานส่งบัญชีแล้ว</p>
       </div>
-      <div class="pvt-splash-title">PVT&amp;T Factory</div>
-      <div class="pvt-splash-sub">กำลังโหลดข้อมูลฝ่ายบัญชี</div>
-    </div>
+      <span id="lastUpdate" class="acc-updated">-</span>
+      <button type="button" class="fm-icon-btn" onclick="loadAccountingData()" aria-label="โหลดใหม่" title="โหลดใหม่">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5" /></svg>
+      </button>
+      <button type="button" class="fm-icon-btn" onclick="FORM_SETTINGS.open()" aria-label="ตั้งค่าตัวอักษร" title="ตั้งค่าตัวอักษร">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19l5-14h2l5 14M6.5 13h7" /><path d="M17 11h4M19 9v4" /></svg>
+      </button>
+    </header>
 
-    <main class="page">
-      <header class="topbar">
+    <div class="acc-layout">
+      <!-- เมนูซ้าย (คอมพิวเตอร์) -->
+      <nav class="acc-side" aria-label="เมนูฝ่ายบัญชี">
+        <div class="acc-side-group">
+          <span class="acc-side-title">เมนูหลัก</span>
+          <button type="button" class="acc-side-item is-active" data-nav="data"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span>ข้อมูลของเสีย</span></button>
+          <button type="button" class="acc-side-item" data-nav="dash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16v-5M12 16V7M17 16v-8" /></svg><span>Dashboard ของเสีย</span></button>
+          <button type="button" class="acc-side-item" data-nav="summary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 10h16M4 15h10M4 20h7" /></svg><span>สรุปผลรวม</span></button>
+          <button type="button" class="acc-side-item" data-nav="pending"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z" /></svg><span>รายการรอตรวจ</span></button>
+          <a class="acc-side-item" href="/pages/production-entry.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M9 10v9M15 10v9" /></svg><span>กรอกยอดผลิตทั้งใบ</span></a>
+          <a class="acc-side-item" href="/pages/daily-report.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7" /></svg><span>รายงานประจำวัน</span></a>
+          <a class="acc-side-item" href="/pages/factory-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 5v4M8 15v4" /></svg><span>ตั้งค่าเกณฑ์ของเสีย</span></a>
+          <a class="acc-side-item" href="/pages/loss-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M4 12h10M4 18h10M17 5l3 3-3 3M20 16h-3" /></svg><span>อาการเสีย &amp; ประเภท</span></a>
+        </div>
+        <div class="acc-side-group">
+          <span class="acc-side-title">รายงาน</span>
+          <button type="button" class="acc-side-item" onclick="exportAccountingExcel()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM5 10h14M5 15h14M11 4v16" /></svg><span>ส่งออก Excel</span></button>
+          <button type="button" class="acc-side-item" onclick="exportAccountingSummaryPDF()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5" /></svg><span>ออกรายงาน PDF</span></button>
+          <button type="button" class="acc-side-item" onclick="printAccountingSummary()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5M7 17H5v-6h14v6h-2M8 14h8v6H8z" /></svg><span>พิมพ์รายงาน</span></button>
+        </div>
+        <div class="acc-side-group" id="accSideOther" hidden>
+          <span class="acc-side-title">ไปหน้าอื่น</span>
+          <a class="acc-side-item" data-role-only="admin management manager executive" href="/index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" /></svg><span>Dashboard ผู้บริหาร</span></a>
+          <a class="acc-side-item" data-role-only="admin" href="/pages/admin-panel.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg><span>หน้าแอดมิน</span></a>
+        </div>
+        <button type="button" class="acc-side-item acc-side-logout" onclick="logoutAccounting()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg><span>ออกจากระบบ</span></button>
+      </nav>
 
-  <div class="header-brand">
-
-    <div class="logo-icon">
-      <img src="/icons/Logo_Apps3.png?v=3" alt="PVT&T FACTORY Logo" />
-    </div>
-
-    <div class="title">
-      <h1>ข้อมูลของเสียจากการผลิต</h1>
-      <p>เฉพาะรายการที่หัวหน้างานส่งบัญชีแล้ว</p>
-    </div>
-
-  </div>
-
-  <div class="actions">
-
-    <a class="btn light" href="/pages/factory-settings.html">
-      <span class="material-symbols-outlined">settings</span>
-      ตั้งค่า
-    </a>
-
-    <a class="btn light" href="/index.html">
-      <span class="material-symbols-outlined">arrow_back</span>
-      ย้อนกลับ
-    </a>
-
-    <button
-      class="btn secondary"
-      type="button"
-      onclick="loadAccountingData()"
-    >
-      <span class="material-symbols-outlined">refresh</span>
-      โหลดใหม่
-    </button>
-
-    <button
-      class="btn logout"
-      type="button"
-      onclick="logoutAccounting()"
-    >
-      <span class="material-symbols-outlined">logout</span>
-      Logout
-    </button>
-
-  </div>
-
-</header>
-
-      <section class="panel acc-list-view">
-        <div class="filter-grid">
-          <div class="form-group">
-            <label for="filterMonthSelect">เลือกเดือน</label>
-            <div class="thai-month-picker" style="display: flex; gap: 6px;">
-              <select id="filterMonthSelect" style="flex: 1; min-width: 0;">
+      <main class="acc-main">
+        <!-- ตัวกรอง -->
+        <section class="rv-card acc-filter acc-list-view">
+          <div class="form-group acc-filter-month">
+            <label for="filterMonthSelect">เดือน</label>
+            <div class="acc-month">
+              <select id="filterMonthSelect">
                 <option value="all">ทุกเดือน</option>
                 <option value="01">มกราคม</option>
                 <option value="02">กุมภาพันธ์</option>
@@ -125,19 +84,16 @@
                 <option value="11">พฤศจิกายน</option>
                 <option value="12">ธันวาคม</option>
               </select>
-              <select id="filterYearSelect" style="flex: 1; min-width: 0;">
-              </select>
-              <input type="hidden" id="filterMonth" />
+              <select id="filterYearSelect" aria-label="ปี"></select>
             </div>
+            <input type="hidden" id="filterMonth" />
           </div>
-
           <div class="form-group">
             <label for="filterDept">แผนก</label>
             <select id="filterDept">
               <option value="all">ทุกแผนก</option>
             </select>
           </div>
-
           <div class="form-group">
             <label for="filterStatus">สถานะ</label>
             <select id="filterStatus">
@@ -147,128 +103,90 @@
               <option value="accounting_cancelled">ยกเลิกรายการ</option>
             </select>
           </div>
-
-          <div class="form-group">
+          <div class="form-group acc-filter-search">
             <label for="searchInput">ค้นหา</label>
             <input type="search" id="searchInput" placeholder="เครื่อง / ปัญหา / ผู้บันทึก" />
           </div>
+        </section>
 
-          <div class="form-group">
-            <label>&nbsp;</label>
-            <button class="btn primary" type="button" onclick="applyFilters()" style="width: 100%;">ค้นหา</button>
-          </div>
-        </div>
-      </section>
+        <!-- ตัวเลขสรุป -->
+        <section class="acc-stats acc-list-view">
+          <div class="rv-stat"><span>จำนวนรายการ</span><strong id="sumCount">0</strong></div>
+          <div class="rv-stat"><span>รอบัญชีตรวจ</span><strong id="sumPending">0</strong></div>
+          <div class="rv-stat"><span>ของเสียรวม (kg)</span><strong id="sumWaste">0.00</strong></div>
+          <div class="rv-stat"><span>ผลิตดีรวม (kg)</span><strong id="sumProduction">0.00</strong></div>
+        </section>
 
-      <div class="acc-list-view" style="margin-top: 20px; margin-bottom: 12px; padding: 0 4px;">
-        <h2 style="font-size: 16px; margin: 0; color: #334155; font-weight: 700;">ภาพรวมข้อมูล</h2>
-      </div>
-      <section class="summary-grid acc-list-view">
-        <div class="summary-card">
-          <span>จำนวนรายการ</span>
-          <strong id="sumCount">0</strong>
-        </div>
-        <div class="summary-card warning">
-          <span>รอบัญชีตรวจ</span>
-          <strong id="sumPending">0</strong>
-        </div>
-        <div class="summary-card danger">
-          <span>น้ำหนักสูญเสียรวม</span>
-          <strong id="sumWaste">0.00</strong>
-        </div>
-        <div class="summary-card success">
-          <span>น้ำหนักผลิตดีรวม</span>
-          <strong id="sumProduction">0.00</strong>
-        </div>
-      </section>
-
-      <!-- ตารางสรุปผลรวมแยกตามแผนก / สินค้า / เครื่องจักร / ประเภทปัญหา -->
-      <section class="panel acc-list-view" style="margin-top: 24px; margin-bottom: 24px; background-color: #eff5ff;">
-        <div class="table-head" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-          <h2 id="summaryTableTitle" style="color: #0031b7;">สรุปผลรวมแยกตามแผนก / สินค้า</h2>
-          <div style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0;">
-            <span id="summaryDeptBadge" style="display: inline-flex; justify-content: center; align-items: center; min-width: 112px; min-height: 44px; margin-right: 14px; background: #e0f2fe; color: #0284c7; padding: 4px 18px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid #bae6fd; white-space: nowrap; text-align: center;">แผนก: ทั้งหมด</span>
-            <select id="summaryGroupType" class="filter-select" style="min-width: 180px;">
+        <!-- สรุปผลรวม -->
+        <section class="rv-card acc-list-view" id="accSummary">
+          <div class="table-header">
+            <div>
+              <h2 id="summaryTableTitle">สรุปผลรวมแยกตามแผนก / สินค้า</h2>
+              <p class="muted"><span id="summaryDeptBadge">แผนก: ทั้งหมด</span></p>
+            </div>
+            <select id="summaryGroupType" class="filter-select acc-inline-select" aria-label="แยกสรุปตาม">
               <option value="dept">แยกตามแผนก / สินค้า</option>
               <option value="machine">แยกตามเครื่องจักร</option>
               <option value="problem">แยกตามประเภทปัญหา</option>
             </select>
           </div>
-        </div>
-        <div class="table-responsive">
-          <table class="data-table summary-month-table" id="summaryTable">
-            <thead id="summaryTableHead">
-              <tr>
-                <th style="background-color: #afdeff; color: #0200bf;">แผนก / สินค้า</th>
-                <th class="text-right" style="background-color: #afdeff; color: #0200bf;">น้ำหนักผลิตรวม (kg)</th>
-                <th class="text-right" style="background-color: #afdeff; color: #0200bf;">น้ำหนักสูญเสียรวม (kg)</th>
-                <th class="text-right" style="background-color: #afdeff; color: #0200bf;">% Waste</th>
-              </tr>
-            </thead>
-            <tbody id="summaryDeptBody">
-              <tr><td colspan="4" class="empty">กำลังคำนวณข้อมูล...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="panel acc-list-view">
-        <div class="table-head" style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 16px; flex-wrap: wrap;">
-          <div>
-            <h2>รายการข้อมูลของเสียจากหน้างาน</h2>
-            <p class="muted">กรอกน้ำหนักผลิตดี (ไม่รวมของเสีย) แล้วบันทึก · กด Enter เพื่อไปช่องถัดไป · ผ่าน/เกินประเมินจากยอดรวมทั้งเดือน</p>
+          <div class="table-responsive">
+            <table class="data-table acc-table summary-month-table" id="summaryTable">
+              <thead id="summaryTableHead">
+                <tr>
+                  <th>แผนก / สินค้า</th>
+                  <th class="text-right">ผลิตดี (kg)</th>
+                  <th class="text-right">ของเสีย (kg)</th>
+                  <th class="text-right">% ของเสีย</th>
+                </tr>
+              </thead>
+              <tbody id="summaryDeptBody">
+                <tr><td colspan="4" class="empty">กำลังคำนวณข้อมูล...</td></tr>
+              </tbody>
+            </table>
           </div>
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-            <span id="lastUpdate" style="margin-right: 8px; font-size: 13px; color: #ed7700; font-weight: 500;">-</span>
-            <button id="btnSaveAll" class="btn success btn-save-all" type="button" onclick="saveAllDrafts()" hidden>
-              <span class="material-symbols-outlined">done_all</span>
+        </section>
+
+        <!-- รายการ -->
+        <section class="rv-card acc-list-view" id="accList">
+          <div class="table-header">
+            <div>
+              <h2>รายการของเสียจากหน้างาน</h2>
+              <p class="muted">กรอกน้ำหนักผลิตดี (ไม่รวมของเสีย) แล้วกดบันทึก · Enter = ช่องถัดไป · ผ่าน/เกินประเมินจากยอดรวมทั้งเดือน</p>
+            </div>
+            <button id="btnSaveAll" class="btn primary btn-save-all" type="button" onclick="saveAllDrafts()" hidden>
               บันทึกทั้งหมด (<span class="save-all-count">0</span>)
             </button>
-            <button onclick="exportAccountingExcel()" class="btn btn-excel" type="button" title="ส่งออกข้อมูลตามตัวกรองเป็นไฟล์ Excel (สร้างในเครื่องนี้ ไม่ส่งข้อมูลออกนอกระบบ)">
-              <span class="material-symbols-outlined">table_view</span>
-              ส่งออก Excel
-            </button>
-            <button onclick="exportAccountingSummaryPDF()" class="btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; border-radius: 8px; background: #0284c7; color: white; border: none; cursor: pointer; font-weight: 600; white-space: nowrap; height: fit-content; transition: background 0.15s ease;">
-              <span class="material-symbols-outlined" style="font-size: 18px;">picture_as_pdf</span>
-              ออกรายงาน PDF
-            </button>
-            <button onclick="printAccountingSummary()" class="btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; border-radius: 8px; background: #0ea5e9; color: white; border: none; cursor: pointer; font-weight: 600; white-space: nowrap; height: fit-content; transition: background 0.15s ease;">
-              <span class="material-symbols-outlined" style="font-size: 18px;">print</span>
-              พิมพ์รายงาน
-            </button>
           </div>
-        </div>
 
-        <div id="periodLockBar" class="period-lock-bar" hidden></div>
+          <div id="periodLockBar" class="period-lock-bar" hidden></div>
 
-        <div class="table-scroll">
-          <table class="data-table" data-rt="cards">
-            <thead>
-              <tr>
-                <th></th>
-                <th>วันที่</th>
-                <th>แผนก</th>
-                <th>กะ</th>
-                <th>เครื่อง</th>
-                <th>ผู้บันทึก</th>
-                <th class="text-right">ของเสีย kg</th>
-                <th>รายการปัญหา</th>
-                <th class="text-right col-production" title="ยอดผลิตดี (ไม่รวมของเสีย)">ผลิตดี kg</th>
-                <th class="text-right" title="% ของเสียของวันนั้น = ของเสีย ÷ (ผลิตดี + ของเสีย) × 100">% เสีย (วัน)</th>
-                <th title="% ของเสียรวมทั้งเดือนของเครื่องนี้ เทียบเกณฑ์">ผลรายเดือน</th>
-                <th>สถานะ</th>
-                <th>จัดการ</th>
-              </tr>
-            </thead>
-            <tbody id="accountingBody">
-              <tr>
-                <td colspan="13" class="empty">กำลังโหลดข้อมูล...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-      <!-- ================= DASHBOARD ของเสีย (สลับจากเมนูซ้าย) ================= -->
+          <div class="table-scroll">
+            <table class="data-table acc-table acc-main-table" data-rt="cards">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>วันที่</th>
+                  <th>แผนก</th>
+                  <th>กะ</th>
+                  <th>เครื่อง</th>
+                  <th>ผู้บันทึก</th>
+                  <th class="text-right">ของเสีย kg</th>
+                  <th>ปัญหา</th>
+                  <th class="text-right col-production" title="ยอดผลิตดี (ไม่รวมของเสีย)">ผลิตดี kg</th>
+                  <th class="text-right" title="% ของเสียของวันนั้น = ของเสีย ÷ (ผลิตดี + ของเสีย) × 100">% เสีย (วัน)</th>
+                  <th title="% ของเสียรวมทั้งเดือนของเครื่องนี้ เทียบเกณฑ์">ผลรายเดือน</th>
+                  <th>สถานะ</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="accountingBody">
+                <tr><td colspan="13" class="empty">กำลังโหลดข้อมูล...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
       <section id="accDashboard" class="acc-dash" hidden aria-labelledby="accDashTitle">
         <div class="acc-dash-head">
           <div>
@@ -294,8 +212,7 @@
         </div>
 
         <div class="acc-dash-period">
-          <span class="material-symbols-outlined" aria-hidden="true">event</span>
-          <strong id="dashPeriodLabel">-</strong>
+                    <strong id="dashPeriodLabel">-</strong>
           <span class="muted" id="dashPeriodHint">กดที่แท่งกราฟเพื่อดูช่วงเวลาอื่น</span>
         </div>
 
@@ -371,37 +288,45 @@
           </div>
         </details>
       </section>
-    </main>
+      </main>
+    </div>
+
+    <!-- แถบไอคอนด้านล่าง (จอเล็กกว่าคอม) -->
+    <nav class="fm-tabbar acc-tabbar" aria-label="เมนูฝ่ายบัญชี">
+      <button type="button" class="fm-tab is-active" data-nav="data"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span class="fm-tab-label">ข้อมูล</span></button>
+      <button type="button" class="fm-tab" data-nav="dash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16v-5M12 16V7M17 16v-8" /></svg><span class="fm-tab-label">Dashboard</span></button>
+      <button type="button" class="fm-tab" data-nav="pending"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z" /></svg><span class="fm-tab-label">รอตรวจ</span></button>
+      <a class="fm-tab" href="/pages/factory-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 5v4M8 15v4" /></svg><span class="fm-tab-label">ตั้งค่า</span></a>
+      <button type="button" class="fm-tab" onclick="logoutAccounting()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg><span class="fm-tab-label">ออก</span></button>
+    </nav>
 
     <div id="appModal" class="modal hidden">
-      <div class="modal-card">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-head">
           <h3 id="modalTitle">แจ้งเตือน</h3>
-          <button class="modal-close" type="button" onclick="closeModal()">×</button>
+          <button class="modal-close" type="button" onclick="closeModal()" aria-label="ปิด">×</button>
         </div>
         <div id="modalBody"></div>
         <div id="modalActions" class="modal-actions"></div>
       </div>
     </div>
 
-    <div id="toast" class="toast hidden"></div>
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/core/supabaseClient.js"></script>
+    <script src="/core/supabaseFetch.js"></script>
     <script src="/core/activityLogger.js"></script>
     <script src="/core/roleConfig.js"></script>
     <script src="/core/ea-common.js"></script>
-    <script src="/core/tableSwipeDetector.js"></script>
-    <script src="/core/counterAnimation.js"></script>
-    <script src="/core/autoRefresh.js"></script>
     <script src="/auth/authGuard.js"></script>
-    <script src="/services/loadingService.js"></script>
     <script src="/core/wasteFormula.js"></script>
     <script src="/core/wasteStandardService.js"></script>
     <script src="/js/accounting/accounting-panel.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/accounting/productionLines.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="/js/accounting/accounting-dashboard.js"></script>
-      <script src="/core/responsiveTables.js"></script>
-    <script src="/core/accountingNav.js"></script>
+    <script src="/core/responsiveTables.js"></script>
+    <script src="/js/accounting/accountingSimpleNav.js"></script>
   </body>
 </html>

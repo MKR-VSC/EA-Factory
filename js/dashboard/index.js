@@ -159,6 +159,7 @@ let chartMachineHistory = null;
 ========================================================= */
 
 window.addEventListener("DOMContentLoaded", async () => {
+  if (!(await verifyServerLogin(ALLOWED_ROLES))) return;
   if (!protectExecutivePage()) return;
 
   setActiveUserLabel();
@@ -172,6 +173,14 @@ window.addEventListener("DOMContentLoaded", async () => {
 /* =========================================================
    AUTH
 ========================================================= */
+
+// ตรวจ session จริงกับ Supabase Auth + role จากตาราง profiles
+// (เดิมเช็กแค่ localStorage ซึ่งแก้เองในเบราว์เซอร์ได้ หรือได้มาจากการเลือกชื่อผ่าน QR โดยไม่ต้องใส่รหัสผ่าน)
+async function verifyServerLogin(allowedRoles) {
+  if (!window.AUTH_GUARD?.requireLogin) return true;
+  const profile = await window.AUTH_GUARD.requireLogin(allowedRoles);
+  return Boolean(profile);
+}
 
 function protectExecutivePage() {
   const activeUser = localStorage.getItem("activeUser");
@@ -573,19 +582,27 @@ async function loadAndProcessDashboardData() {
   showLoading();
 
   try {
+    // ดึงทุกหน้า (Supabase ส่งได้ครั้งละ 1,000 แถว ถ้าไม่แบ่งหน้า ยอดรวมจะขาดหาย)
+    const fetchAll = (build) => (window.SB_FETCH ? window.SB_FETCH.all(build) : build());
     const [currRes, prevRes] = await Promise.all([
-      client
-        .from(REPORT_TABLE)
-        .select("*")
-        .gte("report_date", range.start)
-        .lte("report_date", range.end)
-        .order("report_date", { ascending: true })
-        .order("created_at", { ascending: true }),
-      client
-        .from(REPORT_TABLE)
-        .select("*")
-        .gte("report_date", prevRange.start)
-        .lte("report_date", prevRange.end)
+      fetchAll(() =>
+        client
+          .from(REPORT_TABLE)
+          .select("*")
+          .gte("report_date", range.start)
+          .lte("report_date", range.end)
+          .order("report_date", { ascending: true })
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true }),
+      ),
+      fetchAll(() =>
+        client
+          .from(REPORT_TABLE)
+          .select("*")
+          .gte("report_date", prevRange.start)
+          .lte("report_date", prevRange.end)
+          .order("id", { ascending: true }),
+      ),
     ]);
 
     if (currRes.error) throw currRes.error;
@@ -633,12 +650,17 @@ async function loadAndProcessDashboardData() {
 // ต้องนับยอดผลิตดีของวันนั้นด้วย (ของเสีย 0) ไม่งั้น % ทั้งเดือนจะสูงเกินจริง
 async function loadNoWasteProduction(client, range) {
   try {
-    const { data, error } = await client
-      .from("daily_machine_status")
-      .select("work_date, department_code, machine_no, production_kg, operation_status, accounting_checked_at")
-      .eq("operation_status", "no_waste")
-      .gte("work_date", range.start)
-      .lte("work_date", range.end);
+    const buildStatus = () =>
+      client
+        .from("daily_machine_status")
+        .select("id, work_date, department_code, machine_no, production_kg, operation_status, accounting_checked_at")
+        .eq("operation_status", "no_waste")
+        .gte("work_date", range.start)
+        .lte("work_date", range.end)
+        .order("id", { ascending: true });
+    const { data, error } = window.SB_FETCH
+      ? await window.SB_FETCH.all(buildStatus)
+      : await buildStatus();
     if (error) throw error;
     return (data || [])
       .filter((r) => Number(r.production_kg) > 0 && r.accounting_checked_at)
@@ -983,7 +1005,8 @@ function renderDepartmentSummaryTable(rows, machineSummary = []) {
   // Calculate overall scrap percentage
   const totalWaste = rows.reduce((sum, item) => sum + item.waste, 0);
   const totalProduction = rows.reduce((sum, item) => sum + item.production, 0);
-  const overallPercent = totalProduction > 0 ? (totalWaste / totalProduction) * 100 : 0;
+  // ใช้สูตรกลางของระบบ: ของเสีย ÷ (ผลิตดี + ของเสีย) × 100 (เดิมหารด้วยผลิตดีอย่างเดียว ทำให้ % สูงกว่าหน้าอื่น)
+  const overallPercent = calcWastePercent(totalWaste, totalProduction);
 
   // Render or remove the blinking notification badge
   const alarmContainer = document.getElementById("scrap-alarm-container");
@@ -1420,7 +1443,7 @@ function handleCreateTicketSubmit(event) {
   }
 
   const now = new Date();
-  const dateStr = now.toISOString().slice(0, 10);
+  const dateStr = toDateInputValue(now);
   const ticketId = `TKT-${dateStr.replace(/-/g, "")}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   // Determine initial status based on urgency
@@ -1500,7 +1523,7 @@ function renderMachineHistoryChart(records, machineName, deptColor) {
 
   sortedRecords.forEach((r) => {
     const dStr = formatDateShort(r.report_date || r.date);
-    const shiftLabel = r.shift === "day" ? "กะวัน" : r.shift === "night" ? "กะคืน" : (r.shift ? `กะ ${r.shift}` : "");
+    const shiftLabel = getShiftLabel(r.work_shift || r.shift);
     labels.push(shiftLabel ? `${dStr} (${shiftLabel})` : dStr);
 
     const prod = getProductionWeight(r);
@@ -2099,12 +2122,17 @@ async function attachProblemItemsToReports(rows) {
   if (!client) return rows.map(normalizeReportItemsFallback);
 
   try {
-    const { data, error } = await client
-      .from(ITEM_TABLE)
-      .select("id, report_id, item_no, problem_type, waste_weight_kg, detail, created_at")
-      .in("report_id", ids)
-      .order("item_no", { ascending: true })
-      .order("created_at", { ascending: true });
+    const buildItems = (chunk) =>
+      client
+        .from(ITEM_TABLE)
+        .select("id, report_id, item_no, problem_type, waste_weight_kg, detail, created_at")
+        .in("report_id", chunk)
+        .order("item_no", { ascending: true })
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true });
+    const { data, error } = window.SB_FETCH
+      ? await window.SB_FETCH.inChunks(ids, buildItems)
+      : await buildItems(ids);
 
     if (error) {
       console.warn("โหลด daily_waste_report_items ไม่สำเร็จ ใช้ข้อมูลหัวรายงานแทน:", error);
@@ -2326,6 +2354,23 @@ function setText(id, value) {
     const el = document.getElementById(id);
     if (el) el.textContent = value;
   }
+}
+
+// ชื่อกะสำหรับแสดงผล — ฟอร์มบันทึกชื่อกะภาษาไทยจาก master_shifts (เช่น "กะเช้า")
+// ข้อมูลเก่าอาจเป็นรหัส MORNING / AFTERNOON / NIGHT / day / night
+function getShiftLabel(shift) {
+  const raw = String(shift || "").trim();
+  if (!raw) return "";
+  const map = {
+    morning: "กะเช้า",
+    afternoon: "กะบ่าย",
+    night: "กะดึก",
+    sunday: "วันอาทิตย์",
+    day: "กะวัน",
+    ot: "OT",
+  };
+  const label = map[raw.toLowerCase()] || raw;
+  return label.startsWith("กะ") || label === "OT" || label === "วันอาทิตย์" ? label : `กะ ${label}`;
 }
 
 function toDateInputValue(date) {

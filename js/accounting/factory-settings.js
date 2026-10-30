@@ -35,6 +35,8 @@ const state = {
   originalData: {}, // Map code -> { max, warning } for dirty check
   searchQuery: "",
   currentTab: "departments",
+  hasBasis: false,
+  hasKind: false,
   machines: [],
   problems: [],
   selectedMachineDept: "",
@@ -44,6 +46,11 @@ const state = {
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // ตรวจ session จริงกับ Supabase Auth + role จากตาราง profiles (เดิมเช็กแค่ localStorage)
+  if (window.AUTH_GUARD?.requireLogin) {
+    const verified = await window.AUTH_GUARD.requireLogin(ALLOW_ROLES);
+    if (!verified) return;
+  }
   if (!protectSettingsPage()) return;
 
   state.supabase = window.supabaseClient || window.supabase || null;
@@ -145,18 +152,19 @@ async function loadDepartments(isManualRefresh = false) {
   }
 
   try {
-    const { data, error } = await state.supabase
-      .from(DEPARTMENT_TABLE)
-      .select(`
-        department_code,
-        department_name,
-        sort_order,
-        is_active,
-        max_waste_percent,
-        warning_percent
-      `)
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true });
+    const BASE_COLS = "department_code, department_name, sort_order, is_active, max_waste_percent, warning_percent";
+    const query = (cols) =>
+      state.supabase.from(DEPARTMENT_TABLE).select(cols).eq("is_active", true).order("sort_order", { ascending: true });
+
+    // threshold_basis (database/12) และ dept_kind (database/14) — ถ้ายังไม่มี ใช้แบบเดิม
+    let { data, error } = await query(`${BASE_COLS}, threshold_basis, dept_kind`);
+    state.hasBasis = !error;
+    state.hasKind = !error;
+    if (error) {
+      ({ data, error } = await query(`${BASE_COLS}, threshold_basis`));
+      state.hasBasis = !error;
+    }
+    if (error) ({ data, error } = await query(BASE_COLS));
 
     if (error) throw error;
 
@@ -172,6 +180,8 @@ async function loadDepartments(isManualRefresh = false) {
       state.originalData[code] = {
         max: toNumber(dept.max_waste_percent || 2),
         warning: toNumber(dept.warning_percent || 1.5),
+        basis: dept.threshold_basis || "total",
+        kind: dept.dept_kind || "production",
       };
     });
 
@@ -285,6 +295,18 @@ function renderTable(rows) {
               ${renderGaugeHTML(warning, max)}
             </div>
           </td>
+          <td>
+            <select class="input-basis" data-field="threshold_basis" aria-label="เกณฑ์คิดจาก ของ ${escapeAttr(name)}" ${state.hasBasis ? "" : "disabled title=\"รัน database/12-loss-types.sql ก่อน\""}>
+              <option value="total" ${(dept.threshold_basis || "total") === "total" ? "selected" : ""}>ของเสียทั้งหมด</option>
+              <option value="production" ${dept.threshold_basis === "production" ? "selected" : ""}>เฉพาะสูญเสียจากการผลิต</option>
+            </select>
+          </td>
+          <td>
+            <select class="input-basis input-kind" data-field="dept_kind" aria-label="ประเภทแผนก ${escapeAttr(name)}" ${state.hasKind ? "" : "disabled title=\"รัน database/14-recycle-departments.sql ก่อน\""}>
+              <option value="production" ${(dept.dept_kind || "production") === "production" ? "selected" : ""}>ผลิตสินค้า</option>
+              <option value="recycle" ${dept.dept_kind === "recycle" ? "selected" : ""}>รีไซเคิล</option>
+            </select>
+          </td>
           <td class="text-center">
             <span class="status-pill ${active ? "status-active" : "status-inactive"}">
               <span class="status-dot"></span>
@@ -330,9 +352,9 @@ function bindRowInputListeners() {
   const rows = document.querySelectorAll("#settings-table-body tr[data-code]");
 
   rows.forEach((row) => {
-    const inputs = row.querySelectorAll(".input-percent");
+    const inputs = row.querySelectorAll(".input-percent, .input-basis");
     inputs.forEach((input) => {
-      input.addEventListener("input", () => {
+      input.addEventListener(input.tagName === "SELECT" ? "change" : "input", () => {
         validateRow(row);
         checkGlobalDirtyState();
       });
@@ -394,7 +416,9 @@ function checkGlobalDirtyState() {
 
     const baseline = state.originalData[code];
     if (baseline) {
-      if (baseline.max !== max || baseline.warning !== warning) {
+      const basis = row.querySelector('[data-field="threshold_basis"]')?.value || "total";
+      const kind = row.querySelector('[data-field="dept_kind"]')?.value || "production";
+      if (baseline.max !== max || baseline.warning !== warning || baseline.basis !== basis || baseline.kind !== kind) {
         isDirty = true;
         break;
       }
@@ -425,6 +449,8 @@ function resetToLoadedBaseline() {
     if (baseline) {
       dept.max_waste_percent = baseline.max;
       dept.warning_percent = baseline.warning;
+      dept.threshold_basis = baseline.basis;
+      dept.dept_kind = baseline.kind;
     }
   });
 
@@ -464,7 +490,7 @@ async function saveSettings() {
 
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = `<span class="material-symbols-outlined spin">hourglass_top</span> กำลังบันทึก...`;
+    btn.textContent = "กำลังบันทึก...";
   }
   if (saveInlineBtn) saveInlineBtn.disabled = true;
 
@@ -483,12 +509,13 @@ async function saveSettings() {
         throw new Error(`ค่าเตือนของแผนก ${code} (${warning}%) ต้องไม่มากกว่าเกณฑ์สูงสุด (${maxWaste}%)`);
       }
 
+      const patch = { max_waste_percent: maxWaste, warning_percent: warning };
+      if (state.hasBasis) patch.threshold_basis = row.querySelector('[data-field="threshold_basis"]')?.value || "total";
+      if (state.hasKind) patch.dept_kind = row.querySelector('[data-field="dept_kind"]')?.value || "production";
+
       const { error } = await state.supabase
         .from(DEPARTMENT_TABLE)
-        .update({
-          max_waste_percent: maxWaste,
-          warning_percent: warning,
-        })
+        .update(patch)
         .eq("department_code", code);
 
       if (error) throw error;
@@ -504,7 +531,7 @@ async function saveSettings() {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = `<span class="material-symbols-outlined">save</span> <span>บันทึกการตั้งค่า</span>`;
+      btn.textContent = "บันทึกการตั้งค่าแผนก";
     }
     if (saveInlineBtn) saveInlineBtn.disabled = false;
   }
@@ -542,7 +569,7 @@ function renderEmpty(message) {
 
   tbody.innerHTML = `
     <tr>
-      <td colspan="6" class="tb-empty">
+      <td colspan="8" class="tb-empty">
         <span class="material-symbols-outlined" style="font-size: 32px; color: #94a3b8; display: block; margin: 0 auto 8px;">sentiment_dissatisfied</span>
         ${escapeHtml(message)}
       </td>
@@ -628,7 +655,7 @@ window.logoutSettings = logoutSettings;
    TABS & EXTENDED FACTORY Master MANAGEMENT
    ====================================================== */
 function initTabs() {
-  const tabs = document.querySelectorAll("#settings-tabs-nav .tab-btn");
+  const tabs = document.querySelectorAll("#settings-tabs-nav button.tab-btn");
   tabs.forEach(tab => {
     tab.addEventListener("click", async () => {
       const targetTab = tab.dataset.tab;
@@ -734,7 +761,7 @@ async function loadMachines() {
           </td>
           <td style="text-align: center;">
             <button type="button" class="btn-icon-danger btn-delete-machine" data-id="${mac.id}" data-name="${escapeAttr(mac.machine_no)}">
-              <span class="material-symbols-outlined">delete</span>
+              ลบ
             </button>
           </td>
         </tr>
@@ -926,7 +953,7 @@ async function loadProblems() {
           </td>
           <td style="text-align: center;">
             <button type="button" class="btn-icon-danger btn-delete-prob" data-id="${prob.id}" data-name="${escapeAttr(prob.problem_type)}">
-              <span class="material-symbols-outlined">delete</span>
+              ลบ
             </button>
           </td>
         </tr>
