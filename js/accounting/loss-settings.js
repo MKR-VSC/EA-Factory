@@ -22,6 +22,7 @@
     filter: "all",
     search: "",
     hasType: true,
+    applyAll: false, // database/15: เปลี่ยนประเภทแล้วปรับข้อมูลเก่าด้วย
     byCode: true, // master_problems มีคอลัมน์ department_code (database/09)
   };
 
@@ -42,6 +43,7 @@
 
     initUser();
     bindEvents();
+    detectApplyAll();
     await loadDepartments();
   });
 
@@ -87,6 +89,17 @@
         e.target.blur();
       }
     });
+  }
+
+  // มีคอลัมน์ loss_type_manual = รันไฟล์ 15 แล้ว → เปลี่ยนประเภทมีผลกับข้อมูลทั้งหมด
+  async function detectApplyAll() {
+    const { error } = await state.sb.from("daily_waste_report_items").select("loss_type_manual").limit(1);
+    state.applyAll = !error;
+    if (state.applyAll) {
+      $("apply-scope").textContent = "มีผลกับข้อมูลทั้งหมด";
+      $("apply-note").textContent =
+        "ปรับรายงานเก่าให้ทันที · ยกเว้นงวดที่ปิดบัญชีแล้ว และรายการที่หัวหน้าเลือกประเภทเอง";
+    }
   }
 
   /* ---------- โหลดข้อมูล ---------- */
@@ -271,7 +284,10 @@
         await update(id, { loss_type: t });
         bumpCount(t);
         renderList();
-        toast(`"${p.problem_type}" เป็นสูญเสีย${TYPE_LABEL[t]}แล้ว (มีผลกับรายการใหม่)`, "success");
+        toast(
+          `"${p.problem_type}" เป็นสูญเสีย${TYPE_LABEL[t]}แล้ว (${state.applyAll ? "ปรับข้อมูลเก่าให้แล้ว ยกเว้นงวดที่ปิด" : "มีผลกับรายการใหม่"})`,
+          "success",
+        );
       } catch (err) {
         fail("เปลี่ยนประเภทไม่สำเร็จ", err);
       }

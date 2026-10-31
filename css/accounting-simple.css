@@ -155,9 +155,38 @@
   white-space: nowrap;
 }
 
-.acc-table td:nth-child(8) {
+/* ช่องปัญหา (ตารางรายการ) ตัดบรรทัดได้ */
+.acc-main-table td:nth-child(4) {
   white-space: normal;
-  min-width: 130px;
+  min-width: 170px;
+}
+
+/* สรุปรายเดือน: หัวกลุ่ม + kg / % แยกคอลัมน์ ตัวเลขชิดขวาตรงหัว */
+.summary-month-table thead .sum-grp {
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+}
+
+.summary-month-table thead .sum-grp.is-prod { color: #1e3a8a; background: #eef2fa; }
+.summary-month-table thead .sum-grp.is-forced { color: #c2410c; background: #fff4ec; }
+.summary-month-table thead .sum-grp.is-total { color: var(--text); background: #f1f3f6; }
+
+.summary-month-table .sum-sep {
+  border-left: 1px solid var(--line);
+}
+
+.summary-month-table td.sum-basis {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .acc-table thead th {
@@ -718,7 +747,7 @@ html.acc-view-dashboard .acc-list-view {
   }
 }
 
-/* ตารางรายการ: เป็นการ์ดเฉพาะจอเล็กมาก (ตารางนี้กว้าง 13 คอลัมน์) */
+/* ตารางรายการ: เป็นการ์ดเฉพาะจอเล็กมาก */
 @media (min-width: 760px) {
   .acc-main-table[data-rt="cards"] thead {
     display: table-header-group !important;
@@ -799,16 +828,10 @@ html.acc-view-dashboard .acc-list-view {
     align-items: end;
   }
 
-  /* ตารางกว้าง 13 คอลัมน์: ระยะในช่องกระชับขึ้นบนคอม */
+  /* ระยะในช่องกระชับขึ้นบนคอม */
   .acc-main-table th,
   .acc-main-table[data-rt="cards"] > tbody > tr > td {
     padding: 8px 7px;
-  }
-
-  .acc-main-table td:nth-child(6) {
-    max-width: 110px;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .cell-input-production {
@@ -1144,4 +1167,176 @@ html.acc-view-dashboard .acc-list-view {
   .pl-row > * {
     grid-area: auto;
   }
+}
+
+/* ---------- ตารางรายการ: จัดกลุ่ม วันที่ + แผนก ---------- */
+.acc-group-row > td {
+  padding: 14px 10px 8px !important;
+  background: #f4f6fa !important;
+  border-top: 2px solid #d6dbe6;
+  border-bottom: 1px solid #d6dbe6 !important;
+}
+
+.acc-group-row:first-child > td {
+  border-top: 0;
+}
+
+.acc-group-title {
+  font-size: calc(16px * var(--fs, 1));
+  white-space: nowrap;
+}
+
+.acc-group-title small {
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+}
+
+.acc-group-num strong {
+  color: var(--text);
+}
+
+.acc-group-label small {
+  color: var(--muted);
+}
+
+/* ช่องผลิตดี: ช่องกรอกและปุ่มชิดขวาเส้นเดียวกับหัวคอลัมน์ */
+.cell-production-col .cell-input-production {
+  display: block;
+  margin-left: auto;
+}
+
+/* เครื่อง: ชื่อเครื่องใหญ่ · กะ เล็ก (แผนก/วันที่ อยู่ที่หัวกลุ่มแล้ว) */
+.cell-machine strong {
+  display: block;
+  font-size: calc(15px * var(--fs, 1));
+}
+
+.cell-machine small {
+  display: block;
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+  white-space: nowrap;
+}
+
+.cell-machine-dept {
+  display: none !important;
+}
+
+/* ปัญหา: ชื่อ ซ้าย · kg ขวา */
+/* ตาราง 2 คอลัมน์ขนาดพอดีเนื้อหา: kg อยู่ชิดชื่อ อ่านต่อกันง่าย */
+.pi-list {
+  display: inline-grid;
+  grid-template-columns: minmax(0, max-content) auto;
+  gap: 2px 16px;
+  max-width: 320px;
+  line-height: 1.45;
+}
+
+.pi-row {
+  display: contents;
+}
+
+.pi-kg {
+  text-align: right;
+}
+
+.pi-more {
+  grid-column: 1 / -1;
+}
+
+.pi-name {
+  min-width: 0;
+}
+
+.pi-kg {
+  flex: none;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pi-more {
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+}
+
+.acc-main-table .action-stack {
+  flex-wrap: wrap;
+  max-width: 150px;
+}
+
+/* มือถือ (การ์ด): แสดงแผนก/วันที่ใต้ชื่อเครื่อง และหัวกลุ่มเป็นแถบ */
+@media (max-width: 759px) {
+  .cell-machine-dept {
+    display: block !important;
+  }
+
+  .acc-main-table[data-rt="cards"] > tbody > tr.acc-group-row {
+    display: block !important;
+    margin: 16px 0 6px;
+    padding: 0;
+    background: none;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .acc-main-table[data-rt="cards"] > tbody > tr.acc-group-row > td {
+    display: flex !important;
+    justify-content: space-between;
+    width: 100%;
+    padding: 2px 12px !important;
+    border: 0 !important;
+  }
+
+  .acc-main-table[data-rt="cards"] > tbody > tr.acc-group-row > td:empty,
+  .acc-main-table[data-rt="cards"] > tbody > tr.acc-group-row > td.acc-group-label {
+    display: none !important;
+  }
+
+  .acc-main-table[data-rt="cards"] > tbody > tr.acc-group-row > td.acc-group-title {
+    display: block !important;
+    padding-top: 10px !important;
+  }
+
+  /* มือถือ: ใช้ชื่อหัวคอลัมน์เป็นป้ายตัวเลขของกลุ่ม */
+  .acc-main-table[data-rt="cards"] > tbody > tr.acc-group-row > td::before {
+    display: block !important;
+    content: attr(data-label);
+    color: var(--muted);
+  }
+
+  .acc-main-table[data-rt="cards"] > tbody > tr.acc-group-row > td.acc-group-title::before {
+    content: none;
+  }
+
+  .acc-main-table[data-rt="cards"] > tbody > tr.acc-group-row {
+    padding-bottom: 8px !important;
+    background: #f4f6fa;
+    border-radius: 10px;
+  }
+}
+
+/* สรุปตามกลุ่มแผนก */
+.summary-month-table tr.sum-group-row > td {
+  color: var(--text);
+  font-weight: 700;
+  background: #eef2fa;
+  border-top: 2px solid #c9d3e8;
+}
+
+.summary-month-table tr.sum-child > td:first-child {
+  padding-left: 28px;
+}
+
+.summary-month-table tr.sum-child > td:first-child::before {
+  content: "└ ";
+  color: #b6bdc9;
+}
+
+.summary-month-table tr.sum-divider > td {
+  padding: 12px 10px 6px;
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+  font-weight: 600;
+  border-top: 2px solid var(--line);
 }

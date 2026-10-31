@@ -49,6 +49,7 @@ export default defineConfig({
         lossSettings: resolve(__dirname, 'pages/loss-settings.html'),
         dailyReport: resolve(__dirname, 'pages/daily-report.html'),
         productionEntry: resolve(__dirname, 'pages/production-entry.html'),
+        deptGroups: resolve(__dirname, 'pages/dept-groups.html'),
         formDepartment: resolve(__dirname, 'pages/form-department.html'),
         qrSuccess: resolve(__dirname, 'pages/qr-success.html'),
       },

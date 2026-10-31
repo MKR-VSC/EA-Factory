@@ -1,6 +1,6 @@
 -- =====================================================
 -- นำเข้าข้อมูล Excel ของเสีย 2569 — ขั้นที่ 90: ย้ายจากตารางพักเข้าระบบ
--- รันหลัง 00, 01, 02, 03 · ต้องรันไฟล์ 07 (และแนะนำ 12, 13, 14) แล้ว
+-- รันหลัง 00, 01, 02, 03, 04 · ต้องรันไฟล์ 07 (และแนะนำ 12, 13, 14) แล้ว
 -- รันซ้ำได้: ลบข้อมูลที่เคยนำเข้า (ป้าย IMPORT:EXCEL2569) ก่อนใส่ใหม่
 -- ทั้งหมดอยู่ใน DO block เดียว (คำสั่งเดียว) — SQL Editor ของ Supabase รันได้แน่นอน ไม่ว่าจะแยกคำสั่งหรือไม่
 --
@@ -36,7 +36,8 @@ BEGIN
     ('GARBAGE_BAG_CUT', 'ตัดถุงขยะ-ถุงอเนกประสงค์', 7),
     ('RAIN_TAPE_CUT_PUNCH', 'ตัดเทปน้ำพุ่ง', 8),
     ('SHEET_CUTTING', 'ตัดผืน', 9),
-    ('SHADE_NET', 'สแลน', 10);
+    ('SHADE_NET', 'สแลน', 10),
+    ('RECYCLE', 'รีไซเคิล', 11);
 
   DROP TABLE IF EXISTS import_2569_map;
   CREATE TEMP TABLE import_2569_map (sheet text PRIMARY KEY, code text, ord int);
@@ -53,6 +54,7 @@ BEGIN
            WHEN s.sheet = 'ตัดเทปน้ำพุ่ง' THEN 'RAIN_TAPE_CUT_PUNCH'
            WHEN s.sheet = 'ตัดผืน' THEN 'SHEET_CUTTING'
            WHEN s.sheet LIKE 'สแลน%' THEN 'SHADE_NET'
+           WHEN s.sheet ~* '^(EREMA|PRATICO|PATICO|COMP)' THEN 'RECYCLE'
          END,
          coalesce(nullif(regexp_replace(s.sheet, '\D', '', 'g'), '')::int, 1)
   FROM (SELECT DISTINCT sheet FROM public.import_excel_2569) s;
@@ -62,7 +64,7 @@ BEGIN
       RAISE EXCEPTION 'ยังไม่ได้กำหนดแผนกให้ชีต: % (แก้ส่วนที่ 1 ของไฟล์นี้)', unmapped;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM public.import_excel_2569) THEN
-      RAISE EXCEPTION 'ตารางพักว่าง — รันไฟล์ 01, 02, 03 ก่อน';
+      RAISE EXCEPTION 'ตารางพักว่าง — รันไฟล์ 01, 02, 03, 04 ก่อน';
     END IF;
 
   -- -----------------------------------------------------
@@ -70,6 +72,9 @@ BEGIN
   -- -----------------------------------------------------
   DELETE FROM public.daily_waste_reports WHERE note = 'IMPORT:EXCEL2569';
   DELETE FROM public.daily_machine_status WHERE supervisor_name = 'นำเข้า Excel 2569';
+  IF to_regclass('public.daily_production_lines') IS NOT NULL THEN
+    EXECUTE $q$DELETE FROM public.daily_production_lines WHERE note = 'IMPORT:EXCEL2569'$q$;
+  END IF;
 
   -- -----------------------------------------------------
   -- 3) Master data ที่ยังไม่มี
@@ -79,6 +84,11 @@ BEGIN
   FROM import_2569_dept d
   WHERE EXISTS (SELECT 1 FROM import_2569_map m WHERE m.code = d.code)
     AND NOT EXISTS (SELECT 1 FROM public.master_departments x WHERE upper(x.department_code) = d.code);
+  -- แผนกรีไซเคิล → ตารางรีไซเคิลในรายงานประจำวัน (ต้องรันไฟล์ 14)
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_schema = 'public' AND table_name = 'master_departments' AND column_name = 'dept_kind') THEN
+    EXECUTE $q$UPDATE public.master_departments SET dept_kind = 'recycle' WHERE department_code = 'RECYCLE'$q$;
+  END IF;
 
   INSERT INTO public.master_machines (machine_no, department, is_active, sort_order)
   SELECT m.sheet, lower(m.code), true, m.ord
@@ -235,7 +245,15 @@ BEGIN
       ('SHADE_NET','เศษฟิล์มกรีดหา(ดำ,เขียว,เงิน,ฟ้า,ขาว)',11),
       ('SHADE_NET','เศษแสลนทอแล้ว',12),
       ('SHADE_NET','อื่นๆ',13),
-      ('SHADE_NET','ตัดทิ้ง',14);
+      ('SHADE_NET','ตัดทิ้ง',14),
+      ('RECYCLE','LD-ก้อนแข็ง',1),
+      ('RECYCLE','HD-ก้อนแข็ง',2),
+      ('RECYCLE','เปลี่ยนตระแกรง',3),
+      ('RECYCLE','เม็ดไหม้',4),
+      ('RECYCLE','เปลี่ยนตระแกรงตัวกลาง',3),
+      ('RECYCLE','เปลี่ยนตระแกรงตัวหน้า',4),
+      ('RECYCLE','เปลี่ยนตระแกรงตัวลูก',3),
+      ('RECYCLE','เปลี่ยนตระแกรงตัวแม่',4);
   INSERT INTO import_2569_prob
   SELECT DISTINCT m.code, s.problem, 900
   FROM public.import_excel_2569 s JOIN import_2569_map m USING (sheet)
@@ -298,6 +316,21 @@ BEGIN
   FROM public.import_excel_2569 s
   JOIN import_2569_rep r ON r.sheet = s.sheet AND r.work_date = s.work_date AND r.shift IS NOT DISTINCT FROM s.shift
   WHERE s.waste_kg > 0;
+
+  -- -----------------------------------------------------
+  -- 5.1) เครื่องรีไซเคิล: น้ำหนักผลิตแยกกะ/ชนิดเม็ด (LD / HD) → daily_production_lines (ไฟล์ 13)
+  IF to_regclass('public.daily_production_lines') IS NOT NULL THEN
+    EXECUTE $q$
+      INSERT INTO public.daily_production_lines (work_date, department_code, machine_no, shift, product_spec, unit, weight_kg, note, sort_order)
+      SELECT s.work_date, m.code, s.sheet,
+             CASE WHEN s.shift IN ('เช้า', 'บ่าย', 'ดึก') THEN s.shift END,
+             split_part(s.problem, '-', 1), 'กก.', sum(s.prod_kg), 'IMPORT:EXCEL2569',
+             row_number() OVER (PARTITION BY s.work_date, s.sheet ORDER BY s.shift DESC, split_part(s.problem, '-', 1))
+      FROM public.import_excel_2569 s JOIN import_2569_map m USING (sheet)
+      WHERE m.code = 'RECYCLE' AND s.prod_kg > 0
+      GROUP BY s.work_date, m.code, s.sheet, s.shift, split_part(s.problem, '-', 1)
+    $q$;
+  END IF;
 
   -- -----------------------------------------------------
   -- 6) วันที่มียอดผลิตแต่ไม่มีของเสีย → สถานะเครื่อง "ไม่มีของเสีย"

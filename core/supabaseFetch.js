@@ -20,6 +20,7 @@
 
   const PAGE_SIZE = 1000;
   const CHUNK_SIZE = 150;
+  const CONCURRENCY = 4;
   const MAX_PAGES = 200; // กันวนไม่รู้จบ (200,000 แถว)
 
   function dedupeById(rows) {
@@ -55,14 +56,23 @@
     const unique = Array.from(new Set((ids || []).filter((v) => v !== null && v !== undefined && v !== "")));
     if (!unique.length) return { data: [], error: null };
 
-    const rows = [];
-    for (let i = 0; i < unique.length; i += chunkSize) {
-      const chunk = unique.slice(i, i + chunkSize);
-      const { data, error } = await all(() => build(chunk));
-      if (error) return { data: null, error };
-      rows.push(...data);
+    // ดึงพร้อมกันครั้งละ CONCURRENCY ชุด (เดิมทีละชุด เดือนที่มีข้อมูลมากต้องรอหลายรอบ)
+    const chunks = [];
+    for (let i = 0; i < unique.length; i += chunkSize) chunks.push(unique.slice(i, i + chunkSize));
+    const results = new Array(chunks.length);
+    let next = 0;
+    let failed = null;
+    async function worker() {
+      while (!failed && next < chunks.length) {
+        const k = next++;
+        const res = await all(() => build(chunks[k]));
+        if (res.error) failed = res.error;
+        else results[k] = res.data;
+      }
     }
-    return { data: dedupeById(rows), error: null };
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, chunks.length) }, worker));
+    if (failed) return { data: null, error: failed };
+    return { data: dedupeById(results.flat()), error: null };
   }
 
   window.SB_FETCH = { all, inChunks, PAGE_SIZE };

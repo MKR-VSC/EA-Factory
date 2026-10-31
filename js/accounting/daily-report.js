@@ -121,6 +121,40 @@
       }))
       .sort((a, b) => a.order - b.order);
 
+    // ชื่อไทยของทุกแผนก (รวมที่ปิดใช้งาน) สำหรับข้อมูลเก่า
+    const allD = await st.sb.from("master_departments").select("department_code, department_name, is_active");
+    st.allNames = new Map();
+    (allD.data || [])
+      .filter((d) => d.department_name && up(d.department_name) !== up(d.department_code))
+      .forEach((d) => st.allNames.set(up(d.department_code), d.department_name));
+    st.depts.forEach((d) => {
+      if (d.name === d.code && st.allNames.has(d.code)) d.name = st.allNames.get(d.code);
+    });
+
+    // กลุ่มแผนก (database/16) — ไม่มีก็ข้าม
+    st.groups = [];
+    const [grp, gmap] = await Promise.all([
+      st.sb.from("department_groups").select("*").eq("is_active", true),
+      st.sb.from("master_departments").select("department_code, group_code"),
+    ]);
+    if (!grp.error && !gmap.error) {
+      st.groups = (grp.data || [])
+        .map((g) => ({
+          code: g.code,
+          name: g.name,
+          order: Number(g.sort_order) || 0,
+          max: Number(g.max_waste_percent) || W().DEFAULT_LIMIT,
+          warning: Number(g.warning_percent) || W().DEFAULT_WARNING,
+          basis: g.threshold_basis === "production" ? "production" : "total",
+        }))
+        .sort((a, b) => a.order - b.order);
+      const of = new Map((gmap.data || []).map((d) => [up(d.department_code), d.group_code]));
+      st.depts.forEach((d) => {
+        const g = st.groups.find((x) => x.code === of.get(d.code));
+        if (g) d.group = g;
+      });
+    }
+
     const mm = await st.sb.from("master_machines").select("*");
     (mm.data || []).forEach((m, i) =>
       st.machineOrder.set(`${up(m.department_code || m.department)}|${m.machine_no}`, Number(m.sort_order) || i),
@@ -343,7 +377,8 @@
       if (!byDept.has(m.dept)) byDept.set(m.dept, []);
       byDept.get(m.dept).push(m);
     });
-    const deptMeta = (c) => st.depts.find((d) => d.code === c) || { code: c, name: c, order: 999, max: W().DEFAULT_LIMIT, basis: "total" };
+    const deptMeta = (c) =>
+      st.depts.find((d) => d.code === c) || { code: c, name: st.allNames?.get(c) || c, order: 999, max: W().DEFAULT_LIMIT, basis: "total" };
     const collator = new Intl.Collator("th", { numeric: true });
 
     return [...byDept.entries()]
@@ -405,6 +440,11 @@
       return;
     }
     const built = build(data);
+    // เรียงตามกลุ่มแผนก: แผนกในกลุ่มเดียวกันอยู่ติดกัน (ตามลำดับกลุ่ม) แล้วตามด้วยแผนกที่ไม่อยู่กลุ่ม
+    const groupOf = (code) => st.depts.find((x) => x.code === code)?.group || null;
+    built.forEach((d) => (d.group = groupOf(d.code)));
+    const gOrder = (d) => (d.group ? st.groups.indexOf(d.group) : st.groups.length);
+    built.sort((a, b) => gOrder(a) - gOrder(b));
     const depts = built.filter((d) => !d.recycle);
     const recycleDepts = built.filter((d) => d.recycle);
     const monthly = st.mode === "month";
@@ -424,7 +464,7 @@
 
     let body = "";
     const all = [];
-    depts.forEach((d) => {
+    depts.forEach((d, di) => {
       const rows = d.machines;
       all.push(...rows);
       const dt = sums(rows);
@@ -432,7 +472,7 @@
       rows.forEach((m, idx) => {
         const s = sums([m]);
         body += `<tr class="dr-machine">
-          ${idx === 0 ? `<th scope="rowgroup" rowspan="${span}" class="dr-dept">${esc(d.name)}</th>` : ""}
+          ${idx === 0 ? `<th scope="rowgroup" rowspan="${span}" class="dr-dept">${esc(d.name)}${d.group ? `<small class="dr-dept-group">${esc(d.group.name)}</small>` : ""}</th>` : ""}
           <td class="dr-what">${machineCell(m)}</td>
           <td class="num">${linesCol(m, "qty")}</td>
           <td class="num">${linesCol(m, "kg")}</td>
@@ -447,6 +487,12 @@
         </tr>`;
       });
       if (rows.length > 1) body += totalRow("รวมทั้งสิ้น", dt, monthly ? d : null, "dr-subtotal");
+      // จบกลุ่ม → แถวรวมทั้งกลุ่ม (ประเมินด้วยเกณฑ์ของกลุ่ม)
+      const next = depts[di + 1];
+      if (d.group && (!next || next.group !== d.group)) {
+        const members = depts.filter((x) => x.group === d.group).flatMap((x) => x.machines);
+        body += totalRow(`รวม${d.group.name}`, sums(members), monthly ? d.group : null, "dr-group-total", true);
+      }
     });
 
     const gt = sums(all);
@@ -627,7 +673,7 @@
   function evalPill(s, d) {
     const pct = d.basis === "production" ? s.pctProd : s.pctTotal;
     if (pct === null) return `<span class="muted">รอยอดผลิต</span>`;
-    const ev = W().evaluate(pct, { max: d.max });
+    const ev = W().evaluate(pct, { max: d.max, warning: d.warning });
     const label = ev.level === "over" ? "เกิน" : ev.level === "warn" ? "ใกล้" : "ผ่าน";
     return `<span class="result-pill ${ev.className}" title="เกณฑ์ ${n2(d.max)}% · คิดจาก${d.basis === "production" ? "การผลิต" : "รวม"}">${label} ${n2(pct)}%</span>`;
   }

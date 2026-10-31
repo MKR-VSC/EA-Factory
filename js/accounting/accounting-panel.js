@@ -216,14 +216,17 @@ function adjustMonthToAvailableData() {
   setValue("filterMonth", latestMonth);
 }
 async function loadStandards() {
-  const BASE = "department_code,department_name,max_waste_percent,warning_percent";
-  const q = (cols) => state.supabase.from("master_departments").select(cols).eq("is_active", true);
+  const BASE = "department_code,department_name,max_waste_percent,warning_percent,is_active";
+  // โหลดทุกแผนก (รวมที่ปิดใช้งาน) เพื่อให้ข้อมูลเก่าของแผนกนั้นยังแสดงชื่อไทยได้
+  const q = (cols) => state.supabase.from("master_departments").select(cols);
   // threshold_basis = เกณฑ์คิดจากของเสียทั้งหมด / เฉพาะการผลิต (database/12-loss-types.sql)
   let { data, error } = await q(`${BASE},threshold_basis`);
   if (error) ({ data, error } = await q(BASE));
   if (error) console.warn(error);
   state.standards = {};
-  (data || []).forEach((d) => {
+  // แผนกที่เปิดใช้งานมาก่อน · ชื่อที่ไม่ใช่รหัสชนะชื่อที่เป็นรหัส (กันแถวซ้ำทับชื่อไทย)
+  const rank = (d) => (d.is_active === false ? 0 : 2) + (String(d.department_name || "").trim().toUpperCase() === normalizeDept(d.department_code) ? 0 : 1);
+  [...(data || [])].sort((a, b) => rank(a) - rank(b)).forEach((d) => {
     const c = normalizeDept(d.department_code);
     state.standards[c] = {
       name: d.department_name,
@@ -233,7 +236,63 @@ async function loadStandards() {
       basis: d.threshold_basis === "production" ? "production" : "total",
     };
   });
+
+  // กลุ่มแผนก (database/16) — ไม่มีก็ข้าม
+  state.deptGroups = new Map();
+  state.deptGroupOf = {};
+  const [grp, map] = await Promise.all([
+    state.supabase.from("department_groups").select("*").eq("is_active", true),
+    state.supabase.from("master_departments").select("department_code,group_code"),
+  ]);
+  if (!grp.error && !map.error) {
+    (grp.data || [])
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      .forEach((g) =>
+        state.deptGroups.set(g.code, {
+          code: g.code,
+          name: g.name,
+          max: Number(g.max_waste_percent) || window.WASTE_FORMULA.DEFAULT_LIMIT,
+          warning: Number(g.warning_percent) || window.WASTE_FORMULA.DEFAULT_WARNING,
+          basis: g.threshold_basis === "production" ? "production" : "total",
+        }),
+      );
+    (map.data || []).forEach((d) => {
+      if (d.group_code && state.deptGroups.has(d.group_code)) state.deptGroupOf[normalizeDept(d.department_code)] = d.group_code;
+    });
+  }
+  const opt = document.querySelector('#summaryGroupType option[value="group"]');
+  if (opt) opt.hidden = !state.deptGroups.size;
   renderDeptFilter();
+}
+
+/* สรุปตามกลุ่มแผนก: แถว "รวมทั้งกลุ่ม" (เกณฑ์ของกลุ่ม) ตามด้วยแผนกย่อย (เกณฑ์ของแผนก) */
+function buildGroupSummaryRows(activeGroups) {
+  const deptRows = buildSummaryRows(activeGroups, "dept").sort((a, b) => b.waste - a.waste);
+  const out = [];
+  const used = new Set();
+  state.deptGroups.forEach((g) => {
+    const members = deptRows.filter((r) => state.deptGroupOf[normalizeDept(r.dept)] === g.code);
+    if (!members.length) return;
+    const agg = window.WASTE_FORMULA.aggregate(members.flatMap((m) => m.rows || []));
+    const std = { max: g.max, warning: g.warning, basis: state.hasLossType ? g.basis : "total" };
+    const pctEval = window.WASTE_FORMULA.basisPct(agg, std.basis);
+    out.push({
+      ...agg,
+      name: g.name,
+      sub: `รวมทั้งกลุ่ม · ${members.length} แผนก`,
+      std,
+      pctEval,
+      evaluation: window.WASTE_FORMULA.evaluate(pctEval, std),
+      rowClass: "sum-group-row",
+    });
+    members.forEach((m) => {
+      used.add(m);
+      out.push({ ...m, rowClass: "sum-child" });
+    });
+  });
+  const rest = deptRows.filter((r) => !used.has(r));
+  if (rest.length && out.length) out.push({ divider: true, label: "แผนกที่ไม่อยู่กลุ่ม" });
+  return out.concat(rest);
 }
 function renderDeptFilter() {
   const s = document.getElementById("filterDept");
@@ -258,7 +317,7 @@ async function loadAccountingData() {
   const body = document.getElementById("accountingBody");
   // โหลดครั้งแรกเท่านั้นที่ล้างตารางเป็น "กำลังโหลด" — ครั้งต่อไปคงตารางเดิมไว้จนข้อมูลใหม่มาถึง
   if (body && !state.groups.length)
-    body.innerHTML = `<tr><td colspan="13" class="empty">กำลังโหลดข้อมูล...</td></tr>`;
+    body.innerHTML = `<tr><td colspan="9" class="empty">กำลังโหลดข้อมูล...</td></tr>`;
 
   try {
     // โหลดทั้ง "รายการของเสีย" และ "สถานะเครื่องประจำวัน" ที่หัวหน้าส่งบัญชีแล้ว
@@ -327,7 +386,7 @@ async function loadAccountingData() {
   } catch (e) {
     console.error(e);
     if (body)
-      body.innerHTML = `<tr><td colspan="13" class="empty">โหลดข้อมูลไม่สำเร็จ: ${safeText(e.message || e)}</td></tr>`;
+      body.innerHTML = `<tr><td colspan="9" class="empty">โหลดข้อมูลไม่สำเร็จ: ${safeText(e.message || e)}</td></tr>`;
   } finally {
     state.loading = false;
   }
@@ -813,7 +872,10 @@ function buildSummaryRows(activeGroups, groupType) {
 
 function renderSummaryTable(activeGroups) {
   const groupType = document.getElementById("summaryGroupType")?.value || "dept";
-  const rows = buildSummaryRows(activeGroups, groupType).sort((a, b) => b.waste - a.waste);
+  const rows =
+    groupType === "group"
+      ? buildGroupSummaryRows(activeGroups)
+      : buildSummaryRows(activeGroups, groupType).sort((a, b) => b.waste - a.waste);
   const month = getValue("filterMonth");
 
   const headTitle = document.getElementById("summaryTableTitle");
@@ -821,6 +883,7 @@ function renderSummaryTable(activeGroups) {
     const base =
       groupType === "problem" ? "สรุปผลรวมแยกตามประเภทปัญหา"
       : groupType === "machine" ? "สรุปรายเดือนแยกตามเครื่องจักร"
+      : groupType === "group" ? "สรุปรายเดือนตามกลุ่มแผนก"
       : "สรุปรายเดือนแยกตามแผนก / สินค้า";
     headTitle.textContent = month ? `${base} · ${formatThaiMonthYearAccounting(month)}` : base;
   }
@@ -834,17 +897,25 @@ function renderSummaryTable(activeGroups) {
         ? `<tr><th ${thStyle}>ประเภทปัญหา</th><th class="text-right" ${thStyle}>น้ำหนักของเสีย (kg)</th><th class="text-right" ${thStyle}>สัดส่วน</th></tr>`
         : split
         ? `<tr>
-            <th>${groupType === "machine" ? "เครื่องจักร" : "แผนก"}</th>
-            <th class="text-right">ผลิตดี (kg)</th>
-            <th class="text-right">สูญเสียจากการผลิต<br><small>kg · %</small></th>
-            <th class="text-right">สูญเสียบังคับ<br><small>kg · %</small></th>
-            <th class="text-right">รวม<br><small>kg · %</small></th>
-            <th class="col-center">เกณฑ์ไม่เกิน</th>
-            <th class="col-center">ผลประเมินรายเดือน</th>
-            <th class="col-center">กรอกผลิตแล้ว</th>
+            <th rowspan="2">${groupType === "machine" ? "เครื่องจักร" : groupType === "group" ? "กลุ่ม / แผนก" : "แผนก"}</th>
+            <th rowspan="2" class="text-right">ผลิตดี (kg)</th>
+            <th colspan="2" class="sum-grp is-prod sum-sep">สูญเสียจากการผลิต</th>
+            <th colspan="2" class="sum-grp is-forced sum-sep">สูญเสียบังคับ</th>
+            <th colspan="2" class="sum-grp is-total sum-sep">ของเสียรวม</th>
+            <th rowspan="2" class="col-center sum-sep">เกณฑ์<br>ไม่เกิน</th>
+            <th rowspan="2" class="col-center">ผลประเมิน<br>รายเดือน</th>
+            <th rowspan="2" class="col-center">กรอกผลิต<br>แล้ว (วัน)</th>
+          </tr>
+          <tr>
+            <th class="text-right sum-sep"><span class="sr-only">การผลิต </span>kg</th>
+            <th class="text-right"><span class="sr-only">การผลิต </span>%</th>
+            <th class="text-right sum-sep"><span class="sr-only">บังคับ </span>kg</th>
+            <th class="text-right"><span class="sr-only">บังคับ </span>%</th>
+            <th class="text-right sum-sep"><span class="sr-only">รวม </span>kg</th>
+            <th class="text-right"><span class="sr-only">รวม </span>%</th>
           </tr>`
         : `<tr>
-            <th ${thStyle}>${groupType === "machine" ? "เครื่องจักร" : "แผนก / สินค้า"}</th>
+            <th ${thStyle}>${groupType === "machine" ? "เครื่องจักร" : groupType === "group" ? "กลุ่ม / แผนก" : "แผนก / สินค้า"}</th>
             <th class="text-right" ${thStyle}>ผลิตดี (kg)</th>
             <th class="text-right" ${thStyle}>ของเสีย (kg)</th>
             <th class="text-right" ${thStyle}>% ของเสีย</th>
@@ -858,7 +929,7 @@ function renderSummaryTable(activeGroups) {
 
   const body = document.getElementById("summaryDeptBody");
   if (!body) return;
-  const cols = groupType === "problem" ? 3 : split ? 8 : 7;
+  const cols = groupType === "problem" ? 3 : split ? 11 : 7;
 
   if (!rows.length) {
     body.innerHTML = `<tr><td colspan="${cols}" class="empty">ไม่พบข้อมูลตามตัวกรอง</td></tr>`;
@@ -881,20 +952,22 @@ function renderSummaryTable(activeGroups) {
 
   if (split) {
     const pctOf = (v) => (v === null || v === undefined ? "-" : `${formatNumber(v)}%`);
-    const cell = (kg, pct, strong) =>
-      `<td class="text-right">${strong ? "<strong>" : ""}${formatNumber(kg)}${strong ? "</strong>" : ""}<br><small class="${strong ? "font-bold" : "muted"}">${pctOf(pct)}</small></td>`;
+    // kg และ % แยกช่อง · ช่องที่ใช้ประเมินเกณฑ์ (ตาม "คิดจาก") ตัวหนา
+    const cell = (kg, pct, isBasis) =>
+      `<td class="text-right sum-sep">${formatNumber(kg)}</td><td class="text-right${isBasis ? " sum-basis" : ""}">${pctOf(pct)}</td>`;
     body.innerHTML = rows
       .map((r) => {
+        if (r.divider) return `<tr class="sum-divider"><td colspan="${cols}">${safeText(r.label)}</td></tr>`;
         const ev = r.evaluation;
         const partial = r.withProduction < r.count;
         const onlyProd = r.std.basis === "production";
-        return `<tr>
+        return `<tr class="${r.rowClass || ""}">
           <td style="font-weight: 600;">${safeText(r.name)}<br><small class="muted">${safeText(r.sub || "")}</small></td>
           <td class="text-right">${r.good ? formatNumber(r.good) : "-"}</td>
           ${cell(r.lossProduction, r.pctProduction, onlyProd)}
           ${cell(r.forced, r.pctForced, false)}
           ${cell(r.waste, r.pct, !onlyProd)}
-          <td class="col-center">${formatNumber(r.std.max)}%<br><small class="muted">${onlyProd ? "คิดเฉพาะการผลิต" : "คิดจากรวม"}</small></td>
+          <td class="col-center sum-sep">${formatNumber(r.std.max)}%<br><small class="muted">${onlyProd ? "คิดจากการผลิต" : "คิดจากรวม"}</small></td>
           <td class="col-center"><span class="result-pill ${ev.className}">${safeText(ev.label)}</span>${partial && r.pctEval !== null ? `<br><small class="muted">ยังไม่ครบ (ผลชั่วคราว)</small>` : ""}</td>
           <td class="col-center">${r.withProduction}/${r.count}</td>
         </tr>`;
@@ -905,11 +978,12 @@ function renderSummaryTable(activeGroups) {
 
   body.innerHTML = rows
     .map((r) => {
+      if (r.divider) return `<tr class="sum-divider"><td colspan="${cols}">${safeText(r.label)}</td></tr>`;
       const ev = r.evaluation;
       const pctText = r.pct === null ? "-" : `${formatNumber(r.pct)}%`;
       const partial = r.withProduction < r.count;
       const pending = r.wasteCounted < r.waste;
-      return `<tr>
+      return `<tr class="${r.rowClass || ""}">
         <td style="font-weight: 600;">${safeText(r.name)}<br><small class="muted">${safeText(r.sub || "")}</small></td>
         <td class="text-right">${r.good ? formatNumber(r.good) : "-"}</td>
         <td class="text-right" title="${pending ? `ใช้คิด % ${formatNumber(r.wasteCounted)} kg (เฉพาะรายการที่กรอกผลิตแล้ว)` : ""}">${formatNumber(r.waste)}${pending ? `<br><small class="muted">คิด % ${formatNumber(r.wasteCounted)}</small>` : ""}</td>
@@ -975,11 +1049,50 @@ function renderTable(groups) {
   const body = document.getElementById("accountingBody");
   if (!body) return;
   if (!groups.length) {
-    body.innerHTML = `<tr><td colspan="13" class="empty">ไม่พบข้อมูลตามตัวกรอง</td></tr>`;
+    body.innerHTML = `<tr><td colspan="9" class="empty">ไม่พบข้อมูลตามตัวกรอง</td></tr>`;
     return;
   }
-  body.innerHTML = groups.map((g, i) => renderGroup(g, i)).join("");
+  // จัดกลุ่มตาม วันที่ + แผนก → หัวกลุ่มบอกยอดรวม แถวในกลุ่มเหลือแค่เครื่อง (อ่านง่าย ไม่ซ้ำ)
+  let html = "";
+  let curKey = null;
+  groups.forEach((g, i) => {
+    const k = `${g.date}|${g.dept}`;
+    if (k !== curKey) {
+      curKey = k;
+      html += renderGroupHeader(groups.filter((x) => x.date === g.date && x.dept === g.dept));
+    }
+    html += renderGroup(g, i);
+  });
+  body.innerHTML = html;
   state.openDetails.forEach((key) => loadProductionHistory(key));
+}
+
+function renderGroupHeader(list) {
+  const g0 = list[0];
+  const active = list.filter((g) => {
+    const st = normalizeText(g.status);
+    return st !== STATUS_CANCELLED && !(g.sourceType === "machine_status" && normalizeText(g.operationStatus) === MACHINE_STATUS_NOT_RUNNING);
+  });
+  const waste = active.reduce((s, g) => s + (g.waste || 0), 0);
+  const forced = active.reduce((s, g) => s + forcedOf(g), 0);
+  const withProd = active.filter((g) => g.production > 0);
+  const good = withProd.reduce((s, g) => s + g.production, 0);
+  const wasteCounted = withProd.reduce((s, g) => s + (g.waste || 0), 0);
+  const pct = good > 0 ? window.WASTE_FORMULA.percent(wasteCounted, good) : null;
+  // ตัวเลขของกลุ่มอยู่ใต้หัวคอลัมน์เดียวกับแถวเครื่อง (ของเสีย · ผลิตดี · % วันนี้)
+  return `<tr class="acc-group-row">
+    <td colspan="2" class="acc-group-title">
+      <strong>${safeText(formatDate(g0.date))}</strong> · ${safeText(getDeptName(g0.dept))}
+      <small>${safeText(g0.dept)} · ${list.length} เครื่อง</small>
+    </td>
+    <td class="text-right acc-group-num">
+      <span><strong>${formatNumber(waste)}</strong>${state.hasLossType && forced > 0 ? `<br><small class="loss-split">บังคับ ${formatNumber(forced)}</small>` : ""}</span>
+    </td>
+    <td class="acc-group-label"><small>รวมทั้งแผนก</small></td>
+    <td class="text-right acc-group-num">${good > 0 ? `<strong>${formatNumber(good)}</strong>` : `<small class="muted">ยังไม่มียอดผลิต</small>`}</td>
+    <td class="text-right acc-group-num">${pct === null ? "-" : `<strong>${formatPercent(pct)}</strong>`}</td>
+    <td colspan="3"></td>
+  </tr>`;
 }
 function renderGroup(g, i) {
   const isMachineStatus = g.sourceType === "machine_status";
@@ -1129,18 +1242,15 @@ function renderGroup(g, i) {
 
   const mainRow = `<tr${rowClass}>
     <td>${expandCell}</td>
-    <td>${safeText(formatDate(g.date))}</td>
-    <td>
-      <strong class="code-text">${safeText(g.dept)}</strong><br>
-      <small>${safeText(getDeptName(g.dept))}</small>
+    <td class="cell-machine">
+      <strong>${safeText(g.machine)}</strong>
+      <small>${/กะ|ทั้งวัน/.test(String(g.shift)) ? "" : "กะ "}${safeText(g.shift)}</small>
+      <small class="cell-machine-dept">${safeText(getDeptName(g.dept))} · ${safeText(formatDate(g.date))}</small>
     </td>
-    <td>${safeText(g.shift)}</td>
-    <td><strong class="code-text">${safeText(g.machine)}</strong></td>
-    <td>${safeText([...g.reporter].join(", "))}</td>
     <td class="text-right"><strong>${wasteCell}</strong>${wasteSplit}</td>
     <td>${problemCell}</td>
     <td class="text-right cell-production-col">${productionCell}</td>
-    <td class="text-right">${percentCell}</td>
+    <td class="text-right cell-pct">${percentCell}</td>
     <td><span class="result-pill ${result.className}" title="${safeAttr(resultTitle)}">${safeText(result.label)}</span></td>
     <td>${status}</td>
     <td>${actions}</td>
@@ -1151,7 +1261,7 @@ function renderGroup(g, i) {
     id="detail-${i}"
     class="detail-row${state.openDetails.has(g.key) ? "" : " hidden"}${isCancelled ? " row-cancelled" : ""}"
   >
-    <td colspan="13">${renderProblemTable(g.items || [], g.waste || 0, g.key)}</td>
+    <td colspan="9">${renderProblemTable(g.items || [], g.waste || 0, g.key)}</td>
   </tr>`;
 }
 
@@ -1181,16 +1291,15 @@ function editGroup(key) {
 }
 
 
+// ปัญหา: ชื่อซ้าย · kg ขวา (ป้ายเฉพาะ "บังคับ" — การผลิตเป็นค่าปกติ ไม่ต้องติดป้าย)
 function renderProblemInline(items) {
-  return `<div class="problem-inline">${items
-    .slice(0, 3)
+  const top = [...items].sort((a, b) => b.waste_weight_kg - a.waste_weight_kg).slice(0, 3);
+  return `<div class="pi-list">${top
     .map(
       (x) =>
-        `${safeText(x.problem_type)} ${lossBadge(x)} <strong>${formatNumber(x.waste_weight_kg)} kg</strong>`,
+        `<div class="pi-row"><span class="pi-name">${safeText(x.problem_type)}${x.loss_type === "forced" && state.hasLossType ? ` <span class="loss-badge loss-forced">บังคับ</span>` : ""}</span><span class="pi-kg">${formatNumber(x.waste_weight_kg)}</span></div>`,
     )
-    .join(
-      "<br>",
-    )}${items.length > 3 ? `<br><small>+${items.length - 3} รายการ</small>` : ""}</div>`;
+    .join("")}${items.length > 3 ? `<div class="pi-more">+ อีก ${items.length - 3} รายการ (กด ▼ ดูทั้งหมด)</div>` : ""}</div>`;
 }
 function renderProblemTable(items, total, groupKey) {
   const g = state.groups.find(x => x.key === groupKey);
@@ -1606,7 +1715,7 @@ function handleProductionInput(input, key) {
   // อัปเดต % ของวันนั้นทันที (ผลรายเดือนจะคำนวณใหม่หลังกดบันทึก)
   const row = input.closest("tr");
   if (row) {
-    const pctTd = row.children[9];
+    const pctTd = row.querySelector(".cell-pct");
     const isNotRunning =
       g.sourceType === "machine_status" &&
       normalizeText(g.operationStatus) === MACHINE_STATUS_NOT_RUNNING;
@@ -2154,13 +2263,16 @@ function generateAccountingReportHTML(isPrintImmediate = false) {
   // สรุปรายเดือน (สูตรเดียวกับหน้าจอ: ของเสีย ÷ (ผลิตดี + ของเสีย) × 100)
   const groupType = document.getElementById("summaryGroupType")?.value || "dept";
   const activeGroups = (state.groups || []).filter(g => normalizeText(g.status) !== STATUS_CANCELLED);
-  const sumRows = buildSummaryRows(activeGroups, groupType).sort((a, b) => b.waste - a.waste);
+  const sumRows = (groupType === "group"
+    ? buildGroupSummaryRows(activeGroups)
+    : buildSummaryRows(activeGroups, groupType).sort((a, b) => b.waste - a.waste)
+  ).filter((d) => !d.divider);
   const td = 'style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: right;"';
   const deptRowsHTML = sumRows.map(d => {
     const isProblem = groupType === "problem";
     return `
-      <tr>
-        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-weight: 600; text-align: left;">${safeText(d.name)}${d.sub && !isProblem ? `<br><small style="color:#64748b;font-weight:400">${safeText(d.sub)}</small>` : ""}</td>
+      <tr${d.rowClass === "sum-group-row" ? ' style="background:#eef2fa"' : ""}>
+        <td style="padding: 10px 8px; border-bottom: 1px solid #e2e8f0; font-weight: 600; text-align: left;">${d.rowClass === "sum-child" ? "└ " : ""}${safeText(d.name)}${d.sub && !isProblem ? `<br><small style="color:#64748b;font-weight:400">${safeText(d.sub)}</small>` : ""}</td>
         <td ${td}>${isProblem || !d.good ? "-" : `${formatNumber(d.good)} kg`}</td>
         <td ${td}>${formatNumber(d.waste)} kg</td>
         <td ${td}><strong>${isProblem || d.pct === null ? "-" : `${formatNumber(d.pct)}%`}</strong></td>
@@ -2172,6 +2284,7 @@ function generateAccountingReportHTML(isPrintImmediate = false) {
 
   const summaryTitle = groupType === "problem" ? "สรุปผลรวมแยกตามประเภทปัญหา" 
                      : groupType === "machine" ? "สรุปผลรวมแยกตามเครื่องจักร" 
+                     : groupType === "group" ? "สรุปผลรวมตามกลุ่มแผนก"
                      : "สรุปผลรวมแยกตามแผนก / สินค้า";
                      
   const summaryColName = groupType === "problem" ? "ประเภทปัญหา" 

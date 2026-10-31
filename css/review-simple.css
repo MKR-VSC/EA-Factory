@@ -60,8 +60,13 @@
   color: var(--muted);
 }
 
-.text-right {
+.text-right,
+.data-table th.text-right {
   text-align: right;
+}
+
+.data-table th.col-center {
+  text-align: center;
 }
 
 .hidden {

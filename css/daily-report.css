@@ -307,3 +307,21 @@
   min-width: 0;
   max-width: 100%;
 }
+
+/* กลุ่มแผนก */
+.dr-dept-group {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: calc(11px * var(--fs, 1));
+  font-weight: 400;
+}
+
+.dr-group-total th,
+.dr-group-total td {
+  font-weight: 700;
+  background: #eef2fa;
+  border-top: 2px solid #c9d3e8;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}

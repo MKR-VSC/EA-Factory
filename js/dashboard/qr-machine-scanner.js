@@ -370,11 +370,17 @@
     }
   }
 
-  function handleFileInputChange(event) {
+  async function handleFileInputChange(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
 
     updateScanStatus('กำลังประมวลผลรูปภาพ QR...', 'info');
+    // ไลบรารีสแกนโหลดตอนใช้งานครั้งแรก (หน้า Dashboard ไม่โหลดไว้ล่วงหน้าแล้ว)
+    await loadHtml5QrcodeLibrary();
+    if (typeof Html5Qrcode === 'undefined') {
+      updateScanStatus('ไม่สามารถโหลดไลบรารีสแกนเนอร์ได้', 'error');
+      return;
+    }
 
     const tempScanner = new Html5Qrcode('qr-camera-stream');
     tempScanner

@@ -1,0 +1,138 @@
+/* ==========================================================
+   dept-groups.css — เมนู "กลุ่มแผนก" (pages/dept-groups.html)
+   ต่อจาก settings-simple.css + loss-settings.css
+   ========================================================== */
+.dg-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dg-add input {
+  flex: 1 1 240px;
+  min-height: 44px;
+}
+
+.dg-list {
+  display: grid;
+  gap: 14px;
+}
+
+.dg-card {
+  border-left: 4px solid var(--primary);
+}
+
+.dg-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+}
+
+.dg-name {
+  flex: 1 1 220px;
+  min-height: 42px;
+  font-size: calc(17px * var(--fs, 1));
+  font-weight: 700;
+  background: transparent;
+  border-color: transparent;
+}
+
+.dg-name:hover {
+  border-color: var(--line);
+}
+
+.dg-name:focus {
+  background: var(--card);
+  border-color: var(--primary);
+}
+
+.dg-count {
+  color: var(--muted);
+  font-size: calc(14px * var(--fs, 1));
+}
+
+.dg-std {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: #f8f9fb;
+  border-radius: 10px;
+}
+
+.dg-std label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--muted);
+  font-size: calc(14px * var(--fs, 1));
+}
+
+.dg-std input {
+  width: 84px;
+  min-height: 38px;
+  text-align: right;
+}
+
+.dg-std select {
+  width: auto;
+  min-height: 38px;
+}
+
+.dg-pct {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text);
+}
+
+.dg-members,
+.dg-chips {
+  display: grid;
+  gap: 6px;
+}
+
+.dg-member {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 8px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.dg-member > span {
+  font-weight: 600;
+}
+
+.dg-member small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.dg-move {
+  width: auto;
+  min-width: 180px;
+  min-height: 38px;
+}
+
+.dg-free h2 {
+  margin: 0 0 10px;
+  font-size: calc(16px * var(--fs, 1));
+}
+
+@media (min-width: 900px) {
+  .dg-members,
+  .dg-chips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

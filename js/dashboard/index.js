@@ -15,6 +15,8 @@
 ========================================================= */
 
 const LOGIN_PAGE = "/login.html";
+// ฟอนต์กราฟ = ฟอนต์ของหน้า (ฟอนต์ไทยในเครื่อง ไม่โหลดจากเน็ต)
+const CHART_FONT = 'system-ui, -apple-system, "Segoe UI", "Noto Sans Thai", "Leelawadee UI", Tahoma, sans-serif';
 const REPORT_TABLE = "daily_waste_reports";
 const MASTER_DEPARTMENT_TABLE = "master_departments";
 const ITEM_TABLE = "daily_waste_report_items";
@@ -146,6 +148,10 @@ const EXCLUDE_DEPARTMENT_CODES = [
 let dashboardDataCache = [];
 let filteredDataCache = [];
 let departmentMasters = {};
+let departmentGroups = {};
+let hasItemLossType = null;
+let mastersReady = Promise.resolve();
+let lastDepartmentRows = [];
 let departmentOptions = [];
 
 let chartDailyWastePercent = null;
@@ -165,8 +171,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   setActiveUserLabel();
   initMonthFilter();
 
-  await loadDepartmentMasters();
-  renderDepartmentFilter();
+  // โหลดข้อมูลแผนกกับข้อมูลของเสียไปพร้อมกัน (เดิมรอแผนกเสร็จก่อนแล้วค่อยเริ่มดึงข้อมูล)
+  mastersReady = loadDepartmentMasters().then(renderDepartmentFilter);
   await loadAndProcessDashboardData();
 });
 
@@ -248,11 +254,21 @@ async function loadDepartmentMasters() {
   const client = getSupabaseClient();
   if (!client) return;
 
-  const { data, error } = await client
-    .from(MASTER_DEPARTMENT_TABLE)
-    .select("department_code, department_name, max_waste_percent, warning_percent, sort_order, is_active")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
+  // โหลดทุกแผนก (รวมที่ปิดใช้งาน) เพื่อให้ข้อมูลเก่ายังแสดงชื่อไทยได้
+  // คอลัมน์เสริม (มีหลังรัน SQL 12/14/16) — ถ้ายังไม่มีจะถอยไปใช้ชุดเดิม
+  const base = "department_code, department_name, max_waste_percent, warning_percent, sort_order, is_active";
+  const tryCols = [`${base}, threshold_basis, dept_kind, group_code`, `${base}, threshold_basis, dept_kind`, `${base}, threshold_basis`, base];
+  const groupsReq = client
+    .from("department_groups")
+    .select("code, name, sort_order, is_active, max_waste_percent, warning_percent, threshold_basis")
+    .order("sort_order", { ascending: true })
+    .then((r) => r, () => ({ data: null, error: true }));
+  let data = null;
+  let error = null;
+  for (const cols of tryCols) {
+    ({ data, error } = await client.from(MASTER_DEPARTMENT_TABLE).select(cols).order("sort_order", { ascending: true }));
+    if (!error) break;
+  }
 
   if (error) {
     console.warn("โหลด master_departments ไม่สำเร็จ:", error);
@@ -262,9 +278,11 @@ async function loadDepartmentMasters() {
   departmentMasters = {};
   departmentOptions = [];
 
-  (data || []).forEach((dept) => {
+  // แถวที่เปิดใช้งาน และชื่อภาษาไทย มาก่อน (กรณีรหัสซ้ำหลังแปลงรูปแบบ)
+  const rank = (d) => (d.is_active === false ? 2 : 0) + (/[\u0E00-\u0E7F]/.test(d.department_name || "") ? 0 : 1);
+  [...(data || [])].sort((a, b) => rank(a) - rank(b)).forEach((dept) => {
     const code = normalizeDepartmentCode(dept.department_code);
-    if (!code || EXCLUDE_DEPARTMENT_CODES.includes(code)) return;
+    if (!code || EXCLUDE_DEPARTMENT_CODES.includes(code) || departmentMasters[code]) return;
 
     const item = {
       code,
@@ -272,11 +290,41 @@ async function loadDepartmentMasters() {
       maxWastePercent: toNumber(dept.max_waste_percent || FACTORY_LIMIT_PERCENT),
       warningPercent: toNumber(dept.warning_percent || FACTORY_WARNING_PERCENT),
       sortOrder: toNumber(dept.sort_order || 0),
+      basis: dept.threshold_basis === "production" ? "production" : "total",
+      recycle: dept.dept_kind === "recycle",
+      groupCode: dept.group_code || null,
+      active: dept.is_active !== false,
     };
 
     departmentMasters[code] = item;
-    departmentOptions.push(item);
+    if (item.active && !item.recycle) departmentOptions.push(item);
   });
+  departmentOptions.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "th"));
+
+  // กลุ่มแผนก (SQL 16) — ไม่มีตารางก็ข้ามไป
+  departmentGroups = {};
+  try {
+    const res = await groupsReq;
+    if (!res.error) {
+      (res.data || []).forEach((g) => {
+        departmentGroups[g.code] = {
+          code: g.code,
+          name: g.name || g.code,
+          sortOrder: toNumber(g.sort_order || 0),
+          maxWastePercent: g.max_waste_percent != null ? toNumber(g.max_waste_percent) : null,
+          warningPercent: g.warning_percent != null ? toNumber(g.warning_percent) : null,
+          basis: g.threshold_basis === "production" ? "production" : "total",
+        };
+      });
+    }
+  } catch (_) {
+    /* ยังไม่มีตารางกลุ่ม */
+  }
+}
+
+// แผนกรีไซเคิล (PATICO/EREMA ฯลฯ) ไม่นับรวมใน % ของเสียโรงงาน — ดูในหน้ารายงานประจำวันแทน
+function isRecycleRow(row) {
+  return Boolean(departmentMasters[normalizeDepartmentCode(row.department_code || row.department || "")]?.recycle);
 }
 
 function renderDepartmentFilter() {
@@ -528,12 +576,12 @@ function renderKPIComparison(elementId, current, previous, unit = "kg", higherIs
     icon = "trending_up";
   } else {
     el.className = "kpi-compare-badge neutral";
-    el.innerHTML = `<span class="material-symbols-outlined">trending_flat</span> เท่ากับเดือนก่อน`;
+    el.innerHTML = `${uiIcon("trending_flat")} เท่ากับเดือนก่อน`;
     return;
   }
 
   el.className = `kpi-compare-badge ${statusClass}`;
-  el.innerHTML = `<span class="material-symbols-outlined">${icon}</span> ${formattedDiff} ${unit} (${formattedPct}) เทียบเดือนก่อน`;
+  el.innerHTML = `${uiIcon(icon)} ${formattedDiff} ${unit} (${formattedPct}) เทียบเดือนก่อน`;
 }
 
 function renderKPIPercentComparison(elementId, currentPct, previousPct) {
@@ -559,12 +607,12 @@ function renderKPIPercentComparison(elementId, currentPct, previousPct) {
     icon = "trending_up";
   } else {
     el.className = "kpi-compare-badge neutral";
-    el.innerHTML = `<span class="material-symbols-outlined">trending_flat</span> เท่ากับเดือนก่อน (${previousPct.toFixed(2)}%)`;
+    el.innerHTML = `${uiIcon("trending_flat")} เท่ากับเดือนก่อน (${previousPct.toFixed(2)}%)`;
     return;
   }
 
   el.className = `kpi-compare-badge ${statusClass}`;
-  el.innerHTML = `<span class="material-symbols-outlined">${icon}</span> ${formattedDiff} เทียบเดือนก่อน (${previousPct.toFixed(2)}%)`;
+  el.innerHTML = `${uiIcon(icon)} ${formattedDiff} เทียบเดือนก่อน (${previousPct.toFixed(2)}%)`;
 }
 
 /* =========================================================
@@ -615,14 +663,17 @@ async function loadAndProcessDashboardData() {
       .filter(isAccountingChecked)
       .filter((row) => !isCancelledRow(row));
 
-    const rowsWithItems = [
-      ...(await attachProblemItemsToReports(checkedRows)),
-      ...(await loadNoWasteProduction(client, range)),
-    ];
-    const prevRowsWithItems = [
-      ...(await attachProblemItemsToReports(prevCheckedRows)),
-      ...(await loadNoWasteProduction(client, prevRange)),
-    ];
+    // ดึงรายการปัญหาย่อย + ยอดผลิตเครื่องไม่มีของเสีย ของเดือนนี้และเดือนก่อน พร้อมกัน
+    const [currItems, currNoWaste, prevItems, prevNoWaste] = await Promise.all([
+      attachProblemItemsToReports(checkedRows),
+      loadNoWasteProduction(client, range),
+      attachProblemItemsToReports(prevCheckedRows),
+      loadNoWasteProduction(client, prevRange),
+      mastersReady,
+    ]);
+    const rowsWithItems = [...currItems, ...currNoWaste].filter((row) => !isRecycleRow(row));
+    const prevRowsWithItems = [...prevItems, ...prevNoWaste].filter((row) => !isRecycleRow(row));
+    updateDataStamp(checkedRows);
 
     dashboardDataCache = rowsWithItems;
     filteredDataCache =
@@ -743,7 +794,14 @@ function updateMetricCards(records, prevRecords = [], machineSummary, deptSummar
   setText("cnt-today", `${formatNumber(totalProduction)}`);
   setText("cnt-machine-risk", `${formatNumber(totalWaste)}`);
   setText("cnt-waste-percent", `${formatNumber(wastePercent)}%`);
-  setText("cnt-waste-percent-sub", `ผลิต ${formatNumber(totalProduction)} kg / เสีย ${formatNumber(totalWaste)} kg`);
+  setText("cnt-waste-percent-sub", `ผลิตดี ${formatNumber(totalProduction)} kg / เสีย ${formatNumber(totalWaste)} kg`);
+  const totalForced = records.reduce((sum, row) => sum + getForcedWeight(row), 0);
+  setText(
+    "cnt-waste-split",
+    hasItemLossType
+      ? `จากการผลิต ${formatNumber(totalWaste - totalForced)} · บังคับ ${formatNumber(totalForced)} kg`
+      : "กิโลกรัม",
+  );
 
   setText("cnt-top-machine", topDepartment ? topDepartment.department : "-");
   setText(
@@ -771,7 +829,7 @@ function updateMetricCards(records, prevRecords = [], machineSummary, deptSummar
     }
     scrapValEl.innerHTML = `
       <span style="display: inline-flex; align-items: center; gap: 4px; color: ${color};">
-        <span class="material-symbols-outlined" style="font-size: 24px; font-weight: bold; vertical-align: middle;">${arrowIcon}</span>
+        ${uiIcon(arrowIcon, 26)}
         ${prevWaste === 0 ? "0%" : scrapFormattedPct}
       </span>
     `;
@@ -836,10 +894,9 @@ function renderExecutiveInsight(records, machineSummary) {
   );
 
   box.innerHTML = `
-    <strong>ภาพรวมเดือนนี้:</strong>
-    ผลิตรวม <b>${formatNumber(totalProduction)} kg</b>,
-    ของเสียรวม <b>${formatNumber(totalWaste)} kg</b>,
-    Waste <b>${formatNumber(wastePercent)}%</b><br />
+    ผลิตดี <b>${formatNumber(totalProduction)} kg</b> ·
+    ของเสีย <b>${formatNumber(totalWaste)} kg</b> ·
+    % ของเสีย <b>${formatNumber(wastePercent)}%</b><br />
     พบเครื่องเกินเกณฑ์ <b>${formatNumber(overLimit.length)}</b> เครื่อง
     และเครื่องใกล้เกินเกณฑ์ <b>${formatNumber(warning.length)}</b> เครื่อง
   `;
@@ -861,19 +918,37 @@ function summarizeByDepartment(records) {
         code: key,
         department: dept.name,
         waste: 0,
+        forced: 0,
         production: 0,
         productionKeys: new Set(),
       };
     }
 
     map[key].waste += getWasteWeight(row);
+    map[key].forced += getForcedWeight(row);
     addProductionOnce(map[key], row);
   });
 
-  return Object.values(map).map((item) => ({
+  return Object.values(map).map((item) => withSplit(item, departmentMasters[item.code]?.basis));
+}
+
+// เติม % รวม / % จากการผลิต / % บังคับ และ % ที่ใช้ประเมิน (ตามเกณฑ์คิดจากของแผนก/กลุ่ม)
+function withSplit(item, basis = "total") {
+  const percent = calcWastePercent(item.waste, item.production);
+  const base = item.production > 0 ? item.production + item.waste : 0;
+  const forced = Math.min(item.forced || 0, item.waste);
+  const pctForced = base ? (forced / base) * 100 : 0;
+  const pctProduction = base ? ((item.waste - forced) / base) * 100 : 0;
+  return {
     ...item,
-    percent: calcWastePercent(item.waste, item.production),
-  }));
+    forced,
+    lossProduction: item.waste - forced,
+    percent,
+    pctForced,
+    pctProduction,
+    basis,
+    pctEval: basis === "production" ? pctProduction : percent,
+  };
 }
 
 function summarizeByMachine(records) {
@@ -1002,57 +1077,124 @@ function renderDepartmentSummaryTable(rows, machineSummary = []) {
   const tbody = document.getElementById("department-summary-body");
   if (!tbody) return;
 
-  // Calculate overall scrap percentage
   const totalWaste = rows.reduce((sum, item) => sum + item.waste, 0);
   const totalProduction = rows.reduce((sum, item) => sum + item.production, 0);
-  // ใช้สูตรกลางของระบบ: ของเสีย ÷ (ผลิตดี + ของเสีย) × 100 (เดิมหารด้วยผลิตดีอย่างเดียว ทำให้ % สูงกว่าหน้าอื่น)
+  // สูตรกลางของระบบ: ของเสีย ÷ (ผลิตดี + ของเสีย) × 100
   const overallPercent = calcWastePercent(totalWaste, totalProduction);
 
-  // Render or remove the blinking notification badge
   const alarmContainer = document.getElementById("scrap-alarm-container");
   if (alarmContainer) {
-    if (overallPercent > FACTORY_LIMIT_PERCENT) {
-      alarmContainer.innerHTML = `
-        <span class="scrap-alarm-badge" title="% ของเสียรวมเกิน ${formatNumber(FACTORY_LIMIT_PERCENT)}% (ปัจจุบัน: ${formatNumber(overallPercent)}%)">
-          <span class="material-symbols-outlined">warning</span>
-          <span>ALERT: อัตราของเสียสะสมรวมเกินเกณฑ์กำหนด (${formatNumber(overallPercent)}%)</span>
-        </span>
-      `;
-    } else {
-      alarmContainer.innerHTML = "";
-    }
+    alarmContainer.innerHTML =
+      overallPercent > FACTORY_LIMIT_PERCENT
+        ? `<span class="scrap-alarm-badge" title="เกณฑ์โรงงาน ${formatNumber(FACTORY_LIMIT_PERCENT)}%">${uiIcon("warning")}<span>ทั้งโรงงานเกินเกณฑ์ (${formatNumber(overallPercent)}%)</span></span>`
+        : "";
   }
 
+  const COLS = 7;
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="empty-cell">ไม่พบข้อมูลแผนกในช่วงเดือนที่เลือก</td></tr>`;
+    lastDepartmentRows = [];
+    tbody.innerHTML = `<tr><td colspan="${COLS}" class="empty-cell">ไม่พบข้อมูลแผนกในช่วงเดือนที่เลือก</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = rows
-    .sort((a, b) => a.department.localeCompare(b.department, "th"))
-    .map((item) => {
-      const deptStd = departmentMasters[item.code];
-      const deptMax = deptStd?.maxWastePercent ?? FACTORY_LIMIT_PERCENT;
-      const result = getResultByPercent(item.percent, deptStd?.warningPercent ?? FACTORY_WARNING_PERCENT, deptMax);
-      const isAttention = item.percent > deptMax;
-      const attentionClass = isAttention ? " dept-row-attention" : "";
+  const stdOf = (item) => departmentMasters[item.code];
+  const sortKey = (item) => [stdOf(item)?.sortOrder ?? 999, item.department];
+  const bySort = (a, b) => {
+    const [sa, na] = sortKey(a);
+    const [sb, nb] = sortKey(b);
+    return sa - sb || String(na).localeCompare(String(nb), "th");
+  };
 
-      return `
-        <tr class="${attentionClass}">
-          <td>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="width: 12px; height: 12px; border-radius: 999px; background: ${getDepartmentColor(item.code)}; display: inline-block; box-shadow: 0 0 0 3px rgba(15,23,42,.06); flex-shrink: 0;"></span>
-              <strong>${escapeHTML(item.department)}</strong>
-            </div>
-          </td>
+  // จัดเป็นกลุ่มแผนก (ถ้าตั้งกลุ่มไว้) — แผนกที่ไม่มีกลุ่มอยู่ท้ายสุดแบบเดี่ยว ๆ
+  const hasGroups = Object.keys(departmentGroups).length > 0;
+  const blocks = [];
+  if (hasGroups) {
+    const byGroup = {};
+    const loose = [];
+    rows.forEach((item) => {
+      const g = departmentGroups[stdOf(item)?.groupCode];
+      if (g) (byGroup[g.code] ||= []).push(item);
+      else loose.push(item);
+    });
+    Object.values(departmentGroups)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "th"))
+      .forEach((g) => byGroup[g.code] && blocks.push({ group: g, items: byGroup[g.code].sort(bySort) }));
+    loose.sort(bySort).forEach((item) => blocks.push({ group: null, items: [item] }));
+  } else {
+    rows.sort(bySort).forEach((item) => blocks.push({ group: null, items: [item] }));
+  }
+
+  const splitCell = (item) =>
+    hasItemLossType
+      ? `<span class="xd-split"><span class="loss-production">ผลิต ${formatNumber(item.lossProduction)}</span><span class="loss-forced">บังคับ ${formatNumber(item.forced)}</span></span>`
+      : "";
+
+  const rowHtml = (item, std, cls = "") => {
+    const max = std?.maxWastePercent ?? FACTORY_LIMIT_PERCENT;
+    const warn = std?.warningPercent ?? FACTORY_WARNING_PERCENT;
+    const hasProd = item.production > 0;
+    const result = hasProd
+      ? getResultByPercent(item.pctEval, warn, max)
+      : { label: "รอยอดผลิต", className: "result-none" };
+    const basisNote = item.basis === "production" ? "คิดเฉพาะการผลิต" : "คิดจากทั้งหมด";
+    return {
+      result,
+      html: `
+        <tr class="dept-row-clickable${cls}${hasProd && item.pctEval > max ? " dept-row-attention" : ""}">
+          <td class="xd-name">${cls.includes("xd-group-total") ? "" : `<span class="xd-dot" style="background:${getDepartmentColor(item.code)}"></span>`}<strong>${escapeHTML(item.department)}</strong></td>
           <td class="text-right">${formatNumber(item.production)}</td>
-          <td class="text-right">${formatNumber(item.waste)}</td>
-          <td class="text-right"><strong>${formatNumber(item.percent)}%</strong></td>
+          <td class="text-right">${formatNumber(item.waste)}${splitCell(item)}</td>
+          <td class="text-right"><strong>${hasProd ? formatNumber(item.percent) + "%" : "-"}</strong></td>
+          <td class="text-right">${hasProd && hasItemLossType ? formatNumber(item.pctProduction) + "%" : "-"}</td>
+          <td class="text-right xd-std">${formatNumber(max)}%<small>${basisNote}</small></td>
           <td><span class="result-pill ${result.className}">${escapeHTML(result.label)}</span></td>
-        </tr>
-      `;
-    })
-    .join("");
+        </tr>`,
+    };
+  };
+
+  lastDepartmentRows = [];
+  const html = [];
+  blocks.forEach(({ group, items }) => {
+    if (group) {
+      html.push(`<tr class="xd-group-head"><td colspan="${COLS}">${escapeHTML(group.name)}<small>${items.length} แผนก</small></td></tr>`);
+    }
+    items.forEach((item) => {
+      const r = rowHtml(item, stdOf(item), group ? " xd-child" : "");
+      html.push(r.html);
+      lastDepartmentRows.push({ ...item, result: r.result.label, isGroup: false, inGroup: Boolean(group) });
+    });
+    if (group && items.length > 1) {
+      const sum = items.reduce(
+        (acc, it) => ({ waste: acc.waste + it.waste, forced: acc.forced + it.forced, production: acc.production + it.production }),
+        { waste: 0, forced: 0, production: 0 },
+      );
+      const total = withSplit({ code: group.code, department: `รวม${group.name}`, ...sum }, group.basis);
+      const std = {
+        maxWastePercent: group.maxWastePercent ?? FACTORY_LIMIT_PERCENT,
+        warningPercent: group.warningPercent ?? FACTORY_WARNING_PERCENT,
+      };
+      const r = rowHtml(total, std, " xd-group-total");
+      html.push(r.html);
+      lastDepartmentRows.push({ ...total, result: r.result.label, isGroup: true });
+    }
+  });
+
+  // แถวรวมทั้งโรงงาน
+  const factory = withSplit(
+    {
+      code: "ALL",
+      department: "รวมทั้งโรงงาน",
+      waste: totalWaste,
+      forced: rows.reduce((s, it) => s + (it.forced || 0), 0),
+      production: totalProduction,
+    },
+    "total",
+  );
+  const rf = rowHtml(factory, null, " xd-grand xd-group-total");
+  html.push(rf.html);
+  lastDepartmentRows.push({ ...factory, result: rf.result.label, isGroup: true });
+
+  tbody.innerHTML = html.join("");
 }
 
 function copyMachineId(machineId, btnId) {
@@ -1087,7 +1229,7 @@ function showCopyFeedback(btnId) {
   const btn = document.getElementById(btnId);
   if (!btn) return;
   const originalHTML = btn.innerHTML;
-  btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:13px;color:#10b981;">check</span>`;
+  btn.innerHTML = uiIcon("check", 13);
   btn.style.borderColor = "#10b981";
   btn.style.background = "#f0fdf4";
   btn.style.color = "#10b981";
@@ -1135,14 +1277,14 @@ function renderMachineSummaryList(rows) {
                           class="btn-machine-info-pill" 
                           onclick="event.stopPropagation(); openMachineInfoModal('${safeMachine}', '${safeDeptCode}')"
                           title="เปิดกราฟสถิติและประวัติซ่อมบำรุง">
-                    <span class="material-symbols-outlined">info</span>
-                    <span>Info</span>
+                    ${uiIcon("info", 14)}
+                    <span>ดูประวัติ</span>
                   </button>
                   <button id="${btnId}" 
                           onclick="event.stopPropagation(); copyMachineId('${safeMachine}', '${btnId}')" 
                           title="คัดลอกรหัสเครื่องจักร" 
                           style="border: 1px solid rgba(226, 232, 240, 0.8); background: #f8fafc; border-radius: 6px; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; color: #64748b; transition: all 0.15s ease;">
-                    <span class="material-symbols-outlined" style="font-size: 13px;">content_copy</span>
+                    ${uiIcon("content_copy", 13)}
                   </button>
                 </div>
                 <small>
@@ -1188,7 +1330,7 @@ function showDashboardToast(message, type = "success") {
 
   toast.className = `toast ${type}`;
   toast.innerHTML = `
-    <span class="material-symbols-outlined" style="font-size: 20px;">${iconName}</span>
+    ${uiIcon(iconName, 20)}
     <span>${escapeHTML(message)}</span>
   `;
 
@@ -1596,7 +1738,7 @@ function renderMachineHistoryChart(records, machineName, deptColor) {
             boxWidth: 12,
             boxHeight: 12,
             usePointStyle: true,
-            font: { family: "Prompt, sans-serif", size: 12 },
+            font: { family: CHART_FONT, size: 12 },
           },
         },
         tooltip: {
@@ -1615,7 +1757,7 @@ function renderMachineHistoryChart(records, machineName, deptColor) {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { font: { family: "Prompt, sans-serif", size: 11 } },
+          ticks: { font: { family: CHART_FONT, size: 11 } },
         },
         yWeight: {
           type: "linear",
@@ -1624,12 +1766,12 @@ function renderMachineHistoryChart(records, machineName, deptColor) {
           title: {
             display: true,
             text: "น้ำหนัก (kg)",
-            font: { family: "Prompt, sans-serif", size: 11, weight: 600 },
+            font: { family: CHART_FONT, size: 11, weight: 600 },
           },
           grid: { color: "rgba(226, 232, 240, 0.6)" },
           ticks: {
             callback: (val) => formatNumber(val),
-            font: { family: "Prompt, sans-serif", size: 11 },
+            font: { family: CHART_FONT, size: 11 },
           },
         },
         yPercent: {
@@ -1639,12 +1781,12 @@ function renderMachineHistoryChart(records, machineName, deptColor) {
           title: {
             display: true,
             text: "อัตราของเสีย (%)",
-            font: { family: "Prompt, sans-serif", size: 11, weight: 600 },
+            font: { family: CHART_FONT, size: 11, weight: 600 },
           },
           grid: { drawOnChartArea: false },
           ticks: {
             callback: (val) => val + "%",
-            font: { family: "Prompt, sans-serif", size: 11 },
+            font: { family: CHART_FONT, size: 11 },
           },
         },
       },
@@ -1785,7 +1927,7 @@ function renderMachineMaintenanceNotes(records) {
           </td>
           <td>
             <span class="status-pill ${st.className}" title="${st.label}">
-              <span class="material-symbols-outlined">${st.icon}</span>
+              ${uiIcon(st.icon, 14)}
               <span>${st.label}</span>
             </span>
           </td>
@@ -1962,7 +2104,7 @@ function replaceChart(oldChart, canvasId, config) {
             padding: 18,
             color: "#334155",
             font: {
-              family: "Kanit, Noto Sans Thai, sans-serif",
+              family: CHART_FONT,
               size: 12,
               weight: "700",
             },
@@ -1997,7 +2139,7 @@ function replaceChart(oldChart, canvasId, config) {
                 ticks: {
                   color: "#475569",
                   font: {
-                    family: "Kanit, Noto Sans Thai, sans-serif",
+                    family: CHART_FONT,
                     size: 11,
                     weight: "700",
                   },
@@ -2011,7 +2153,7 @@ function replaceChart(oldChart, canvasId, config) {
                 ticks: {
                   color: "#64748b",
                   font: {
-                    family: "Kanit, Noto Sans Thai, sans-serif",
+                    family: CHART_FONT,
                     size: 11,
                     weight: "700",
                   },
@@ -2122,17 +2264,25 @@ async function attachProblemItemsToReports(rows) {
   if (!client) return rows.map(normalizeReportItemsFallback);
 
   try {
-    const buildItems = (chunk) =>
+    // loss_type (สูญเสียจากการผลิต/บังคับ) มีหลังรัน SQL 12 — ถ้ายังไม่มีจะโหลดแบบเดิม
+    const buildItemsWith = (cols) => (chunk) =>
       client
         .from(ITEM_TABLE)
-        .select("id, report_id, item_no, problem_type, waste_weight_kg, detail, created_at")
+        .select(cols)
         .in("report_id", chunk)
         .order("item_no", { ascending: true })
         .order("created_at", { ascending: true })
         .order("id", { ascending: true });
-    const { data, error } = window.SB_FETCH
-      ? await window.SB_FETCH.inChunks(ids, buildItems)
-      : await buildItems(ids);
+    const run = (cols) =>
+      window.SB_FETCH ? window.SB_FETCH.inChunks(ids, buildItemsWith(cols)) : buildItemsWith(cols)(ids);
+    const baseCols = "id, report_id, item_no, problem_type, waste_weight_kg, detail, created_at";
+    let { data, error } = hasItemLossType === false ? { error: true } : await run(`${baseCols}, loss_type`);
+    if (error) {
+      if (hasItemLossType !== false) hasItemLossType = false;
+      ({ data, error } = await run(baseCols));
+    } else {
+      hasItemLossType = true;
+    }
 
     if (error) {
       console.warn("โหลด daily_waste_report_items ไม่สำเร็จ ใช้ข้อมูลหัวรายงานแทน:", error);
@@ -2151,6 +2301,7 @@ async function attachProblemItemsToReports(rows) {
         problem_type: item.problem_type || "ไม่ระบุปัญหา",
         waste_weight_kg: toNumber(item.waste_weight_kg),
         detail: item.detail || "",
+        loss_type: item.loss_type === "forced" ? "forced" : "production",
       });
     });
 
@@ -2262,6 +2413,12 @@ function isCancelledRow(row) {
 function getWasteWeight(row) {
   const itemWaste = getProblemItems(row).reduce((sum, item) => sum + toNumber(item.waste_weight_kg), 0);
   return itemWaste || toNumber(row.waste_weight_kg || row.waste_qty || row.total_waste_kg || 0);
+}
+
+// ส่วนของของเสียที่เป็น "สูญเสียบังคับ" (ต้องรัน SQL 12 ก่อน ไม่งั้นนับเป็นการผลิตทั้งหมด)
+function getForcedWeight(row) {
+  const items = Array.isArray(row.problem_items) ? row.problem_items : [];
+  return items.reduce((sum, item) => sum + (item.loss_type === "forced" ? toNumber(item.waste_weight_kg) : 0), 0);
 }
 
 // ยอดผลิตดีที่ฝ่ายบัญชีกรอก (ไม่ใช้ total_qty / production_qty
@@ -2512,88 +2669,77 @@ function renderKPISparklines(records, dailySummary, deptSummary) {
   );
 }
 
+// เส้นแนวโน้มเล็กในการ์ดตัวเลข — วาดด้วย SVG ธรรมดา (เดิมใช้ d3 ~280KB ทำให้หน้าโหลดช้า)
 function drawSparkline(containerId, data, color, areaColor, tooltipTitle) {
-  const container = d3.select(`#${containerId}`);
-  if (container.empty()) return;
+  const node = document.getElementById(containerId);
+  if (!node) return;
+  node.innerHTML = "";
+  node.title = tooltipTitle || "";
 
-  container.html(""); // Clear old SVG
+  const values = (data || []).map((v) => Number(v) || 0);
+  if (!values.length) return;
 
-  const node = container.node();
-  const width = node ? node.getBoundingClientRect().width || 120 : 120;
-  const height = node ? node.getBoundingClientRect().height || 36 : 36;
+  const rect = node.getBoundingClientRect();
+  const width = Math.round(rect.width) || 120;
+  const height = Math.round(rect.height) || 34;
+  let min = Math.min(...values);
+  let max = Math.max(...values);
+  if (min === max) {
+    min -= 1;
+    max += 1;
+  }
+  const n = values.length;
+  const x = (i) => (n === 1 ? width / 2 : 4 + (i * (width - 12)) / (n - 1));
+  const y = (v) => height - 4 - ((v - min) * (height - 8)) / (max - min);
+  const pts = values.map((v, i) => [x(i), y(v)].map((k) => k.toFixed(1)).join(","));
+  const [lx, ly] = [x(n - 1), y(values[n - 1])].map((k) => k.toFixed(1));
+  const area = n > 1 ? `<path d="M${pts[0].split(",")[0]},${height} L${pts.join(" L")} L${lx},${height} Z" fill="${areaColor}"/>` : "";
+  const line = n > 1 ? `<polyline points="${pts.join(" ")}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>` : "";
 
-  // Set native browser tooltip
-  container.attr("title", tooltipTitle);
+  node.innerHTML = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="display:block;overflow:visible" aria-hidden="true">
+    ${area}${line}
+    <circle cx="${lx}" cy="${ly}" r="4.5" fill="${color}" opacity="0.4"/>
+    <circle cx="${lx}" cy="${ly}" r="2.5" fill="${color}" stroke="#fff" stroke-width="1.2"/>
+  </svg>`;
+}
 
-  // Handle all zeros or flat data
-  const minVal = d3.min(data) || 0;
-  const maxVal = d3.max(data) || 0;
-  const yDomain = minVal === maxVal ? [minVal - 1, maxVal + 1] : [minVal, maxVal];
 
-  // Map ranges with margin padding to avoid clipped lines/circles
-  const xScale = d3.scaleLinear()
-    .domain([0, data.length - 1])
-    .range([4, width - 8]);
+/* =========================================================
+   ICONS (เส้นเรียบ แบบเดียวกับหน้าอื่น — ไม่ต้องโหลดฟอนต์ไอคอน)
+========================================================= */
 
-  const yScale = d3.scaleLinear()
-    .domain(yDomain)
-    .range([height - 4, 4]);
+const UI_ICON_PATHS = {
+  trending_up: "M4 17l6-6 4 4 6-7M15 8h5v5",
+  trending_down: "M4 7l6 6 4-4 6 7M15 16h5v-5",
+  trending_flat: "M4 12h15M15 8l4 4-4 4",
+  warning: "M12 4l9 16H3zM12 10v4M12 17v.5",
+  check: "M5 12l5 5 9-10",
+  check_circle: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM8 12l3 3 5-6",
+  error: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8v5M12 16v.5",
+  info: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5",
+  content_copy: "M9 9h11v11H9zM5 15H4V4h11v1",
+  autorenew: "M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5",
+  schedule: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2",
+};
 
-  const svg = container.append("svg")
-    .attr("width", width)
-    .attr("height", height)
-    .style("display", "block")
-    .style("overflow", "visible");
+function uiIcon(name, size = 16) {
+  const d = UI_ICON_PATHS[name] || UI_ICON_PATHS.info;
+  return `<svg class="ui-icon" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
+}
 
-  // Smooth line curve
-  const lineGen = d3.line()
-    .x((_, i) => xScale(i))
-    .y(d => yScale(d))
-    .curve(d3.curveMonotoneX);
-
-  // Gradient fill under the line
-  const areaGen = d3.area()
-    .x((_, i) => xScale(i))
-    .y0(height)
-    .y1(d => yScale(d))
-    .curve(d3.curveMonotoneX);
-
-  // Render Area under curve
-  svg.append("path")
-    .datum(data)
-    .attr("d", areaGen)
-    .attr("fill", areaColor);
-
-  // Render Line path
-  svg.append("path")
-    .datum(data)
-    .attr("d", lineGen)
-    .attr("fill", "none")
-    .attr("stroke", color)
-    .attr("stroke-width", 2)
-    .attr("stroke-linecap", "round");
-
-  // Render last data point highlights
-  const lastIndex = data.length - 1;
-  const lastX = xScale(lastIndex);
-  const lastY = yScale(data[lastIndex]);
-
-  // Outer glowing pulse
-  svg.append("circle")
-    .attr("cx", lastX)
-    .attr("cy", lastY)
-    .attr("r", 4.5)
-    .attr("fill", color)
-    .attr("opacity", 0.4);
-
-  // Solid center dot
-  svg.append("circle")
-    .attr("cx", lastX)
-    .attr("cy", lastY)
-    .attr("r", 2.5)
-    .attr("fill", color)
-    .attr("stroke", "#ffffff")
-    .attr("stroke-width", 1.2);
+// เวลาโหลดล่าสุด + วันที่บัญชีตรวจล่าสุด (หัวหน้า)
+function updateDataStamp(checkedRows) {
+  const now = new Date();
+  const hhmm = now.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+  setText("updateStatus", `อัปเดต ${hhmm} น.`);
+  const last = (checkedRows || []).map((r) => r.report_date).filter(Boolean).sort().pop();
+  if (last) {
+    const d = new Date(`${last}T00:00:00`);
+    const text = d.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" });
+    setText("accountingUpdate", `บัญชีตรวจถึง ${text}`);
+  } else {
+    setText("accountingUpdate", "ยังไม่มีข้อมูลที่บัญชีตรวจในเดือนนี้");
+  }
 }
 
 /* =========================================================
@@ -2630,28 +2776,24 @@ function exportDepartmentSummaryPDF() {
   }
 
   // Get active date range values for report header
-  const rangeStart = document.getElementById("range-start")?.value || "";
-  const rangeEnd = document.getElementById("range-end")?.value || "";
-  const dateStr = rangeStart && rangeEnd ? `${rangeStart} ถึง ${rangeEnd}` : "สรุปข้อมูลรายเดือน";
+  const range = getSelectedDateRange();
+  const dateStr = range?.thaiLabel ? `เดือน${range.thaiLabel} (${range.start} ถึง ${range.end})` : "สรุปข้อมูลรายเดือน";
 
-  const rowsHTML = Array.from(tbody.querySelectorAll("tr.dept-row-clickable")).map(tr => {
-    // Extract text values safely
-    const deptName = tr.querySelector("strong")?.textContent || "";
-    const cols = tr.querySelectorAll("td");
-    const production = cols[1]?.textContent || "0";
-    const waste = cols[2]?.textContent || "0";
-    const percent = cols[3]?.textContent || "0%";
-    const result = cols[4]?.querySelector(".result-pill")?.textContent || "";
-    
+  const cell = "padding: 8px 10px; border-bottom: 1px solid #e2e8f0;";
+  const rowsHTML = lastDepartmentRows.map((r) => {
+    const bold = r.isGroup ? "font-weight:700; background:#eef2fa;" : "";
+    const indent = r.inGroup ? "padding-left:22px;" : "";
+    const hasProd = r.production > 0;
     return `
-      <tr>
-        <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600; text-align: left;">${deptName}</td>
-        <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">${production}</td>
-        <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">${waste}</td>
-        <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${percent}</td>
-        <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${result}</td>
-      </tr>
-    `;
+      <tr style="${bold}">
+        <td style="${cell} ${indent} text-align:left; font-weight:600;">${escapeHTML(r.department)}</td>
+        <td style="${cell} text-align:right;">${formatNumber(r.production)}</td>
+        <td style="${cell} text-align:right;">${formatNumber(r.waste)}</td>
+        <td style="${cell} text-align:right;">${formatNumber(r.forced || 0)}</td>
+        <td style="${cell} text-align:right; font-weight:700;">${hasProd ? formatNumber(r.percent) + "%" : "-"}</td>
+        <td style="${cell} text-align:right;">${hasProd ? formatNumber(r.pctProduction) + "%" : "-"}</td>
+        <td style="${cell} text-align:center;">${escapeHTML(r.result || "")}</td>
+      </tr>`;
   }).join("");
 
   printWindow.document.write(`
@@ -2758,9 +2900,11 @@ function exportDepartmentSummaryPDF() {
         <thead>
           <tr>
             <th style="text-align: left;">แผนก</th>
-            <th style="text-align: right;">ผลิตรวม (kg)</th>
+            <th style="text-align: right;">ผลิตดี (kg)</th>
             <th style="text-align: right;">ของเสียรวม (kg)</th>
-            <th style="text-align: right;">อัตราของเสีย (% Waste)</th>
+            <th style="text-align: right;">เสียบังคับ (kg)</th>
+            <th style="text-align: right;">% รวม</th>
+            <th style="text-align: right;">% จากการผลิต</th>
             <th style="text-align: center;">ผลการประเมิน</th>
           </tr>
         </thead>

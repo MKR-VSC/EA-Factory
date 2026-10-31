@@ -2,368 +2,263 @@
 <html lang="th">
   <head>
     <!-- ======================================================
-      PVT&T FACTORY - EXECUTIVE DASHBOARD v1.0
-      หน้าแรกสำหรับผู้บริหาร / Management / Admin
-      ใช้ดูภาพรวมของเสียทั้งโรงงานแบบรายเดือน
+      PVT&T FACTORY - Dashboard ผู้บริหาร
+      ภาพรวมของเสียรายเดือนทั้งโรงงาน (admin / management / manager / executive)
+      หน้าตาแบบเรียบชุดเดียวกับหน้าบัญชี / รายงานประจำวัน
+      (JS: js/dashboard/index.js — id ทั้งหมดในหน้านี้ JS ใช้อยู่ ห้ามเปลี่ยนชื่อ)
     ======================================================= -->
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Dashboard ผู้บริหาร - PVT&amp;T FACTORY</title>
+    <meta name="description" content="ภาพรวมของเสียรายเดือนของ PVT&amp;T FACTORY สำหรับผู้บริหาร" />
 
-    <title>PVT&T FACTORY | Dashboard สรุปภาพรวมของเสีย</title>
-    <meta name="description" content="Industrial production monitoring, scrap percentage tracking, and supervisory dashboard for PVT&T FACTORY with custom brand styling." />
-    <meta property="og:title" content="PVT&T FACTORY" />
-    <meta property="og:description" content="Industrial production monitoring, scrap percentage tracking, and supervisory dashboard for PVT&T FACTORY with custom brand styling." />
-
-    <!-- Fonts -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-
-    <!-- Icons -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-      rel="stylesheet"
-    />
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/Logo_Icons3.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icons/Logo_Icons3.png" />
-    <link rel="apple-touch-icon" href="/icons/Logo_Icons3.png" />
-    
-
-    <!-- PWA -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="icon" type="image/png" href="/icons/logo-header.png" />
+    <link rel="apple-touch-icon" href="/icons/Logo_Apps3.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#1E3A8A" />
+    <meta name="theme-color" content="#ffffff" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="PVT&amp;T Factory" />
 
-    <link rel="stylesheet" href="/css/loadingService.css" />
-    <link rel="stylesheet" href="/css/index.css" />
-      <link rel="stylesheet" href="/css/responsive.css" />
-      <link rel="stylesheet" href="/css/splash.css" />
+    <link rel="stylesheet" href="/css/form-mobile.css" />
+    <link rel="stylesheet" href="/css/review-simple.css" />
+    <link rel="stylesheet" href="/css/accounting-simple.css" />
+    <link rel="stylesheet" href="/css/exec-dashboard-simple.css" />
+    <script src="/js/department/formSettings.js"></script>
   </head>
 
-  <body data-page="dashboard">
-    <!-- หน้าเปิดแอป (แบบเดียวกันทั้งแอป — ดู css/splash.css) -->
-    <div id="splash-screen" class="pvt-splash" role="status" aria-label="กำลังเปิดแอป">
-      <div class="pvt-splash-mark" aria-hidden="true">
-        <span class="pvt-splash-glow"></span>
-        <svg class="pvt-splash-ring" viewBox="0 0 120 120" aria-hidden="true">
-          <defs>
-            <linearGradient id="pvtSplashRing" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#ff8a3d" />
-              <stop offset="0.55" stop-color="#f26a1b" />
-              <stop offset="1" stop-color="#1e3a8a" />
-            </linearGradient>
-          </defs>
-          <circle class="track" cx="60" cy="60" r="54" />
-          <circle class="arc" cx="60" cy="60" r="54" />
-        </svg>
-        <img class="pvt-splash-logo" src="/icons/Logo_Apps3.png?v=3" alt="" />
+  <body class="rv acc xd" data-page="dashboard">
+    <header class="fm-top rv-top acc-top">
+      <img class="fm-logo" src="/icons/logo-header.png" width="42" height="37" alt="PVT&amp;T FACTORY" />
+      <div class="fm-top-title">
+        <h1>สรุปภาพรวมของเสีย</h1>
+        <p><span id="lbl-active-user">-</span> · <span id="accountingUpdate">กำลังโหลด...</span></p>
       </div>
-      <div class="pvt-splash-title">PVT&amp;T Factory</div>
-      <div class="pvt-splash-sub">กำลังโหลด Dashboard ภาพรวม</div>
-    </div>
+      <span class="acc-updated" id="updateStatus"></span>
+      <button type="button" class="fm-icon-btn" onclick="loadAndProcessDashboardData()" aria-label="โหลดข้อมูลล่าสุด" title="โหลดข้อมูลล่าสุด">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5" /></svg>
+      </button>
+      <button type="button" class="fm-icon-btn" onclick="FORM_SETTINGS.open()" aria-label="ตั้งค่าตัวอักษร" title="ตั้งค่าตัวอักษร">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19l5-14h2l5 14M6.5 13h7" /><path d="M17 11h4M19 9v4" /></svg>
+      </button>
+    </header>
 
-    <main class="exec-shell">
-      <!-- ================= HEADER ================= -->
-      <header class="exec-header">
-        <div class="brand-block">
-          <div class="logo">
-        <img src="/icons/Logo_Apps3.png?v=3" alt="PVT&T FACTORY Logo" />
-        <div>
-          <!-- <h2>PVT&T FACTORY</h2> -->
-          <!-- <p>ศูนย์รวมข้อมูลและระบบงาน</p> -->
+    <div class="acc-layout">
+      <nav class="acc-side" aria-label="เมนูผู้บริหาร">
+        <div class="acc-side-group">
+          <span class="acc-side-title">เมนูหลัก</span>
+          <a class="acc-side-item is-active" aria-current="page" href="/index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" /></svg><span>ภาพรวมของเสีย</span></a>
+          <a class="acc-side-item" href="/pages/daily-report.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7" /></svg><span>รายงานประจำวัน</span></a>
+          <button type="button" class="acc-side-item" data-nav="data" data-role-only="admin management"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span>ข้อมูลของเสีย</span></button>
+          <button type="button" class="acc-side-item" data-nav="summary" data-role-only="admin management"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 10h16M4 15h10M4 20h7" /></svg><span>สรุปผลรวม</span></button>
         </div>
-      </div>
-          <!-- <div class="brand-icon">
-            <span class="material-symbols-outlined">factory</span>
-          </div> -->
-          <div>
-            <h1>สรุปภาพรวมของเสีย</h1>
-            <!-- <p>ภาพรวมของเสียทั้งโรงงานสำหรับฝ่ายบริหาร</p> -->
-          </div>
+        <div class="acc-side-group" id="accSideOther" hidden>
+          <span class="acc-side-title">ตั้งค่า</span>
+          <a class="acc-side-item" data-role-only="admin management" href="/pages/loss-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M4 12h10M4 18h10M17 5l3 3-3 3M20 16h-3" /></svg><span>อาการเสีย &amp; ประเภท</span></a>
+          <a class="acc-side-item" data-role-only="admin management" href="/pages/dept-groups.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h7v5H3zM14 6h7v5h-7zM8 15h8v5H8zM6.5 11v2h11v-2M12 13v2" /></svg><span>กลุ่มแผนก</span></a>
+          <a class="acc-side-item" data-role-only="admin" href="/pages/factory-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 5v4M8 15v4" /></svg><span>ตั้งค่าเกณฑ์ของเสีย</span></a>
+          <a class="acc-side-item" data-role-only="admin" href="/pages/admin-panel.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg><span>หน้าแอดมิน</span></a>
         </div>
+        <button type="button" class="acc-side-item acc-side-logout" onclick="handleDashboardLogout()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg><span>ออกจากระบบ</span></button>
+      </nav>
 
-        <div class="header-actions">
-          <div class="user-chip">
-            <span class="material-symbols-outlined">account_circle</span>
-            <span>ผู้ใช้งาน:</span>
-            <strong id="lbl-active-user">-</strong>
-          </div>
-
-          <button
-            class="btn btn-dark"
-            type="button"
-            onclick="loadAndProcessDashboardData()"
-          >
-            <span class="material-symbols-outlined">refresh</span>
-            โหลดใหม่
-          </button>
-
-          <button
-            class="btn btn-danger"
-            type="button"
-            onclick="handleDashboardLogout()"
-          >
-            <span class="material-symbols-outlined">logout</span>
-            ออกจากระบบ
-          </button>
-
-          <div class="dashboard-update">
-            <div class="update-status" id="updateStatus">
-              🟢 อัปเดต 09 ก.ค. 2569 15:42
-            </div>
-
-            <div class="update-date" id="accountingUpdate">
-              บัญชีตรวจถึง 08 ก.ค. 2569
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <!-- ================= FILTER ================= -->
-      <section class="filter-card">
-        <div class="filter-inputs">
-          <div class="form-group">
-            <label for="filter-month-select">เลือกเดือนที่ต้องการดู (ภาษาไทย)</label>
-            <div class="thai-month-picker" style="display: flex; gap: 8px;">
-              <select id="filter-month-select" class="thai-month-select" aria-label="เลือกเดือน" style="flex: 1.6;">
-                <option value="01">มกราคม</option>
-                <option value="02">กุมภาพันธ์</option>
-                <option value="03">มีนาคม</option>
-                <option value="04">เมษายน</option>
-                <option value="05">พฤษภาคม</option>
-                <option value="06">มิถุนายน</option>
-                <option value="07">กรกฎาคม</option>
-                <option value="08">สิงหาคม</option>
-                <option value="09">กันยายน</option>
-                <option value="10">ตุลาคม</option>
-                <option value="11">พฤศจิกายน</option>
-                <option value="12">ธันวาคม</option>
-              </select>
-              <select id="filter-year-select" class="thai-year-select" aria-label="เลือกปี" style="flex: 1.2;">
-              </select>
-              <input id="filter-month" type="hidden" />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="sel-dept-filter">แผนก</label>
+      <main class="acc-main">
+        <!-- ================= ตัวกรอง ================= -->
+        <section class="rv-card xd-controls">
+          <label class="xd-field">
+            <span>เดือน</span>
+            <select id="filter-month-select" aria-label="เลือกเดือน">
+              <option value="01">มกราคม</option>
+              <option value="02">กุมภาพันธ์</option>
+              <option value="03">มีนาคม</option>
+              <option value="04">เมษายน</option>
+              <option value="05">พฤษภาคม</option>
+              <option value="06">มิถุนายน</option>
+              <option value="07">กรกฎาคม</option>
+              <option value="08">สิงหาคม</option>
+              <option value="09">กันยายน</option>
+              <option value="10">ตุลาคม</option>
+              <option value="11">พฤศจิกายน</option>
+              <option value="12">ธันวาคม</option>
+            </select>
+          </label>
+          <label class="xd-field xd-field-year">
+            <span>ปี</span>
+            <select id="filter-year-select" aria-label="เลือกปี"></select>
+          </label>
+          <input id="filter-month" type="hidden" />
+          <label class="xd-field xd-field-dept">
+            <span>แผนก</span>
             <select id="sel-dept-filter">
               <option value="all">ทุกแผนกผลิต</option>
             </select>
-          </div>
-        </div>
-
-        <div class="filter-actions-row">
-          <div class="quick-dates">
+          </label>
+          <div class="xd-quick" role="group" aria-label="เลือกเดือนเร็ว">
             <button type="button" class="quick-month-btn active" onclick="setQuickMonth('thisMonth')">เดือนนี้</button>
             <button type="button" class="quick-month-btn" onclick="setQuickMonth('lastMonth')">เดือนที่แล้ว</button>
           </div>
-
-          <div class="filter-btn-group">
-            <button
-              class="btn btn-primary btn-search"
-              type="button"
-              onclick="loadAndProcessDashboardData()"
-            >
-              <span class="material-symbols-outlined">search</span>
-              ค้นหา
-            </button>
-
-            <button
-              class="btn btn-light"
-              type="button"
-              onclick="exportToDataExcelCSV()"
-            >
-              <span class="material-symbols-outlined">download</span>
-              Export CSV
-            </button>
+          <div class="xd-actions">
+            <button class="btn primary" type="button" onclick="loadAndProcessDashboardData()">แสดงข้อมูล</button>
+            <button class="btn light" type="button" onclick="exportToDataExcelCSV()">ดาวน์โหลด CSV</button>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- ================= DEPARTMENT SUMMARY ================= -->
-      <section class="table-card department-summary-card">
-        <div class="section-head">
-          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 16px; flex-wrap: wrap;">
+        <!-- ================= สรุปสั้น ================= -->
+        <section class="rv-card xd-verdict">
+          <div class="xd-verdict-head">
+            <h2>ผลเดือนนี้</h2>
+            <span id="overall-result-pill" class="result-pill result-none">รอข้อมูล</span>
+          </div>
+          <div id="exec-insight-box" class="xd-insight">กำลังวิเคราะห์ข้อมูล...</div>
+          <p class="xd-note">% ของเสีย = ของเสีย ÷ (ผลิตดี + ของเสีย) × 100 · รวมทั้งเดือนก่อนแล้วค่อยหาร · นับเฉพาะรายการที่บัญชีตรวจแล้ว · ไม่รวมเครื่องรีไซเคิล</p>
+        </section>
+
+        <!-- ================= KPI ================= -->
+        <section class="xd-kpis" id="exec-kpi-grid" aria-label="ตัวเลขสำคัญ">
+          <article class="rv-card metric-card xd-kpi xd-kpi-main">
+            <span class="xd-kpi-label">% ของเสียทั้งเดือน</span>
+            <strong id="cnt-waste-percent">0%</strong>
+            <small id="cnt-waste-percent-sub">ผลิตดี 0 kg / เสีย 0 kg</small>
+            <div id="sparkline-waste-percent" class="sparkline-container"></div>
+            <div id="cnt-waste-percent-cmp" class="kpi-compare-badge"></div>
+          </article>
+
+          <article class="rv-card metric-card xd-kpi">
+            <span class="xd-kpi-label">ผลิตดีทั้งเดือน</span>
+            <strong id="cnt-today">0</strong>
+            <small>กิโลกรัม</small>
+            <div id="sparkline-production" class="sparkline-container"></div>
+            <div id="cnt-today-cmp" class="kpi-compare-badge"></div>
+          </article>
+
+          <article class="rv-card metric-card xd-kpi">
+            <span class="xd-kpi-label">ของเสียทั้งเดือน</span>
+            <strong id="cnt-machine-risk">0</strong>
+            <small id="cnt-waste-split">กิโลกรัม</small>
+            <div id="sparkline-waste" class="sparkline-container"></div>
+            <div id="cnt-machine-risk-cmp" class="kpi-compare-badge"></div>
+          </article>
+
+          <article class="rv-card metric-card xd-kpi" id="kpi-scrap-mom-card">
+            <span class="xd-kpi-label">ของเสียเทียบเดือนก่อน</span>
+            <strong id="cnt-scrap-mom-val">0%</strong>
+            <small id="cnt-scrap-mom-sub">เทียบเดือนก่อนหน้า</small>
+            <div id="sparkline-scrap-mom" class="sparkline-container"></div>
+            <div id="cnt-scrap-mom-cmp" class="kpi-compare-badge"></div>
+          </article>
+
+          <article class="rv-card metric-card xd-kpi">
+            <span class="xd-kpi-label">แผนกที่เสียมากสุด (kg)</span>
+            <strong id="cnt-top-machine">-</strong>
+            <small id="cnt-top-machine-sub">-</small>
+            <div id="sparkline-top-department" class="sparkline-container"></div>
+            <div id="cnt-top-machine-cmp" class="kpi-compare-badge"></div>
+          </article>
+        </section>
+
+        <!-- ================= กราฟ ================= -->
+        <section class="xd-charts">
+          <article class="rv-card xd-chart-card">
+            <h2>% ของเสียรายวัน</h2>
+            <div class="xd-chart"><canvas id="chart-daily-waste-percent"></canvas></div>
+          </article>
+          <article class="rv-card xd-chart-card">
+            <h2>10 เครื่องที่ % ของเสียสูงสุด</h2>
+            <div class="xd-chart"><canvas id="chart-machine-risk"></canvas></div>
+          </article>
+          <article class="rv-card xd-chart-card">
+            <h2>10 อาการเสียที่พบมากสุด</h2>
+            <div class="xd-chart"><canvas id="chart-problem-count-bar"></canvas></div>
+          </article>
+          <article class="rv-card xd-chart-card">
+            <h2>สัดส่วนของเสียตามแผนก</h2>
+            <div class="xd-chart"><canvas id="chart-dept-donut"></canvas></div>
+          </article>
+        </section>
+
+        <!-- ================= สรุปตามแผนก ================= -->
+        <section class="rv-card xd-section">
+          <div class="xd-section-head">
             <div>
-              <h2 style="display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px;">
-                สรุปรายเดือนตามแผนก
-                <span id="scrap-alarm-container"></span>
-              </h2>
-              <p>ผลิตรวม / ของเสียรวม / % Waste ของแต่ละแผนก</p>
+              <h2>สรุปรายเดือนตามแผนก <span id="scrap-alarm-container"></span></h2>
+              <p>ประเมินกับเกณฑ์ของแต่ละแผนก/กลุ่ม (ตั้งได้ในหน้า "ตั้งค่าเกณฑ์" และ "กลุ่มแผนก")</p>
             </div>
-            <button onclick="exportDepartmentSummaryPDF()" class="btn-primary" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; border-radius: 8px; background: #0284c7; color: white; border: none; cursor: pointer; font-weight: 600; white-space: nowrap; height: fit-content; transition: background 0.15s ease;">
-              <span class="material-symbols-outlined" style="font-size: 18px;">picture_as_pdf</span>
-              ออกรายงาน PDF
-            </button>
+            <button type="button" class="btn light btn-sm" onclick="exportDepartmentSummaryPDF()">พิมพ์ / PDF</button>
           </div>
-        </div>
-
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>แผนก</th>
-                <th class="text-right">ผลิต kg</th>
-                <th class="text-right">ของเสีย kg</th>
-                <th class="text-right">% Waste</th>
-                <th>ผล</th>
-              </tr>
-            </thead>
-            <tbody id="department-summary-body">
-              <tr>
-                <td colspan="5" class="empty-cell">กำลังโหลดข้อมูล...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- ================= KPI ================= -->
-      <section class="metric-grid" id="exec-kpi-grid">
-        <article class="metric-card" data-widget-id="kpi_total_prod">
-          <span>รวมผลิตเดือนนี้(รวม)</span>
-          <strong id="cnt-today">0</strong>
-          <small>จำนวน kg.</small>
-          <div id="sparkline-production" class="sparkline-container" style="height: 36px; margin: 8px 0 4px 0;"></div>
-          <div id="cnt-today-cmp" class="kpi-compare-badge"></div>
-        </article>
-
-        <article class="metric-card warning" data-widget-id="kpi_total_waste">
-          <span>จำนวนของเสียเดือนนี้(รวม)</span>
-          <strong id="cnt-machine-risk">0</strong>
-          <small>จำนวน kg.</small>
-          <div id="sparkline-waste" class="sparkline-container" style="height: 36px; margin: 8px 0 4px 0;"></div>
-          <div id="cnt-machine-risk-cmp" class="kpi-compare-badge"></div>
-        </article>
-
-        <article class="metric-card warning" id="kpi-scrap-mom-card" data-widget-id="kpi_scrap_mom">
-          <span>เปรียบเทียบของเสีย MoM</span>
-          <strong id="cnt-scrap-mom-val">0 kg</strong>
-          <small id="cnt-scrap-mom-sub">เทียบเดือนก่อนหน้า</small>
-          <div id="sparkline-scrap-mom" class="sparkline-container" style="height: 36px; margin: 8px 0 4px 0;"></div>
-          <div id="cnt-scrap-mom-cmp" class="kpi-compare-badge"></div>
-        </article>
-
-        <article class="metric-card success" data-widget-id="kpi_waste_pct">
-          <span>% ของเสียเดือนนี้(รวม)</span>
-          <strong id="cnt-waste-percent">0%</strong>
-          <small id="cnt-waste-percent-sub">ผลิต 0 kg / เสีย 0 kg</small>
-          <div id="sparkline-waste-percent" class="sparkline-container" style="height: 36px; margin: 8px 0 4px 0;"></div>
-          <div id="cnt-waste-percent-cmp" class="kpi-compare-badge"></div>
-        </article>
-
-        <article class="metric-card danger" data-widget-id="kpi_top_dept">
-          <span>แผนกที่มีของเสียสูงสุด</span>
-          <strong id="cnt-top-machine">-</strong>
-          <small id="cnt-top-machine-sub">-</small>
-          <div id="sparkline-top-department" class="sparkline-container" style="height: 36px; margin: 8px 0 4px 0;"></div>
-          <div id="cnt-top-machine-cmp" class="kpi-compare-badge"></div>
-        </article>
-      </section>
-
-      <!-- ================= EXEC SUMMARY ================= -->
-      <section class="summary-card">
-        <div class="section-head">
-          <div>
-            <h2>สรุปภาพรวมเดือนนี้</h2>
-            <p>
-              อ่านเร็วสำหรับผู้บริหาร: โรงงานอยู่ในเกณฑ์หรือมีจุดที่ควรติดตาม
-            </p>
+          <div class="table-scroll">
+            <table class="data-table xd-dept-table">
+              <thead>
+                <tr>
+                  <th>แผนก</th>
+                  <th class="text-right">ผลิตดี (kg)</th>
+                  <th class="text-right">ของเสีย (kg)</th>
+                  <th class="text-right">% รวม</th>
+                  <th class="text-right">% จากการผลิต</th>
+                  <th class="text-right">เกณฑ์</th>
+                  <th>ผล</th>
+                </tr>
+              </thead>
+              <tbody id="department-summary-body">
+                <tr><td colspan="7" class="empty-cell">กำลังโหลดข้อมูล...</td></tr>
+              </tbody>
+            </table>
           </div>
-          <span id="overall-result-pill" class="result-pill result-none"
-            >รอข้อมูล</span
-          >
-        </div>
-        <div id="exec-insight-box" class="exec-insight-box">
-          กำลังวิเคราะห์ข้อมูล...
-        </div>
-      </section>
+        </section>
 
-      <!-- ================= CHARTS ================= -->
-      <section class="chart-grid">
-        <article class="chart-card">
-          <h2>แนวโน้มของเสียรายวัน</h2>
-          <canvas id="chart-daily-waste-percent"></canvas>
-        </article>
-
-        <article class="chart-card">
-          <h2>Top 10 เครื่องตาม % Waste</h2>
-          <canvas id="chart-machine-risk"></canvas>
-        </article>
-
-        <article class="chart-card">
-          <h2>Top 10 สาเหตุ / อาการ</h2>
-          <canvas id="chart-problem-count-bar"></canvas>
-        </article>
-
-        <article class="chart-card">
-          <h2>สัดส่วนของเสียตามแผนก</h2>
-          <canvas id="chart-dept-donut"></canvas>
-        </article>
-      </section>
-
-      <!-- ================= MACHINE SUMMARY ================= -->
-      <section class="table-card">
-        <div class="section-head">
-          <div>
-            <h2>สถิติของเสียรายเดือนแยกตามเครื่อง</h2>
-            <p>
-              แสดงทุกเครื่องที่มีข้อมูลในเดือนนี้ เรียงตามแผนกและเครื่อง
-              สีแดงคือเกิน 1% (กดปุ่ม Info เพื่อดูกราฟย้อนหลังและประวัติซ่อมบำรุง)
-            </p>
+        <!-- ================= รายเครื่อง ================= -->
+        <section class="rv-card xd-section">
+          <div class="xd-section-head">
+            <div>
+              <h2>ของเสียรายเครื่อง</h2>
+              <p>ทุกเครื่องที่มีข้อมูลในเดือนนี้ แยกตามแผนก · สีแดง = เกินเกณฑ์ · กด "ดูประวัติ" เพื่อดูกราฟย้อนหลังและบันทึกซ่อม</p>
+            </div>
           </div>
-        </div>
-        <div id="machine-summary-list" class="machine-summary-list">
-          กำลังโหลดข้อมูล...
-        </div>
-      </section>
-    </main>
+          <div id="machine-summary-list" class="machine-summary-list">กำลังโหลดข้อมูล...</div>
+        </section>
+      </main>
+    </div>
 
-    <!-- ================= CENTERED MACHINE PERFORMANCE & MAINTENANCE MODAL ================= -->
-    <div id="machine-info-modal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" style="display: none;">
+    <nav class="fm-tabbar acc-tabbar" aria-label="เมนู">
+      <a class="fm-tab is-active" aria-current="page" href="/index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" /></svg><span class="fm-tab-label">ภาพรวม</span></a>
+      <a class="fm-tab" href="/pages/daily-report.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7" /></svg><span class="fm-tab-label">รายงาน</span></a>
+      <button type="button" class="fm-tab" data-nav="data" data-role-only="admin management"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span class="fm-tab-label">ข้อมูล</span></button>
+      <button type="button" class="fm-tab" onclick="handleDashboardLogout()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg><span class="fm-tab-label">ออก</span></button>
+    </nav>
+
+    <!-- ================= หน้าต่างข้อมูลเครื่อง ================= -->
+    <div id="machine-info-modal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" style="display: none">
       <div class="modal-dialog machine-modal-dialog">
         <header class="modal-header">
           <div class="modal-title-group">
             <div class="modal-icon-badge" id="modal-dept-icon-badge">
-              <span class="material-symbols-outlined">precision_manufacturing</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M5 20V9l5 3V9l5 3V5h4v15" /></svg>
             </div>
             <div>
-              <div class="modal-eyebrow" id="modal-machine-dept-name">แผนกการผลิต</div>
+              <div class="modal-eyebrow" id="modal-machine-dept-name">แผนก</div>
               <h2 class="modal-title" id="modal-machine-title">ข้อมูลเครื่องจักร</h2>
             </div>
           </div>
           <div class="modal-header-actions">
-            <button type="button" class="btn-create-ticket-header" onclick="openCreateTicketModal()" title="เปิดใบแจ้งซ่อมบำรุงเครื่องนี้">
-              <span class="material-symbols-outlined" style="font-size: 16px;">add_task</span>
-              <span>Create Ticket</span>
-            </button>
-            <span id="modal-machine-status-pill" class="result-pill pill-success">ปกติ</span>
+            <span id="modal-machine-status-pill" class="result-pill result-success">ปกติ</span>
             <button type="button" class="modal-close-btn" onclick="closeMachineInfoModal()" aria-label="ปิดหน้าต่าง">
-              <span class="material-symbols-outlined">close</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
             </button>
           </div>
         </header>
 
         <div class="modal-body">
-          <!-- Machine KPI Summary Bar -->
           <div class="machine-modal-kpis">
             <div class="m-kpi-card">
-              <span class="m-kpi-label">ผลิตสะสม (เดือนนี้)</span>
+              <span class="m-kpi-label">ผลิตดี (เดือนนี้)</span>
               <strong class="m-kpi-value" id="modal-m-prod">0 kg</strong>
             </div>
             <div class="m-kpi-card">
-              <span class="m-kpi-label">ของเสียสะสม (เดือนนี้)</span>
+              <span class="m-kpi-label">ของเสีย (เดือนนี้)</span>
               <strong class="m-kpi-value text-danger" id="modal-m-waste">0 kg</strong>
             </div>
             <div class="m-kpi-card">
-              <span class="m-kpi-label">อัตราของเสียเฉลี่ย</span>
+              <span class="m-kpi-label">% ของเสีย</span>
               <strong class="m-kpi-value" id="modal-m-pct">0.00%</strong>
             </div>
             <div class="m-kpi-card">
@@ -372,125 +267,91 @@
             </div>
           </div>
 
-          <!-- Historical Performance Chart Section -->
           <div class="modal-section-card">
             <div class="modal-section-head">
-              <div class="modal-section-title">
-                <span class="material-symbols-outlined">query_stats</span>
-                <span>กราฟประสิทธิภาพและอัตราของเสียย้อนหลัง (Historical Performance)</span>
-              </div>
-              <div class="chart-legend-hint">
-                <span class="legend-dot green"></span> ผลิต (kg)
-                <span class="legend-dot red"></span> เสีย (kg)
-                <span class="legend-line blue"></span> % Waste
-              </div>
+              <div class="modal-section-title">กราฟย้อนหลัง</div>
             </div>
             <div class="modal-chart-container">
               <canvas id="chart-machine-history"></canvas>
             </div>
           </div>
 
-          <!-- Recent Maintenance & Defect Notes Section -->
           <div class="modal-section-card">
             <div class="modal-section-head">
-              <div class="modal-section-title">
-                <span class="material-symbols-outlined">build_circle</span>
-                <span>ประวัติบันทึกปัญหาและการซ่อมบำรุงล่าสุด (Recent Defect & Maintenance Logs)</span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <button type="button" class="btn-create-ticket-sub" onclick="openCreateTicketModal()" title="เปิดใบแจ้งซ่อมเครื่องนี้">
-                  <span class="material-symbols-outlined" style="font-size: 15px;">build</span>
-                  <span>แจ้งซ่อม (Create Ticket)</span>
-                </button>
+              <div class="modal-section-title">บันทึกปัญหาและการซ่อมล่าสุด</div>
+              <div class="modal-section-tools">
+                <button type="button" class="btn light btn-sm" onclick="openCreateTicketModal()">แจ้งซ่อม</button>
                 <span class="badge" id="modal-notes-count">0 รายการ</span>
               </div>
             </div>
-            <div class="modal-table-scroll">
-              <table class="modal-data-table">
+            <div class="table-scroll modal-table-scroll">
+              <table class="data-table modal-data-table">
                 <thead>
                   <tr>
                     <th>วันที่ / กะ</th>
-                    <th>สาเหตุ / อาการปัญหา</th>
+                    <th>อาการ</th>
                     <th class="text-right">ของเสีย kg</th>
-                    <th>สถานะ (Status)</th>
-                    <th>รายละเอียด & บันทึกการซ่อมบำรุง / หมายเหตุ</th>
+                    <th>สถานะ</th>
+                    <th>รายละเอียด / หมายเหตุ</th>
                     <th>ผู้บันทึก</th>
                   </tr>
                 </thead>
                 <tbody id="modal-maintenance-notes-body">
-                  <tr>
-                    <td colspan="6" class="empty-cell">กำลังโหลดข้อมูล...</td>
-                  </tr>
+                  <tr><td colspan="6" class="empty-cell">กำลังโหลดข้อมูล...</td></tr>
                 </tbody>
               </table>
             </div>
           </div>
         </div>
 
-        <footer class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
-          <button type="button" class="btn-create-ticket-footer" onclick="openCreateTicketModal()">
-            <span class="material-symbols-outlined" style="font-size: 17px;">build</span>
-            <span>เปิดใบแจ้งซ่อมเครื่องนี้ (Create Ticket)</span>
-          </button>
-          <button type="button" class="btn btn-light" onclick="closeMachineInfoModal()">
-            <span class="material-symbols-outlined">close</span>
-            <span>ปิดหน้าต่าง</span>
-          </button>
+        <footer class="modal-footer">
+          <button type="button" class="btn light" onclick="openCreateTicketModal()">เปิดใบแจ้งซ่อมเครื่องนี้</button>
+          <button type="button" class="btn primary" onclick="closeMachineInfoModal()">ปิด</button>
         </footer>
       </div>
     </div>
 
-    <!-- ================= CREATE MAINTENANCE TICKET MODAL OVERLAY ================= -->
-    <div id="create-ticket-modal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" style="display: none; z-index: 1050;">
-      <div class="modal-dialog" style="max-width: 540px;">
+    <!-- ================= หน้าต่างแจ้งซ่อม ================= -->
+    <div id="create-ticket-modal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" style="display: none; z-index: 1050">
+      <div class="modal-dialog xd-ticket-dialog">
         <header class="modal-header">
           <div class="modal-title-group">
-            <div class="modal-icon-badge" style="background: rgba(2, 132, 199, 0.12); color: #0284c7;">
-              <span class="material-symbols-outlined">build</span>
-            </div>
             <div>
-              <div class="modal-eyebrow">Maintenance Dispatch</div>
-              <h2 class="modal-title">เปิดใบแจ้งซ่อมบำรุง (Create Ticket)</h2>
+              <div class="modal-eyebrow">แจ้งซ่อมบำรุง</div>
+              <h2 class="modal-title">เปิดใบแจ้งซ่อม</h2>
             </div>
           </div>
           <button type="button" class="modal-close-btn" onclick="closeCreateTicketModal()" aria-label="ปิดหน้าต่าง">
-            <span class="material-symbols-outlined">close</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </header>
 
         <form id="create-ticket-form" onsubmit="handleCreateTicketSubmit(event)">
-          <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
-            <!-- Pre-filled machine & dept summary card -->
+          <div class="modal-body xd-ticket-body">
             <div class="ticket-prefill-card">
               <div class="ticket-prefill-item">
-                <span class="ticket-prefill-label">รหัสเครื่องจักร (Machine ID)</span>
+                <span class="ticket-prefill-label">เครื่อง</span>
                 <strong id="ticket-field-machine" class="ticket-prefill-val">-</strong>
                 <input type="hidden" id="ticket-input-machine" name="machine_no" />
               </div>
               <div class="ticket-prefill-item">
-                <span class="ticket-prefill-label">แผนก (Department)</span>
+                <span class="ticket-prefill-label">แผนก</span>
                 <strong id="ticket-field-dept" class="ticket-prefill-val">-</strong>
                 <input type="hidden" id="ticket-input-dept" name="department_code" />
               </div>
             </div>
 
-            <!-- Urgency & Category -->
-            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
-              <div>
-                <label for="ticket-input-urgency" class="ticket-form-label">
-                  ระดับความเร่งด่วน <span style="color: #ef4444;">*</span>
-                </label>
+            <div class="xd-two">
+              <label class="ticket-form-label">
+                ความเร่งด่วน <span class="req">*</span>
                 <select id="ticket-input-urgency" name="urgency" required class="ticket-form-select">
-                  <option value="Normal">ปกติ (Normal - วางแผนซ่อม)</option>
-                  <option value="Urgent">ด่วน (Urgent - กระทบคุณภาพ)</option>
-                  <option value="Critical">วิกฤต (Critical - เครื่องหยุด)</option>
+                  <option value="Normal">ปกติ (วางแผนซ่อม)</option>
+                  <option value="Urgent">ด่วน (กระทบคุณภาพ)</option>
+                  <option value="Critical">วิกฤต (เครื่องหยุด)</option>
                 </select>
-              </div>
-
-              <div>
-                <label for="ticket-input-category" class="ticket-form-label">
-                  หมวดหมู่อาการเสีย <span style="color: #ef4444;">*</span>
-                </label>
+              </label>
+              <label class="ticket-form-label">
+                หมวดหมู่ <span class="req">*</span>
                 <select id="ticket-input-category" name="problem_type" required class="ticket-form-select">
                   <option value="ระบบกลไก / แมคคานิค (Mechanical)">ระบบกลไก / แมคคานิค</option>
                   <option value="ระบบไฟฟ้า / มอเตอร์ (Electrical)">ระบบไฟฟ้า / มอเตอร์</option>
@@ -498,98 +359,73 @@
                   <option value="แม่พิมพ์ / หัวฉีด-ดาย (Mold & Die)">แม่พิมพ์ / หัวฉีด-ดาย</option>
                   <option value="ระบบควบคุม / เซ็นเซอร์ (PLC & Sensor)">ระบบควบคุม / เซ็นเซอร์</option>
                   <option value="ระบบลม / ไฮดรอลิก (Pneumatic/Hydraulic)">ระบบลม / ไฮดรอลิก</option>
-                  <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                  <option value="อื่นๆ (Other)">อื่นๆ</option>
                 </select>
-              </div>
-            </div>
-
-            <!-- Problem details -->
-            <div>
-              <label for="ticket-input-detail" class="ticket-form-label">
-                รายละเอียดอาการเสีย / ข้อบกพร่อง <span style="color: #ef4444;">*</span>
               </label>
-              <textarea id="ticket-input-detail" name="detail" rows="3" required placeholder="ระบุอาการผิดปกติ เสียง ความร้อน หรือข้อบกพร่องของชิ้นงาน..." class="ticket-form-textarea"></textarea>
             </div>
 
-            <!-- Initial Action / Recommendation -->
-            <div>
-              <label for="ticket-input-action" class="ticket-form-label">
-                การดำเนินการเบื้องต้น / ข้อเสนอแนะช่าง
-              </label>
-              <input type="text" id="ticket-input-action" name="action_taken" placeholder="เช่น หยุดเครื่องชั่วคราว, ปรับอุณหภูมิ, เปลี่ยนใบมีด..." class="ticket-form-input" />
-            </div>
+            <label class="ticket-form-label">
+              รายละเอียดอาการ <span class="req">*</span>
+              <textarea id="ticket-input-detail" name="detail" rows="3" required placeholder="อาการผิดปกติ เสียง ความร้อน หรือข้อบกพร่องของชิ้นงาน..." class="ticket-form-textarea"></textarea>
+            </label>
 
-            <!-- Reporter info & shift in 2 columns -->
-            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
-              <div>
-                <label for="ticket-input-reporter" class="ticket-form-label">
-                  ผู้แจ้ง / หัวหน้างาน (Supervisor)
-                </label>
+            <label class="ticket-form-label">
+              การแก้ไขเบื้องต้น / ข้อเสนอแนะ
+              <input type="text" id="ticket-input-action" name="action_taken" placeholder="เช่น หยุดเครื่องชั่วคราว, ปรับอุณหภูมิ..." class="ticket-form-input" />
+            </label>
+
+            <div class="xd-two">
+              <label class="ticket-form-label">
+                ผู้แจ้ง
                 <input type="text" id="ticket-input-reporter" name="reporter" class="ticket-form-input" />
-              </div>
-              <div>
-                <label for="ticket-input-shift" class="ticket-form-label">
-                  กะการทำงาน (Shift)
-                </label>
+              </label>
+              <label class="ticket-form-label">
+                กะ
                 <select id="ticket-input-shift" name="shift" class="ticket-form-select">
-                  <option value="day">กะวัน (Day Shift)</option>
-                  <option value="night">กะคืน (Night Shift)</option>
+                  <option value="day">กะวัน</option>
+                  <option value="night">กะคืน</option>
                 </select>
-              </div>
+              </label>
             </div>
           </div>
 
-          <footer class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
-            <button type="button" class="btn btn-light" onclick="closeCreateTicketModal()">
-              <span>ยกเลิก</span>
-            </button>
-            <button type="submit" class="btn btn-primary" id="btn-submit-ticket" style="display: inline-flex; align-items: center; gap: 6px;">
-              <span class="material-symbols-outlined" style="font-size: 18px;">send</span>
-              <span>บันทึกและส่งใบแจ้งซ่อม</span>
-            </button>
+          <footer class="modal-footer">
+            <button type="button" class="btn light" onclick="closeCreateTicketModal()">ยกเลิก</button>
+            <button type="submit" class="btn primary" id="btn-submit-ticket">บันทึกใบแจ้งซ่อม</button>
           </footer>
         </form>
       </div>
     </div>
 
-    <!-- Floating 'Scan QR' Action Button -->
-    <button id="btn-floating-scan-qr" class="floating-scan-qr-btn" type="button" aria-label="สแกน QR ประจำเครื่องจักร เพื่อเปิดข้อมูลซ่อมบำรุงและประสิทธิภาพ" title="สแกน QR เครื่องจักร (เปิดข้อมูลซ่อมบำรุงและประสิทธิภาพ)">
-      <span class="scan-qr-pulse" aria-hidden="true"></span>
-      <span class="scan-qr-icon-wrap">
-        <span class="material-symbols-outlined scan-icon">qr_code_scanner</span>
-      </span>
+    <!-- ปุ่มสแกน QR เครื่อง -->
+    <button id="btn-floating-scan-qr" class="floating-scan-qr-btn" type="button" aria-label="สแกน QR ประจำเครื่องจักร" title="สแกน QR เครื่องจักร">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5M8 12h8" /></svg>
       <span class="scan-qr-label">สแกน QR เครื่อง</span>
     </button>
 
-    <!-- ================= QR CODE CAMERA SCANNER MODAL ================= -->
-    <div id="qr-scan-modal" class="modal-backdrop qr-scan-modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" style="display: none;">
+    <!-- ================= หน้าต่างสแกน QR ================= -->
+    <div id="qr-scan-modal" class="modal-backdrop qr-scan-modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" style="display: none">
       <div class="modal-dialog qr-scan-dialog">
-        <header class="modal-header qr-scan-header" style="display: flex; justify-content: space-between; align-items: center;">
-          <div class="modal-title-group" style="display: flex; align-items: center; gap: 12px;">
-            <div class="modal-icon-badge qr-scan-badge" style="width: 42px; height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;">
-              <span class="material-symbols-outlined">qr_code_scanner</span>
-            </div>
+        <header class="modal-header">
+          <div class="modal-title-group">
             <div>
-              <div class="modal-eyebrow" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px; color: #0284c7;">SUPERVISOR SCANNER</div>
-              <h2 class="modal-title" style="font-size: 18px; margin: 0; font-weight: 600;">สแกน QR Code เครื่องจักร</h2>
+              <div class="modal-eyebrow">สแกนเครื่อง</div>
+              <h2 class="modal-title">สแกน QR Code เครื่องจักร</h2>
             </div>
           </div>
-          <button type="button" id="btn-close-qr-scan" class="modal-close-btn" aria-label="ปิดหน้าต่างสแกน QR" style="border: none; background: #f1f5f9; border-radius: 50%; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #475569;">
-            <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+          <button type="button" id="btn-close-qr-scan" class="modal-close-btn" aria-label="ปิดหน้าต่างสแกน QR">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </header>
 
         <div class="modal-body qr-scan-body">
-          <!-- Status Indicator Pill -->
           <div id="qr-scan-status" class="qr-scan-status-pill status-info">
             <span class="status-indicator-dot"></span>
-            <span id="qr-scan-status-text">กำลังเปิดกล้องถ่ายภาพ...</span>
+            <span id="qr-scan-status-text">กำลังเปิดกล้อง...</span>
           </div>
 
-          <!-- Camera Viewfinder with Overlay HUD -->
           <div class="qr-viewfinder-wrapper">
             <div id="qr-camera-stream" class="qr-camera-container"></div>
-
             <div class="qr-hud-overlay" id="qr-hud-overlay">
               <div class="qr-target-box">
                 <span class="corner-marker top-left"></span>
@@ -598,69 +434,42 @@
                 <span class="corner-marker bottom-right"></span>
                 <div class="qr-laser-line"></div>
               </div>
-              <div class="qr-hud-instruction">
-                <span class="material-symbols-outlined" style="font-size: 16px;">center_focus_strong</span>
-                <span>จัดตำแหน่ง QR Code ให้อยู่ในกรอบ</span>
-              </div>
+              <div class="qr-hud-instruction">จัด QR Code ให้อยู่ในกรอบ</div>
             </div>
           </div>
 
-          <!-- Camera Controls Toolbar -->
           <div class="qr-toolbar-actions">
-            <button type="button" id="btn-toggle-camera-facing" class="qr-action-btn" title="สลับกล้องหน้า/หลัง" style="display: none;">
-              <span class="material-symbols-outlined">flip_camera_ios</span>
-              <span>สลับกล้อง</span>
-            </button>
-            <button type="button" id="btn-toggle-camera-torch" class="qr-action-btn" title="เปิด/ปิดไฟฉาย" style="display: none;">
-              <span class="material-symbols-outlined">flashlight_on</span>
-              <span>เปิดไฟฉาย</span>
-            </button>
-            <label for="qr-file-input" class="qr-action-btn qr-file-label" title="อัปโหลดรูปภาพ QR Code">
-              <span class="material-symbols-outlined">image</span>
-              <span>เลือกรูปภาพ QR</span>
-            </label>
-            <input type="file" id="qr-file-input" accept="image/*" style="display: none;" />
+            <button type="button" id="btn-toggle-camera-facing" class="btn light btn-sm qr-action-btn" style="display: none"><span>สลับกล้อง</span></button>
+            <button type="button" id="btn-toggle-camera-torch" class="btn light btn-sm qr-action-btn" style="display: none"><span>เปิดไฟฉาย</span></button>
+            <label for="qr-file-input" class="btn light btn-sm qr-action-btn qr-file-label">เลือกรูป QR</label>
+            <input type="file" id="qr-file-input" accept="image/*" hidden />
           </div>
 
-          <!-- Manual Machine Fallback -->
           <div class="qr-manual-fallback">
-            <div class="qr-manual-divider">
-              <span>หรือเลือกเครื่องจากรายการโดยตรง</span>
-            </div>
+            <div class="qr-manual-divider"><span>หรือเลือกเครื่องจากรายการ</span></div>
             <div class="qr-manual-row">
-              <div class="qr-select-wrap">
-                <select id="qr-quick-machine-select" class="qr-quick-select">
-                  <option value="">-- เลือกรหัสเครื่องจากรายการ --</option>
-                </select>
-              </div>
-              <button type="button" id="btn-qr-open-selected-machine" class="btn btn-primary qr-quick-open-btn">
-                <span>เปิดข้อมูล</span>
-                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
-              </button>
+              <select id="qr-quick-machine-select" class="qr-quick-select">
+                <option value="">-- เลือกเครื่อง --</option>
+              </select>
+              <button type="button" id="btn-qr-open-selected-machine" class="btn primary qr-quick-open-btn">เปิดข้อมูล</button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Toast Notification Container -->
-    <div id="dashboard-toast" class="toast hidden"></div>
+    <div id="dashboard-toast" class="toast hidden" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <script src="/js/vendor/html5-qrcode.min.js"></script>
+    <!-- กราฟ: ระบุเวอร์ชันเต็ม (ไม่ต้องรอ CDN หาเวอร์ชันล่าสุดทุกครั้ง และแคชได้นาน) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <!-- ไลบรารีสแกน QR (~370KB) โหลดเมื่อกดปุ่มสแกนครั้งแรกเท่านั้น -->
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/supabaseFetch.js"></script>
     <script src="/auth/authGuard.js"></script>
-    <script src="/core/tableSwipeDetector.js"></script>
-    <script src="/core/counterAnimation.js"></script>
-    <script src="/core/autoRefresh.js"></script>
-    <script src="/core/widgetDragDrop.js"></script>
-    <script src="/services/loadingService.js"></script>
     <script src="/core/wasteFormula.js"></script>
     <script src="/js/dashboard/index.js"></script>
     <script src="/js/dashboard/qr-machine-scanner.js"></script>
-      <script src="/core/responsiveTables.js"></script>
+    <script src="/js/accounting/accountingSimpleNav.js"></script>
   </body>
 </html>
