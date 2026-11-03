@@ -1340,3 +1340,102 @@ html.acc-view-dashboard .acc-list-view {
   font-weight: 600;
   border-top: 2px solid var(--line);
 }
+
+/* ==========================================================
+   เมนูชุดเดียวทุกหน้า (js/accounting/accountingSimpleNav.js)
+   จอเล็ก (< 1024px): ปุ่ม "เมนู" ที่แถบล่าง เปิดเมนูซ้ายเป็นลิ้นชัก
+   ========================================================== */
+@media (max-width: 1023px) {
+  body.acc-menu-open {
+    overflow: hidden;
+  }
+
+  body.acc-menu-open .acc-side {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 210;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: min(300px, 86vw);
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 10px calc(16px + var(--safe-b));
+    overflow-y: auto;
+    color: #e6ebf7;
+    background: linear-gradient(180deg, #1e3a8a 0%, #172e6e 100%);
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.25);
+  }
+
+  body.acc-menu-open .acc-side-title {
+    color: rgba(230, 235, 247, 0.6);
+  }
+
+  body.acc-menu-open .acc-side-item {
+    position: relative;
+    color: #e6ebf7;
+  }
+
+  body.acc-menu-open .acc-side-item.is-active {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  body.acc-menu-open .acc-side-item.is-active::before {
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: 0;
+    width: 4px;
+    content: "";
+    background: #f97316;
+    border-radius: 0 4px 4px 0;
+  }
+
+  body.acc-menu-open .acc-side-logout {
+    color: #fecaca;
+  }
+
+  .acc-menu-shade {
+    display: none;
+  }
+
+  body.acc-menu-open .acc-menu-shade {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: block;
+    background: rgba(17, 24, 39, 0.45);
+  }
+}
+
+@media (min-width: 1024px) {
+  .acc-menu-shade {
+    display: none !important;
+  }
+}
+
+/* แถบล่าง: จำนวนช่องตามเมนูที่มีสิทธิ์ (JS ตั้ง grid-template-columns) */
+.acc-tabbar:empty {
+  display: none;
+}
+
+/* หน้าบัญชี > สรุปผลรวม: ตัวเลือกแยกสรุป + ส่งออก */
+.acc-summary-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+@media (max-width: 759px) {
+  .acc-summary-tools {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .acc-summary-tools .btn {
+    flex: 1;
+  }
+}

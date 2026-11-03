@@ -37,32 +37,7 @@
 
     <div class="acc-layout">
       <!-- เมนูซ้าย (คอมพิวเตอร์) -->
-      <nav class="acc-side" aria-label="เมนูฝ่ายบัญชี">
-        <div class="acc-side-group">
-          <span class="acc-side-title">เมนูหลัก</span>
-          <button type="button" class="acc-side-item is-active" data-nav="data"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span>ข้อมูลของเสีย</span></button>
-          <button type="button" class="acc-side-item" data-nav="dash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16v-5M12 16V7M17 16v-8" /></svg><span>Dashboard ของเสีย</span></button>
-          <button type="button" class="acc-side-item" data-nav="summary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 10h16M4 15h10M4 20h7" /></svg><span>สรุปผลรวม</span></button>
-          <button type="button" class="acc-side-item" data-nav="pending"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z" /></svg><span>รายการรอตรวจ</span></button>
-          <a class="acc-side-item" href="/pages/production-entry.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M9 10v9M15 10v9" /></svg><span>กรอกยอดผลิตทั้งใบ</span></a>
-          <a class="acc-side-item" href="/pages/daily-report.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7" /></svg><span>รายงานประจำวัน</span></a>
-          <a class="acc-side-item" href="/pages/factory-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 5v4M8 15v4" /></svg><span>ตั้งค่าเกณฑ์ของเสีย</span></a>
-          <a class="acc-side-item" href="/pages/loss-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M4 12h10M4 18h10M17 5l3 3-3 3M20 16h-3" /></svg><span>อาการเสีย &amp; ประเภท</span></a>
-          <a class="acc-side-item" href="/pages/dept-groups.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h7v5H3zM14 6h7v5h-7zM8 15h8v5H8zM6.5 11v2h11v-2M12 13v2" /></svg><span>กลุ่มแผนก</span></a>
-        </div>
-        <div class="acc-side-group">
-          <span class="acc-side-title">รายงาน</span>
-          <button type="button" class="acc-side-item" onclick="exportAccountingExcel()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM5 10h14M5 15h14M11 4v16" /></svg><span>ส่งออก Excel</span></button>
-          <button type="button" class="acc-side-item" onclick="exportAccountingSummaryPDF()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5" /></svg><span>ออกรายงาน PDF</span></button>
-          <button type="button" class="acc-side-item" onclick="printAccountingSummary()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5M7 17H5v-6h14v6h-2M8 14h8v6H8z" /></svg><span>พิมพ์รายงาน</span></button>
-        </div>
-        <div class="acc-side-group" id="accSideOther" hidden>
-          <span class="acc-side-title">ไปหน้าอื่น</span>
-          <a class="acc-side-item" data-role-only="admin management manager executive" href="/index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" /></svg><span>Dashboard ผู้บริหาร</span></a>
-          <a class="acc-side-item" data-role-only="admin" href="/pages/admin-panel.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg><span>หน้าแอดมิน</span></a>
-        </div>
-        <button type="button" class="acc-side-item acc-side-logout" onclick="logoutAccounting()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg><span>ออกจากระบบ</span></button>
-      </nav>
+      <nav class="acc-side" aria-label="เมนู"><!-- เมนูสร้างจาก js/accounting/accountingSimpleNav.js (ชุดเดียวทุกหน้า) --></nav>
 
       <main class="acc-main">
         <!-- ตัวกรอง -->
@@ -125,12 +100,17 @@
               <h2 id="summaryTableTitle">สรุปผลรวมแยกตามแผนก / สินค้า</h2>
               <p class="muted"><span id="summaryDeptBadge">แผนก: ทั้งหมด</span></p>
             </div>
-            <select id="summaryGroupType" class="filter-select acc-inline-select" aria-label="แยกสรุปตาม">
-              <option value="dept">แยกตามแผนก / สินค้า</option>
-              <option value="group" hidden>ตามกลุ่มแผนก (รวมกลุ่ม + แผนกย่อย)</option>
-              <option value="machine">แยกตามเครื่องจักร</option>
-              <option value="problem">แยกตามประเภทปัญหา</option>
-            </select>
+            <div class="acc-summary-tools">
+              <select id="summaryGroupType" class="filter-select acc-inline-select" aria-label="แยกสรุปตาม">
+                <option value="dept">แยกตามแผนก / สินค้า</option>
+                <option value="group" hidden>ตามกลุ่มแผนก (รวมกลุ่ม + แผนกย่อย)</option>
+                <option value="machine">แยกตามเครื่องจักร</option>
+                <option value="problem">แยกตามประเภทปัญหา</option>
+              </select>
+              <button type="button" class="btn light btn-sm" onclick="exportAccountingExcel()">ส่งออก Excel</button>
+              <button type="button" class="btn light btn-sm" onclick="exportAccountingSummaryPDF()">PDF</button>
+              <button type="button" class="btn light btn-sm" onclick="printAccountingSummary()">พิมพ์</button>
+            </div>
           </div>
           <div class="table-responsive">
             <table class="data-table acc-table summary-month-table" id="summaryTable">
@@ -290,13 +270,7 @@
     </div>
 
     <!-- แถบไอคอนด้านล่าง (จอเล็กกว่าคอม) -->
-    <nav class="fm-tabbar acc-tabbar" aria-label="เมนูฝ่ายบัญชี">
-      <button type="button" class="fm-tab is-active" data-nav="data"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span class="fm-tab-label">ข้อมูล</span></button>
-      <button type="button" class="fm-tab" data-nav="dash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16v-5M12 16V7M17 16v-8" /></svg><span class="fm-tab-label">Dashboard</span></button>
-      <button type="button" class="fm-tab" data-nav="pending"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z" /></svg><span class="fm-tab-label">รอตรวจ</span></button>
-      <a class="fm-tab" href="/pages/factory-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 5v4M8 15v4" /></svg><span class="fm-tab-label">ตั้งค่า</span></a>
-      <button type="button" class="fm-tab" onclick="logoutAccounting()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg><span class="fm-tab-label">ออก</span></button>
-    </nav>
+    <nav class="fm-tabbar acc-tabbar" aria-label="เมนูฝ่ายบัญชี"></nav>
 
     <div id="appModal" class="modal hidden">
       <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">

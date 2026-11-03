@@ -45,23 +45,7 @@
     </header>
 
     <div class="acc-layout">
-      <nav class="acc-side" aria-label="เมนูผู้บริหาร">
-        <div class="acc-side-group">
-          <span class="acc-side-title">เมนูหลัก</span>
-          <a class="acc-side-item is-active" aria-current="page" href="/index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" /></svg><span>ภาพรวมของเสีย</span></a>
-          <a class="acc-side-item" href="/pages/daily-report.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7" /></svg><span>รายงานประจำวัน</span></a>
-          <button type="button" class="acc-side-item" data-nav="data" data-role-only="admin management"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span>ข้อมูลของเสีย</span></button>
-          <button type="button" class="acc-side-item" data-nav="summary" data-role-only="admin management"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 10h16M4 15h10M4 20h7" /></svg><span>สรุปผลรวม</span></button>
-        </div>
-        <div class="acc-side-group" id="accSideOther" hidden>
-          <span class="acc-side-title">ตั้งค่า</span>
-          <a class="acc-side-item" data-role-only="admin management" href="/pages/loss-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M4 12h10M4 18h10M17 5l3 3-3 3M20 16h-3" /></svg><span>อาการเสีย &amp; ประเภท</span></a>
-          <a class="acc-side-item" data-role-only="admin management" href="/pages/dept-groups.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h7v5H3zM14 6h7v5h-7zM8 15h8v5H8zM6.5 11v2h11v-2M12 13v2" /></svg><span>กลุ่มแผนก</span></a>
-          <a class="acc-side-item" data-role-only="admin" href="/pages/factory-settings.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 5v4M8 15v4" /></svg><span>ตั้งค่าเกณฑ์ของเสีย</span></a>
-          <a class="acc-side-item" data-role-only="admin" href="/pages/admin-panel.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg><span>หน้าแอดมิน</span></a>
-        </div>
-        <button type="button" class="acc-side-item acc-side-logout" onclick="handleDashboardLogout()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg><span>ออกจากระบบ</span></button>
-      </nav>
+      <nav class="acc-side" aria-label="เมนู"><!-- เมนูสร้างจาก js/accounting/accountingSimpleNav.js (ชุดเดียวทุกหน้า) --></nav>
 
       <main class="acc-main">
         <!-- ================= ตัวกรอง ================= -->
@@ -219,12 +203,7 @@
       </main>
     </div>
 
-    <nav class="fm-tabbar acc-tabbar" aria-label="เมนู">
-      <a class="fm-tab is-active" aria-current="page" href="/index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" /></svg><span class="fm-tab-label">ภาพรวม</span></a>
-      <a class="fm-tab" href="/pages/daily-report.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7" /></svg><span class="fm-tab-label">รายงาน</span></a>
-      <button type="button" class="fm-tab" data-nav="data" data-role-only="admin management"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span class="fm-tab-label">ข้อมูล</span></button>
-      <button type="button" class="fm-tab" onclick="handleDashboardLogout()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg><span class="fm-tab-label">ออก</span></button>
-    </nav>
+    <nav class="fm-tabbar acc-tabbar" aria-label="เมนู"></nav>
 
     <!-- ================= หน้าต่างข้อมูลเครื่อง ================= -->
     <div id="machine-info-modal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" style="display: none">
@@ -397,79 +376,16 @@
       </div>
     </div>
 
-    <!-- ปุ่มสแกน QR เครื่อง -->
-    <button id="btn-floating-scan-qr" class="floating-scan-qr-btn" type="button" aria-label="สแกน QR ประจำเครื่องจักร" title="สแกน QR เครื่องจักร">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5M8 12h8" /></svg>
-      <span class="scan-qr-label">สแกน QR เครื่อง</span>
-    </button>
-
-    <!-- ================= หน้าต่างสแกน QR ================= -->
-    <div id="qr-scan-modal" class="modal-backdrop qr-scan-modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" style="display: none">
-      <div class="modal-dialog qr-scan-dialog">
-        <header class="modal-header">
-          <div class="modal-title-group">
-            <div>
-              <div class="modal-eyebrow">สแกนเครื่อง</div>
-              <h2 class="modal-title">สแกน QR Code เครื่องจักร</h2>
-            </div>
-          </div>
-          <button type="button" id="btn-close-qr-scan" class="modal-close-btn" aria-label="ปิดหน้าต่างสแกน QR">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
-          </button>
-        </header>
-
-        <div class="modal-body qr-scan-body">
-          <div id="qr-scan-status" class="qr-scan-status-pill status-info">
-            <span class="status-indicator-dot"></span>
-            <span id="qr-scan-status-text">กำลังเปิดกล้อง...</span>
-          </div>
-
-          <div class="qr-viewfinder-wrapper">
-            <div id="qr-camera-stream" class="qr-camera-container"></div>
-            <div class="qr-hud-overlay" id="qr-hud-overlay">
-              <div class="qr-target-box">
-                <span class="corner-marker top-left"></span>
-                <span class="corner-marker top-right"></span>
-                <span class="corner-marker bottom-left"></span>
-                <span class="corner-marker bottom-right"></span>
-                <div class="qr-laser-line"></div>
-              </div>
-              <div class="qr-hud-instruction">จัด QR Code ให้อยู่ในกรอบ</div>
-            </div>
-          </div>
-
-          <div class="qr-toolbar-actions">
-            <button type="button" id="btn-toggle-camera-facing" class="btn light btn-sm qr-action-btn" style="display: none"><span>สลับกล้อง</span></button>
-            <button type="button" id="btn-toggle-camera-torch" class="btn light btn-sm qr-action-btn" style="display: none"><span>เปิดไฟฉาย</span></button>
-            <label for="qr-file-input" class="btn light btn-sm qr-action-btn qr-file-label">เลือกรูป QR</label>
-            <input type="file" id="qr-file-input" accept="image/*" hidden />
-          </div>
-
-          <div class="qr-manual-fallback">
-            <div class="qr-manual-divider"><span>หรือเลือกเครื่องจากรายการ</span></div>
-            <div class="qr-manual-row">
-              <select id="qr-quick-machine-select" class="qr-quick-select">
-                <option value="">-- เลือกเครื่อง --</option>
-              </select>
-              <button type="button" id="btn-qr-open-selected-machine" class="btn primary qr-quick-open-btn">เปิดข้อมูล</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div id="dashboard-toast" class="toast hidden" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- กราฟ: ระบุเวอร์ชันเต็ม (ไม่ต้องรอ CDN หาเวอร์ชันล่าสุดทุกครั้ง และแคชได้นาน) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-    <!-- ไลบรารีสแกน QR (~370KB) โหลดเมื่อกดปุ่มสแกนครั้งแรกเท่านั้น -->
     <script src="/core/supabaseClient.js"></script>
     <script src="/core/supabaseFetch.js"></script>
     <script src="/auth/authGuard.js"></script>
     <script src="/core/wasteFormula.js"></script>
     <script src="/js/dashboard/index.js"></script>
-    <script src="/js/dashboard/qr-machine-scanner.js"></script>
     <script src="/js/accounting/accountingSimpleNav.js"></script>
   </body>
 </html>

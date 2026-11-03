@@ -1494,7 +1494,45 @@ function closeMachineInfoModal() {
    CREATE MAINTENANCE TICKET LOGIC
 ========================================================= */
 
+// ใบแจ้งซ่อม: เปิดใช้ในเวอร์ชันถัดไป — ตอนนี้กดแล้วแจ้งว่ากำลังพัฒนา
+// (เปลี่ยนเป็น true เมื่อพร้อมใช้งาน ฟอร์มและการบันทึกเดิมยังอยู่ครบ)
+const TICKET_ENABLED = false;
+
+function showComingSoon(title, message) {
+  document.getElementById("xd-coming-soon")?.remove();
+  const box = document.createElement("div");
+  box.id = "xd-coming-soon";
+  box.className = "modal-backdrop xd-soon";
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-modal", "true");
+  box.innerHTML = `
+    <div class="modal-dialog xd-soon-dialog">
+      <div class="modal-body xd-soon-body">
+        <div class="xd-soon-icon" aria-hidden="true">${uiIcon("schedule", 28)}</div>
+        <h2 class="modal-title">${escapeHTML(title)}</h2>
+        <p>${escapeHTML(message)}</p>
+        <button type="button" class="btn primary" data-close>ตกลง</button>
+      </div>
+    </div>`;
+  const close = () => box.remove();
+  box.addEventListener("click", (e) => {
+    if (e.target === box || e.target.closest("[data-close]")) close();
+  });
+  document.addEventListener("keydown", function onKey(e) {
+    if (e.key === "Escape") {
+      close();
+      document.removeEventListener("keydown", onKey);
+    }
+  });
+  document.body.appendChild(box);
+  box.querySelector("[data-close]").focus();
+}
+
 function openCreateTicketModal() {
+  if (!TICKET_ENABLED) {
+    showComingSoon("อยู่ระหว่างพัฒนา", "ระบบเปิดใบแจ้งซ่อมจะเปิดใช้ในเวอร์ชันถัดไปค่ะ");
+    return;
+  }
   const ticketModal = document.getElementById("create-ticket-modal");
   if (!ticketModal) return;
 

@@ -293,3 +293,14 @@
     text-align: right;
   }
 }
+
+/* จอเล็กมีแถบเมนูล่าง: ให้แถบบันทึกอยู่เหนือแถบเมนู */
+@media (max-width: 1023px) {
+  .pe-savebar {
+    bottom: calc(var(--bar-h) + 10px + var(--safe-b, 0px));
+  }
+
+  .pe .acc-main {
+    padding-bottom: calc(var(--bar-h) + 24px + var(--safe-b, 0px));
+  }
+}
