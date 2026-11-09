@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>กลุ่มแผนก - PVT&amp;T FACTORY</title>
+
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="icon" type="image/png" href="/icons/logo-header.png" />
+    <link rel="apple-touch-icon" href="/icons/Logo_Apps3.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#ffffff" />
+
+    <link rel="stylesheet" href="/css/form-mobile.css" />
+    <link rel="stylesheet" href="/css/review-simple.css" />
+    <link rel="stylesheet" href="/css/accounting-simple.css" />
+    <link rel="stylesheet" href="/css/settings-simple.css" />
+    <link rel="stylesheet" href="/css/loss-settings.css" />
+    <link rel="stylesheet" href="/css/dept-groups.css" />
+    <script src="/js/department/formSettings.js"></script>
+  </head>
+
+  <body class="rv acc fs ls dg">
+    <header class="fm-top rv-top acc-top">
+      <img class="fm-logo" src="/icons/logo-header.png" width="42" height="37" alt="PVT&amp;T FACTORY" />
+      <div class="fm-top-title">
+        <h1>กลุ่มแผนก</h1>
+        <p><span id="lbl-active-user">-</span> · <span id="lbl-active-role">-</span></p>
+      </div>
+      <button type="button" id="btn-refresh" class="fm-icon-btn" aria-label="โหลดข้อมูลล่าสุด" title="โหลดข้อมูลล่าสุด">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5" /></svg>
+      </button>
+      <button type="button" class="fm-icon-btn" onclick="FORM_SETTINGS.open()" aria-label="ตั้งค่าตัวอักษร" title="ตั้งค่าตัวอักษร">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19l5-14h2l5 14M6.5 13h7" /><path d="M17 11h4M19 9v4" /></svg>
+      </button>
+    </header>
+
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <div class="acc-layout">
+      <nav class="acc-side" aria-label="เมนู"><!-- เมนูสร้างจาก js/accounting/accountingSimpleNav.js (ชุดเดียวทุกหน้า) --></nav>
+
+      <main class="acc-main" id="dg-app">
+        <section class="fs-info ls-info">
+          <div class="rv-stat">
+            <span>กลุ่มแผนก</span>
+            <strong>รวมหลายแผนกเป็นกลุ่ม</strong>
+            <small>เช่น กลุ่มตัด = ตัดเจาะ + ตัดถุงขยะ · แผนกย่อยยังใช้อาการ/เกณฑ์ของตัวเอง</small>
+          </div>
+          <div class="rv-stat">
+            <span>รายงาน</span>
+            <strong>ดูได้ 2 ระดับ</strong>
+            <small>แผนกย่อย และ "รวมทั้งกลุ่ม" ที่ประเมินด้วยเกณฑ์ของกลุ่ม</small>
+          </div>
+          <div class="rv-stat">
+            <span>ย้ายแผนก</span>
+            <strong>เปลี่ยนได้ตลอด</strong>
+            <small>ไม่ต้องย้ายข้อมูล · รายงานย้อนหลังจัดกลุ่มตามที่ตั้งไว้ล่าสุด</small>
+          </div>
+        </section>
+
+        <div id="alert-box" class="alert-box" hidden></div>
+
+        <section class="rv-card dg-add-card">
+          <form class="dg-add" id="form-add" autocomplete="off">
+            <input type="text" id="new-name" placeholder="ชื่อกลุ่มใหม่ เช่น กลุ่มตัด" maxlength="80" required aria-label="ชื่อกลุ่มใหม่" />
+            <button type="submit" class="btn primary" id="btn-add">สร้างกลุ่ม</button>
+          </form>
+        </section>
+
+        <div id="dg-list" class="dg-list"><p class="ls-empty">กำลังโหลด...</p></div>
+
+        <section class="rv-card dg-free">
+          <h2>แผนกที่ยังไม่อยู่กลุ่ม</h2>
+          <div id="dg-free" class="dg-chips"><span class="ls-muted">-</span></div>
+        </section>
+      </main>
+    </div>
+
+    <nav class="fm-tabbar acc-tabbar" aria-label="เมนูฝ่ายบัญชี"></nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/core/supabaseClient.js"></script>
+    <script src="/auth/authGuard.js"></script>
+    <script src="/core/roleConfig.js"></script>
+    <script src="/js/accounting/dept-groups.js"></script>
+    <script src="/js/accounting/accountingSimpleNav.js"></script>
+  </body>
+</html>

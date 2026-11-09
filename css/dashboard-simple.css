@@ -1,0 +1,363 @@
+/* ==========================================================
+   dashboard-simple.css — Dashboard ของเสีย (pages/supervisor-dashboard.html)
+   ใช้ต่อจาก form-mobile.css + review-simple.css (แถบหัว แถบล่าง การ์ด ปุ่ม หน้าต่าง)
+   มือถือ: ตัวเลข 2 คอลัมน์ กราฟเรียงลงมา
+   แท็บเล็ต: ตัวเลข 3 คอลัมน์ กราฟ 2 คอลัมน์
+   จอใหญ่: ตัวเลข 6 ช่องแถวเดียว กราฟ 2 คอลัมน์ (กราฟรายวันเต็มแถว)
+   ========================================================== */
+
+/* ---------- ช่วงวันที่ ---------- */
+.db-filter {
+  grid-template-columns: 1fr 1fr;
+}
+
+.quick-dates {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.quick-date-btn {
+  min-height: 40px;
+  padding: 0 6px;
+  color: var(--text);
+  font-size: calc(14px * var(--fs, 1));
+  white-space: nowrap;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.quick-date-btn.active {
+  color: var(--primary);
+  font-weight: 700;
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+/* ---------- ตัวเลขสรุป ---------- */
+.db-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.db-kpi {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.db-kpi > span,
+.db-kpi > small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.db-kpi > strong {
+  overflow: hidden;
+  font-size: calc(20px * var(--fs, 1));
+  line-height: 1.35;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.kpi-compare-badge {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+  line-height: 1.4;
+}
+
+.kpi-compare-badge:empty {
+  display: none;
+}
+
+.kpi-compare-badge.better {
+  color: var(--ok);
+}
+
+.kpi-compare-badge.worse {
+  color: var(--danger);
+}
+
+.kpi-arrow {
+  font-weight: 700;
+}
+
+/* ---------- กราฟ ---------- */
+.db-charts {
+  display: grid;
+  gap: 12px;
+}
+
+.db-chart {
+  min-width: 0;
+}
+
+.db-chart h2 {
+  margin: 0 0 8px;
+  font-size: calc(16px * var(--fs, 1));
+}
+
+.db-chart-box {
+  position: relative;
+  height: 240px;
+}
+
+/* ---------- % ของเสียรายเครื่อง ---------- */
+.top-list {
+  display: grid;
+  gap: 14px;
+}
+
+.dept-machine-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.dept-machine-title {
+  color: var(--muted);
+  font-size: calc(14px * var(--fs, 1));
+  font-weight: 700;
+}
+
+.top-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  border-radius: 10px;
+}
+
+.top-item.machine-danger {
+  border-left-color: var(--danger);
+}
+
+.top-item.machine-warning {
+  border-left-color: #e0a63b;
+}
+
+.top-item.machine-normal {
+  border-left-color: var(--ok);
+}
+
+.top-item > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.top-item small {
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+/* % อยู่มุมขวาบน ตัวเลขรายละเอียดเต็มบรรทัดล่าง */
+.top-item > div:first-child {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.top-item > .top-value {
+  display: contents;
+}
+
+.top-value strong {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: calc(18px * var(--fs, 1));
+  text-align: right;
+}
+
+.top-value small {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+.machine-danger .top-value strong {
+  color: var(--danger);
+}
+
+.empty-state {
+  padding: 16px 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ---------- หน้าต่างสแกน QR ---------- */
+.db-scan .modal-card {
+  max-width: 480px;
+}
+
+.qr-scan-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: calc(14px * var(--fs, 1));
+}
+
+.status-indicator-dot {
+  width: 8px;
+  height: 8px;
+  background: #9ca3af;
+  border-radius: 50%;
+}
+
+.qr-scan-status-pill.status-active .status-indicator-dot,
+.qr-scan-status-pill.status-success .status-indicator-dot {
+  background: var(--ok);
+}
+
+.qr-scan-status-pill.status-error {
+  color: var(--danger);
+}
+
+.qr-scan-status-pill.status-error .status-indicator-dot {
+  background: var(--danger);
+}
+
+.qr-viewfinder-wrapper {
+  position: relative;
+  overflow: hidden;
+  min-height: 220px;
+  background: #111827;
+  border-radius: 12px;
+}
+
+.qr-camera-container,
+.qr-camera-container video {
+  width: 100% !important;
+  border-radius: 12px;
+}
+
+.qr-hud-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.qr-target-box {
+  width: 60%;
+  aspect-ratio: 1;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 14px;
+}
+
+.qr-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.qr-action-btn.active {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.db-scan-or {
+  margin: 14px 0 6px;
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.db-scan-manual {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.db-scan-manual .btn {
+  min-height: 48px;
+}
+
+/* ---------- แท็บเล็ต ---------- */
+@media (min-width: 600px) {
+  .db-filter {
+    grid-template-columns: 1fr 1fr 2fr;
+    align-items: end;
+  }
+
+  .quick-dates {
+    grid-column: auto;
+  }
+
+  .quick-date-btn {
+    min-height: 48px;
+  }
+
+  .db-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .db-kpi > strong {
+    font-size: calc(22px * var(--fs, 1));
+  }
+
+  .db-charts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .db-chart-wide {
+    grid-column: 1 / -1;
+  }
+
+  /* แท็บเล็ต: กราฟเครื่องจักรเต็มแถว แล้วปัญหา + สถานะ คู่กัน */
+  .db-chart-machine {
+    grid-column: 1 / -1;
+  }
+
+  .db-chart-box {
+    height: 280px;
+  }
+
+  .dept-machine-group {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 8px;
+  }
+
+  .dept-machine-title {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------- จอใหญ่ ---------- */
+@media (min-width: 1024px) {
+  .db-filter {
+    grid-template-columns: 200px 200px minmax(0, 420px);
+  }
+
+  .db-kpis {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .db-charts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .db-chart-machine {
+    grid-column: auto;
+  }
+
+  .db-chart-box {
+    height: 300px;
+  }
+}

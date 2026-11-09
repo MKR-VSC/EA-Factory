@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>อาการเสีย &amp; ประเภท - PVT&amp;T FACTORY</title>
+
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="icon" type="image/png" href="/icons/logo-header.png" />
+    <link rel="apple-touch-icon" href="/icons/Logo_Apps3.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#ffffff" />
+
+    <link rel="stylesheet" href="/css/form-mobile.css" />
+    <link rel="stylesheet" href="/css/review-simple.css" />
+    <link rel="stylesheet" href="/css/accounting-simple.css" />
+    <link rel="stylesheet" href="/css/settings-simple.css" />
+    <link rel="stylesheet" href="/css/loss-settings.css" />
+    <script src="/js/department/formSettings.js"></script>
+  </head>
+
+  <body class="rv acc fs ls">
+    <header class="fm-top rv-top acc-top">
+      <img class="fm-logo" src="/icons/logo-header.png" width="42" height="37" alt="PVT&amp;T FACTORY" />
+      <div class="fm-top-title">
+        <h1>อาการเสีย &amp; ประเภท</h1>
+        <p><span id="lbl-active-user">-</span> · <span id="lbl-active-role">-</span></p>
+      </div>
+      <button type="button" id="btn-refresh" class="fm-icon-btn" aria-label="โหลดข้อมูลล่าสุด" title="โหลดข้อมูลล่าสุด">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5" /></svg>
+      </button>
+      <button type="button" class="fm-icon-btn" onclick="FORM_SETTINGS.open()" aria-label="ตั้งค่าตัวอักษร" title="ตั้งค่าตัวอักษร">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19l5-14h2l5 14M6.5 13h7" /><path d="M17 11h4M19 9v4" /></svg>
+      </button>
+    </header>
+
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <div class="acc-layout">
+      <nav class="acc-side" aria-label="เมนู"><!-- เมนูสร้างจาก js/accounting/accountingSimpleNav.js (ชุดเดียวทุกหน้า) --></nav>
+
+      <main class="acc-main" id="loss-app">
+        <section class="fs-info ls-info">
+          <div class="rv-stat ls-type-card is-production">
+            <span>ประเภท 1</span>
+            <strong>สูญเสียจากการผลิต</strong>
+            <small>ของเสียจากปัญหาระหว่างผลิต เช่น ทะลุ ตกใบมีด น้ำหนักไม่ถึง</small>
+          </div>
+          <div class="rv-stat ls-type-card is-forced">
+            <span>ประเภท 2</span>
+            <strong>สูญเสียบังคับ</strong>
+            <small>ของเสียที่เลี่ยงไม่ได้จากการทำงาน เช่น เปลี่ยนไซร้ เดินเครื่องใหม่ ไฟดับ</small>
+          </div>
+          <div class="rv-stat">
+            <span>เมื่อเปลี่ยนประเภท</span>
+            <strong id="apply-scope">มีผลกับรายการใหม่</strong>
+            <small id="apply-note">รายงานที่บันทึกไปแล้วคงประเภทเดิม · หัวหน้าเปลี่ยนรายรายการได้ที่หน้าตรวจสอบรายวัน</small>
+          </div>
+        </section>
+
+        <div id="alert-box" class="alert-box" hidden></div>
+
+        <section class="rv-card ls-panel">
+          <div class="ls-depts" id="dept-chips" role="tablist" aria-label="เลือกแผนก">
+            <span class="ls-muted">กำลังโหลดแผนก...</span>
+          </div>
+
+          <div class="ls-toolbar">
+            <div class="ls-filter" role="group" aria-label="กรองตามประเภท">
+              <button type="button" class="ls-filter-btn is-active" data-filter="all">ทั้งหมด <b id="cnt-all">0</b></button>
+              <button type="button" class="ls-filter-btn" data-filter="production">การผลิต <b id="cnt-production">0</b></button>
+              <button type="button" class="ls-filter-btn" data-filter="forced">บังคับ <b id="cnt-forced">0</b></button>
+            </div>
+            <div class="fs-search ls-search">
+              <input type="search" id="input-search" placeholder="ค้นหาอาการ..." autocomplete="off" aria-label="ค้นหาอาการ" />
+            </div>
+          </div>
+
+          <form class="ls-add" id="form-add" autocomplete="off">
+            <input type="text" id="new-name" placeholder="ชื่ออาการใหม่ เช่น หลอดสั้น" maxlength="120" required aria-label="ชื่ออาการใหม่" />
+            <select id="new-type" aria-label="ประเภทของอาการใหม่">
+              <option value="production">สูญเสียจากการผลิต</option>
+              <option value="forced">สูญเสียบังคับ</option>
+            </select>
+            <button type="submit" class="btn primary" id="btn-add">เพิ่มอาการ</button>
+          </form>
+
+          <div class="ls-head" aria-hidden="true">
+            <span>ลำดับ</span><span>อาการ</span><span>ประเภท</span><span>ใช้งาน</span><span></span>
+          </div>
+          <div class="ls-list" id="problem-list">
+            <p class="ls-empty">กำลังโหลด...</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <nav class="fm-tabbar acc-tabbar" aria-label="เมนูฝ่ายบัญชี"></nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/core/supabaseClient.js"></script>
+    <script src="/auth/authGuard.js"></script>
+    <script src="/core/roleConfig.js"></script>
+    <script src="/js/accounting/loss-settings.js"></script>
+    <script src="/js/accounting/accountingSimpleNav.js"></script>
+  </body>
+</html>

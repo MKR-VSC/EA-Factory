@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 import { corsHeaders } from "../_shared/cors.ts";
 import { ok, fail } from "../_shared/response.ts";
-import { requireAdmin } from "../_shared/auth.ts";
+import { requireAdmin, HttpError } from "../_shared/auth.ts";
+import { normalizeDept, normalizeRole, normalizeStatus, readJson } from "../_shared/validate.ts";
 
 serve(async (req) => {
   try {
@@ -14,17 +15,17 @@ serve(async (req) => {
       return fail("Method not allowed", 405);
     }
 
-    const { admin, user } = await requireAdmin(req);
-    const body = await req.json();
+    const { admin, user, profile: actor } = await requireAdmin(req);
+    const body = await readJson(req);
 
     const userId = String(body.user_id || "").trim();
     const username = String(body.username || "").trim().toUpperCase();
     const display_name = String(body.display_name || username).trim();
     const full_name = String(body.full_name || display_name || username).trim();
-    const department = String(body.department || "").trim().toUpperCase();
-    const department_code = String(body.department_code || department).trim().toUpperCase();
-    const role = String(body.role || "staff").trim().toLowerCase();
-    const status = String(body.status || "active").trim().toLowerCase();
+    const department = normalizeDept(body.department);
+    const department_code = normalizeDept(body.department_code) || department;
+    const role = normalizeRole(body.role);
+    const status = normalizeStatus(body.status);
     const password = String(body.password || "").trim();
 
     if (!userId) return fail("ไม่พบ user_id");
@@ -32,6 +33,25 @@ serve(async (req) => {
 
     if (user.id === userId && status !== "active") {
       return fail("ไม่สามารถปิดใช้งาน User ที่กำลัง Login อยู่ได้");
+    }
+
+    const { data: target, error: targetError } = await admin
+      .from("profiles")
+      .select("id, role, is_system_owner")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (targetError) return fail(targetError.message);
+    if (!target) return fail("ไม่พบผู้ใช้งาน", 404);
+
+    // admin ทั่วไปแก้บัญชี system owner ไม่ได้
+    if (target.is_system_owner === true && actor.is_system_owner !== true && user.id !== userId) {
+      return fail("ไม่มีสิทธิ์แก้ไขบัญชีเจ้าของระบบ", 403);
+    }
+
+    // กันล็อกตัวเองออกจากหน้า Admin (ลด role ตัวเองจาก admin)
+    if (user.id === userId && role !== "admin" && actor.is_system_owner !== true) {
+      return fail("ไม่สามารถเปลี่ยน Role ของตัวเองออกจาก admin ได้");
     }
 
     const email = String(body.email || `${username.toLowerCase()}@pvt.local`)
@@ -114,7 +134,7 @@ serve(async (req) => {
   } catch (err) {
     return fail(
       err instanceof Error ? err.message : "เกิดข้อผิดพลาด",
-      500
+      err instanceof HttpError ? err.status : 500
     );
   }
 });

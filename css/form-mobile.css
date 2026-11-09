@@ -1,0 +1,824 @@
+/* ==========================================================
+   form-mobile.css — หน้าบันทึกของเสีย (pages/form-department.html)
+   แนวคิด: เรียบ อ่านง่าย สีน้อย โหลดเร็ว
+   - ใช้ฟอนต์ไทยที่มีในเครื่อง (ไม่โหลดฟอนต์จากเน็ต)
+   - สีหลักสีเดียว (น้ำเงินเข้ม) ใช้กับปุ่มบันทึกและช่องที่กำลังกรอก
+   - สีแดงใช้เฉพาะตอนกรอกไม่ครบหลังกดบันทึก
+   ========================================================== */
+
+:root {
+  --bg: #f4f5f7;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --line: #d9dde3;
+  --primary: #1e3a8a;
+  --primary-soft: #eef2fb;
+  --danger: #c62828;
+  --ok: #2e7d32;
+  --radius: 12px;
+  --bar-h: calc(68px * var(--fs, 1));
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --fs: 1;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font, system-ui, -apple-system, "Segoe UI", "Noto Sans Thai", "Leelawadee UI", Tahoma, sans-serif);
+  font-size: calc(16px * var(--fs, 1));
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+[hidden],
+.hidden {
+  display: none !important;
+}
+
+/* ---------- แถบหัว ---------- */
+.fm-top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 56px;
+  padding: env(safe-area-inset-top, 0px) 4px 0;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+}
+
+.fm-logo {
+  flex: none;
+  width: auto;
+  height: 36px;
+  margin: 0 2px 0 4px;
+}
+
+.fm-top-title {
+  flex: 1;
+  min-width: 0;
+  padding: 0 4px;
+}
+
+.fm-top-title h1 {
+  margin: 0;
+  font-size: calc(18px * var(--fs, 1));
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.fm-top-title p {
+  margin: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fm-icon-btn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.fm-icon-btn:active {
+  background: var(--bg);
+}
+
+.fm-icon-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fm-net {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.fm-net::before {
+  width: 8px;
+  height: 8px;
+  content: "";
+  background: var(--ok);
+  border-radius: 50%;
+}
+
+.fm-net.is-offline {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.fm-net.is-offline::before {
+  background: var(--danger);
+}
+
+/* ---------- เนื้อหา ---------- */
+.fm-main {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 12px 12px calc(var(--bar-h) + 24px + var(--safe-b));
+}
+
+.fm-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.fm-user-label {
+  color: var(--muted);
+  font-size: calc(14px * var(--fs, 1));
+}
+
+.fm-user strong {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fm-link {
+  color: var(--primary);
+  font-size: calc(14px * var(--fs, 1));
+  font-weight: 600;
+}
+
+.fm-qr {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  background: var(--primary-soft);
+  border-radius: var(--radius);
+}
+
+.fm-qr div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fm-qr span {
+  color: var(--muted);
+}
+
+.fm-card {
+  padding: 4px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.fm-field {
+  padding: 12px 0;
+}
+
+.fm-field + .fm-field {
+  border-top: 1px solid #eef0f3;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: calc(15px * var(--fs, 1));
+  font-weight: 600;
+}
+
+label b,
+label .required {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  font-size: calc(16px * var(--fs, 1)); /* 16px ขึ้นไป iPhone จะไม่ซูมหน้าเอง */
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+select {
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 10px center;
+  background-repeat: no-repeat;
+  background-size: 20px;
+}
+
+textarea {
+  min-height: 48px;
+  resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12);
+}
+
+input:disabled,
+select:disabled,
+.qr-locked-field {
+  color: var(--text);
+  background-color: #f1f3f5;
+  opacity: 1;
+}
+
+/* แสดงสีแดงเฉพาะหลังกดบันทึกแล้วยังกรอกไม่ครบ */
+.was-validated .field-unfilled {
+  border-color: var(--danger);
+  background-color: #fff8f8;
+}
+
+.field-attention-shake {
+  animation: fm-shake 0.3s;
+}
+
+@keyframes fm-shake {
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* ---------- รายการปัญหา ---------- */
+.fm-section {
+  margin: 20px 2px 8px;
+  font-size: calc(15px * var(--fs, 1));
+  font-weight: 700;
+}
+
+.fm-problems {
+  display: grid;
+  gap: 10px;
+}
+
+.problem-item {
+  padding: 12px 14px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  scroll-margin: 72px 0 calc(var(--bar-h) + 16px);
+}
+
+.problem-item.is-active {
+  border-color: var(--primary);
+}
+
+.problem-item.needs-attention {
+  border-color: var(--danger);
+}
+
+.problem-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.problem-item-head strong {
+  font-size: calc(15px * var(--fs, 1));
+}
+
+.problem-item-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.problem-item-status {
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.problem-item.is-complete .problem-item-status {
+  color: var(--ok);
+}
+
+.btn-remove-problem {
+  min-height: 36px;
+  padding: 0 10px;
+  color: var(--danger);
+  font-size: calc(14px * var(--fs, 1));
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-remove-problem:active {
+  background: #fdecec;
+}
+
+.problem-item-grid {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 10px;
+}
+
+.problem-item-grid > div,
+.problem-detail-wrap {
+  min-width: 0;
+}
+
+.problem-detail-wrap {
+  margin-top: 10px;
+}
+
+.problem-mini-label {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+  font-weight: 600;
+}
+
+.problem-weight-input {
+  text-align: right;
+}
+
+.problem-item-inline-message {
+  margin-top: 8px;
+  color: var(--danger);
+  font-size: calc(14px * var(--fs, 1));
+}
+
+.field-status-pill,
+.problem-field-pill {
+  display: none !important;
+}
+
+/* ---------- ปุ่ม ---------- */
+.fm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 18px;
+  font-size: calc(16px * var(--fs, 1));
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.fm-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.fm-btn-primary {
+  color: #fff;
+  background: var(--primary);
+}
+
+.fm-btn-primary:active {
+  background: #172e6e;
+}
+
+.fm-btn-outline {
+  width: 100%;
+  margin-top: 10px;
+  color: var(--primary);
+  background: var(--card);
+  border: 1px dashed #9aa6bf;
+}
+
+.fm-btn-ghost {
+  color: var(--muted);
+  background: none;
+  border-color: var(--line);
+}
+
+/* ---------- ยอดรวม ---------- */
+.fm-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.fm-total > span {
+  color: var(--muted);
+  font-size: calc(15px * var(--fs, 1));
+}
+
+.fm-total strong {
+  font-size: calc(20px * var(--fs, 1));
+  white-space: nowrap;
+}
+
+/* ---------- แถบไอคอนด้านล่าง ---------- */
+.fm-tabbar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: end;
+  min-height: var(--bar-h);
+  padding: 6px max(4px, calc((100vw - 560px) / 2)) calc(6px + var(--safe-b));
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+
+.fm-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 4px 2px;
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+  line-height: 1.3;
+  text-align: center;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.fm-tab:active {
+  background: var(--bg);
+}
+
+.fm-tab svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fm-tab-label {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ปุ่มบันทึกตรงกลาง: วงกลมสีหลัก ยกขึ้นเล็กน้อย */
+.fm-tab-save {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.fm-tab-save:active {
+  background: none;
+}
+
+.fm-tab-save-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-top: -22px;
+  color: #fff;
+  background: var(--primary);
+  border: 4px solid var(--card);
+  border-radius: 50%;
+}
+
+.fm-tab-save:active .fm-tab-save-icon {
+  background: #172e6e;
+}
+
+.fm-tab-save.is-busy .fm-tab-save-icon {
+  opacity: 0.6;
+}
+
+.fm-tab:disabled {
+  cursor: default;
+}
+
+/* ---------- เมนู / หน้าต่าง ---------- */
+.fm-sheet,
+.fm-modal,
+.fm-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  background: rgba(17, 24, 39, 0.45);
+}
+
+.fm-sheet {
+  align-items: flex-end;
+}
+
+.fm-sheet-panel {
+  display: grid;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 8px 8px calc(8px + var(--safe-b));
+  background: var(--card);
+  border-radius: 16px 16px 0 0;
+}
+
+.fm-sheet-panel:not(.fm-settings) > * {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  text-align: left;
+  font-size: calc(16px * var(--fs, 1));
+  line-height: 52px;
+  color: var(--text);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.fm-sheet-panel:not(.fm-settings) > *:active {
+  background: var(--bg);
+}
+
+.fm-sheet-panel .is-danger {
+  color: var(--danger);
+}
+
+.fm-sheet-panel .fm-sheet-cancel {
+  margin-top: 4px;
+  color: var(--muted);
+  text-align: center;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+}
+
+.fm-modal,
+.fm-loading {
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.fm-modal-box,
+.fm-loading-box {
+  width: 100%;
+  max-width: 400px;
+  padding: 22px 20px 20px;
+  background: var(--card);
+  border-radius: 16px;
+}
+
+.fm-modal-box h3,
+.fm-loading-box h3 {
+  margin: 0 0 4px;
+  font-size: calc(18px * var(--fs, 1));
+}
+
+.fm-modal-box p,
+.fm-loading-box p {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: calc(14px * var(--fs, 1));
+}
+
+.fm-modal-box .fm-btn {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.fm-loading-box {
+  max-width: 280px;
+  text-align: center;
+}
+
+.fm-loading-box p {
+  margin: 0;
+}
+
+.fm-spinner {
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 10px;
+  border: 3px solid #e5e7eb;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: fm-spin 0.8s linear infinite;
+}
+
+@keyframes fm-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ป้าย "รอส่ง n รายการ" (offlineQueue.js) ให้อยู่เหนือแถบล่าง */
+.offline-queue-chip {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--bar-h) + 12px + var(--safe-b));
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100vw - 24px);
+  padding: 6px 6px 6px 14px;
+  color: #fff;
+  font-size: calc(14px * var(--fs, 1));
+  white-space: nowrap;
+  background: #374151;
+  border-radius: 999px;
+  transform: translateX(-50%);
+}
+
+.offline-queue-chip.is-offline {
+  background: #92400e;
+}
+
+.offline-queue-chip.is-failed {
+  background: var(--danger);
+}
+
+.offline-queue-chip .material-symbols-outlined {
+  display: none;
+}
+
+.offline-queue-chip button {
+  min-height: 32px;
+  padding: 0 12px;
+  color: var(--text);
+  font-size: calc(13px * var(--fs, 1));
+  font-weight: 600;
+  background: #fff;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+/* ป้าย DEV (เฉพาะเว็บทดสอบ) ไม่ให้ทับปุ่มเมนู */
+body > div[style*="99999"] {
+  top: auto !important;
+  right: auto !important;
+  bottom: calc(var(--bar-h) + 8px + var(--safe-b)) !important;
+  left: 8px !important;
+  padding: 2px 8px !important;
+  z-index: 15 !important;
+  font-size: calc(11px * var(--fs, 1)) !important;
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (min-width: 600px) {
+  .fm-main {
+    padding-top: 20px;
+  }
+}
+
+/* ---------- ตั้งค่าตัวอักษร (js/department/formSettings.js) ---------- */
+.fm-settings {
+  gap: 0;
+  padding: 16px 16px calc(16px + var(--safe-b));
+}
+
+.fm-settings > * {
+  line-height: 1.5;
+}
+
+.fm-settings h3 {
+  margin: 0 0 4px;
+  font-size: calc(18px * var(--fs, 1));
+}
+
+.fm-settings-label {
+  margin: 12px 0 6px;
+  color: var(--muted);
+  font-size: calc(14px * var(--fs, 1));
+  font-weight: 600;
+}
+
+.fm-seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.fm-seg button,
+.fm-font-list button {
+  min-height: 48px;
+  padding: 0 12px;
+  font-size: calc(16px * var(--fs, 1));
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.fm-font-list {
+  display: grid;
+  gap: 6px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.fm-font-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+}
+
+.fm-font-list small {
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.fm-seg button[aria-checked="true"],
+.fm-font-list button[aria-checked="true"] {
+  color: var(--primary);
+  font-weight: 700;
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+.fm-settings-hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.fm-settings .fm-settings-done {
+  width: 100%;
+  margin-top: 14px;
+  line-height: 1;
+}

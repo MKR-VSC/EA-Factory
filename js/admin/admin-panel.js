@@ -134,7 +134,7 @@ function setButtonBusy(button, busy, loadingText = "กำลังบันท�
   if (busy) {
     const originalHtml = button.dataset.originalHtml || button.innerHTML;
     button.dataset.originalHtml = originalHtml;
-    button.innerHTML = `<span class="material-symbols-outlined">hourglass_top</span> ${loadingText}`;
+    button.innerHTML = `${loadingText}`;
     return;
   }
 
@@ -984,7 +984,7 @@ function renderDepartments() {
                     class="btn btn-icon btn-edit" title="แก้ไข" aria-label="แก้ไข"
                     onclick="editDepartment('${escapeAttr(id)}')"
                   >
-                    <span class="material-symbols-outlined">edit</span>
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/></svg>
                   </button>
 
                   <button
@@ -992,7 +992,7 @@ function renderDepartments() {
                     class="btn btn-icon btn-sort" title="เปลี่ยนลำดับการแสดง" aria-label="เปลี่ยนลำดับการแสดง"
                     onclick="editDepartmentOrder('${escapeAttr(id)}', ${sortOrder})"
                   >
-                    <span class="material-symbols-outlined">sort</span>
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M4 17l3 3 3-3M17 20V4M14 7l3-3 3 3"/></svg>
                   </button>
 
                   <button
@@ -1000,9 +1000,6 @@ function renderDepartments() {
   class="btn btn-toggle ${row.is_active === false ? "btn-enable" : "btn-disable"}"
   onclick="toggleDepartmentActive('${escapeAttr(id)}', ${row.is_active !== false})"
 >
-  <span class="material-symbols-outlined">
-    ${row.is_active === false ? "toggle_on" : "toggle_off"}
-  </span>
   ${row.is_active === false ? "เปิดใช้งาน" : "ปิดใช้งาน"}
 </button>
 
@@ -1011,7 +1008,7 @@ function renderDepartments() {
                     class="btn btn-icon btn-delete" title="ลบ" aria-label="ลบ"
                     onclick="deleteDepartment('${escapeAttr(id)}')"
                   >
-                    <span class="material-symbols-outlined">delete</span>
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
                   </button>
 
                 </div>
@@ -1435,13 +1432,13 @@ function renderShifts() {
               ? `
                 <div class="master-actions">
                   <button type="button" class="btn btn-icon btn-edit" title="แก้ไข" aria-label="แก้ไข" onclick="editShift('${escapeAttr(id)}')">
-                    <span class="material-symbols-outlined">edit</span>
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/></svg>
                   </button>
                   <button type="button" class="btn btn-icon btn-sort" title="เปลี่ยนลำดับการแสดง" aria-label="เปลี่ยนลำดับการแสดง" onclick="editShiftOrder('${escapeAttr(id)}', ${sortOrder})">
-                    <span class="material-symbols-outlined">sort</span>
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M4 17l3 3 3-3M17 20V4M14 7l3-3 3 3"/></svg>
                   </button>
                   <button type="button" class="btn btn-icon btn-delete" title="ลบ" aria-label="ลบ" onclick="deleteShift('${escapeAttr(id)}')">
-                    <span class="material-symbols-outlined">delete</span>
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
                   </button>
                 </div>
               `
@@ -1679,14 +1676,14 @@ function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
     const editBtn = document.createElement("button");
     editBtn.type = "button";
     editBtn.className = "btn btn-icon btn-edit";
-    editBtn.innerHTML = '<span class="material-symbols-outlined">edit</span>';
+    editBtn.innerHTML = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/></svg>';
     editBtn.title = "แก้ไขชื่อ";
     editBtn.addEventListener("click", () => editMasterName(row, type));
 
     const orderBtn = document.createElement("button");
     orderBtn.type = "button";
     orderBtn.className = "btn btn-icon btn-sort";
-    orderBtn.innerHTML = '<span class="material-symbols-outlined">sort</span>';
+    orderBtn.innerHTML = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M4 17l3 3 3-3M17 20V4M14 7l3-3 3 3"/></svg>';
     orderBtn.title = "แก้ไขลำดับ";
     orderBtn.addEventListener("click", () => editMasterOrder(row, type));
 
@@ -1694,7 +1691,7 @@ function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
     deleteBtn.type = "button";
     deleteBtn.className = "btn btn-icon btn-delete";
     deleteBtn.innerHTML =
-      '<span class="material-symbols-outlined">delete</span>';
+      '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>';
     deleteBtn.title = "ลบ";
     deleteBtn.addEventListener("click", () => onDelete(row.id));
 
@@ -1710,7 +1707,7 @@ function renderDepartmentFilteredList(elementId, rows, onDelete, type) {
       qrBtn.type = "button";
       qrBtn.className = "btn btn-toggle btn-qr";
       qrBtn.innerHTML =
-        '<span class="material-symbols-outlined">qr_code</span> QR';
+        '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2"/></svg> QR';
       qrBtn.title = "สร้าง QR เครื่องนี้";
       qrBtn.addEventListener("click", () => {
         openMachineQrByRow(row);
@@ -1922,8 +1919,8 @@ function renderUsers() {
             <td>${getRoleSelectHtml(userId, role)}</td>
             <td>${getStatusSelectHtml(userId, status)}</td>
             <td class="action-buttons">
-              <button type="button" class="btn btn-warning" onclick="openEditUserModal('${userId}')"><span class="material-symbols-outlined">edit</span> แก้ไข</button>
-              <button type="button" class="btn btn-danger" onclick="deleteUser('${userId}')"><span class="material-symbols-outlined">delete</span> ลบ</button>
+              <button type="button" class="btn btn-warning" onclick="openEditUserModal('${userId}')"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/></svg> แก้ไข</button>
+              <button type="button" class="btn btn-danger" onclick="deleteUser('${userId}')"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg> ลบ</button>
             </td>
           </tr>`;
       })
@@ -1989,10 +1986,10 @@ function renderUsers() {
 
           <div class="user-card-actions">
             <button type="button" class="icon-action edit" onclick="openEditUserModal('${userId}')" title="แก้ไข User">
-              <span class="material-symbols-outlined">edit</span>
+              <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/></svg>
             </button>
             <button type="button" class="icon-action danger" onclick="deleteUser('${userId}')" title="ลบ User">
-              <span class="material-symbols-outlined">delete</span>
+              <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
             </button>
           </div>
         </article>
@@ -2023,6 +2020,31 @@ function getStatusSelectHtml(userId, status) {
       ).join("")}
     </select>
   `;
+}
+
+// อ่านข้อความ error จาก Edge Function ให้อ่านง่าย
+// (เดิมแสดง JSON ดิบ เช่น {"ok":false,"message":"..."} หรือแค่ "non-2xx status code")
+async function readEdgeFunctionError(error) {
+  console.error("Edge Function raw error:", error);
+  let detail = error?.message || "เรียก Edge Function ไม่สำเร็จ";
+  try {
+    if (error?.context && typeof error.context.text === "function") {
+      const text = await error.context.text();
+      console.error("Edge Function response:", text);
+      try {
+        const json = JSON.parse(text);
+        detail = json?.message || json?.error || text || detail;
+      } catch {
+        detail = text || detail;
+      }
+      const status = Number(error.context.status || 0);
+      if (status === 401) detail = `กรุณาเข้าสู่ระบบใหม่ (${detail})`;
+      else if (status === 403) detail = `ไม่มีสิทธิ์ทำรายการนี้ (${detail})`;
+    }
+  } catch (e) {
+    console.warn("อ่าน error response ไม่ได้:", e);
+  }
+  return detail;
 }
 
 async function addUser() {
@@ -2072,21 +2094,7 @@ async function addUser() {
     );
 
     if (error) {
-      console.error("Edge Function raw error:", error);
-
-      let detail = error.message || "เรียก Edge Function ไม่สำเร็จ";
-
-      try {
-        if (error.context) {
-          const text = await error.context.text();
-
-          console.error("Edge Function response:", text);
-
-          detail = text;
-        }
-      } catch {}
-
-      throw new Error(detail);
+      throw new Error(await readEdgeFunctionError(error));
     }
 
     if (!data?.ok) {
@@ -2214,7 +2222,7 @@ async function deleteUser(userId) {
     );
 
     if (error) {
-      throw new Error(error.message || "เรียก Edge Function ไม่สำเร็จ");
+      throw new Error(await readEdgeFunctionError(error));
     }
 
     if (!data?.ok) {
@@ -2332,21 +2340,7 @@ async function saveEditUser() {
     );
 
     if (error) {
-      console.error("Edge Function raw error:", error);
-
-      let detail = error.message || "เรียก Edge Function ไม่สำเร็จ";
-
-      try {
-        if (error.context) {
-          const text = await error.context.text();
-          console.error("Edge Function response:", text);
-          detail = text;
-        }
-      } catch (e) {
-        console.warn("อ่าน error response ไม่ได้:", e);
-      }
-
-      throw new Error(detail);
+      throw new Error(await readEdgeFunctionError(error));
     }
 
     if (!data?.ok) {

@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 import { corsHeaders } from "../_shared/cors.ts";
 import { ok, fail } from "../_shared/response.ts";
-import { requireAdmin } from "../_shared/auth.ts";
+import { requireAdmin, HttpError } from "../_shared/auth.ts";
+import { readJson } from "../_shared/validate.ts";
 
 serve(async (req) => {
   try {
@@ -14,9 +15,9 @@ serve(async (req) => {
       return fail("Method not allowed", 405);
     }
 
-    const { admin, user } = await requireAdmin(req);
+    const { admin, user, profile: actor } = await requireAdmin(req);
 
-    const body = await req.json();
+    const body = await readJson(req);
     const userId = String(body.user_id || "").trim();
 
     if (!userId) {
@@ -31,7 +32,7 @@ serve(async (req) => {
     // ตรวจสอบว่ามี User นี้จริงหรือไม่
     const { data: profile, error: profileError } = await admin
       .from("profiles")
-      .select("id, username")
+      .select("id, username, is_system_owner")
       .eq("id", userId)
       .maybeSingle();
 
@@ -40,7 +41,12 @@ serve(async (req) => {
     }
 
     if (!profile) {
-      return fail("ไม่พบผู้ใช้งาน");
+      return fail("ไม่พบผู้ใช้งาน", 404);
+    }
+
+    // admin ทั่วไปลบบัญชี system owner ไม่ได้
+    if (profile.is_system_owner === true && actor.is_system_owner !== true) {
+      return fail("ไม่มีสิทธิ์ลบบัญชีเจ้าของระบบ", 403);
     }
 
     // ลบสิทธิ์แผนก (ถ้ามี)
@@ -63,8 +69,9 @@ serve(async (req) => {
     const { error: authError } =
       await admin.auth.admin.deleteUser(userId);
 
+    // profile ถูกลบไปแล้ว ถ้าลบ Auth ไม่สำเร็จให้แจ้งชัดเจน (บัญชีนี้จะล็อกอินไม่ได้แล้ว เพราะไม่มี profile)
     if (authError) {
-      return fail(authError.message);
+      return fail(`ลบ profile แล้ว แต่ลบบัญชี Auth ไม่สำเร็จ: ${authError.message}`, 500);
     }
 
     return ok({
@@ -73,10 +80,8 @@ serve(async (req) => {
 
   } catch (err) {
     return fail(
-      err instanceof Error
-        ? err.message
-        : "เกิดข้อผิดพลาด",
-      500
+      err instanceof Error ? err.message : "เกิดข้อผิดพลาด",
+      err instanceof HttpError ? err.status : 500
     );
   }
 });

@@ -1,0 +1,894 @@
+/* ==========================================================
+   review-simple.css — หน้าตรวจสอบรายวัน (pages/supervisor-daily-review.html)
+   แนวเดียวกับหน้าบันทึกของเสีย (ใช้ตัวแปร/แถบหัว/แถบล่างจาก form-mobile.css)
+   รองรับทุกขนาดจอ:
+     มือถือ  (< 600px)     : 1 คอลัมน์ ตารางเป็นการ์ด แถบไอคอนด้านล่าง
+     แท็บเล็ต (600–1023px) : กว้างขึ้น เครื่องจักร 2 คอลัมน์ ตารางจริงเมื่อ ≥ 900px
+     จอใหญ่  (≥ 1024px)    : ไม่มีแถบล่าง เมนูอยู่แถบบน เนื้อหากว้างสุด 1200px
+   ========================================================== */
+
+/* ---------- แถบหัว ---------- */
+.rv-top {
+  padding-left: 14px;
+}
+
+
+.rv-top-links {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  margin-right: 4px;
+}
+
+.rv-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 12px;
+  color: var(--text);
+  font-size: calc(15px * var(--fs, 1));
+  text-decoration: none;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.rv-link:hover {
+  background: var(--bg);
+}
+
+/* ---------- เนื้อหา ---------- */
+.rv-main {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 12px calc(var(--bar-h) + 24px + var(--safe-b));
+}
+
+.rv-card {
+  min-width: 0;
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.text-right,
+.data-table th.text-right {
+  text-align: right;
+}
+
+.data-table th.col-center {
+  text-align: center;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ตัวกรอง */
+.filter-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.form-group {
+  min-width: 0;
+}
+
+.form-group label {
+  font-size: calc(14px * var(--fs, 1));
+  color: var(--muted);
+}
+
+/* ตัวเลขสรุป */
+.rv-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rv-stat {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.rv-stat span,
+.rv-stat small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rv-stat strong {
+  overflow: hidden;
+  font-size: calc(19px * var(--fs, 1));
+  line-height: 1.35;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* หัวการ์ด */
+.table-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.table-header h2 {
+  margin: 0;
+  font-size: calc(17px * var(--fs, 1));
+}
+
+.table-header p {
+  margin: 2px 0 0;
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.table-header > .muted {
+  flex: none;
+  font-size: calc(13px * var(--fs, 1));
+}
+
+/* ---------- ปุ่ม ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  color: var(--text);
+  font-size: calc(15px * var(--fs, 1));
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn.primary,
+.btn.success {
+  color: #fff;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn.danger {
+  color: var(--danger);
+  border-color: #f0c7c7;
+}
+
+.btn-sm {
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: calc(14px * var(--fs, 1));
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.row-actions .btn {
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: calc(14px * var(--fs, 1));
+}
+
+/* ---------- แถบเตือนวันที่ยังไม่ส่งบัญชี ---------- */
+.unsent-reminder {
+  padding: 12px 14px;
+  background: #fff8ed;
+  border: 1px solid #f3d9b1;
+  border-radius: var(--radius);
+}
+
+.unsent-body {
+  display: grid;
+  gap: 2px;
+}
+
+.unsent-body > span {
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.unsent-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.unsent-days.is-collapsed .is-extra {
+  display: none;
+}
+
+.unsent-day,
+.unsent-more {
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: calc(14px * var(--fs, 1));
+  background: var(--card);
+  border: 1px solid #e4c99f;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.unsent-day small {
+  color: var(--muted);
+}
+
+.unsent-day.is-current {
+  color: #fff;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.unsent-day.is-current small {
+  color: #dbe3f5;
+}
+
+.unsent-more {
+  color: var(--primary);
+  border-style: dashed;
+}
+
+/* ---------- ตรวจเครื่องจักรประจำวัน ---------- */
+.machine-check-summary {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+.machine-mini-pill {
+  padding: 3px 10px;
+  font-size: calc(13px * var(--fs, 1));
+  white-space: nowrap;
+  background: var(--bg);
+  border-radius: 999px;
+}
+
+.machine-mini-pill.machine-wait strong {
+  color: #b45309;
+}
+
+.machine-bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0;
+  border-top: 1px solid #eef0f3;
+}
+
+.machine-bulk-actions .muted {
+  width: 100%;
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.machine-check-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 4px 0 12px;
+}
+
+.machine-check-item {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  border-radius: 10px;
+}
+
+.machine-check-item.is-pending {
+  border-left-color: #e0a63b;
+}
+
+.machine-check-item.is-waste {
+  border-left-color: var(--danger);
+}
+
+.machine-check-item.is-no-waste {
+  border-left-color: var(--ok);
+}
+
+.machine-check-item.is-off {
+  border-left-color: #9ca3af;
+}
+
+.machine-name {
+  font-weight: 700;
+}
+
+.machine-dept {
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.machine-check-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.machine-tick {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 8px;
+  margin: 0;
+  color: var(--text);
+  font-size: calc(14px * var(--fs, 1));
+  font-weight: 600;
+  text-align: center;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.machine-tick input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.machine-tick .tick-box {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  color: transparent;
+  font-size: 11px;
+  border: 1.5px solid #9ca3af;
+  border-radius: 50%;
+}
+
+.machine-tick:has(input:focus-visible) {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.machine-tick.is-selected,
+.machine-tick:has(input:checked) {
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+.machine-tick.is-selected .tick-box,
+.machine-tick input:checked + .tick-box {
+  color: #fff;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.machine-auto-status {
+  grid-column: 1 / -1;
+  color: var(--danger);
+  font-size: calc(14px * var(--fs, 1));
+  font-weight: 600;
+}
+
+.machine-send-footer {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #eef0f3;
+}
+
+.machine-send-footer .btn {
+  width: 100%;
+  min-height: 48px;
+}
+
+/* ---------- ตาราง (จอใหญ่) / การ์ด (มือถือ) ---------- */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: calc(14px * var(--fs, 1));
+}
+
+.data-table th {
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line);
+}
+
+.data-table td {
+  padding: 10px;
+  vertical-align: top;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.data-table small {
+  color: var(--muted);
+}
+
+.empty-cell {
+  padding: 18px 10px !important;
+  color: var(--muted);
+  text-align: center;
+}
+
+.expand-btn {
+  width: 32px;
+  height: 32px;
+  color: var(--muted);
+  font-size: 11px;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: calc(13px * var(--fs, 1));
+  white-space: nowrap;
+}
+
+.status-pill::before {
+  width: 8px;
+  height: 8px;
+  content: "";
+  border-radius: 50%;
+}
+
+.status-pending::before {
+  background: #e0a63b;
+}
+
+.status-sent::before {
+  background: var(--primary);
+}
+
+.status-done::before {
+  background: var(--ok);
+}
+
+.problem-inline {
+  line-height: 1.5;
+}
+
+.detail-row > td {
+  background: #fafbfc;
+}
+
+.problem-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  border: 1px solid #eef0f3;
+  border-radius: 8px;
+}
+
+.problem-table th,
+.problem-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.problem-table th {
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+  font-weight: 600;
+}
+
+.problem-table .text-right {
+  text-align: right;
+}
+
+.problem-table tfoot td {
+  font-weight: 700;
+  border-bottom: 0;
+}
+
+/* การ์ดบนจอเล็ก (responsiveTables.js ใส่ data-label ให้แต่ละช่อง) */
+@media (max-width: 899px) {
+  .data-table[data-rt="cards"] thead {
+    display: none;
+  }
+
+  .data-table[data-rt="cards"],
+  .data-table[data-rt="cards"] > tbody {
+    display: block;
+  }
+
+  .data-table[data-rt="cards"] > tbody > tr {
+    display: block;
+    margin-bottom: 8px;
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+
+  .data-table[data-rt="cards"] > tbody > tr.detail-row {
+    margin-top: -6px;
+    padding: 0;
+    border-top: 0;
+    border-radius: 0 0 10px 10px;
+  }
+
+  .data-table[data-rt="cards"] > tbody > tr.detail-row.hidden {
+    display: none;
+  }
+
+  .data-table[data-rt="cards"] > tbody > tr > td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    text-align: right;
+    border-bottom: 1px solid #f1f3f5;
+  }
+
+  .data-table[data-rt="cards"] > tbody > tr > td:last-child {
+    border-bottom: 0;
+  }
+
+  .data-table[data-rt="cards"] > tbody > tr > td[data-label]::before {
+    flex: none;
+    color: var(--muted);
+    font-size: calc(13px * var(--fs, 1));
+    text-align: left;
+    content: attr(data-label);
+  }
+
+  .data-table[data-rt="cards"] > tbody > tr > td.rt-corner {
+    display: none;
+  }
+
+  .data-table[data-rt="cards"] > tbody > tr > td[colspan] {
+    display: block;
+    padding: 10px;
+    text-align: left;
+  }
+
+  .data-table[data-rt="cards"] > tbody > tr > td.rt-actions {
+    display: block;
+    padding-top: 10px;
+  }
+
+  .data-table[data-rt="cards"] > tbody > tr > td.rt-actions::before {
+    display: none;
+  }
+
+  .data-table[data-rt="cards"] .row-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  }
+
+  .data-table[data-rt="cards"] .problem-table th,
+  .data-table[data-rt="cards"] .problem-table td {
+    padding: 6px 8px;
+  }
+}
+
+/* ---------- หน้าต่างกลาง / แจ้งเตือน ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(17, 24, 39, 0.45);
+}
+
+.modal-overlay[hidden],
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  max-height: 92vh;
+  background: var(--card);
+  border-radius: 16px 16px 0 0;
+}
+
+.modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 8px;
+}
+
+.modal-head h2 {
+  margin: 0;
+  font-size: calc(18px * var(--fs, 1));
+}
+
+.modal-head p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: calc(14px * var(--fs, 1));
+}
+
+.modal-head p:empty {
+  display: none;
+}
+
+.modal-close {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  color: var(--muted);
+  font-size: 24px;
+  line-height: 1;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.app-modal-body {
+  overflow-y: auto;
+  padding: 0 16px 8px;
+}
+
+.app-modal-body > p {
+  margin: 0 0 8px;
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 12px 16px calc(12px + var(--safe-b));
+  border-top: 1px solid #eef0f3;
+}
+
+.modal-actions:empty {
+  display: none;
+}
+
+.edit-report-form {
+  display: grid;
+  gap: 10px;
+}
+
+.edit-items-title {
+  margin-top: 6px;
+  font-weight: 700;
+}
+
+.edit-item-box {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--bar-h) + 16px + var(--safe-b));
+  z-index: 120;
+  max-width: calc(100vw - 24px);
+  padding: 10px 16px;
+  color: #fff;
+  font-size: calc(14px * var(--fs, 1));
+  background: #374151;
+  border-radius: 10px;
+  transform: translateX(-50%);
+}
+
+.toast.success {
+  background: var(--ok);
+}
+
+.toast.error {
+  background: var(--danger);
+}
+
+/* แถบล่าง: ปุ่มที่หน้าปัจจุบัน */
+.fm-tab.is-active {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* ---------- แท็บเล็ต ---------- */
+@media (min-width: 600px) {
+  .rv-main {
+    gap: 14px;
+    padding-top: 16px;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .rv-card {
+    padding: 16px 18px;
+  }
+
+  .rv-stat {
+    padding: 12px 16px;
+  }
+
+  .rv-stat strong {
+    font-size: calc(22px * var(--fs, 1));
+  }
+
+  .machine-check-body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .machine-bulk-actions .muted {
+    width: auto;
+  }
+
+  .machine-send-footer {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+
+  .machine-send-footer .btn {
+    width: auto;
+    min-width: 220px;
+  }
+
+  .modal-overlay {
+    align-items: center;
+    padding: 20px;
+  }
+
+  .modal-card {
+    border-radius: 16px;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-bottom: 12px;
+  }
+}
+
+/* ---------- จอใหญ่: ไม่มีแถบล่าง เมนูอยู่บนแถบหัว ---------- */
+@media (min-width: 1024px) {
+  .rv-tabbar {
+    display: none;
+  }
+
+  .rv-top-links {
+    display: flex;
+  }
+
+  .rv-top {
+    padding-right: max(8px, calc((100vw - 1200px) / 2));
+    padding-left: max(16px, calc((100vw - 1200px) / 2 + 16px));
+  }
+
+  .rv-main {
+    padding-bottom: 32px;
+  }
+
+  .filter-card {
+    grid-template-columns: 220px 220px;
+  }
+
+  .machine-check-body {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+
+  .toast {
+    bottom: 24px;
+  }
+
+  body.rv > div[style*="99999"] {
+    bottom: 8px !important;
+  }
+}
+
+/* แผนก: รหัส + ชื่อ อยู่บรรทัดเดียว (จอใหญ่ขึ้นบรรทัดใหม่) */
+@media (min-width: 900px) {
+  .dept-cell small {
+    display: block;
+  }
+}
+
+/* แท็บเล็ต: ข้อมูลในการ์ดแบ่ง 2 คอลัมน์ ให้การ์ดเตี้ยลง */
+@media (min-width: 600px) and (max-width: 899px) {
+  .data-table[data-rt="cards"] > tbody > tr:not(.detail-row) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 24px;
+  }
+
+  .data-table[data-rt="cards"] > tbody > tr > td.rt-actions,
+  .data-table[data-rt="cards"] > tbody > tr > td[colspan] {
+    grid-column: 1 / -1;
+  }
+
+  .data-table[data-rt="cards"] > tbody > tr > td:nth-last-child(2) {
+    border-bottom: 0;
+  }
+}
+
+/* ---------- ประเภทของเสีย (ใช้ร่วมทุกหน้า) ----------
+   ผลิต = สูญเสียจากการผลิต (น้ำเงิน) · บังคับ = สูญเสียบังคับ (ส้ม) */
+.loss-badge {
+  display: inline-block;
+  padding: 0 7px;
+  font-size: calc(12px * var(--fs, 1));
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: 1px;
+  border-radius: 999px;
+}
+
+.loss-production {
+  color: #1e3a8a;
+  background: #e8edf8;
+}
+
+.loss-forced {
+  color: #c2410c;
+  background: #fff1e6;
+}
+
+.loss-split {
+  color: #c2410c;
+  font-weight: 600;
+}
+
+.problem-table tfoot .loss-sub td {
+  color: var(--muted);
+  font-weight: 400;
+}

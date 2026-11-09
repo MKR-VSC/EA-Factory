@@ -337,7 +337,6 @@
         torchSupported = true;
         torchBtn.style.display = 'inline-flex';
         torchBtn.innerHTML = `
-          <span class="material-symbols-outlined">${isTorchOn ? 'flashlight_off' : 'flashlight_on'}</span>
           <span>${isTorchOn ? 'ปิดไฟฉาย' : 'เปิดไฟฉาย'}</span>
         `;
       } else {
@@ -363,7 +362,6 @@
       if (torchBtn) {
         torchBtn.classList.toggle('active', isTorchOn);
         torchBtn.innerHTML = `
-          <span class="material-symbols-outlined">${isTorchOn ? 'flashlight_off' : 'flashlight_on'}</span>
           <span>${isTorchOn ? 'ปิดไฟฉาย' : 'เปิดไฟฉาย'}</span>
         `;
       }
@@ -372,11 +370,17 @@
     }
   }
 
-  function handleFileInputChange(event) {
+  async function handleFileInputChange(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
 
     updateScanStatus('กำลังประมวลผลรูปภาพ QR...', 'info');
+    // ไลบรารีสแกนโหลดตอนใช้งานครั้งแรก (หน้า Dashboard ไม่โหลดไว้ล่วงหน้าแล้ว)
+    await loadHtml5QrcodeLibrary();
+    if (typeof Html5Qrcode === 'undefined') {
+      updateScanStatus('ไม่สามารถโหลดไลบรารีสแกนเนอร์ได้', 'error');
+      return;
+    }
 
     const tempScanner = new Html5Qrcode('qr-camera-stream');
     tempScanner
@@ -458,7 +462,7 @@
 
     modal.innerHTML = `
       <div style="width: 56px; height: 56px; background: #fff7ed; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 16px;">
-        <span class="material-symbols-outlined" style="color: #ea580c; font-size: 32px;">engineering</span>
+        <span aria-hidden="true" style="color: #ea580c; font-size: 26px;">🛠</span>
       </div>
       <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 800; color: #0f172a; font-family: inherit;">อยู่ระหว่างพัฒนา</h3>
       <p style="margin: 0 0 20px; font-size: 14px; color: #64748b; line-height: 1.5; font-family: inherit;">ระบบข้อมูลเครื่องจักรสำหรับเครื่อง <strong>${escapeHTML(cleanMachine)}</strong> อยู่ระหว่างการพัฒนาเพิ่มเติม ขออภัยในความไม่สะดวกค่ะ</p>

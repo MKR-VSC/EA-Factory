@@ -1,0 +1,835 @@
+/* ==========================================================
+   exec-dashboard-simple.css — Dashboard ผู้บริหาร (index.html)
+   แบบเรียบชุดเดียวกับหน้าบัญชี (ต่อจาก form-mobile + review-simple + accounting-simple)
+   ไม่โหลดฟอนต์/ไอคอนจากเน็ต · สีหลักน้ำเงิน · แดง/ส้ม/เขียว ใช้บอกผลเท่านั้น
+   ========================================================== */
+
+.xd .acc-main {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ui-icon {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -3px;
+}
+
+.xd h2 {
+  margin: 0;
+  font-size: calc(17px * var(--fs, 1));
+  font-weight: 700;
+}
+
+/* ---------- ตัวกรอง ---------- */
+.xd-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+}
+
+.xd-field {
+  display: grid;
+  gap: 4px;
+  min-width: 140px;
+  margin: 0;
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.xd-field-year {
+  min-width: 100px;
+}
+
+.xd-field-dept {
+  min-width: 200px;
+}
+
+.xd-field select {
+  min-height: 42px;
+}
+
+.xd-quick {
+  display: inline-flex;
+  padding: 3px;
+  background: #f1f3f6;
+  border-radius: 10px;
+}
+
+.quick-month-btn {
+  min-height: 38px;
+  padding: 0 14px;
+  color: var(--muted);
+  font: inherit;
+  font-size: calc(14px * var(--fs, 1));
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.quick-month-btn.active {
+  color: var(--text);
+  font-weight: 600;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.xd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* ---------- ผลเดือนนี้ ---------- */
+.xd-verdict {
+  display: grid;
+  gap: 8px;
+}
+
+.xd-verdict-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.xd-verdict .result-pill,
+.xd-verdict .status-pill {
+  font-size: calc(16px * var(--fs, 1));
+  font-weight: 700;
+}
+
+.xd-verdict .result-pill::before,
+.xd-verdict .status-pill::before {
+  width: 10px;
+  height: 10px;
+}
+
+.xd-insight {
+  font-size: calc(15px * var(--fs, 1));
+  line-height: 1.7;
+}
+
+.xd-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+}
+
+/* ---------- ตัวเลขสำคัญ ---------- */
+.xd-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.xd-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  border-left: 4px solid var(--line);
+}
+
+.xd-kpi-main {
+  border-left-color: var(--primary);
+}
+
+.xd-kpi-label {
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.xd-kpi > strong {
+  overflow: hidden;
+  font-size: calc(26px * var(--fs, 1));
+  font-weight: 700;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.xd-kpi > strong .ui-icon {
+  vertical-align: -4px;
+}
+
+.xd-kpi > small {
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+}
+
+.sparkline-container {
+  height: 34px;
+  margin: 6px 0 2px;
+}
+
+.sparkline-container svg {
+  display: block;
+  max-width: 100%;
+}
+
+.kpi-compare-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 18px;
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+}
+
+.kpi-compare-badge .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.kpi-compare-badge.better {
+  color: var(--ok);
+}
+
+.kpi-compare-badge.worse {
+  color: var(--danger);
+}
+
+#kpi-scrap-mom-card.success {
+  border-left-color: var(--ok);
+}
+
+#kpi-scrap-mom-card.danger {
+  border-left-color: var(--danger);
+}
+
+#kpi-scrap-mom-card.warning {
+  border-left-color: #e0a63b;
+}
+
+/* ---------- หัวข้อส่วน ---------- */
+.xd-section {
+  display: grid;
+  gap: 12px;
+}
+
+.xd-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 14px;
+}
+
+.xd-section-head p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.scrap-alarm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 2px 10px;
+  color: var(--danger);
+  font-size: calc(13px * var(--fs, 1));
+  font-weight: 600;
+  vertical-align: middle;
+  background: #fdecec;
+  border-radius: 999px;
+}
+
+/* ---------- ตารางแผนก ---------- */
+.xd-dept-table {
+  min-width: 760px;
+  font-variant-numeric: tabular-nums;
+}
+
+.xd-dept-table td {
+  vertical-align: middle;
+}
+
+.xd-name {
+  white-space: nowrap;
+}
+
+.xd-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  vertical-align: 0;
+  border-radius: 50%;
+}
+
+.xd-split {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: calc(12px * var(--fs, 1));
+  white-space: nowrap;
+}
+
+.xd-std small {
+  display: block;
+  color: var(--muted);
+  font-size: calc(11px * var(--fs, 1));
+  white-space: nowrap;
+}
+
+.xd-group-head td {
+  padding-top: 14px !important;
+  color: var(--primary);
+  font-weight: 700;
+  background: var(--primary-soft) !important;
+}
+
+.xd-group-head small {
+  margin-left: 8px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.xd-child .xd-name {
+  padding-left: 24px !important;
+}
+
+.xd-group-total td {
+  font-weight: 700;
+  background: #f5f7fb;
+  border-top: 2px solid #d6dcea;
+}
+
+.xd-grand td {
+  background: #eef1f6;
+  border-top: 2px solid #9aa3b2;
+}
+
+.dept-row-attention .xd-name strong {
+  color: var(--danger);
+}
+
+/* ---------- กราฟ ---------- */
+.xd-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.xd-chart-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.xd-chart {
+  position: relative;
+  height: 280px;
+}
+
+@media (min-width: 900px) {
+  .xd-charts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .xd-chart {
+    height: 300px;
+  }
+}
+
+/* ---------- รายเครื่อง ---------- */
+.machine-summary-list {
+  display: grid;
+  gap: 14px;
+  color: var(--muted);
+}
+
+.dept-machine-group {
+  display: grid;
+  gap: 6px;
+}
+
+.dept-machine-title {
+  padding-bottom: 4px;
+  color: var(--text);
+  font-weight: 700;
+  border-bottom: 1px solid var(--line);
+}
+
+.machine-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 14px;
+  padding: 10px 12px;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left-width: 4px !important;
+  border-radius: 10px;
+}
+
+.machine-item.machine-danger {
+  background: #fff6f6;
+  border-color: #f3c9c9;
+}
+
+.machine-item.machine-danger .machine-value strong {
+  color: var(--danger);
+}
+
+.machine-item.machine-warning .machine-value strong {
+  color: #b45309;
+}
+
+.machine-main-col,
+.machine-value {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.machine-main-col small,
+.machine-value small {
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+}
+
+.machine-value {
+  text-align: right;
+}
+
+.machine-value strong {
+  font-size: calc(18px * var(--fs, 1));
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-machine-info-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 0 10px;
+  color: var(--primary);
+  font: inherit;
+  font-size: calc(13px * var(--fs, 1));
+  background: var(--primary-soft);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.machine-item button[id^="copy-btn"] {
+  width: 30px !important;
+  height: 30px !important;
+}
+
+/* ---------- หน้าต่าง (modal) ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(17, 24, 39, 0.45);
+}
+
+.modal-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
+  background: var(--card);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+
+.machine-modal-dialog {
+  max-width: 1040px;
+}
+
+.modal-header,
+.modal-footer {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-footer {
+  border-top: 1px solid var(--line);
+}
+
+.modal-title-group,
+.modal-header-actions,
+.modal-section-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.modal-icon-badge {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-radius: 10px;
+}
+
+.modal-icon-badge svg,
+.modal-close-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.modal-eyebrow {
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+}
+
+.modal-title {
+  margin: 0;
+  font-size: calc(18px * var(--fs, 1)) !important;
+}
+
+.modal-close-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.modal-close-btn:hover {
+  background: var(--bg);
+}
+
+.modal-body {
+  display: grid;
+  gap: 14px;
+  padding: 14px 16px;
+  overflow-y: auto;
+}
+
+.machine-modal-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (min-width: 760px) {
+  .machine-modal-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.m-kpi-card {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  background: #f7f8fa;
+  border-radius: 10px;
+}
+
+.m-kpi-label {
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+}
+
+.m-kpi-value {
+  font-size: calc(18px * var(--fs, 1));
+  font-variant-numeric: tabular-nums;
+}
+
+.text-danger {
+  color: var(--danger) !important;
+}
+
+.modal-section-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.modal-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.modal-section-title {
+  font-weight: 700;
+}
+
+.chart-legend-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+}
+
+.legend-dot,
+.legend-line {
+  display: inline-block;
+  margin-right: -4px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.legend-line {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.legend-dot.green {
+  background: #10b981;
+}
+
+.legend-dot.red {
+  background: #ef4444;
+}
+
+.legend-line.blue {
+  background: #1e3a8a;
+}
+
+.modal-chart-container {
+  position: relative;
+  height: 280px;
+}
+
+.modal-data-table {
+  min-width: 720px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+  background: #f1f3f6;
+  border-radius: 999px;
+}
+
+/* สถานะบันทึกซ่อมในหน้าต่างเครื่อง */
+.status-pill .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.status-pill-resolved {
+  color: var(--ok);
+}
+
+.status-pill-in-progress {
+  color: var(--primary);
+}
+
+.status-pill-pending {
+  color: #b45309;
+}
+
+.status-pill-critical {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.status-pill-resolved::before,
+.status-pill-in-progress::before,
+.status-pill-pending::before,
+.status-pill-critical::before {
+  display: none;
+}
+
+/* ---------- แจ้งซ่อม ---------- */
+.xd-ticket-dialog {
+  max-width: 560px;
+}
+
+.xd-ticket-body {
+  gap: 12px;
+}
+
+.ticket-prefill-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--primary-soft);
+  border-radius: 10px;
+}
+
+.ticket-prefill-item {
+  display: grid;
+  min-width: 0;
+}
+
+.ticket-prefill-label {
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+}
+
+.xd-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ticket-form-label {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.ticket-form-label .req {
+  color: var(--danger);
+}
+
+.ticket-form-textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+@media (max-width: 479px) {
+  .xd-two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- แจ้งเตือน ---------- */
+#dashboard-toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#dashboard-toast.hidden {
+  display: none !important;
+}
+
+/* ---------- มือถือ ---------- */
+@media (max-width: 759px) {
+  .xd-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .xd-actions .btn {
+    flex: 1;
+  }
+
+  .xd-field,
+  .xd-field-dept {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  .xd-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .xd-kpi-main {
+    grid-column: 1 / -1;
+  }
+
+  .xd-kpi > strong {
+    font-size: calc(22px * var(--fs, 1));
+  }
+
+  .machine-value {
+    text-align: left;
+  }
+}
+
+@media print {
+  .xd-controls {
+    display: none !important;
+  }
+}
+
+/* ---------- แจ้ง "อยู่ระหว่างพัฒนา" ---------- */
+.xd-soon {
+  z-index: 1100;
+  display: flex;
+}
+
+.xd-soon-dialog {
+  max-width: 360px;
+}
+
+.xd-soon-body {
+  justify-items: center;
+  gap: 10px;
+  padding: 24px 20px 20px;
+  text-align: center;
+}
+
+.xd-soon-body p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.xd-soon-body .btn {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.xd-soon-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  color: #b45309;
+  background: #fff7e6;
+  border-radius: 50%;
+}
+
+.xd-soon-icon .ui-icon {
+  vertical-align: 0;
+}

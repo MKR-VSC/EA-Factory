@@ -1,0 +1,563 @@
+/* ==========================================================
+   settings-simple.css — หน้าตั้งค่าเกณฑ์ (pages/factory-settings.html)
+   ต่อจาก form-mobile.css + review-simple.css + accounting-simple.css
+   ========================================================== */
+
+/* ตัวแปรที่ JS เดิมอ้างถึงในสไตล์ฝัง */
+.fs {
+  --text-muted: var(--muted);
+  --red: var(--danger);
+  --ea-blue: var(--primary);
+}
+
+/* ---------- คำอธิบายบนสุด ---------- */
+.fs-info {
+  display: grid;
+  gap: 8px;
+}
+
+.fs-info .rv-stat small {
+  white-space: normal;
+}
+
+.fs-formula {
+  font-size: calc(16px * var(--fs, 1)) !important;
+  white-space: normal !important;
+}
+
+.alert-box {
+  padding: 10px 14px;
+  color: var(--danger);
+  background: #fff5f5;
+  border: 1px solid #f0c7c7;
+  border-radius: 10px;
+}
+
+.alert-box.success {
+  color: var(--ok);
+  background: #f3faf4;
+  border-color: #c8e6c9;
+}
+
+.alert-box[hidden] {
+  display: none;
+}
+
+/* ---------- แท็บ ---------- */
+.settings-tabs {
+  display: flex;
+  gap: 4px;
+  margin: -4px 0 14px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab-btn {
+  flex: none;
+  min-height: 44px;
+  padding: 0 14px;
+  color: var(--muted);
+  font-size: calc(15px * var(--fs, 1));
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+
+a.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.tab-btn:hover {
+  color: var(--text);
+}
+
+.tab-btn.active {
+  color: var(--primary);
+  font-weight: 700;
+  border-bottom-color: var(--primary);
+}
+
+.tab-content-view[hidden] {
+  display: none;
+}
+
+/* ---------- แถบเครื่องมือ ---------- */
+.fs-toolbar,
+.config-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.fs-search {
+  position: relative;
+  flex: 1 1 260px;
+  max-width: 420px;
+}
+
+.fs-search input {
+  padding-right: 40px;
+}
+
+.btn-clear-search {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  width: 34px;
+  height: 34px;
+  color: var(--muted);
+  font-size: 20px;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.btn-clear-search[hidden] {
+  display: none;
+}
+
+.btn-preset {
+  color: var(--primary);
+  border-color: #c7d0e6;
+}
+
+.unsaved-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #fffbea;
+  border: 1px solid #f1dfa6;
+  border-radius: 10px;
+}
+
+.unsaved-banner[hidden] {
+  display: none;
+}
+
+.unsaved-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.config-form-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-form-inline > div[style*="width: 1px"] {
+  display: none;
+}
+
+.config-select-dept,
+.config-input-text {
+  width: auto;
+  min-height: 40px;
+}
+
+.config-select-dept {
+  min-width: 200px;
+}
+
+.config-form-inline input[type="text"] {
+  min-width: 240px;
+}
+
+.guidance-box {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  font-size: calc(14px * var(--fs, 1));
+  background: var(--primary-soft);
+  border-radius: 10px;
+}
+
+.guidance-box > div {
+  display: grid;
+  gap: 4px;
+}
+
+.machine-std-note {
+  color: #b45309;
+}
+
+/* ---------- ตาราง ---------- */
+.settings-table,
+.config-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: calc(14px * var(--fs, 1));
+}
+
+.config-table th,
+.config-table td,
+.settings-table th,
+.settings-table td {
+  padding: 10px;
+  vertical-align: middle;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.config-table th,
+.settings-table th {
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom-color: var(--line);
+}
+
+.settings-table th small {
+  font-weight: 400;
+}
+
+.text-center {
+  text-align: center !important;
+}
+
+.tb-empty {
+  padding: 24px 10px !important;
+  color: var(--muted);
+  text-align: center;
+}
+
+.order-cell {
+  width: 56px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.row-invalid > td {
+  background: #fff5f5;
+}
+
+.dept-cell-modern {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dept-color-tag {
+  width: 4px;
+  height: 32px;
+  flex: none;
+  border-radius: 4px;
+}
+
+.dept-name-block {
+  display: grid;
+}
+
+.dept-name-text {
+  font-weight: 600;
+}
+
+.dept-code-tag {
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+}
+
+.percent-input-group,
+.machine-target-input-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.input-percent,
+.machine-target-input {
+  width: 96px;
+  min-height: 40px;
+  text-align: right;
+}
+
+.input-unit {
+  color: var(--muted);
+}
+
+.input-warning .input-percent {
+  border-color: #ecd7a4;
+}
+
+/* เกณฑ์คิดจาก (ของเสียทั้งหมด / เฉพาะสูญเสียจากการผลิต) */
+.input-kind {
+  min-width: 140px !important;
+}
+
+.input-basis {
+  width: auto;
+  min-width: 190px;
+  min-height: 40px;
+}
+
+/* แถบช่วงเกณฑ์: เขียว = ปกติ · เหลือง = เตือน · แดง = เกิน */
+.threshold-preview {
+  min-width: 200px;
+}
+
+.threshold-gauge-bar {
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.gauge-safe {
+  background: #66bb6a;
+}
+
+.gauge-warn {
+  background: #f2b84b;
+}
+
+.gauge-danger {
+  flex: 1;
+  background: #e57373;
+}
+
+.threshold-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+}
+
+.fs .status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.fs .status-pill::before {
+  display: none;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: #9ca3af;
+  border-radius: 50%;
+}
+
+.status-active .status-dot {
+  background: var(--ok);
+}
+
+.status-inactive {
+  color: var(--muted);
+}
+
+.range-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: calc(13px * var(--fs, 1));
+  white-space: nowrap;
+}
+
+/* ข้อความจาก JS มีจุดสี (emoji) อยู่แล้ว ไม่ต้องเติมจุดซ้ำ */
+.range-pill::before {
+  display: none;
+}
+
+.cell-range-preview {
+  line-height: 1.5;
+}
+
+.range-pill-green::before {
+  background: var(--ok);
+}
+
+.range-pill-yellow::before {
+  background: #e0a63b;
+}
+
+.range-pill-red {
+  color: var(--danger);
+}
+
+.range-pill-red::before {
+  background: var(--danger);
+}
+
+.badge-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: calc(13px * var(--fs, 1));
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.badge-mode-custom {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.badge-mode-inherit {
+  color: var(--muted);
+}
+
+.btn-light {
+  color: var(--text);
+  background: var(--card);
+}
+
+.btn-icon-danger {
+  min-height: 34px;
+  padding: 0 12px;
+  color: var(--danger);
+  font-size: calc(14px * var(--fs, 1));
+  background: none;
+  border: 1px solid #f0c7c7;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* สวิตช์เปิด/ปิด */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  margin: 0;
+}
+
+.switch input {
+  width: 0;
+  height: 0;
+  min-height: 0;
+  opacity: 0;
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  background: #cfd5de;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.slider::before {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  content: "";
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+
+.switch input:checked + .slider {
+  background: var(--primary);
+}
+
+.switch input:checked + .slider::before {
+  transform: translateX(20px);
+}
+
+.switch input:focus-visible + .slider {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ---------- แถบบันทึก ---------- */
+.save-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eef0f3;
+}
+
+.save-note {
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.save-buttons-wrap {
+  display: flex;
+  gap: 8px;
+}
+
+.btn.pulse {
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.2);
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e5e7eb;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: fm-spin 0.8s linear infinite;
+}
+
+/* ---------- แจ้งเตือน (toast) ---------- */
+.toast-container {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--bar-h) + 16px + var(--safe-b));
+  z-index: 120;
+  display: grid;
+  gap: 8px;
+}
+
+.toast-container .toast {
+  position: static;
+  display: flex;
+  gap: 8px;
+  transform: none;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.toast-info {
+  background: #374151;
+}
+
+.toast-success {
+  background: var(--ok);
+}
+
+.toast-error {
+  background: var(--danger);
+}
+
+/* ---------- ขนาดจอ ---------- */
+@media (min-width: 760px) {
+  .fs-info {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .toast-container {
+    bottom: 24px;
+  }
+}

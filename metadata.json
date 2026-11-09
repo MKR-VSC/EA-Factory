@@ -1,6 +1,6 @@
 {
   "name": "PVT&T FACTORY",
-  "description": "Industrial production monitoring, scrap percentage tracking, PR management, and supervisory dashboard for PVT&T FACTORY with custom brand styling.",
+  "description": "Industrial production monitoring, scrap percentage tracking, and supervisory dashboard for PVT&T FACTORY with custom brand styling.",
   "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

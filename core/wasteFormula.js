@@ -10,6 +10,10 @@
      (รวมยอดก่อนแล้วค่อยหาร ไม่ใช่เอา % รายวันมาเฉลี่ย)
    - คิดเฉพาะรายการที่บัญชีกรอกยอดผลิตแล้ว (ยังไม่กรอก = ยังไม่นำมาคิด)
    - เกณฑ์ตั้งต้นของโรงงาน: ไม่เกิน 2.00% ต่อเดือน, เตือนที่ 1.50%
+   - ของเสีย 2 ประเภท (ตามใบรายงานการผลิต): สูญเสียจากการผลิต / สูญเสียบังคับ
+       % แต่ละประเภท = ของเสียประเภทนั้น ÷ (ผลิตดี + ของเสียทั้งหมด) × 100
+       → % การผลิต + % บังคับ = % รวม
+     แต่ละแผนกเลือกได้ว่าเกณฑ์คิดจาก "ของเสียทั้งหมด" (total) หรือ "เฉพาะการผลิต" (production)
 ====================================================== */
 (function () {
   "use strict";
@@ -58,35 +62,56 @@
 
   /**
    * รวมยอดหลายรายการ (เช่น ทุกวันในเดือน) แล้วคิด % ครั้งเดียว
-   * rows: [{ waste, production }]  — production = ยอดผลิตดีที่บัญชีกรอก (0/ว่าง = ยังไม่กรอก)
+   * rows: [{ waste, production, forced? }]
+   *   production = ยอดผลิตดีที่บัญชีกรอก (0/ว่าง = ยังไม่กรอก)
+   *   forced     = ส่วนของ waste ที่เป็น "สูญเสียบังคับ" (kg)
    */
   function aggregate(rows) {
     let waste = 0;
     let wasteCounted = 0;
+    let forced = 0;
+    let forcedCounted = 0;
     let good = 0;
     let count = 0;
     let withProduction = 0;
     (rows || []).forEach((r) => {
       const w = toNum(r.waste);
+      const f = Math.min(toNum(r.forced), w);
       const g = toNum(r.production);
       waste += w;
+      forced += f;
       count += 1;
       if (g > 0) {
         good += g;
         wasteCounted += w;
+        forcedCounted += f;
         withProduction += 1;
       }
     });
+    const base = good > 0 ? good + wasteCounted : 0;
+    const share = (kg) => (base > 0 ? (kg / base) * 100 : null);
     return {
       waste, // ของเสียทั้งหมด (รวมรายการที่ยังไม่กรอกผลิต)
       wasteCounted, // ของเสียเฉพาะรายการที่กรอกผลิตแล้ว (ใช้คิด %)
+      forced, // สูญเสียบังคับ (kg)
+      lossProduction: waste - forced, // สูญเสียจากการผลิต (kg)
       good, // ผลิตดีรวม
       count,
       withProduction,
       complete: count > 0 && withProduction === count,
       pct: percent(wasteCounted, good),
+      pctForced: share(forcedCounted),
+      pctProduction: share(wasteCounted - forcedCounted),
     };
   }
+
+  /** % ที่ใช้ประเมินตามเกณฑ์ของแผนก: basis = 'production' → เฉพาะการผลิต, อื่น ๆ → รวม */
+  function basisPct(agg, basis) {
+    if (!agg) return null;
+    return basis === "production" ? agg.pctProduction : agg.pct;
+  }
+
+  const BASIS_LABEL = { total: "ของเสียทั้งหมด", production: "เฉพาะสูญเสียจากการผลิต" };
 
   window.WASTE_FORMULA = {
     DEFAULT_LIMIT,
@@ -95,6 +120,8 @@
     standard,
     evaluate,
     aggregate,
+    basisPct,
+    BASIS_LABEL,
     description: "% ของเสีย = ของเสีย ÷ (ผลิตดี + ของเสีย) × 100 · ประเมินรายเดือน",
   };
 })();

@@ -133,11 +133,16 @@ async function loadPageData() {
   const status = getValue("filterStatus") || "all";
 
   try {
-    const { data, error } = await state.supabase
-      .from(REPORT_TABLE)
-      .select("*")
-      .eq("report_date", date)
-      .order("created_at", { ascending: false });
+    const buildReports = () =>
+      state.supabase
+        .from(REPORT_TABLE)
+        .select("*")
+        .eq("report_date", date)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true });
+    const { data, error } = window.SB_FETCH
+      ? await window.SB_FETCH.all(buildReports)
+      : await buildReports();
 
     if (error) throw error;
 
@@ -198,13 +203,23 @@ function filterByStatus(rows, status) {
 async function attachProblemItemsToReports(rows) {
   if (!rows.length) return [];
   const reportIds = rows.map((r) => r.id).filter(Boolean);
-  const { data, error } = await state.supabase
-    .from(ITEM_TABLE)
-    .select(
-      "id, report_id, item_no, problem_type, waste_weight_kg, detail, created_at",
-    )
-    .in("report_id", reportIds)
-    .order("item_no", { ascending: true });
+  const ITEM_COLS = "id, report_id, item_no, problem_type, waste_weight_kg, detail, created_at";
+  const fetchItems = (cols) => {
+    const buildItems = (chunk) =>
+      state.supabase
+        .from(ITEM_TABLE)
+        .select(cols)
+        .in("report_id", chunk)
+        .order("item_no", { ascending: true })
+        .order("id", { ascending: true });
+    return window.SB_FETCH
+      ? window.SB_FETCH.inChunks(reportIds, buildItems)
+      : buildItems(reportIds);
+  };
+  // loss_type (ประเภทของเสีย) มีหลังรัน database/12-loss-types.sql
+  let { data, error } = await fetchItems(`${ITEM_COLS}, loss_type`);
+  state.hasLossType = !error;
+  if (error) ({ data, error } = await fetchItems(ITEM_COLS));
   if (error) {
     console.warn(error);
     return rows.map((r) => ({ ...r, problem_items: getFallbackItems(r) }));
@@ -219,12 +234,29 @@ async function attachProblemItemsToReports(rows) {
       problem_type: item.problem_type,
       waste_weight_kg: Number(item.waste_weight_kg || 0),
       detail: item.detail || "",
+      loss_type: item.loss_type || null,
     });
   });
   return rows.map((r) => ({
     ...r,
     problem_items: map.get(String(r.id)) || getFallbackItems(r),
   }));
+}
+/* ประเภทของเสีย: production = สูญเสียจากการผลิต · forced = สูญเสียบังคับ */
+function lossBadge(x) {
+  if (!state.hasLossType || !x.loss_type) return "";
+  return x.loss_type === "forced"
+    ? `<span class="loss-badge loss-forced">บังคับ</span>`
+    : `<span class="loss-badge loss-production">ผลิต</span>`;
+}
+function lossSplit(rows) {
+  const s = { production: 0, forced: 0 };
+  rows.forEach((r) =>
+    (r.problem_items || []).forEach((i) => {
+      s[i.loss_type === "forced" ? "forced" : "production"] += Number(i.waste_weight_kg || 0);
+    }),
+  );
+  return s;
 }
 function getFallbackItems(r) {
   return [
@@ -259,6 +291,10 @@ function renderSummary(rows) {
   const top = Object.entries(m).sort((a, b) => b[1] - a[1])[0];
   setText("countPending", pending.toLocaleString("th-TH"));
   setText("todayWaste", `${formatNumber(waste)} kg`);
+  if (state.hasLossType) {
+    const split = lossSplit(rows);
+    setText("todayWasteSplit", `การผลิต ${formatNumber(split.production)} · บังคับ ${formatNumber(split.forced)} kg`);
+  }
   if (top) {
     setText("topMachineToday", top[0]);
     setText("topMachineTodaySub", `${formatNumber(top[1])} kg`);
@@ -311,7 +347,7 @@ function renderSentRow(r, i) {
   return `<tr>
     <td><button class="expand-btn" onclick="toggleSentDetail(${i})">▼</button></td>
     <td>${safeText(formatDateTime(r.incident_datetime || r.created_at || r.report_date))}</td>
-    <td><strong>${safeText(getDeptCode(r))}</strong><br><small>${safeText(getDeptName(getDeptCode(r)))}</small></td>
+    <td><span class="dept-cell"><strong>${safeText(getDeptCode(r))}</strong> <small>${safeText(getDeptName(getDeptCode(r)))}</small></span></td>
     <td><strong>${safeText(r.machine_no || "-")}</strong></td>
     <td>${safeText(r.reported_by || r.created_by_name || "-")}</td>
     <td class="text-right"><strong>${formatNumber(totalWaste(r))}</strong></td>
@@ -345,7 +381,7 @@ function renderDetailReadOnly(r) {
           .map(
             (x) => `
               <tr>
-                <td><strong>${safeText(x.problem_type)}</strong></td>
+                <td><strong>${safeText(x.problem_type)}</strong> ${lossBadge(x)}</td>
                 <td class="text-right">${formatNumber(x.waste_weight_kg)}</td>
                 <td>${safeText(x.detail || "-")}</td>
               </tr>
@@ -387,7 +423,7 @@ function renderRow(r, i) {
   return `<tr>
     <td><button class="expand-btn" onclick="toggleDetail(${i})">▼</button></td>
     <td>${safeText(formatDateTime(r.incident_datetime || r.created_at || r.report_date))}</td>
-    <td><strong>${safeText(getDeptCode(r))}</strong><br><small>${safeText(getDeptName(getDeptCode(r)))}</small></td>
+    <td><span class="dept-cell"><strong>${safeText(getDeptCode(r))}</strong> <small>${safeText(getDeptName(getDeptCode(r)))}</small></span></td>
     <td><strong>${safeText(r.machine_no || "-")}</strong></td>
     <td>${safeText(r.reported_by || r.created_by_name || "-")}</td>
     <td class="text-right"><strong>${formatNumber(totalWaste(r))}</strong></td>
@@ -412,7 +448,7 @@ function renderProblemInline(r) {
     .slice(0, 3)
     .map(
       (x) =>
-        `${safeText(x.problem_type)} <strong>${formatNumber(x.waste_weight_kg)} kg</strong>`,
+        `${safeText(x.problem_type)} ${lossBadge(x)} <strong>${formatNumber(x.waste_weight_kg)} kg</strong>`,
     )
     .join(
       "<br>",
@@ -420,7 +456,7 @@ function renderProblemInline(r) {
 }
 function renderDetail(r) {
   const items = r.problem_items || [];
-  return `<table class="problem-table"><thead><tr><th>ปัญหา</th><th class="text-right">น้ำหนัก kg</th><th>รายละเอียด</th></tr></thead><tbody>${items.map((x) => `<tr><td><strong>${safeText(x.problem_type)}</strong></td><td class="text-right">${formatNumber(x.waste_weight_kg)}</td><td>${safeText(x.detail || "-")}</td></tr>`).join("")}</tbody><tfoot><tr><td>รวมของเสีย</td><td class="text-right">${formatNumber(totalWaste(r))}</td><td>kg</td></tr></tfoot></table><div class="form-group" style="margin-top:12px"><label>หมายเหตุหัวหน้า</label><textarea id="note-${safeAttr(r.id)}" rows="2" placeholder="ใส่หมายเหตุถ้ามี" ${!PENDING_STATUS_SET.has(normalizeText(r.status || STATUS_PENDING)) ? "disabled" : ""}>${safeText(r.supervisor_note || "")}</textarea></div>`;
+  return `<table class="problem-table"><thead><tr><th>ปัญหา</th><th class="text-right">น้ำหนัก kg</th><th>รายละเอียด</th></tr></thead><tbody>${items.map((x) => `<tr><td><strong>${safeText(x.problem_type)}</strong> ${lossBadge(x)}</td><td class="text-right">${formatNumber(x.waste_weight_kg)}</td><td>${safeText(x.detail || "-")}</td></tr>`).join("")}</tbody><tfoot><tr><td>รวมของเสีย</td><td class="text-right">${formatNumber(totalWaste(r))}</td><td>kg</td></tr></tfoot></table><div class="form-group" style="margin-top:12px"><label>หมายเหตุหัวหน้า</label><textarea id="note-${safeAttr(r.id)}" rows="2" placeholder="ใส่หมายเหตุถ้ามี" ${!PENDING_STATUS_SET.has(normalizeText(r.status || STATUS_PENDING)) ? "disabled" : ""}>${safeText(r.supervisor_note || "")}</textarea></div>`;
 }
 function toggleDetail(i) {
   document.getElementById(`detail-${i}`)?.classList.toggle("hidden");
@@ -535,6 +571,19 @@ function editReport(id) {
                 <input class="editProblemType" value="${safeAttr(item.problem_type || "")}" />
               </div>
 
+              ${
+                state.hasLossType
+                  ? `<div class="form-group">
+                <label>ประเภทของเสีย</label>
+                <select class="editLossType" data-orig="${safeAttr(item.loss_type || "production")}">
+                  <option value="production" ${item.loss_type !== "forced" ? "selected" : ""}>สูญเสียจากการผลิต</option>
+                  <option value="forced" ${item.loss_type === "forced" ? "selected" : ""}>สูญเสียบังคับ</option>
+                </select>
+                <small class="muted">ค่าเริ่มต้นตามที่ตั้งไว้ของอาการ · เปลี่ยนเฉพาะรายการนี้ได้ (เช่น "อื่นๆ")</small>
+              </div>`
+                  : ""
+              }
+
               <div class="form-group">
                 <label>น้ำหนักของเสีย kg</label>
                 <input class="editWasteWeight" type="number" step="0.01" min="0" value="${Number(item.waste_weight_kg || 0)}" />
@@ -569,13 +618,20 @@ async function saveEditReport(id) {
   const problemTypes = [...document.querySelectorAll(".editProblemType")];
   const wasteWeights = [...document.querySelectorAll(".editWasteWeight")];
   const details = [...document.querySelectorAll(".editDetail")];
+  const lossTypes = [...document.querySelectorAll(".editLossType")];
 
-  const updates = itemIds.map((el, index) => ({
-    id: el.value,
-    problem_type: problemTypes[index]?.value?.trim() || "ไม่ระบุปัญหา",
-    waste_weight_kg: Number(wasteWeights[index]?.value || 0),
-    detail: details[index]?.value?.trim() || "",
-  }));
+  const updates = itemIds.map((el, index) => {
+    const u = {
+      id: el.value,
+      problem_type: problemTypes[index]?.value?.trim() || "ไม่ระบุปัญหา",
+      waste_weight_kg: Number(wasteWeights[index]?.value || 0),
+      detail: details[index]?.value?.trim() || "",
+    };
+    // ส่งประเภทเฉพาะเมื่อหัวหน้าเปลี่ยนเอง (ถ้าไม่ส่ง ฐานข้อมูลใช้ประเภทของอาการให้อัตโนมัติ)
+    const sel = lossTypes[index];
+    if (state.hasLossType && sel && sel.value !== sel.dataset.orig) u.loss_type = sel.value;
+    return u;
+  });
 
   const total = updates.reduce(
     (sum, item) => sum + Number(item.waste_weight_kg || 0),
@@ -609,6 +665,7 @@ async function saveEditReport(id) {
         problem_type: item.problem_type,
         waste_weight_kg: item.waste_weight_kg,
         detail: item.detail,
+        ...(item.loss_type ? { loss_type: item.loss_type } : {}),
       })
       .eq("id", item.id);
 
@@ -639,15 +696,12 @@ function ensureMachineCheckUI() {
 
   const section = document.createElement("section");
   section.id = "machineDailyCheckCard";
-  section.className = "table-card supervisor-table-card machine-check-card";
+  section.className = "table-card supervisor-table-card machine-check-card rv-card";
   section.innerHTML = `
     <div class="table-header machine-check-header">
       <div>
-        <h2>ตรวจความครบถ้วนเครื่องจักรประจำวัน</h2>
-        <p class="muted">
-          เครื่องที่มีรายงานของเสีย ระบบจะตรวจให้อัตโนมัติ
-          ส่วนเครื่องที่ไม่มีรายการ ให้หัวหน้ายืนยันว่า “ไม่มีของเสีย” หรือ “ไม่ได้เดินเครื่อง”
-        </p>
+        <h2>ตรวจเครื่องจักรประจำวัน</h2>
+        <p class="muted">เครื่องที่ไม่มีรายงาน ให้เลือก “ไม่มีของเสีย” หรือ “ไม่ได้เดินเครื่อง”</p>
       </div>
       <div class="machine-check-summary">
         <span class="machine-mini-pill machine-ok">ครบ <strong id="machineDoneCount">0</strong></span>
@@ -655,14 +709,10 @@ function ensureMachineCheckUI() {
       </div>
     </div>
 
-    <div class="machine-bulk-actions" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
-      <span class="muted">ตั้งค่ารวดเร็วสำหรับเครื่องที่ยังรอยืนยัน:</span>
-      <button class="btn" type="button" onclick="setAllPendingMachineStatus('no_waste')" style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; padding: 6px 12px; font-size: 13px; font-weight: 700; cursor: pointer; border-radius: 8px;">
-        ไม่มีของเสียทั้งหมด
-      </button>
-      <button class="btn" type="button" onclick="setAllPendingMachineStatus('not_running')" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 6px 12px; font-size: 13px; font-weight: 700; cursor: pointer; border-radius: 8px;">
-        ไม่ได้เดินเครื่องทั้งหมด
-      </button>
+    <div class="machine-bulk-actions">
+      <span class="muted">เครื่องที่ยังรอ ตั้งทีเดียว:</span>
+      <button class="btn secondary btn-sm" type="button" onclick="setAllPendingMachineStatus('no_waste')">ไม่มีของเสียทั้งหมด</button>
+      <button class="btn secondary btn-sm" type="button" onclick="setAllPendingMachineStatus('not_running')">ไม่ได้เดินเครื่องทั้งหมด</button>
     </div>
 
     <div id="machineCheckBody" class="machine-check-body">
@@ -682,8 +732,9 @@ function ensureMachineCheckUI() {
 
   firstTable.parentNode.insertBefore(section, firstTable);
 
-  // CSS เสริมไว้ใน JS เพื่อไม่ต้องแก้ไฟล์ CSS เดิม
-  if (!document.getElementById("machineDailyCheckStyle")) {
+  // CSS เสริมไว้ใน JS เพื่อไม่ต้องแก้ไฟล์ CSS เดิม (หน้าแบบใหม่ใช้ css/review-simple.css แทน)
+  const hasSimpleCss = document.querySelector('link[href*="review-simple.css"]');
+  if (!hasSimpleCss && !document.getElementById("machineDailyCheckStyle")) {
     const style = document.createElement("style");
     style.id = "machineDailyCheckStyle";
     style.textContent = `
@@ -868,7 +919,7 @@ async function loadMachineDailyCheck(reportRows, date) {
     });
 
     rows.sort((a, b) =>
-      `${a.dept}|${a.machineNo}`.localeCompare(`${b.dept}|${b.machineNo}`, "th"),
+      `${a.dept}|${a.machineNo}`.localeCompare(`${b.dept}|${b.machineNo}`, "th", { numeric: true }),
     );
 
     state.dailyCheckRows = rows;
@@ -921,7 +972,7 @@ function renderMachineDailyCheck(rows) {
                 onchange="setMachineDailyStatus('${safeAttr(m.dept)}','${safeAttr(m.machineNo)}','no_waste')"
               />
               <span class="tick-box">✓</span>
-              <span>เดินเครื่อง / ไม่มีของเสีย</span>
+              <span>ไม่มีของเสีย</span>
             </label>
 
             <label class="machine-tick off ${isOff ? "is-selected" : ""}">
@@ -1431,7 +1482,6 @@ async function checkUnsentDays() {
     const current = getValue("filterDate");
     host.hidden = false;
     host.innerHTML = `
-      <span class="material-symbols-outlined unsent-icon" aria-hidden="true">notification_important</span>
       <div class="unsent-body">
         <strong>ยังไม่ได้ส่งบัญชี ${days.length.toLocaleString("th-TH")} วัน (${total.toLocaleString("th-TH")} รายการ)</strong>
         <span>กดวันที่เพื่อเปิดตรวจและส่งบัญชี</span>

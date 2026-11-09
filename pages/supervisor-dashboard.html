@@ -1,329 +1,256 @@
 <!doctype html>
 <html lang="th">
   <head>
-    <!-- ======================================================
-      SUPERVISOR DASHBOARD
-      ไฟล์: pages/supervisor-dashboard.html
-      หน้าที่: Dashboard ให้หัวหน้างานดูสถิติของเสีย
-      ปรับรอบนี้:
-      - Admin / Management / Executive เห็นทุกแผนก
-      - Supervisor / Manager เห็นตาม user_departments
-      - ใช้ข้อมูลจาก daily_waste_reports
-    ======================================================= -->
+    <!-- Dashboard ของเสีย (หัวหน้างาน)
+         - Admin / Management / Executive เห็นทุกแผนก
+         - Supervisor / Manager เห็นตาม user_departments
+         หน้าตาแนวเดียวกับหน้าบันทึก/ตรวจสอบรายวัน: css/form-mobile.css + review-simple.css + dashboard-simple.css -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>สรุปของเสีย - หัวหน้างาน | PVT&T FACTORY</title>
+    <title>Dashboard ของเสีย - PVT&amp;T FACTORY</title>
 
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-
-    <!-- Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/Logo_Icons3.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icons/Logo_Icons3.png" />
-    <link rel="apple-touch-icon" href="/icons/Logo_Icons3.png" />
-
-    <!-- PWA -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="icon" type="image/png" href="/icons/logo-header.png" />
+    <link rel="apple-touch-icon" href="/icons/Logo_Apps3.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#1E3A8A" />
+    <meta name="theme-color" content="#ffffff" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="PVT&amp;T Factory" />
 
-    <link rel="stylesheet" href="/css/loadingService.css" />
-    <link rel="stylesheet" href="/css/supervisor-dashboard.css" />
-      <link rel="stylesheet" href="/css/responsive.css" />
-    <link rel="stylesheet" href="/css/app-shell.css" />
-    <script src="/core/appShell.js"></script>
-      <link rel="stylesheet" href="/css/splash.css" />
+    <link rel="stylesheet" href="/css/form-mobile.css" />
+    <link rel="stylesheet" href="/css/review-simple.css" />
+    <link rel="stylesheet" href="/css/dashboard-simple.css" />
+    <script src="/js/department/formSettings.js"></script>
   </head>
 
-  <body>
-    <!-- หน้าเปิดแอป (แบบเดียวกันทั้งแอป — ดู css/splash.css) -->
-    <div id="splash-screen" class="pvt-splash" role="status" aria-label="กำลังเปิดแอป">
-      <div class="pvt-splash-mark" aria-hidden="true">
-        <span class="pvt-splash-glow"></span>
-        <svg class="pvt-splash-ring" viewBox="0 0 120 120" aria-hidden="true">
-          <defs>
-            <linearGradient id="pvtSplashRing" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#ff8a3d" />
-              <stop offset="0.55" stop-color="#f26a1b" />
-              <stop offset="1" stop-color="#1e3a8a" />
-            </linearGradient>
-          </defs>
-          <circle class="track" cx="60" cy="60" r="54" />
-          <circle class="arc" cx="60" cy="60" r="54" />
-        </svg>
-        <img class="pvt-splash-logo" src="/icons/Logo_Apps3.png?v=3" alt="" />
+  <body class="rv">
+    <!-- แถบหัว -->
+    <header class="fm-top rv-top">
+      <img class="fm-logo" src="/icons/logo-header.png" width="42" height="37" alt="PVT&amp;T FACTORY" />
+      <div class="fm-top-title">
+        <h1>Dashboard ของเสีย</h1>
+        <p><span id="userName">-</span> · <span id="userDept">-</span></p>
       </div>
-      <div class="pvt-splash-title">PVT&amp;T Factory</div>
-      <div class="pvt-splash-sub">กำลังโหลด Dashboard ของเสีย</div>
-    </div>
 
-    <main class="page">
-      <!-- HEADER: PVT Factory style -->
-      <header class="page-header dashboard-hero">
-        <div class="header-top">
-          <div class="title-area">
-            <div class="dashboard-brand">
-              <div class="dashboard-logo-wrap">
-                <img
-                  class="dashboard-logo"
-                  src="/icons/Logo_Apps3.png?v=3"
-                  alt="PVT&T FACTORY Logo"
-                />
-              </div>
+      <nav class="rv-top-links" aria-label="เมนู">
+        <a class="rv-link" href="/pages/supervisor-daily-review.html">ตรวจรายวัน</a>
+        <button type="button" class="rv-link" data-open-scan>สแกน QR</button>
+        <button type="button" class="rv-link" onclick="logout()">ออกจากระบบ</button>
+      </nav>
 
-              <div class="dashboard-title-copy">
-                <span class="dashboard-eyebrow">SUPERVISOR DASHBOARD</span>
-                <h1>Dashboard สถิติของเสีย</h1>
-                <p>ดูแนวโน้มของเสีย เพื่อแก้ปัญหาหน้างาน</p>
-              </div>
-            </div>
-          </div>
+      <button type="button" class="fm-icon-btn" onclick="loadDashboard()" aria-label="รีเฟรช" title="รีเฟรช">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5" /></svg>
+      </button>
+      <button type="button" class="fm-icon-btn" onclick="FORM_SETTINGS.open()" aria-label="ตั้งค่าตัวอักษร" title="ตั้งค่าตัวอักษร">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19l5-14h2l5 14M6.5 13h7" /><path d="M17 11h4M19 9v4" /></svg>
+      </button>
+    </header>
 
-          <div class="header-actions">
-            <a href="/pages/supervisor-daily-review.html" class="btn secondary">
-              <span class="material-symbols-outlined">fact_check</span>
-              กลับหน้าตรวจสอบ
-            </a>
-
-            <button class="btn danger" type="button" onclick="logout()">
-              <span class="material-symbols-outlined">logout</span>
-              ออกจากระบบ
-            </button>
-          </div>
+    <main class="rv-main">
+      <!-- ช่วงวันที่ -->
+      <section class="filter-card db-filter rv-card">
+        <div class="form-group">
+          <label for="startDate">ตั้งแต่</label>
+          <input type="date" id="startDate" />
         </div>
-
-        <div class="header-user-row">
-          <div class="user-info-card">
-            <div class="user-avatar">
-              <span class="material-symbols-outlined">person</span>
-            </div>
-
-            <div class="user-detail">
-              <span class="user-label">ผู้ใช้งานปัจจุบัน</span>
-              <strong id="userName">หัวหน้างาน แผนกที่รับผิดชอบ</strong>
-              <div id="userDept">-</div>
-            </div>
-
-            <div class="dashboard-status">
-              <span class="status-dot"></span>
-              พร้อมใช้งาน
-            </div>
-          </div>
+        <div class="form-group">
+          <label for="endDate">ถึง</label>
+          <input type="date" id="endDate" />
         </div>
-      </header>
-
-      <section class="filter-card">
-        <div class="filter-inputs">
-          <div class="form-group">
-            <label for="startDate">วันที่เริ่มต้น</label>
-            <input type="date" id="startDate" />
-          </div>
-
-          <div class="form-group">
-            <label for="endDate">วันที่สิ้นสุด</label>
-            <input type="date" id="endDate" />
-          </div>
-        </div>
-
-        <div class="filter-actions-row">
-          <div class="quick-dates">
-            <button type="button" class="quick-date-btn" onclick="setQuickDate('today')">วันนี้</button>
-            <button type="button" class="quick-date-btn" onclick="setQuickDate('7days')">7 วันล่าสุด</button>
-            <button type="button" class="quick-date-btn" onclick="setQuickDate('30days')">30 วันล่าสุด</button>
-            <button type="button" class="quick-date-btn active" onclick="setQuickDate('thisMonth')">เดือนนี้</button>
-          </div>
-
-          <button class="btn primary btn-search" type="button" onclick="loadDashboard()">
-            <span class="material-symbols-outlined">search</span>
-            ค้นหา
-          </button>
+        <div class="quick-dates" role="group" aria-label="ช่วงวันที่ลัด">
+          <button type="button" class="quick-date-btn" onclick="setQuickDate('today')">วันนี้</button>
+          <button type="button" class="quick-date-btn" onclick="setQuickDate('7days')">7 วัน</button>
+          <button type="button" class="quick-date-btn" onclick="setQuickDate('30days')">30 วัน</button>
+          <button type="button" class="quick-date-btn active" onclick="setQuickDate('thisMonth')">เดือนนี้</button>
         </div>
       </section>
 
-      <section class="summary-grid" id="supervisor-kpi-grid">
-        <article class="summary-card" data-widget-id="kpi_records">
-          <span>จำนวนรายการ</span>
-          <strong id="totalRecords">0</strong>
-          <small>รายการในช่วงวันที่เลือก</small>
-          <div id="totalRecordsCmp" class="kpi-compare-badge"></div>
+      <!-- ตัวเลขสรุป -->
+      <section class="db-kpis" id="supervisor-kpi-grid">
+        <article class="db-kpi">
+          <span>% ของเสีย</span>
+          <strong id="wastePercent">0%</strong>
+          <small>ของเสีย ÷ (ผลิต + ของเสีย)</small>
+          <div id="wastePercentCmp" class="kpi-compare-badge"></div>
         </article>
-
-        <article class="summary-card success" data-widget-id="kpi_waste">
-          <span>น้ำหนักของเสียรวม</span>
+        <article class="db-kpi">
+          <span>ของเสียรวม</span>
           <strong id="totalWaste">0 kg</strong>
-          <small>รวมทุกเครื่องในแผนก</small>
+          <small>ทุกเครื่องในแผนก</small>
           <div id="totalWasteCmp" class="kpi-compare-badge"></div>
         </article>
-
-        <article class="summary-card success" data-widget-id="kpi_production">
-          <span>น้ำหนักผลิตรวม</span>
+        <article class="db-kpi">
+          <span>ผลิตรวม</span>
           <strong id="totalProduction">0 kg</strong>
-          <small>ข้อมูลจากการผลิต</small>
+          <small>ยอดที่บัญชีกรอกแล้ว</small>
           <div id="totalProductionCmp" class="kpi-compare-badge"></div>
         </article>
-
-        <article class="summary-card warning" data-widget-id="kpi_problem">
+        <article class="db-kpi">
+          <span>จำนวนรายการ</span>
+          <strong id="totalRecords">0</strong>
+          <small>ในช่วงวันที่เลือก</small>
+          <div id="totalRecordsCmp" class="kpi-compare-badge"></div>
+        </article>
+        <article class="db-kpi">
+          <span>เครื่องที่เสียมากสุด</span>
+          <strong id="topMachine">-</strong>
+          <small id="topMachineSub">-</small>
+          <div id="topMachineCmp" class="kpi-compare-badge"></div>
+        </article>
+        <article class="db-kpi">
           <span>ปัญหาที่พบบ่อยสุด</span>
           <strong id="topProblem">-</strong>
           <small id="topProblemSub">-</small>
           <div id="topProblemCmp" class="kpi-compare-badge"></div>
         </article>
-
-        <article class="summary-card danger" data-widget-id="kpi_machine">
-          <span>เครื่องที่ของเสียสูงสุด</span>
-          <strong id="topMachine">-</strong>
-          <small id="topMachineSub">-</small>
-          <div id="topMachineCmp" class="kpi-compare-badge"></div>
-        </article>
-
-        <article class="summary-card warning" data-widget-id="kpi_waste_pct">
-          <span>% Waste</span>
-          <strong id="wastePercent">0%</strong>
-          <small>ของเสียรวมเดือนนี้</small>
-          <div id="wastePercentCmp" class="kpi-compare-badge"></div>
-        </article>
       </section>
 
-      <section class="chart-grid">
-        <article class="chart-card">
-          <h2>แนวโน้มของเสียรายวัน</h2>
-          <canvas id="dailyTrendChart"></canvas>
+      <!-- กราฟ -->
+      <section class="db-charts">
+        <article class="rv-card db-chart db-chart-wide">
+          <h2>ของเสียรายวัน (kg)</h2>
+          <div class="db-chart-box"><canvas id="dailyTrendChart"></canvas></div>
         </article>
-
-        <article class="chart-card">
-          <h2>Top 10 เครื่องที่มีของเสียสูงสุด</h2>
-          <canvas id="machineChart"></canvas>
+        <article class="rv-card db-chart db-chart-machine">
+          <h2>10 เครื่องที่ของเสียสูงสุด (kg)</h2>
+          <div class="db-chart-box"><canvas id="machineChart"></canvas></div>
         </article>
-
-        <article class="chart-card">
-          <h2>Top 10 ประเภทปัญหาที่เกิดบ่อย</h2>
-          <canvas id="problemChart"></canvas>
+        <article class="rv-card db-chart">
+          <h2>10 ปัญหาที่เกิดบ่อย (ครั้ง)</h2>
+          <div class="db-chart-box"><canvas id="problemChart"></canvas></div>
         </article>
-
-        <article class="chart-card">
+        <article class="rv-card db-chart">
           <h2>สถานะรายการ</h2>
-          <canvas id="statusChart"></canvas>
+          <div class="db-chart-box"><canvas id="statusChart"></canvas></div>
         </article>
       </section>
 
-      <section class="table-card">
-        <h2>สถิติของเสียรายเดือน</h2>
+      <!-- % ของเสียรายเครื่อง -->
+      <section class="rv-card" id="machine-stats">
+        <div class="table-header">
+          <div>
+            <h2>% ของเสียรายเครื่อง</h2>
+            <p class="muted">เรียงจาก % สูงไปต่ำ · แถบซ้ายสีแดง = เกินเกณฑ์, สีเหลือง = ใกล้เกณฑ์</p>
+          </div>
+        </div>
         <div id="topList" class="top-list">กำลังโหลดข้อมูล...</div>
       </section>
     </main>
 
-    <!-- Floating 'Scan QR' Action Button -->
-    <button id="btn-floating-scan-qr" class="floating-scan-qr-btn" type="button" aria-label="สแกน QR ประจำเครื่องจักร เพื่อเปิดข้อมูลซ่อมบำรุงและประสิทธิภาพ" title="สแกน QR เครื่องจักร (เปิดข้อมูลซ่อมบำรุงและประสิทธิภาพ)">
-      <span class="scan-qr-pulse" aria-hidden="true"></span>
-      <span class="scan-qr-icon-wrap">
-        <span class="material-symbols-outlined scan-icon">qr_code_scanner</span>
-      </span>
-      <span class="scan-qr-label">สแกน QR เครื่อง</span>
-    </button>
+    <!-- แถบไอคอนด้านล่าง (มือถือ/แท็บเล็ต) -->
+    <nav class="fm-tabbar rv-tabbar" aria-label="เมนูหลัก">
+      <a class="fm-tab" href="/pages/supervisor-daily-review.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 9l2 2 4-4M8 15h8" /></svg>
+        <span class="fm-tab-label">ตรวจรายวัน</span>
+      </a>
+      <a class="fm-tab is-active" href="/pages/supervisor-dashboard.html" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16v-5M12 16V7M17 16v-8" /></svg>
+        <span class="fm-tab-label">Dashboard</span>
+      </a>
+      <button type="button" class="fm-tab fm-tab-save" data-open-scan>
+        <span class="fm-tab-save-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M4 12h16" /></svg>
+        </span>
+        <span class="fm-tab-label">สแกน QR</span>
+      </button>
+      <a class="fm-tab" href="/pages/supervisor-daily-review.html#history">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v5h5M12 8v4l3 2" /></svg>
+        <span class="fm-tab-label">ส่งแล้ว</span>
+      </a>
+      <button type="button" class="fm-tab" onclick="logout()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></svg>
+        <span class="fm-tab-label">ออก</span>
+      </button>
+    </nav>
 
-    <!-- ================= QR CODE CAMERA SCANNER MODAL ================= -->
-    <div id="qr-scan-modal" class="modal-backdrop qr-scan-modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" style="display: none;">
-      <div class="modal-dialog qr-scan-dialog">
-        <header class="modal-header qr-scan-header" style="display: flex; justify-content: space-between; align-items: center;">
-          <div class="modal-title-group" style="display: flex; align-items: center; gap: 12px;">
-            <div class="modal-icon-badge qr-scan-badge" style="width: 42px; height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;">
-              <span class="material-symbols-outlined">qr_code_scanner</span>
-            </div>
-            <div>
-              <div class="modal-eyebrow" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px; color: #0284c7;">SUPERVISOR SCANNER</div>
-              <h2 class="modal-title" style="font-size: 18px; margin: 0; font-weight: 600;">สแกน QR Code เครื่องจักร</h2>
-            </div>
+    <!-- ปุ่มเดิมของตัวสแกน (qr-machine-scanner.js ผูกกับ id นี้) — ซ่อนไว้ เรียกจากเมนูแทน -->
+    <button id="btn-floating-scan-qr" type="button" hidden>สแกน QR</button>
+
+    <!-- หน้าต่างสแกน QR เครื่องจักร -->
+    <div id="qr-scan-modal" class="modal-overlay db-scan" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="qr-scan-title" style="display: none">
+      <div class="modal-card">
+        <div class="modal-head">
+          <div>
+            <h2 id="qr-scan-title">สแกน QR เครื่องจักร</h2>
+            <p>ส่องกล้องไปที่ QR ประจำเครื่อง</p>
           </div>
-          <button type="button" id="btn-close-qr-scan" class="modal-close-btn" aria-label="ปิดหน้าต่างสแกน QR" style="border: none; background: #f1f5f9; border-radius: 50%; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #475569;">
-            <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
-          </button>
-        </header>
-
-        <div class="modal-body qr-scan-body">
-          <!-- Status Indicator Pill -->
+          <button type="button" id="btn-close-qr-scan" class="modal-close" aria-label="ปิด">×</button>
+        </div>
+        <div class="app-modal-body">
           <div id="qr-scan-status" class="qr-scan-status-pill status-info">
             <span class="status-indicator-dot"></span>
-            <span id="qr-scan-status-text">กำลังเปิดกล้องถ่ายภาพ...</span>
+            <span id="qr-scan-status-text">กำลังเปิดกล้อง...</span>
           </div>
 
-          <!-- Camera Viewfinder with Overlay HUD -->
           <div class="qr-viewfinder-wrapper">
             <div id="qr-camera-stream" class="qr-camera-container"></div>
-
-            <div class="qr-hud-overlay" id="qr-hud-overlay">
-              <div class="qr-target-box">
-                <span class="corner-marker top-left"></span>
-                <span class="corner-marker top-right"></span>
-                <span class="corner-marker bottom-left"></span>
-                <span class="corner-marker bottom-right"></span>
-                <div class="qr-laser-line"></div>
-              </div>
-              <div class="qr-hud-instruction">
-                <span class="material-symbols-outlined" style="font-size: 16px;">center_focus_strong</span>
-                <span>จัดตำแหน่ง QR Code ให้อยู่ในกรอบ</span>
-              </div>
+            <div class="qr-hud-overlay" id="qr-hud-overlay" aria-hidden="true">
+              <div class="qr-target-box"></div>
             </div>
           </div>
 
-          <!-- Camera Controls Toolbar -->
           <div class="qr-toolbar-actions">
-            <button type="button" id="btn-toggle-camera-facing" class="qr-action-btn" title="สลับกล้องหน้า/หลัง" style="display: none;">
-              <span class="material-symbols-outlined">flip_camera_ios</span>
-              <span>สลับกล้อง</span>
-            </button>
-            <button type="button" id="btn-toggle-camera-torch" class="qr-action-btn" title="เปิด/ปิดไฟฉาย" style="display: none;">
-              <span class="material-symbols-outlined">flashlight_on</span>
-              <span>เปิดไฟฉาย</span>
-            </button>
-            <label for="qr-file-input" class="qr-action-btn qr-file-label" title="อัปโหลดรูปภาพ QR Code">
-              <span class="material-symbols-outlined">image</span>
-              <span>เลือกรูปภาพ QR</span>
-            </label>
-            <input type="file" id="qr-file-input" accept="image/*" style="display: none;" />
+            <button type="button" id="btn-toggle-camera-facing" class="btn btn-sm qr-action-btn" style="display: none">สลับกล้อง</button>
+            <button type="button" id="btn-toggle-camera-torch" class="btn btn-sm qr-action-btn" style="display: none">เปิดไฟฉาย</button>
+            <label for="qr-file-input" class="btn btn-sm qr-action-btn">เลือกรูป QR</label>
+            <input type="file" id="qr-file-input" accept="image/*" hidden />
           </div>
 
-          <!-- Manual Machine Fallback -->
-          <div class="qr-manual-fallback">
-            <div class="qr-manual-divider">
-              <span>หรือเลือกเครื่องจากรายการโดยตรง</span>
-            </div>
-            <div class="qr-manual-row">
-              <div class="qr-select-wrap">
-                <select id="qr-quick-machine-select" class="qr-quick-select">
-                  <option value="">-- เลือกรหัสเครื่องจากรายการ --</option>
-                </select>
-              </div>
-              <button type="button" id="btn-qr-open-selected-machine" class="btn btn-primary qr-quick-open-btn">
-                <span>เปิดข้อมูล</span>
-                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
-              </button>
-            </div>
+          <p class="db-scan-or">หรือเลือกเครื่องจากรายการ</p>
+          <div class="db-scan-manual">
+            <select id="qr-quick-machine-select" aria-label="เลือกเครื่องจักร">
+              <option value="">เลือกเครื่องจักร</option>
+            </select>
+            <button type="button" id="btn-qr-open-selected-machine" class="btn primary">เปิด</button>
           </div>
         </div>
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/js/vendor/html5-qrcode.min.js"></script>
+    <script src="/js/vendor/html5-qrcode.min.js" defer></script>
     <script src="/core/supabaseClient.js"></script>
+    <script src="/core/supabaseFetch.js"></script>
+    <script src="/auth/authGuard.js"></script>
     <script src="/core/roleConfig.js"></script>
     <script src="/core/ea-common.js"></script>
     <script src="/core/departmentConfig.js"></script>
-    <script src="/core/tableSwipeDetector.js"></script>
-    <script src="/core/counterAnimation.js"></script>
-    <script src="/core/autoRefresh.js"></script>
-    <script src="/core/widgetDragDrop.js"></script>
-    <script src="/services/loadingService.js"></script>
     <script src="/core/wasteFormula.js"></script>
     <script src="/js/dashboard/supervisor-dashboard.js"></script>
     <script src="/js/dashboard/qr-machine-scanner.js"></script>
-      <script src="/core/responsiveTables.js"></script>
+    <script>
+      // ปุ่ม "สแกน QR" ในแถบบน/แถบล่าง → เปิดหน้าต่างสแกนเดิม
+      document.querySelectorAll("[data-open-scan]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          document.getElementById("btn-floating-scan-qr").click();
+        });
+      });
+      // เปลี่ยนวันที่เอง → โหลดใหม่ทันที (ไม่ต้องกดค้นหา)
+      ["startDate", "endDate"].forEach(function (id) {
+        document.getElementById(id).addEventListener("change", function () {
+          document.querySelectorAll(".quick-date-btn").forEach(function (b) { b.classList.remove("active"); });
+          if (typeof loadDashboard === "function") loadDashboard();
+        });
+      });
+      // มาจากปุ่ม "สแกน QR" ของหน้าอื่น → เปิดกล้องทันที
+      if (location.hash === "#scan") {
+        history.replaceState(null, "", location.pathname + location.search);
+        setTimeout(function () { document.getElementById("btn-floating-scan-qr").click(); }, 700);
+      }
+      // แจ้งเตือนสั้น ๆ (qr-machine-scanner.js เรียกใช้)
+      window.showDashboardToast = function (msg, type) {
+        var t = document.getElementById("toast");
+        if (!t) return;
+        t.textContent = msg;
+        t.className = "toast " + (type || "");
+        clearTimeout(t._timer);
+        t._timer = setTimeout(function () { t.className = "toast hidden"; }, 2600);
+      };
+    </script>
   </body>
 </html>

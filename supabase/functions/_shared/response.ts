@@ -1,6 +1,6 @@
 import { corsHeaders } from "./cors.ts";
 
-export function ok(data: unknown = {}) {
+export function ok(data: Record<string, unknown> = {}) {
   return new Response(
     JSON.stringify({
       ok: true,

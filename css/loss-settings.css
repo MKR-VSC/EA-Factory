@@ -1,0 +1,283 @@
+/* ==========================================================
+   loss-settings.css — เมนู "อาการเสีย & ประเภท" (pages/loss-settings.html)
+   ต่อจาก form-mobile / review-simple / accounting-simple / settings-simple
+   สีประเภท: การผลิต = น้ำเงิน · บังคับ = ส้ม (ใช้สีเดียวกันทุกหน้า)
+   ========================================================== */
+.ls {
+  --loss-prod: #1e3a8a;
+  --loss-prod-soft: #e8edf8;
+  --loss-forced: #c2410c;
+  --loss-forced-soft: #fff1e6;
+}
+
+.ls-type-card.is-production {
+  border-left: 4px solid var(--loss-prod);
+}
+
+.ls-type-card.is-forced {
+  border-left: 4px solid var(--loss-forced);
+}
+
+.ls-muted,
+.ls-empty {
+  color: var(--muted);
+}
+
+.ls-empty {
+  margin: 0;
+  padding: 24px 8px;
+  text-align: center;
+}
+
+/* ---------- เลือกแผนก ---------- */
+.ls-depts {
+  display: flex;
+  gap: 8px;
+  margin: -2px -2px 14px;
+  padding: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.ls-dept {
+  display: grid;
+  flex: none;
+  gap: 1px;
+  min-width: 120px;
+  padding: 8px 14px;
+  color: var(--text);
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.ls-dept span {
+  font-weight: 600;
+  font-size: calc(15px * var(--fs, 1));
+}
+
+.ls-dept small {
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+}
+
+.ls-dept.is-active {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  box-shadow: inset 0 -3px 0 var(--primary);
+}
+
+/* ---------- แถบกรอง / ค้นหา ---------- */
+.ls-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ls-filter {
+  display: inline-flex;
+  padding: 3px;
+  background: #f1f3f6;
+  border-radius: 10px;
+}
+
+.ls-filter.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.ls-filter-btn {
+  min-height: 38px;
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: calc(14px * var(--fs, 1));
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ls-filter-btn b {
+  margin-left: 2px;
+  font-weight: 600;
+}
+
+.ls-filter-btn.is-active {
+  color: var(--text);
+  font-weight: 600;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.ls-search {
+  max-width: 320px;
+}
+
+/* ---------- เพิ่มอาการ ---------- */
+.ls-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 12px;
+  background: #f8f9fb;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+}
+
+.ls-add input,
+.ls-add select {
+  min-height: 44px;
+}
+
+/* ---------- รายการ ---------- */
+.ls-head {
+  display: none;
+}
+
+.ls-list {
+  display: grid;
+}
+
+.ls-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-areas:
+    "order name"
+    "type  type"
+    "act   del";
+  align-items: center;
+  gap: 8px 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.ls-row:last-child {
+  border-bottom: 0;
+}
+
+.ls-order {
+  grid-area: order;
+  min-height: 40px;
+  text-align: center;
+}
+
+.ls-name {
+  grid-area: name;
+  min-height: 40px;
+  font-weight: 600;
+  background: transparent;
+  border-color: transparent;
+}
+
+.ls-name:hover {
+  border-color: var(--line);
+}
+
+.ls-name:focus {
+  background: var(--card);
+  border-color: var(--primary);
+}
+
+.ls-row .switch {
+  grid-area: act;
+  justify-self: start;
+}
+
+.ls-del {
+  grid-area: del;
+  justify-self: end;
+}
+
+.ls-row.is-off .ls-name,
+.ls-row.is-off .ls-order {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+/* ปุ่มเลือกประเภท */
+.ls-type {
+  display: inline-grid;
+  grid-area: type;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  background: #f1f3f6;
+  border-radius: 10px;
+}
+
+.ls-type.is-disabled {
+  opacity: 0.45;
+}
+
+.ls-type-btn {
+  min-height: 36px;
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: calc(14px * var(--fs, 1));
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ls-type-btn:disabled {
+  cursor: not-allowed;
+}
+
+.ls-type-btn.is-production.is-on {
+  color: #fff;
+  font-weight: 600;
+  background: var(--loss-prod);
+}
+
+.ls-type-btn.is-forced.is-on {
+  color: #fff;
+  font-weight: 600;
+  background: var(--loss-forced);
+}
+
+/* ---------- จอกว้าง ---------- */
+@media (min-width: 760px) {
+  .ls-add {
+    grid-template-columns: minmax(0, 1fr) 220px auto;
+    align-items: center;
+  }
+
+  .ls-head,
+  .ls-row {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) 210px 64px 64px;
+    grid-template-areas: none;
+    gap: 12px;
+  }
+
+  .ls-head {
+    padding: 0 0 8px;
+    color: var(--muted);
+    font-size: calc(13px * var(--fs, 1));
+    font-weight: 600;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .ls-row {
+    padding: 8px 0;
+  }
+
+  .ls-order,
+  .ls-name,
+  .ls-type,
+  .ls-row .switch,
+  .ls-del {
+    grid-area: auto;
+  }
+
+  .ls-row .switch {
+    justify-self: center;
+  }
+}

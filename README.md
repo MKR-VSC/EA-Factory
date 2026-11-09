@@ -196,7 +196,6 @@ EA-Factory/
 │  ├─ admin-panel.html
 │  ├─ accounting-panel.html
 │  ├─ form-department.html
-│  ├─ pr-form.html
 │  └─ reset-password.html
 │
 ├─ js/
@@ -206,10 +205,8 @@ EA-Factory/
 │  │  └─ admin-panel.js
 │  ├─ accounting/
 │  │  └─ accounting-panel.js
-│  ├─ department/
-│  │  └─ form-department.js
-│  └─ pr/
-│     └─ pr-form.js
+│  └─ department/
+│     └─ form-department.js
 │
 ├─ css/
 │  ├─ root.css     ✅ เก็บสีกลางทั้งหมด     เรียก root ก่อน CSS หน้าอื่น ต้องอยู่บนสุดเสมอ เพราะไฟล์อื่นจะเรียกใช้ตัวแปรสีจากไฟล์นี้<link rel="stylesheet" href="/css/root.css" />
@@ -218,7 +215,6 @@ EA-Factory/
 │  ├─ admin-panel.css
 │  ├─ accounting-panel.css
 │  ├─ form-department.css
-│  ├─ pr-form.css
 │  └─ reset-password.css
 │
 ├─ images/

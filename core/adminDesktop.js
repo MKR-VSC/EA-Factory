@@ -45,17 +45,17 @@
           </select>
         </label>
         <button type="button" class="admin-pager-btn" data-go="first" title="หน้าแรก" aria-label="หน้าแรก">
-          <span class="material-symbols-outlined">first_page</span>
+          <span aria-hidden="true">«</span>
         </button>
         <button type="button" class="admin-pager-btn" data-go="prev" title="หน้าก่อน (←)" aria-label="หน้าก่อน">
-          <span class="material-symbols-outlined">chevron_left</span>
+          <span aria-hidden="true">‹</span>
         </button>
         <span class="admin-pager-page"></span>
         <button type="button" class="admin-pager-btn" data-go="next" title="หน้าถัดไป (→)" aria-label="หน้าถัดไป">
-          <span class="material-symbols-outlined">chevron_right</span>
+          <span aria-hidden="true">›</span>
         </button>
         <button type="button" class="admin-pager-btn" data-go="last" title="หน้าสุดท้าย" aria-label="หน้าสุดท้าย">
-          <span class="material-symbols-outlined">last_page</span>
+          <span aria-hidden="true">»</span>
         </button>
       </div>`;
 
@@ -174,10 +174,9 @@
     const note = document.createElement("div");
     note.className = "admin-desktop-notice";
     note.innerHTML = `
-      <span class="material-symbols-outlined" aria-hidden="true">desktop_windows</span>
       <span>หน้าผู้ดูแลระบบออกแบบสำหรับคอมพิวเตอร์ แนะนำให้ใช้งานบน PC / โน้ตบุ๊ก</span>
       <button type="button" aria-label="ปิดข้อความแนะนำ">
-        <span class="material-symbols-outlined">close</span>
+        <span aria-hidden="true">×</span>
       </button>`;
     note.querySelector("button").addEventListener("click", () => {
       note.remove();
@@ -185,8 +184,9 @@
         sessionStorage.setItem(KEY, "1");
       } catch (_) {}
     });
-    const host = document.querySelector(".workspace-header") || document.querySelector("main") || document.body;
-    host.insertAdjacentElement("beforebegin", note);
+    // แทรกไว้บนสุดของเนื้อหา (ไม่แทรกนอก <main> เพราะจะไปเบียดช่องของเมนูซ้าย)
+    const host = document.querySelector("main") || document.body;
+    host.insertAdjacentElement("afterbegin", note);
   }
 
   function init() {

@@ -1,0 +1,327 @@
+/* ==========================================================
+   daily-report.css — รายงานการผลิตและของเสีย (pages/daily-report.html)
+   หน้าจอ: แบบเรียบชุดเดียวกับหน้าบัญชี · พิมพ์: A4 แนวนอน ขาวดำอ่านง่าย
+   ========================================================== */
+.dr-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+}
+
+.dr-mode {
+  display: inline-flex;
+  padding: 3px;
+  background: #f1f3f6;
+  border-radius: 10px;
+}
+
+.dr-mode-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  color: var(--muted);
+  font-size: calc(15px * var(--fs, 1));
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.dr-mode-btn.is-active {
+  color: var(--text);
+  font-weight: 600;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.dr-field {
+  display: grid;
+  gap: 4px;
+  min-width: 160px;
+  margin: 0;
+  color: var(--muted);
+  font-size: calc(13px * var(--fs, 1));
+}
+
+.dr-field[hidden] {
+  display: none;
+}
+
+.dr-field input,
+.dr-field select {
+  min-height: 42px;
+}
+
+.dr-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.dr-alert {
+  padding: 8px 14px;
+  color: #92400e;
+  font-size: calc(14px * var(--fs, 1));
+  background: #fffbea;
+  border: 1px solid #f1dfa6;
+  border-radius: 10px;
+}
+
+.dr-alert[hidden] {
+  display: none;
+}
+
+/* ---------- ใบรายงาน ---------- */
+.dr-sheet {
+  padding: 18px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.dr-empty {
+  margin: 0;
+  padding: 32px 8px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.dr-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.dr-head h2 {
+  margin: 0;
+  font-size: calc(18px * var(--fs, 1));
+}
+
+.dr-head p {
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+
+.dr-scroll {
+  overflow-x: auto;
+}
+
+.dr-table {
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: collapse;
+  font-size: calc(13px * var(--fs, 1));
+  font-variant-numeric: tabular-nums;
+}
+
+.dr-table th,
+.dr-table td {
+  padding: 6px 8px;
+  vertical-align: top;
+  border: 1px solid #d6dae1;
+}
+
+.dr-table thead th {
+  font-weight: 600;
+  text-align: center;
+  vertical-align: middle;
+  background: #f3f5f8;
+}
+
+.dr-table thead .loss-prod-h {
+  color: #1e3a8a;
+  background: #e8edf8;
+}
+
+.dr-table thead .loss-forced-h {
+  color: #c2410c;
+  background: #fff1e6;
+}
+
+.dr-table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.dr-table .ctr {
+  text-align: center;
+}
+
+.dr-table .strong {
+  font-weight: 600;
+}
+
+.dr-dept {
+  min-width: 90px;
+  font-weight: 700;
+  text-align: center !important;
+  vertical-align: middle !important;
+  background: #fafbfc;
+}
+
+.dr-what {
+  min-width: 220px;
+}
+
+.dr-line {
+  line-height: 1.6;
+}
+
+.dr-line small {
+  color: var(--muted);
+}
+
+.dr-line-first {
+  min-height: 1.6em;
+  line-height: 1.6;
+}
+
+.dr-line-total {
+  margin-top: 2px;
+  font-weight: 700;
+  border-top: 1px solid #d6dae1;
+}
+
+.dr-cause,
+.dr-cause-h {
+  min-width: 200px;
+}
+
+.dr-cause {
+  font-size: calc(12px * var(--fs, 1));
+}
+
+.c-forced {
+  color: #c2410c;
+}
+
+.dr-subtotal td {
+  font-weight: 600;
+  background: #fafbfc;
+}
+
+.dr-total-label {
+  font-weight: 700;
+  text-align: right !important;
+}
+
+.dr-grand th,
+.dr-grand td {
+  font-weight: 700;
+  background: #eef1f6;
+  border-top: 2px solid #9aa3b2;
+}
+
+.dr-table .result-pill {
+  white-space: nowrap;
+}
+
+.dr-foot {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: calc(12px * var(--fs, 1));
+}
+
+.dr-foot p {
+  margin: 2px 0;
+}
+
+.dr-foot-warn {
+  color: #b45309;
+  font-weight: 600;
+}
+
+/* ---------- พิมพ์ ---------- */
+@page {
+  size: A4 landscape;
+  margin: 8mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    --fs: 0.78;
+  }
+
+  .no-print,
+  .fm-top,
+  .acc-side,
+  .fm-tabbar,
+  body > div[style*="position: fixed"] {
+    display: none !important;
+  }
+
+  .acc-layout,
+  .acc-main {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .dr-sheet {
+    padding: 0;
+    border: 0;
+  }
+
+  .dr-scroll {
+    overflow: visible;
+  }
+
+  .dr-table {
+    min-width: 0;
+    font-size: 9pt;
+  }
+
+  .dr-table th,
+  .dr-table td {
+    padding: 3px 5px;
+    border-color: #888;
+  }
+
+  .dr-table tr {
+    break-inside: avoid;
+  }
+
+  .dr-table thead {
+    display: table-header-group;
+  }
+
+  .dr-table thead th,
+  .dr-dept,
+  .dr-grand th,
+  .dr-grand td,
+  .dr-subtotal td {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* ตารางกว้างเลื่อนในกรอบ ไม่ดันทั้งหน้า (มือถือ) */
+.dr .acc-main,
+.dr-sheet,
+.dr-controls {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* กลุ่มแผนก */
+.dr-dept-group {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: calc(11px * var(--fs, 1));
+  font-weight: 400;
+}
+
+.dr-group-total th,
+.dr-group-total td {
+  font-weight: 700;
+  background: #eef2fa;
+  border-top: 2px solid #c9d3e8;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
