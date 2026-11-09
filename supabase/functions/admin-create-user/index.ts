@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { ok, fail } from "../_shared/response.ts";
 import { requireAdmin, HttpError } from "../_shared/auth.ts";
+import { normalizeDept, normalizeRole, normalizeStatus, readJson } from "../_shared/validate.ts";
 
 serve(async (req) => {
   try {
@@ -15,20 +16,18 @@ serve(async (req) => {
     }
 
     const { admin } = await requireAdmin(req);
-    const body = await req.json();
+    const body = await readJson(req);
 
     const username = String(body.username || "").trim().toUpperCase();
     const password = String(body.password || "").trim();
-    const role = String(body.role || "staff").trim().toLowerCase();
+    const role = normalizeRole(body.role);
 
-    const department = String(body.department || "").trim().toUpperCase();
-    const department_code = String(body.department_code || department)
-      .trim()
-      .toUpperCase();
+    const department = normalizeDept(body.department);
+    const department_code = normalizeDept(body.department_code) || department;
 
     const display_name = String(body.display_name || username).trim();
     const full_name = String(body.full_name || display_name || username).trim();
-    const status = String(body.status || "active").trim().toLowerCase();
+    const status = normalizeStatus(body.status);
 
     const email = String(body.email || `${username.toLowerCase()}@pvt.local`)
       .trim()
@@ -38,6 +37,9 @@ serve(async (req) => {
     if (!password) return fail("กรุณาระบุ Password", 400);
     if (password.length < 6) {
       return fail("Password ต้องมีอย่างน้อย 6 ตัวอักษร", 400);
+    }
+    if (!/^[A-Z0-9_.-]+$/.test(username)) {
+      return fail("Username ใช้ได้เฉพาะ A-Z, 0-9, _ . -", 400);
     }
 
     const { data: existingProfile, error: existingProfileError } = await admin

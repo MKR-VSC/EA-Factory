@@ -963,7 +963,7 @@ function addProblemItem(
           step="0.01"
           inputmode="decimal"
           placeholder="0.00"
-          value="${defaultValue.waste_weight_kg || ""}"
+          value="${escapeHtml(defaultValue.waste_weight_kg || "")}"
           required
         />
       </div>
@@ -975,7 +975,7 @@ function addProblemItem(
         class="problem-detail-input"
         rows="1"
         placeholder="ไม่บังคับ (ถ้าเลือก อื่นๆ ต้องระบุ)"
-      >${defaultValue.detail || ""}</textarea>
+      >${escapeHtml(defaultValue.detail || "")}</textarea>
     </div>
 
     <div class="problem-item-inline-message" hidden></div>
